@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<!-- V4.3 — ANALYZE BUTTON FIX -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EVOLUM Pitchdeck Generator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #0b0b0b, #1a1a1a);
+    color: white;
+    overflow: hidden;
+}
+.container {
+    width: 780px;
+    margin: 0 auto;
+    padding: 12px 18px 8px;
+    text-align: center;
+    box-sizing: border-box;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.logo {
+    margin: 0 auto 6px;
+    text-align: center;
+}
+.logo-evolum {
+    font-size: 30px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #ffffff, #dcdcdc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 0.5px;
+}
+.logo-img {
+    width: 200px;
+    max-width: 90%;
+    display: block;
+    margin: 0 auto 4px;
+}
+.logo-divider {
+    font-size: 22px;
+    color: #52a8ff;
+    margin: 0 8px;
+    vertical-align: 2px;
+}
+.logo-sub {
+    font-size: 16px;
+    font-weight: 700;
+    color: #cfcfcf;
+    letter-spacing: 0.2px;
+}
+.logo-line {
+    width: 220px;
+    height: 2px;
+    margin: 4px auto 6px;
+    background: linear-gradient(90deg, transparent, #ff7a00, transparent);
+    opacity: 0.9;
+}
+.tagline {
+  margin-top: -8px;        /* tighten gap */
+  font-weight: 600;       /* make it feel intentional */
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+}
+.primary-button {
+    padding: 12px 20px;
+    background: #ff7a00;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+.button-row {
+    width: 520px;
+    margin: 20px auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+.shell {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    flex: 1;
+}
+.card {
+    background: #151515;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: 0.2s;
+}
+.card:hover {
+    border-color: #ff7a00;
+}
+.section-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin-top: 0;
+}
+.section-subtitle {
+    color: #cfcfcf;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+.choice-stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+.choice {
+    background: #1a1a1a;
+    padding: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    text-align: center;
+}
+.choice:hover {
+    border-color: #ff7a00;
+}
+.choice.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: rgba(255,255,255,0.08);
+}
+.choice.disabled:hover {
+    border-color: rgba(255,255,255,0.08);
+}
+.choice-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+.choice-copy {
+    color: #d0d0d0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+.workspace-panel {
+    display: none;
+    margin-top: 10px;
+    text-align: left;
+    background: #111111;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    max-height: 280px;
+    overflow-y: auto;
+}
+#uploadState {
+    max-height: 440px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 10px;
+}
+.workspace-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+}
+.workspace-copy {
+    color: #cfcfcf;
+    line-height: 1.35;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+.box {
+    background: #0f0f0f;
+    padding: 6px 8px;
+    border-radius: 10px;
+    margin: 12px auto;
+    width: 520px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.label {
+    display: block;
+    font-size: 10px;
+    color: #e6b800;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5;
+}
+.value {
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.modal.show {
+    display: flex;
+}
+.modal-content {
+    background: #141414;
+    padding: 18px;
+    border-radius: 14px;
+    width: 90%;
+    max-width: 430px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.15);
+    text-align: left;
+}
+.modal-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 22px;
+    cursor: pointer;
+}
+input[type="file"], input[type="email"], input[type="password"], input[type="text"], textarea {
+    width: 100%;
+    margin: 8px auto;
+    max-width: 520px;
+    margin-top: 6px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #0c0c0c;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    display: block;
+}
+textarea {
+    resize: vertical;
+    min-height: 84px;
+}
+.login-switch {
+    margin-top: 10px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 13px;
+}
+.upload-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+}
+.upload-actions .primary-button {
+    width: 100%;
+    margin-bottom: 0;
+    padding: 10px 16px;
+}
+.upload-note {
+    margin-top: 6px;
+    color: #9f9f9f;
+    font-size: 11px;
+}
+.field-group {
+    margin-bottom: 10px;
+}
+.field-help {
+    color: #9f9f9f;
+    font-size: 11px;
+    margin-top: -4px;
+    margin-bottom: 8px;
+}
+.footer-powered {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #8f8f8f;
+    text-align: center;
+}
+.info-copy {
+    color: #cfcfcf;
+    line-height: 1.5;
+    margin: 12px 0 16px;
+}
+.build-meta {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.build-status-line {
+    color: #52a8ff;
+    font-weight: 700;
+}
+.build-stage-line {
+    color: #cfcfcf;
+}
+.bottom-build-meta {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #0a0a0a;
+    border: 1px solid rgba(82,168,255,0.18);
+    border-radius: 12px;
+}
+.terminal-log {
+    background: #0a0a0a;
+    border: 1px solid rgba(82,168,255,0.18);
+    border-radius: 12px;
+    padding: 10px;
+    min-height: 170px;
+    max-height: 180px;
+    overflow-y: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #cfe7ff;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.complete-panel {
+    display: none;
+    background: #0a0a0a;
+    border: 1px solid rgba(82,168,255,0.18);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+}
+    body.active-build.complete-mode .workspace-title {
+    display: none;
+}
+    .complete-title {
+    font-size: 34px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+    .complete-copy {
+    color: #cfcfcf;
+    font-size: 20px;
+    line-height: 1.45;
+    margin-bottom: 12px;
+}
+    .complete-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+    .complete-actions .primary-button {
+    min-width: 140px;
+    padding: 12px 18px;
+    font-size: 14px;
+    margin-bottom: 0;
+}
+    .terminal-prompt { color: #52a8ff; }
+    .terminal-accent { color: #ffb25c; }
+    .terminal-success { color: #8be28b; }
+
+    .flow-mode #demoForm,
+    .flow-mode #createHeader {
+    display: none;
+}
+    .flow-mode .card {
+    padding-top: 14px;
+}
+    .flow-mode #uploadState {
+    margin-top: 0;
+}
+
+    .active-build {
+    overflow: hidden;
+}
+    .active-build #demoForm,
+    .active-build #createHeader,
+    .active-build #choiceStack,
+    .active-build .footer-powered {
+    display: none !important;
+}
+    .active-build .container {
+    padding: 8px 16px 4px;
+}
+    .active-build .logo-line {
+    margin: 3px auto 4px;
+}
+    .active-build .tagline {
+    font-size: 12px;
+    margin: 2px 0 4px;
+}
+   .active-build .card {
+    padding: 12px;
+}
+body.active-build .workspace-panel {
+    margin-top: 4px;
+    padding: 10px;
+}
+body.active-build .workspace-title {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+body.active-build .workspace-copy {
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+body.active-build .build-meta {
+    display: flex;
+}
+body.active-build .terminal-log {
+    min-height: 150px;
+    max-height: 160px;
+    padding: 8px;
+    line-height: 1.35;
+}
+body.active-build .upload-actions {
+    gap: 6px;
+    margin-top: 6px;
+}
+body.active-build .upload-actions .primary-button {
+    padding: 8px 14px;
+    font-size: 12px;
+}
+body.active-build.complete-mode .upload-actions {
+    display: none;
+}
+
+@media (max-width: 780px) {
+    body { overflow: auto; }
+    .container { min-height: auto; }
+    .workspace-panel { max-height: none; }
+    #uploadState {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .logo-evolum { font-size: 26px; }
+    .logo-divider { font-size: 18px; margin: 0 6px; }
+    .logo-sub { font-size: 14px; }
+    .terminal-log { max-height: none; }
+    .build-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+    #analyzePassModal .modal-content {
+    max-width: 760px;
+    width: 92%;
+}
+    #analyzePassModal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+    .upload-actions {
+    display: flex;
+    justify-content: center;
+}
+    .value {
+    text-align: left !important;
+}
+    #passTheme {
+    text-align: left !important;
+    display: block;
+    width: 100%;
+}
+    #passContinueButton {
+    width: auto;
+    padding: 12px 28px;
+    font-size: 16px;
+}
+    #analyzePassModal h3 {
+    text-align: center;
+}
+    #analyzePassModal h3 {
+    text-align: center;
+    color: #00ff88;
+}
+    input,
+    textarea {
+    width: 100%;
+    max-width: 520px;
+    margin: 8px auto;
+    display: block;
+}
+    input[type="file"] {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    display: block;
+}
+    .button-row {
+    width: 520px;
+    margin: 20px auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+    body {
+    overflow-y: hidden;
+}
+    .upload-actions .primary-button {
+    width: 180px;
+    padding: 10px 0;
+    font-size: 14px;
+}
+    .workspace-panel {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+    .analysis-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+</style>
+</head>
+
+<body>
+<div class="container">
+<div class="logo">
+    <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
+</div>
+
+    <div class="tagline">From Idea → Screenplay → Pitch Package → <b>In Minutes</b></div>
+
+    <form action="/demo" method="POST" target="_blank" id="demoForm">
+        <button class="primary-button" type="submit" style="margin-top: 12px;">Demo Deck</button>
+    </form>
+
+    <div class="shell">
+        <div class="card">
+            <div id="createHeader">
+                <div class="section-title">Create Project</div>
+                <div class="section-subtitle">Choose how you want to begin</div>
+            </div>
+
+            <div class="choice-stack" id="choiceStack">
+                <div class="choice" onclick="requireLogin('analyze')">
+                    <div class="choice-title">Analyze Script</div>
+                    <div class="choice-copy">Run live screenplay analysis and view story breakdown.</div>
+                </div>
+                <div class="choice" onclick="requireLogin('upload')">
+                    <div class="choice-title">Upload Script</div>
+                    <div class="choice-copy">Upload a .txt screenplay and generate a deck.</div>
+                </div>
+                <div class="choice disabled">
+                    <div class="choice-title">Start From Idea - COMING SOON!</div>
+                    <div class="choice-copy">Create from an original concept. Coming soon.</div>
+                </div>
+            </div>
+
+            <div class="workspace-panel" id="analyzerPanel">
+                <div class="workspace-title">Generating Your Pitch Deck</div>
+                <div class="workspace-copy" id="buildCopy">Real-time terminal-style pipeline output during deck generation.</div>
+                <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
+
+                <div class="build-meta bottom-build-meta" id="buildMeta">
+                    <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
+                    <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
+                </div>
+
+                <div class="complete-panel" id="completePanel">
+                    <div class="complete-title">Your pitch deck is ready.</div>
+                    <div class="complete-copy">
+                        Here are your completed documents. Please have a look at them, and remember—having your PowerPoint means you can open it in Google Slides and fully customize it. This gives you the power to shape the deck into something you’re as proud of as the script you started with.
+                    </div>
+            <div class="complete-actions">
+                <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pptx'">Download PowerPoint</button>
+    <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pdf'">Download PDF</button>
+    <button class="primary-button" type="button" onclick="resetCreateProject()">Create Another Project</button>
+</div>
+
+                    </div>
+                </div>
+
+                <div class="upload-actions">
+                </div>
+            </div>
+
+            <div class="workspace-panel" id="uploadState">
+                <div class="workspace-title" style="text-align: center;">Upload Script</div>
+                <div class="workspace-copy" style="text-align: center;">Choose your screenplay file to begin the upload workflow.</div>
+
+                <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return validateUploadAndStart();">
+                     <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf" style="display:none;">
+
+                    <div class="field-group">
+                        <label class="label" for="loglineInput">Logline</label>
+                        <input type="text" name="logline" id="loglineInput" placeholder="Optional: enter your own logline">
+                    </div>
+
+                    <div class="field-group">
+                        <label class="label" for="synopsisInput">Synopsis</label>
+                        <textarea name="synopsis" id="synopsisInput" placeholder="Optional: enter your own synopsis"></textarea>
+                    </div>
+
+                    <div class="field-group">
+    <label class="label" for="posterInput" style="display: inline-block; margin-right: 10px;">Upload Poster</label>
+    <input type="file" name="poster" id="posterInput" accept="image/png,image/jpeg,image/webp" style="display: inline-block;">
+</div>
+
+
+                    <div class="field-group">
+                        <label class="label" for="imagesInput">Upload Images - Optional: up to 10 images, 1 MB max each.</label>
+                        <input type="file" name="images" id="imagesInput" accept="image/png,image/jpeg,image/webp" multiple>
+                    </div>
+
+                    <div class="upload-actions">
+                        <button class="primary-button" type="submit">Generate Deck</button>
+                        <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
+                    </div>
+                </form>
+            </div>
+
+
+            <div class="workspace-panel" id="ideaPanel">
+                <div class="workspace-title">Start From Idea</div>
+                <div class="workspace-copy">This feature is currently in development and will be available in a future update.</div>
+                <div class="upload-actions">
+                    <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-powered">Powered by Developum AI Engine</div>
+</div>
+
+<div class="modal" id="loginModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('loginModal')">×</div>
+        <h3 id="loginTitle">Log In</h3>
+        <input type="email" placeholder="Email">
+        <input type="password" placeholder="Password">
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="primary-button" type="button" onclick="continueAfterLogin()" style="display: block; margin: 20px auto 0 auto; width: 200px;">
+    Continue
+</button>
+
+        </div>
+        <div class="login-switch" onclick="toggleLogin()">Switch to Create Account</div>
+    </div>
+</div>
+
+<div class="modal" id="infoModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('infoModal')">×</div>
+        <h3 id="infoTitle">Notice</h3>
+        <div class="info-copy" id="infoCopy">This feature is currently unavailable.</div>
+        <button class="primary-button" type="button" onclick="closeModal('infoModal')">Continue</button>
+    </div>
+</div>
+
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('uploadModal')">×</div>
+        <h3>Upload Script</h3>
+        <div class="info-copy">Select your script file so we can check it for proper formatting and input integrity.</div>
+        <input type="file" id="uploadAnalyzeFile" accept=".txt,text/plain,.pdf,application/pdf">
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="analyzeSelectedScript()">Analyze Script</button>
+            <button class="primary-button" type="button" onclick="closeModal('uploadModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="uploadPassModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('uploadPassModal')">×</div>
+        <h3>Success! <b>Script Upload Check Complete!</b></h3>
+
+        <div class="complete-copy" id="uploadSummaryCopy">
+            Your script passed the upload check and is ready to move forward.
+        </div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="continueToApprovedUpload()">Continue to Upload</button>
+            <button class="primary-button" type="button" onclick="closeModal('uploadPassModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="analyzePassModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('analyzePassModal')">×</div>
+        <h3>Success! <b>Script Analysis Complete!</b></h3>
+
+        <div class="complete-copy" id="analysisSummaryCopy">
+            DIME puts Zena at the center of a high-pressure world where identity, ambition, and competition collide. There is strong emotional weight here, along with the kind of grounded sports drama energy that can connect with an audience.
+        </div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="window.open('/analysis-report/latest.pdf', '_blank')">View Analysis Report</button>
+            <button class="primary-button" type="button" onclick="window.location.href='/analysis-report/latest.pdf'">Download PDF</button>
+            <button class="primary-button" type="button" onclick="resetCreateProject()">Analyze Another Script</button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+let pending = null;
+let loginMode = "login";
+let runStartedAt = null;
+let timerInterval = null;
+let lastStatus = "IDLE";
+let approvedScriptFile = null;
+let buildInFlight = false;
+let sawFreshBuildStatus = false;
+let analyzeFlowMode = null;
+
+function enterFlowMode(){
+    document.body.classList.add("flow-mode");
+}
+function exitFlowMode(){
+    document.body.classList.remove("flow-mode");
+}
+function enterActiveBuildMode(){
+    document.body.classList.add("active-build");
+}
+function exitActiveBuildMode(){
+    document.body.classList.remove("active-build");
+    document.body.classList.remove("complete-mode");
+}
+
+function requireLogin(action){
+    pending = action;
+    document.getElementById("loginModal").classList.add("show");
+}
+
+function toggleLogin(){
+    const title = document.getElementById("loginTitle");
+    if(loginMode === "login"){
+        loginMode = "create";
+        title.innerText = "Create Account";
+    } else {
+        loginMode = "login";
+        title.innerText = "Log In";
+    }
+}
+
+function hideWorkspacePanels(){
+    document.getElementById("analyzerPanel").style.display = "none";
+    document.getElementById("uploadState").style.display = "none";
+    document.getElementById("ideaPanel").style.display = "none";
+}
+
+function closeModal(id){
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("show");
+}
+
+function closeAllModals(){
+    closeModal("loginModal");
+    closeModal("infoModal");
+    closeModal("uploadModal");
+    closeModal("uploadPassModal");
+    closeModal("analyzeFailModal");
+    closeModal("analyzePassModal");
+}
+
+function showInfoModal(title, copy){
+    document.getElementById("infoTitle").textContent = title;
+    document.getElementById("infoCopy").textContent = copy;
+    document.getElementById("infoModal").classList.add("show");
+}
+
+function showUploadState(){
+    exitActiveBuildMode();
+    enterFlowMode();
+    hideWorkspacePanels();
+    document.getElementById("choiceStack").style.display = "none";
+    document.getElementById("uploadState").style.display = "block";
+    document.getElementById("createHeader").style.display = "block";
+}
+
+function resetCreateProject(){
+    closeAllModals();
+    exitActiveBuildMode();
+    exitFlowMode();
+    hideWorkspacePanels();
+    document.getElementById("choiceStack").style.display = "grid";
+    document.getElementById("createHeader").style.display = "block";
+    approvedScriptFile = null;
+    buildInFlight = false;
+    sawFreshBuildStatus = false;
+
+    const approvedScriptBox = document.getElementById("approvedScriptBox");
+    const approvedScriptName = document.getElementById("approvedScriptName");
+    const imagesInput = document.getElementById("imagesInput");
+    const posterInput = document.getElementById("posterInput");
+    const loglineInput = document.getElementById("loglineInput");
+    const synopsisInput = document.getElementById("synopsisInput");
+
+    if (approvedScriptBox) approvedScriptBox.style.display = "none";
+    if (approvedScriptName) approvedScriptName.textContent = "-";
+    if (imagesInput) imagesInput.value = "";
+    if (posterInput) posterInput.value = "";
+    if (loglineInput) loglineInput.value = "";
+    if (synopsisInput) synopsisInput.value = "";
+
+    document.getElementById("liveProcessLog").style.display = "block";
+    document.getElementById("buildMeta").style.display = "none";
+    document.getElementById("buildCopy").style.display = "block";
+    document.getElementById("completePanel").style.display = "none";
+}
+function showUploadAnalyzeModal(){
+    document.getElementById("uploadModal").classList.add("show");
+}
+
+function openAnalyzePassModal(){
+    closeAllModals();
+    document.getElementById("analyzePassModal").classList.add("show");
+}
+
+function continueAfterLogin(){
+    closeModal("loginModal");
+    
+    if (pending === "analyze"){
+        analyzeFlowMode = "analyze";
+        resetCreateProject();
+        showUploadAnalyzeModal();
+    } else if (pending === "upload"){
+        analyzeFlowMode = "upload";
+        resetCreateProject();
+        showUploadAnalyzeModal();
+    } else if (pending === "idea"){
+        resetCreateProject();
+        showInfoModal("Start From Idea", "This feature is currently unavailable.");
+    }
+}
+
+async function analyzeSelectedScript(){
+    const fileInput = document.getElementById("uploadAnalyzeFile");
+
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0){
+        closeModal("uploadModal");
+        document.getElementById("infoTitle").textContent = "Upload Script";
+        document.getElementById("infoCopy").textContent = "Please choose a script file before continuing.";
+        document.getElementById("infoModal").classList.add("show");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const fileName = (file.name || "").toLowerCase();
+    const passes = fileName.endsWith(".txt") || fileName.endsWith(".pdf");
+
+    if (!passes){
+        closeModal("uploadModal");
+        document.getElementById("analyzeFailModal").classList.add("show");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("script", file);
+
+    try {
+        const response = await fetch("/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok){
+            closeModal("uploadModal");
+            document.getElementById("analyzeFailModal").classList.add("show");
+            return;
+        }
+
+        const data = await response.json();
+
+        const summaryEl = document.getElementById("analysisSummaryCopy");
+        if (summaryEl) {
+            summaryEl.textContent =
+                data.summary_note ||
+                "Your script has been analyzed and your full report is ready to view.";
+        }
+        closeModal("uploadModal");
+        if (analyzeFlowMode === "analyze") {
+    openAnalyzePassModal();
+} else {
+    approvedScriptFile = file;
+    closeModal("uploadModal");
+    document.getElementById("uploadPassModal").classList.add("show");
+}
+    } catch (err) {
+        closeModal("uploadModal");
+        document.getElementById("analyzeFailModal").classList.add("show");
+    }
+}
+function continueToApprovedUpload(){
+    closeAllModals();
+    exitActiveBuildMode();
+    enterFlowMode();
+    hideWorkspacePanels();
+    document.getElementById("choiceStack").style.display = "none";
+    document.getElementById("uploadState").style.display = "block";
+
+    const scriptInput = document.getElementById("scriptInput");
+
+    if (approvedScriptFile && scriptInput) {
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(approvedScriptFile);
+            scriptInput.files = dt.files;
+        } catch (e) {}
+    }
+}
+async function analyzeSelectedScript(){
+    const fileInput = document.getElementById("uploadAnalyzeFile");
+
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0){
+        closeModal("uploadModal");
+        document.getElementById("infoTitle").textContent = "Upload Script";
+        document.getElementById("infoCopy").textContent = "Please choose a script file before continuing.";
+        document.getElementById("infoModal").classList.add("show");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const fileName = (file.name || "").toLowerCase();
+    const passes = fileName.endsWith(".txt") || fileName.endsWith(".pdf");
+
+    if (!passes){
+        closeModal("uploadModal");
+        document.getElementById("analyzeFailModal").classList.add("show");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("script", file);
+
+    try {
+        const response = await fetch("/analyze-script-pass", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok){
+            closeModal("uploadModal");
+            document.getElementById("analyzeFailModal").classList.add("show");
+            return;
+        }
+
+        const data = await response.json();
+
+        const summaryEl = document.getElementById("analysisSummaryCopy");
+        if (summaryEl) {
+            summaryEl.textContent =
+                data.summary_note ||
+                "Your script has been analyzed and your full report is ready to view.";
+        }
+
+        closeModal("uploadModal");
+
+        if (analyzeFlowMode === "analyze") {
+            openAnalyzePassModal();
+        } else {
+            approvedScriptFile = file;
+            continueToApprovedUpload();
+        }
+
+    } catch (err) {
+        closeModal("uploadModal");
+        document.getElementById("analyzeFailModal").classList.add("show");
+    }
+}
+
+function validateUploadAndStart(){
+    const form = document.querySelector('#uploadState form');
+    const imagesInput = document.getElementById("imagesInput");
+
+    if (imagesInput && imagesInput.files && imagesInput.files.length > 10){
+        showInfoModal("Upload Images", "Please upload no more than 10 images.");
+        return false;
+    }
+
+    if (imagesInput && imagesInput.files){
+        for (const file of imagesInput.files){
+            if (file.size > 1024 * 1024){
+                showInfoModal("Upload Images", "Each image must be 1 MB or smaller.");
+                return false;
+            }
+        }
+    }
+
+    buildInFlight = true;
+    sawFreshBuildStatus = false;
+    showLiveProcess();
+    setLocalStatus("UPLOADED");
+
+    const formData = new FormData(form);
+
+    fetch("/upload", {
+        method: "POST",
+        body: formData
+    }).catch(err => {
+        console.error("Upload failed:", err);
+    });
+
+    return false;
+}
+
+function showLiveProcess(){
+    exitFlowMode();
+    enterActiveBuildMode();
+    hideWorkspacePanels();
+    document.getElementById("analyzerPanel").style.display = "block";
+    document.getElementById("liveProcessLog").style.display = "block";
+    document.getElementById("buildCopy").style.display = "block";
+    document.getElementById("buildMeta").style.display = "flex";
+    document.getElementById("completePanel").style.display = "none";
+    document.body.classList.remove("complete-mode");
+}
+
+function escapeHtml(text){
+    return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+}
+
+function renderLiveProcessLog(status){
+    const logEl = document.getElementById("liveProcessLog");
+    if (!logEl) return;
+
+    let lines = [];
+    if (status === "IDLE"){
+        lines = ['[system] waiting for deck generation...','','> pipeline idle','> upload a script and click Generate Deck to begin'];
+    } else if (status === "UPLOADED"){
+        lines = ['[system] build request received','','> intake: screenplay file accepted','> preparing canonical input','> initializing pipeline environment','> waiting for analysis stage...'];
+    } else if (status === "ANALYZING"){
+        lines = ['[system] screenplay analysis in progress','','> converting uploaded script to working text','> cleaning screenplay content','> sending story into brain pass','> extracting characters','> identifying world and tone','> generating pitch intelligence','> analysis still running...'];
+    } else if (status === "BUILDING"){
+        lines = ['[system] deck generation in progress','','> analysis approved','> creating slide plan','> selecting visual placements','> assembling presentation structure','> building PowerPoint export','> preparing PDF export','> final packaging in progress...'];
+    } else if (status === "DEMO_RUNNING"){
+        lines = ['[system] demo build launched','','> loading demo screenplay','> initializing demo pipeline','> analysis queue started','> waiting for deck assembly...'];
+    } else if (status === "COMPLETE"){
+        lines = ['[system] build complete','','> screenplay processed successfully','> analysis complete','> deck assembly complete','> PowerPoint export ready','> PDF export ready','','[success] files available for download'];
+    } else if (status === "ERROR"){
+        lines = ['[system] pipeline interrupted','','> build error detected','> story analysis may be incomplete','> deck assembly may have stopped early','> check terminal / backend logs for details'];
+    } else {
+        lines = ['[system] processing...','','> pipeline active'];
+    }
+
+    const html = lines.map((line) => {
+        const safe = escapeHtml(line);
+        if (line.startsWith('[success]')) return '<span class="terminal-success">' + safe + '</span>';
+        if (line.startsWith('[system]')) return '<span class="terminal-prompt">' + safe + '</span>';
+        if (line.startsWith('>')) return '<span class="terminal-accent">' + safe + '</span>';
+        return safe;
+    }).join('\n');
+
+    logEl.innerHTML = html;
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setLocalStatus(status){ updateStatusUI(status); }
+
+function formatElapsed(seconds){
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+}
+
+function startTimer(){
+    if (!runStartedAt){ runStartedAt = Date.now(); }
+    if (timerInterval){ return; }
+    timerInterval = setInterval(() => {
+        if (!runStartedAt) return;
+        const elapsedSeconds = Math.floor((Date.now() - runStartedAt) / 1000);
+        const formatted = formatElapsed(elapsedSeconds);
+        document.getElementById("inlineStatusValue").textContent = lastStatus + " • " + formatted;
+    }, 250);
+}
+
+function stopTimer(){
+    if (timerInterval){
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
+function resetTimer(){
+    runStartedAt = null;
+    stopTimer();
+    document.getElementById("inlineStatusValue").textContent = "IDLE • 00:00";
+}
+
+function updateStatusUI(status){
+    const inlineStatusEl = document.getElementById("inlineStatusValue");
+    const inlineStageEl = document.getElementById("inlineStageValue");
+
+    lastStatus = status;
+
+    const activeStatuses = ["UPLOADED", "ANALYZING", "BUILDING", "DEMO_RUNNING"];
+    if (activeStatuses.includes(status)) startTimer();
+
+    if (status === "IDLE"){
+        resetTimer();
+        inlineStageEl.textContent = "Awaiting input...";
+        document.body.classList.remove("complete-mode");
+    } else if (status === "UPLOADED"){
+        inlineStatusEl.textContent = "UPLOADED • 00:00";
+        inlineStageEl.textContent = "Preparing engine";
+    } else if (status === "ANALYZING"){
+        inlineStageEl.textContent = "Analyzing script";
+    } else if (status === "BUILDING"){
+        inlineStageEl.textContent = "Building deck";
+    } else if (status === "DEMO_RUNNING"){
+        inlineStageEl.textContent = "Preparing engine";
+    } else if (status === "COMPLETE"){
+        stopTimer();
+        buildInFlight = false;
+        document.body.classList.add("complete-mode");
+        document.getElementById("liveProcessLog").style.display = "none";
+        document.getElementById("buildCopy").style.display = "none";
+        document.getElementById("buildMeta").style.display = "none";
+        document.getElementById("completePanel").style.display = "block";
+    } else if (status === "ERROR"){
+        stopTimer();
+        buildInFlight = false;
+        inlineStageEl.textContent = "Check terminal / backend";
+        document.body.classList.remove("complete-mode");
+        document.getElementById("liveProcessLog").style.display = "block";
+        document.getElementById("buildCopy").style.display = "block";
+        document.getElementById("buildMeta").style.display = "flex";
+        document.getElementById("completePanel").style.display = "none";
+    } else {
+        inlineStageEl.textContent = "Processing";
+        document.body.classList.remove("complete-mode");
+    }
+
+    renderLiveProcessLog(status);
+}
+
+async function pollStatus(){
+    try {
+        const response = await fetch("/status", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data && data.status) {
+            if (buildInFlight && !sawFreshBuildStatus) {
+                if (data.status === "ANALYZING" || data.status === "BUILDING") {
+                    sawFreshBuildStatus = true;
+                } else {
+                    return;
+                }
+            }
+            updateStatusUI(data.status);
+        }
+    } catch (e) {}
+}
+
+updateStatusUI("IDLE");
+setInterval(pollStatus, 1200);
+pollStatus();
+</script>
+</body>
+</html>

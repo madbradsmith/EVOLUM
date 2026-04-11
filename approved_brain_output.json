@@ -1,0 +1,1777 @@
+{
+  "title": "Court Jester",
+  "characters": [
+    "ELIAS",
+    "FINN",
+    "CEDRIC",
+    "THAT",
+    "WREN"
+  ],
+  "character_stats": {
+    "ELIAS": {
+      "dialogue_count": 168,
+      "action_count": 185,
+      "first_seen": 8
+    },
+    "FINN": {
+      "dialogue_count": 93,
+      "action_count": 96,
+      "first_seen": 112
+    },
+    "CEDRIC": {
+      "dialogue_count": 48,
+      "action_count": 110,
+      "first_seen": 41
+    },
+    "THAT": {
+      "dialogue_count": 0,
+      "action_count": 40,
+      "first_seen": 87
+    },
+    "WREN": {
+      "dialogue_count": 15,
+      "action_count": 13,
+      "first_seen": 299
+    },
+    "AND": {
+      "dialogue_count": 0,
+      "action_count": 21,
+      "first_seen": 46
+    },
+    "REBEL LEADER": {
+      "dialogue_count": 17,
+      "action_count": 1,
+      "first_seen": 1104
+    },
+    "KING AUGUSTUS": {
+      "dialogue_count": 16,
+      "action_count": 0,
+      "first_seen": 86
+    },
+    "GUARDS": {
+      "dialogue_count": 0,
+      "action_count": 17,
+      "first_seen": 11
+    },
+    "BUT": {
+      "dialogue_count": 0,
+      "action_count": 17,
+      "first_seen": 35
+    },
+    "VALORIA": {
+      "dialogue_count": 0,
+      "action_count": 14,
+      "first_seen": 28
+    },
+    "MAJESTY": {
+      "dialogue_count": 0,
+      "action_count": 13,
+      "first_seen": 89
+    },
+    "THIS": {
+      "dialogue_count": 0,
+      "action_count": 13,
+      "first_seen": 110
+    },
+    "LORD": {
+      "dialogue_count": 0,
+      "action_count": 12,
+      "first_seen": 41
+    },
+    "THEN": {
+      "dialogue_count": 0,
+      "action_count": 13,
+      "first_seen": 174
+    },
+    "GOOD": {
+      "dialogue_count": 0,
+      "action_count": 10,
+      "first_seen": 47
+    },
+    "ISABELLA": {
+      "dialogue_count": 3,
+      "action_count": 5,
+      "first_seen": 76
+    },
+    "ONE": {
+      "dialogue_count": 0,
+      "action_count": 10,
+      "first_seen": 121
+    },
+    "HERMIT": {
+      "dialogue_count": 9,
+      "action_count": 0,
+      "first_seen": 624
+    },
+    "NOBLES": {
+      "dialogue_count": 0,
+      "action_count": 8,
+      "first_seen": 17
+    },
+    "TWO": {
+      "dialogue_count": 0,
+      "action_count": 7,
+      "first_seen": 121
+    },
+    "GUARD": {
+      "dialogue_count": 6,
+      "action_count": 0,
+      "first_seen": 57
+    },
+    "REBELS": {
+      "dialogue_count": 1,
+      "action_count": 5,
+      "first_seen": 1115
+    },
+    "LORD CEDRIC": {
+      "dialogue_count": 0,
+      "action_count": 6,
+      "first_seen": 41
+    },
+    "BECAUSE": {
+      "dialogue_count": 0,
+      "action_count": 7,
+      "first_seen": 177
+    },
+    "SEVERAL": {
+      "dialogue_count": 0,
+      "action_count": 7,
+      "first_seen": 241
+    },
+    "FOR": {
+      "dialogue_count": 0,
+      "action_count": 6,
+      "first_seen": 102
+    },
+    "BLACKWELL": {
+      "dialogue_count": 0,
+      "action_count": 6,
+      "first_seen": 863
+    },
+    "THE REBEL": {
+      "dialogue_count": 0,
+      "action_count": 6,
+      "first_seen": 1109
+    },
+    "WHICH": {
+      "dialogue_count": 0,
+      "action_count": 5,
+      "first_seen": 117
+    },
+    "LET": {
+      "dialogue_count": 0,
+      "action_count": 5,
+      "first_seen": 134
+    },
+    "MERCHANTS": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 4
+    },
+    "WHERE": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 29
+    },
+    "VERY": {
+      "dialogue_count": 0,
+      "action_count": 5,
+      "first_seen": 453
+    },
+    "VALEN": {
+      "dialogue_count": 0,
+      "action_count": 5,
+      "first_seen": 476
+    },
+    "HOLD": {
+      "dialogue_count": 0,
+      "action_count": 5,
+      "first_seen": 1065
+    },
+    "WHAT": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 82
+    },
+    "WELL": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 134
+    },
+    "WELCOME": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 28
+    },
+    "HOW": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 52
+    },
+    "CEDRIC BLACKWELL": {
+      "dialogue_count": 1,
+      "action_count": 2,
+      "first_seen": 73
+    },
+    "ELIAS REED": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 162
+    },
+    "YES": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 260
+    },
+    "ONCE": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 436
+    },
+    "NORTH VALEN": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 476
+    },
+    "ROYAL": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 534
+    },
+    "BEHIND": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 708
+    },
+    "STOP": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 722
+    },
+    "WHY": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 776
+    },
+    "INSIDE": {
+      "dialogue_count": 0,
+      "action_count": 4,
+      "first_seen": 807
+    },
+    "AGENT": {
+      "dialogue_count": 4,
+      "action_count": 0,
+      "first_seen": 748
+    },
+    "BARD": {
+      "dialogue_count": 3,
+      "action_count": 0,
+      "first_seen": 27
+    },
+    "EVEN": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 91
+    },
+    "SERVANTS": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 98
+    },
+    "THERE": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 125
+    },
+    "BELLS": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 132
+    },
+    "NOT": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 138
+    },
+    "COURT AIDE": {
+      "dialogue_count": 3,
+      "action_count": 0,
+      "first_seen": 159
+    },
+    "TRUMPETS": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 203
+    },
+    "TELL": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 283
+    },
+    "AFTER": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 412
+    },
+    "BAD": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 417
+    },
+    "ACROSS": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 467
+    },
+    "NOW": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 511
+    },
+    "SUDDENLY": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 556
+    },
+    "KNIGHTS": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 668
+    },
+    "JUST": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 737
+    },
+    "DIPLOMATS": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 807
+    },
+    "TONIGHT": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 818
+    },
+    "MURMURS": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 967
+    },
+    "NEXT": {
+      "dialogue_count": 0,
+      "action_count": 3,
+      "first_seen": 1033
+    },
+    "FAKE CAPTAIN": {
+      "dialogue_count": 3,
+      "action_count": 0,
+      "first_seen": 533
+    },
+    "DIPLOMAT": {
+      "dialogue_count": 3,
+      "action_count": 0,
+      "first_seen": 867
+    },
+    "MUSICIANS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 4
+    },
+    "MUSIC BEGINS": {
+      "dialogue_count": 4,
+      "action_count": 0,
+      "first_seen": 26
+    },
+    "INTERESTING": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 75
+    },
+    "SERVANT": {
+      "dialogue_count": 2,
+      "action_count": 0,
+      "first_seen": 99
+    },
+    "MOST": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 87
+    },
+    "PERHAPS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 94
+    },
+    "CONGRATULATIONS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 100
+    },
+    "TORCHLIGHT": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 123
+    },
+    "DID": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 140
+    },
+    "MESSENGER": {
+      "dialogue_count": 2,
+      "action_count": 0,
+      "first_seen": 363
+    },
+    "BANDIT": {
+      "dialogue_count": 2,
+      "action_count": 0,
+      "first_seen": 557
+    },
+    "GUARD CAPTAIN": {
+      "dialogue_count": 2,
+      "action_count": 0,
+      "first_seen": 986
+    },
+    "CROWD": {
+      "dialogue_count": 3,
+      "action_count": 0,
+      "first_seen": 211
+    },
+    "COURT JESTER": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 0
+    },
+    "STONE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 3
+    },
+    "MARKETS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 4
+    },
+    "SHIPS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 4
+    },
+    "AMONG": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 7
+    },
+    "PASSENGERS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 7
+    },
+    "WOW": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 9
+    },
+    "SAILORS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 11
+    },
+    "VENDORS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 14
+    },
+    "OPPORTUNITY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 17
+    },
+    "RAISE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 37
+    },
+    "CARRIAGES": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 55
+    },
+    "INVITATION": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 58
+    },
+    "LOVELY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 62
+    },
+    "ENJOY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 66
+    },
+    "ABOVE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 71
+    },
+    "NEARBY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 71
+    },
+    "LORDSHIP": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 160
+    },
+    "FIND": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 162
+    },
+    "EVERYTHING": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 164
+    },
+    "COLORFUL": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 190
+    },
+    "REMIND": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 193
+    },
+    "TAKE": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 243
+    },
+    "BOTH": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 253
+    },
+    "GASPS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 275
+    },
+    "PLEASE": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 379
+    },
+    "NOBODY": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 381
+    },
+    "QUIET": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 440
+    },
+    "WONDERFUL": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 453
+    },
+    "GREY PASS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 515
+    },
+    "CHAOS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 556
+    },
+    "BANDITS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 572
+    },
+    "MOVE": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 587
+    },
+    "TECHNICALLY": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 595
+    },
+    "SMOKE": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 622
+    },
+    "JUGGLERS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 676
+    },
+    "STEALTH": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 766
+    },
+    "VOICES": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 832
+    },
+    "PREPARATION": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 895
+    },
+    "ENOUGH": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 921
+    },
+    "FROM": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 966
+    },
+    "SEARCH": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 987
+    },
+    "LORD WREN": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 998
+    },
+    "RIDERS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 1068
+    },
+    "WHEN": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 1119
+    },
+    "BANNERS": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 1178
+    },
+    "TORCHES": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 1229
+    },
+    "BATTLE": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 1278
+    },
+    "FIRE": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 1302
+    },
+    "HERE": {
+      "dialogue_count": 0,
+      "action_count": 2,
+      "first_seen": 1777
+    },
+    "SECOND BARD": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 39
+    },
+    "FULL CROWD": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 42
+    },
+    "LAUGHTER": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 87
+    },
+    "DOZENS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 127
+    },
+    "RUNNERS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 127
+    },
+    "SPIES": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 127
+    },
+    "ENTERTAINMENT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 137
+    },
+    "RIGHT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 137
+    },
+    "SCATTERED": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 138
+    },
+    "OTHERS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 146
+    },
+    "EVEN ISABELLA": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 156
+    },
+    "TAVERN CROWD": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 31
+    },
+    "CITIZENS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 190
+    },
+    "LOOK": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 201
+    },
+    "AND LORD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 223
+    },
+    "KINGDOM": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 229
+    },
+    "KINGS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 229
+    },
+    "NONE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 229
+    },
+    "TAKE LORD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 243
+    },
+    "CHILDREN": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 249
+    },
+    "TROUBLING": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 271
+    },
+    "SPY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 278
+    },
+    "SOME": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 279
+    },
+    "EMBARRASS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 330
+    },
+    "LOYALISTS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 342
+    },
+    "MILITARY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 342
+    },
+    "TRADE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 342
+    },
+    "PRECISELY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 350
+    },
+    "ARE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 354
+    },
+    "APPARENTLY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 356
+    },
+    "MUCH": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 360
+    },
+    "WATER": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 368
+    },
+    "YESTERDAY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 374
+    },
+    "RED": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 385
+    },
+    "THOSE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 389
+    },
+    "TROOPS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 394
+    },
+    "BOOTS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 406
+    },
+    "COURTS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 424
+    },
+    "EVERYONE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 424
+    },
+    "YET": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 425
+    },
+    "PROCEED": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 432
+    },
+    "CONTINUE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 474
+    },
+    "OPPORTUNITIES": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 474
+    },
+    "ARRANGEMENTS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 515
+    },
+    "ACCIDENTS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 517
+    },
+    "ESPECIALLY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 520
+    },
+    "HALT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 534
+    },
+    "INSPECTION": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 534
+    },
+    "SLOWLY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 549
+    },
+    "STEP": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 549
+    },
+    "RUN": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 563
+    },
+    "ARROWS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 565
+    },
+    "THESE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 568
+    },
+    "KEEP": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 577
+    },
+    "DUST": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 590
+    },
+    "SILENCE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 591
+    },
+    "DENSE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 613
+    },
+    "RELAX": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 632
+    },
+    "WORD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 637
+    },
+    "ARMIES": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 643
+    },
+    "LOYAL": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 643
+    },
+    "SUPPLY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 643
+    },
+    "HISTORY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 661
+    },
+    "CROWDS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 667
+    },
+    "HAPPENS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 672
+    },
+    "VALEN TOURNAMENT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 672
+    },
+    "THOUSANDS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 674
+    },
+    "THROUGH": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 709
+    },
+    "SUPPORT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 711
+    },
+    "HEY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 722
+    },
+    "UNBELIEVABLE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 743
+    },
+    "DON": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 752
+    },
+    "PREFERABLY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 758
+    },
+    "STABLE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 764
+    },
+    "TORCHLIT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 764
+    },
+    "AGENTS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 769
+    },
+    "LEFT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 774
+    },
+    "DUSTY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 781
+    },
+    "AHEAD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 794
+    },
+    "GUARDED": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 798
+    },
+    "IMPORTANT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 836
+    },
+    "YEP": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 840
+    },
+    "HEAVY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 847
+    },
+    "SMALL": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 855
+    },
+    "DOES": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 858
+    },
+    "COUP": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 865
+    },
+    "SIGNED": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 865
+    },
+    "REMOVE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 871
+    },
+    "REMARKABLE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 876
+    },
+    "TRULY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 876
+    },
+    "WOULD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 891
+    },
+    "DETAIN": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 912
+    },
+    "ANOTHER": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 922
+    },
+    "CHAIRS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 925
+    },
+    "GOBLETS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 925
+    },
+    "STANDING": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 938
+    },
+    "ANY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 969
+    },
+    "ALARM": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 985
+    },
+    "POSTERS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 985
+    },
+    "THEN CEDRIC": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1010
+    },
+    "SEND": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1017
+    },
+    "TRY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1041
+    },
+    "PERFORMERS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1057
+    },
+    "LOOSE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1079
+    },
+    "ARMED": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1096
+    },
+    "STATE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1098
+    },
+    "MAPS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1103
+    },
+    "SOMETIMES": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1165
+    },
+    "FAR": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1173
+    },
+    "DISGUISED": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1185
+    },
+    "HARDLY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1193
+    },
+    "OLD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1193
+    },
+    "FOCUS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1201
+    },
+    "AROUND": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1205
+    },
+    "LORD BLACKWELL": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1210
+    },
+    "MERELY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1214
+    },
+    "INTERRUPTING": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1221
+    },
+    "ADVISORS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1225
+    },
+    "MASSIVE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1228
+    },
+    "THINK": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1235
+    },
+    "DEPENDS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1252
+    },
+    "INSTEAD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1256
+    },
+    "STEEL": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1259
+    },
+    "ARCHERS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1261
+    },
+    "PUSH": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1263
+    },
+    "WOOD": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1265
+    },
+    "PALACE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1280
+    },
+    "STILL": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1318
+    },
+    "WITH": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1325
+    },
+    "SORRY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1341
+    },
+    "ARREST": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1356
+    },
+    "WAIT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1365
+    },
+    "LIES": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1424
+    },
+    "FUNNY": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1461
+    },
+    "BUT CEDRIC": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1490
+    },
+    "PREPARE": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1510
+    },
+    "SHOUTS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1540
+    },
+    "FOOLS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1544
+    },
+    "OUT": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1570
+    },
+    "BROKEN": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1588
+    },
+    "POOR": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1609
+    },
+    "VALERIA": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1676
+    },
+    "ANNOYING": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1709
+    },
+    "TOO": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1727
+    },
+    "UNLESS": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1820
+    },
+    "ALSO": {
+      "dialogue_count": 0,
+      "action_count": 1,
+      "first_seen": 1850
+    },
+    "BEAT": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 288
+    },
+    "COMMANDER": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 1020
+    },
+    "REBEL GUARD": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 1097
+    },
+    "FULL CAMP": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 1127
+    },
+    "REBEL RIDER": {
+      "dialogue_count": 1,
+      "action_count": 0,
+      "first_seen": 1262
+    }
+  },
+  "protagonist": "ELIAS",
+  "world": "feature / fantasy satire comedy",
+  "time_frame": "single day",
+  "setting": "across castles, ceremonial chambers, village spaces, and a heightened kingdom full of absurd rules",
+  "tone": "playful, witty, satirical, adventurous",
+  "story_engine": "Elias stumbles into a role far bigger than expected, and each attempt to survive the absurd rules of the kingdom only pulls the chaos closer.",
+  "core_conflict": "Elias must navigate ridiculous power structures, inflated egos, and escalating chaos without losing the part of themselves that makes them dangerous.",
+  "reversal": "The truth behind the situation is different from what the protagonist first assumes.",
+  "logline": "I have no words to say right now!!",
+  "synopsis": "Final Render ready test",
+  "image_plan": [
+    {
+      "slide_number": 1,
+      "slide_title": "Title",
+      "image_query": "grounded dramatic environment playful witty satirical establishing cinematic world",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "establishing",
+        "cinematic",
+        "world"
+      ]
+    },
+    {
+      "slide_number": 2,
+      "slide_title": "Logline",
+      "image_query": "grounded dramatic environment playful witty satirical wide establishing mood",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "wide",
+        "establishing",
+        "mood"
+      ]
+    },
+    {
+      "slide_number": 3,
+      "slide_title": "Synopsis",
+      "image_query": "grounded dramatic environment playful witty satirical pressure story_world",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "pressure",
+        "story_world"
+      ]
+    },
+    {
+      "slide_number": 4,
+      "slide_title": "Protagonist",
+      "image_query": "grounded dramatic environment playful witty satirical isolation implied_presence elias",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "isolation",
+        "implied_presence",
+        "elias"
+      ]
+    },
+    {
+      "slide_number": 5,
+      "slide_title": "Antagonist",
+      "image_query": "grounded dramatic environment playful witty satirical pressure rival_energy confrontation_space",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "pressure",
+        "rival_energy",
+        "confrontation_space"
+      ]
+    },
+    {
+      "slide_number": 6,
+      "slide_title": "Supporting Characters",
+      "image_query": "grounded dramatic environment playful witty satirical group_dynamic world_detail relationship_space",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "group_dynamic",
+        "world_detail",
+        "relationship_space"
+      ]
+    },
+    {
+      "slide_number": 7,
+      "slide_title": "Theme",
+      "image_query": "grounded dramatic environment playful witty satirical symbolic atmosphere identity",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "symbolic",
+        "atmosphere",
+        "identity"
+      ]
+    },
+    {
+      "slide_number": 8,
+      "slide_title": "Tone",
+      "image_query": "grounded dramatic environment playful witty satirical mood texture lighting",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "mood",
+        "texture",
+        "lighting"
+      ]
+    },
+    {
+      "slide_number": 9,
+      "slide_title": "World",
+      "image_query": "grounded dramatic environment playful witty satirical place lived_in",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "place",
+        "lived_in"
+      ]
+    },
+    {
+      "slide_number": 10,
+      "slide_title": "Conflict Engine",
+      "image_query": "grounded dramatic environment playful witty satirical tension separation friction",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "tension",
+        "separation",
+        "friction"
+      ]
+    },
+    {
+      "slide_number": 11,
+      "slide_title": "Stakes",
+      "image_query": "grounded dramatic environment playful witty satirical scale emptiness consequence",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "scale",
+        "emptiness",
+        "consequence"
+      ]
+    },
+    {
+      "slide_number": 12,
+      "slide_title": "Why This Film",
+      "image_query": "grounded dramatic environment playful witty satirical cinematic elevated statement",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "cinematic",
+        "elevated",
+        "statement"
+      ]
+    },
+    {
+      "slide_number": 13,
+      "slide_title": "Audience",
+      "image_query": "grounded dramatic environment playful witty satirical relatable_world emotion aspiration",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "relatable_world",
+        "emotion",
+        "aspiration"
+      ]
+    },
+    {
+      "slide_number": 14,
+      "slide_title": "Visual Style",
+      "image_query": "grounded dramatic environment playful witty satirical visual_texture lighting composition",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "visual_texture",
+        "lighting",
+        "composition"
+      ]
+    },
+    {
+      "slide_number": 15,
+      "slide_title": "Comparables",
+      "image_query": "grounded dramatic environment playful witty satirical premium cinematic recognizable_lane",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "premium",
+        "cinematic",
+        "recognizable_lane"
+      ]
+    },
+    {
+      "slide_number": 16,
+      "slide_title": "Market Position",
+      "image_query": "grounded dramatic environment playful witty satirical commercial elevated broad_appeal",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "commercial",
+        "elevated",
+        "broad_appeal"
+      ]
+    },
+    {
+      "slide_number": 17,
+      "slide_title": "Director Vision",
+      "image_query": "grounded dramatic environment playful witty satirical intimate framing movement",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "intimate",
+        "framing",
+        "movement"
+      ]
+    },
+    {
+      "slide_number": 18,
+      "slide_title": "Casting Ideas",
+      "image_query": "grounded dramatic environment playful witty satirical presence silhouette human_energy",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "presence",
+        "silhouette",
+        "human_energy"
+      ]
+    },
+    {
+      "slide_number": 19,
+      "slide_title": "Production Scope",
+      "image_query": "grounded dramatic environment playful witty satirical contained practical real_world",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "contained",
+        "practical",
+        "real_world"
+      ]
+    },
+    {
+      "slide_number": 20,
+      "slide_title": "Closing Statement",
+      "image_query": "grounded dramatic environment playful witty satirical emotional_finality impact resonance",
+      "image_tags": [
+        "grounded",
+        "dramatic",
+        "environment",
+        "playful",
+        "witty",
+        "satirical",
+        "emotional_finality",
+        "impact",
+        "resonance"
+      ]
+    }
+  ]
+}
