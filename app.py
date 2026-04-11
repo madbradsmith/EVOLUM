@@ -1,5 +1,5 @@
 # V4.3 — ANALYZE SUCCESS SUMMARY + REPORT OUTPUT
-#!V_3 UPDATED FOR NEW CLEAN APP SPACE
+#!V_4 UPDATED FOR NEW CLEAN APP SPACE
 
 from flask import Flask, request, render_template, send_file, jsonify, abort
 from pathlib import Path
@@ -335,7 +335,8 @@ def build_analysis_report_output(brain: dict, slide_data: dict):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    is_render = os.environ.get("RENDER", "").lower() == "true"
+    return render_template("index.html", is_render=is_render)
 
 
 @app.route("/status")

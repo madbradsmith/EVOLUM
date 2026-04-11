@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V4.3 — ANALYZE BUTTON FIX -->
+<!-- V4.5 — PDF RENDER FIX -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -568,12 +568,14 @@ body.active-build.complete-mode .upload-actions {
                 <div class="complete-panel" id="completePanel">
                     <div class="complete-title">Your pitch deck is ready.</div>
                     <div class="complete-copy">
-                        Here are your completed documents. Please have a look at them, and remember—having your PowerPoint means you can open it in Google Slides and fully customize it. This gives you the power to shape the deck into something you’re as proud of as the script you started with.
+                        Your pitch deck is ready to download. Please have a look at it, and remember—having your PowerPoint means you can open it in Google Slides and fully customize it. This gives you the power to shape the deck into something you’re as proud of as the script you started with.
                     </div>
             <div class="complete-actions">
                 <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pptx'">Download PowerPoint</button>
-    <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pdf'">Download PDF</button>
-    <button class="primary-button" type="button" onclick="resetCreateProject()">Create Another Project</button>
+                {% if not is_render %}
+                <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pdf'">Download PDF</button>
+                {% endif %}
+                <button class="primary-button" type="button" onclick="resetCreateProject()">Create Another Project</button>
 </div>
 
                     </div>

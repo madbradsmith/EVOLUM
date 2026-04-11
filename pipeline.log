@@ -88,27 +88,28 @@
 ]
 ✅ Full slide plan generated
 ✅ Slide count: 12
-🖼️ Using POSTER for 'Court Jester': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/poster/beat_1.png
-TITLE POSTER PATH: /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/poster/beat_1.png
-🖼️ Using USER image fallback for 'Logline': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_2.png
-🖼️ Using USER image fallback for 'Synopsis': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_3.png
-🖼️ Using USER image fallback for 'Protagonist': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_2.png
-🖼️ Using USER image fallback for 'World': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_3.png
-🖼️ Using USER image fallback for 'Hook': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_2.png
-🖼️ Using USER image fallback for 'Conflict': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_3.png
-🖼️ Using USER image fallback for 'Stakes': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_2.png
-🖼️ Using USER image fallback for 'Tone': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_3.png
-🖼️ Using USER image fallback for 'Story Engine': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_2.png
-🖼️ Using USER image fallback for 'Reversal': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_3.png
-🖼️ Using USER image fallback for 'Why This Movie': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/user_uploaded/current/beat_2.png
-✅ Pitch deck created: /home/madbrad/app/D_AI_FULL_SITE/app/output/pitch_deck_v1.pptx
-✅ PDF created: /home/madbrad/app/D_AI_FULL_SITE/app/output/pitch_deck_v1.pdf
+/home/madbrad/.local/lib/python3.9/site-packages/PIL/Image.py:3452: DecompressionBombWarning: Image size (150978560 pixels) exceeds limit of 89478485 pixels, could be decompression bomb DOS attack.
+  warnings.warn(
+🖼️ Using BRAIN STOCK image for title 'Court Jester': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/01_cinematic_tension/cinematic_tension_empty_space_mood.jpg
+TITLE POSTER PATH: None
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/02_emotional_grounded/emotional_character_closeup_reflection.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/02_emotional_grounded/emotional_family_pressure_scene.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/07_night_isolation/07_night_neon_03.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/02_emotional_grounded/emotional_family_pressure_scene.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/02_emotional_grounded/emotional_character_closeup_reflection.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/02_emotional_grounded/emotional_family_pressure_scene.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/01_cinematic_tension/cinematic_tension_empty_space_mood.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/02_emotional_grounded/emotional_internal_conflict_stare.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/01_cinematic_tension/cinematic_tension_empty_space_mood.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/05_scale_nature/05_nature_epic_01.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/app/D_AI_FULL_SITE/app/visuals/01_cinematic_tension/cinematic_tension_empty_space_mood.jpg
+✅ Pitch deck created: /home/madbrad/app/D_AI_FULL_SITE/app/output/pitch_deck_v5.pptx
 🚀 Starting full pipeline
-📄 Script input: /home/madbrad/app/D_AI_FULL_SITE/app/uploads/Court_Jester_script_master.txt
+📄 Script input: /home/madbrad/app/D_AI_FULL_SITE/app/uploads/Court_Jester_script_master_v001.txt
 📁 Working directory: /home/madbrad/app/D_AI_FULL_SITE/app
 
 ========================================
-python3 "/home/madbrad/app/D_AI_FULL_SITE/app/input_handler_v1.py" "/home/madbrad/app/D_AI_FULL_SITE/app/uploads/Court_Jester_script_master.txt"
+python3 "/home/madbrad/app/D_AI_FULL_SITE/app/input_handler_v1.py" "/home/madbrad/app/D_AI_FULL_SITE/app/uploads/Court_Jester_script_master_v001.txt"
 
 ========================================
 python3 /home/madbrad/app/D_AI_FULL_SITE/app/single_brain_orchestrator_v3.py /home/madbrad/app/D_AI_FULL_SITE/app/input.txt
@@ -118,9 +119,7 @@ python3 /home/madbrad/app/D_AI_FULL_SITE/app/layout_engine.py /home/madbrad/app/
 
 ========================================
 python3 /home/madbrad/app/D_AI_FULL_SITE/app/deck_builder.py /home/madbrad/app/D_AI_FULL_SITE/app/slide_plan.json
-📄 Found PPTX: /home/madbrad/app/D_AI_FULL_SITE/app/output/pitch_deck_v1.pptx
-
-========================================
-python3 /home/madbrad/app/D_AI_FULL_SITE/app/pptx_to_pdf.py /home/madbrad/app/D_AI_FULL_SITE/app/output/pitch_deck_v1.pptx
+📄 Found PPTX: /home/madbrad/app/D_AI_FULL_SITE/app/output/pitch_deck_v5.pptx
+⚠️ Skipping PDF conversion on Render
 
 🎉 Pipeline complete
