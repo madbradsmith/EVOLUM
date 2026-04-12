@@ -1,12 +1,13 @@
-# V4.3 — ANALYZE SUCCESS SUMMARY + REPORT OUTPUT
-#!V_4 UPDATED FOR NEW CLEAN APP SPACE
+# V4.8 — PASSWORD GATE + PER-CODE LOGGING
+#!EVOLUM CLEAN APP
 
-from flask import Flask, request, render_template, send_file, jsonify, abort
+from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for, session, redirect, url_for
 from pathlib import Path
 import json
 import shutil
 import subprocess
 import os
+from datetime import datetime
 
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfbase.pdfmetrics import stringWidth
@@ -14,6 +15,7 @@ from reportlab.pdfgen import canvas
 
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -32,6 +34,41 @@ LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
+
+ACCESS_CODES = [
+    "beta1",
+    "beta2",
+    "vip",
+    "madbrad",
+]
+
+BETA_ACCESS_LOGS_DIR = BASE_DIR / "beta_access_logs"
+BETA_ACCESS_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def is_render_env() -> bool:
+    return os.environ.get("RENDER", "").lower() == "true"
+
+
+def has_beta_access() -> bool:
+    return session.get("beta_access") is True
+
+
+def log_beta_access(access_code: str, status: str):
+    safe_code = "".join(ch for ch in access_code if ch.isalnum() or ch in ("-", "_")).strip() or "unknown"
+    code_dir = BETA_ACCESS_LOGS_DIR / safe_code
+    code_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ip_addr = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    user_agent = request.headers.get("User-Agent", "unknown")
+    log_line = f"{timestamp} | {status} | code={access_code} | ip={ip_addr} | ua={user_agent}\n"
+
+    log_file = code_dir / "access_log.txt"
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(log_line)
+
+    print(log_line.strip())
 
 
 def set_status(text: str):
@@ -209,134 +246,49 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     pdf.save()
 
 
-def build_analysis_report_output(brain: dict, slide_data: dict):
-    slides = slide_data.get("slides", [])
+@app.before_request
+def require_beta_gate():
+    public_endpoints = {"index", "beta_access", "static"}
 
-    def slide_text(title):
-        for slide in slides:
-            if slide.get("title") == title:
-                return slide.get("content", {}).get("text", "-")
-        return "-"
+    if request.endpoint in public_endpoints:
+        return None
 
-    def extract_lead(text):
-        text = safe_text(text)
-        if text == "-":
-            return "-"
-        if " is " in text:
-            return text.split(" is ", 1)[0].strip()
-        return text.split(".")[0].strip()
+    if has_beta_access():
+        return None
 
-    def extract_supporting(text, lead_name):
-        text = safe_text(text)
-        if text == "-":
-            return []
+    if request.method == "GET":
+        return redirect(url_for("index"))
 
-        names = []
-        for part in text.replace("\n", " ").split("."):
-            part = part.strip()
-            if not part:
-                continue
+    return ("Unauthorized", 403)
 
-            if " is " in part:
-                name = part.split(" is ", 1)[0].strip()
-            elif " helps " in part:
-                name = part.split(" helps ", 1)[0].strip()
-            else:
-                continue
 
-            if name and name != lead_name and name not in names:
-                names.append(name)
+@app.route("/beta-access", methods=["POST"])
+def beta_access():
+    access_code = (request.form.get("access_code") or "").strip()
 
-        return names
+    if access_code in ACCESS_CODES:
+        session["beta_access"] = True
+        session["beta_code"] = access_code
+        log_beta_access(access_code, "ACCESS GRANTED")
+        return redirect(url_for("index"))
 
-    def extract_genre(title_text, world_text):
-        world_text = safe_text(world_text)
-        if world_text != "-":
-            world_lower = world_text.lower()
-            if "sports drama" in world_lower:
-                return "Sports Drama"
-            if "drama" in world_lower:
-                return "Drama"
-            return world_text.split(".")[0].strip().title()
-
-        title_text = safe_text(title_text)
-        if title_text != "-" and "\n\n" in title_text:
-            subtitle = title_text.split("\n\n", 1)[1].strip().lower()
-            if "sports drama" in subtitle:
-                return "Sports Drama"
-
-        return "-"
-
-    lead_text = slide_text("Protagonist")
-    supporting_text = slide_text("Supporting Characters")
-    title_text = slide_text(slide_data.get("project_title", ""))
-    theme_text = slide_text("Theme")
-
-    lead_name = extract_lead(lead_text)
-    supporting_list = extract_supporting(supporting_text, lead_name)
-
-    characters = brain.get("characters") or []
-    character_stats = brain.get("character_stats") or {}
-
-    top_characters = []
-    for name in characters[:5]:
-        stats = character_stats.get(name, {})
-        top_characters.append(
-            {
-                "name": name,
-                "dialogue_count": stats.get("dialogue_count", 0),
-                "action_count": stats.get("action_count", 0),
-                "first_seen": stats.get("first_seen", 0),
-            }
-        )
-
-    report_output = {
-        "title": safe_text(slide_data.get("project_title"), "UNTITLED PROJECT"),
-        "tagline": safe_text(slide_text("Logline")),
-        "summary_note": safe_text(
-            brain.get("summary_note")
-            or brain.get("why_this_film")
-            or slide_text("Why This Film")
-            or "Your script has been analyzed and your full report is ready to review."
-        ),
-        "logline": safe_text(slide_text("Logline")),
-        "synopsis": safe_text(slide_text("Synopsis")),
-        "lead_character": safe_text(lead_name),
-        "supporting_characters": supporting_list,
-        "genre": extract_genre(title_text, brain.get("world")),
-        "tone": safe_text(brain.get("tone") or slide_text("Tone")),
-        "theme": safe_text(theme_text),
-        "world": safe_text(brain.get("world") or slide_text("World")),
-        "core_conflict": safe_text(brain.get("core_conflict") or slide_text("Conflict Engine")),
-        "story_engine": safe_text(brain.get("story_engine") or slide_text("Conflict Engine")),
-        "reversal": safe_text(brain.get("reversal") or slide_text("Reversal")),
-        "story_insights": [
-            "The lead character is clearly carrying the story.",
-            "The supporting cast helps shape the pressure around the lead.",
-            "The script shows a clear emotional direction and story identity.",
-        ],
-        "whats_working": [
-            "Strong central character",
-            "Clear story direction",
-            "Good pitch potential",
-        ],
-        "what_needs_work": [
-            "Some supporting roles may need clearer definition.",
-            "The middle of the story may need sharper momentum.",
-            "Character balance can still be refined.",
-        ],
-        "character_analysis": {
-            "top_characters": top_characters,
-        },
-    }
-
-    return report_output
+    log_beta_access(access_code or "blank", "ACCESS FAILED")
+    return render_template(
+        "index.html",
+        is_render=is_render_env(),
+        gate_locked=True,
+        gate_error="Incorrect access code. Please try again.",
+    )
 
 
 @app.route("/")
 def index():
-    is_render = os.environ.get("RENDER", "").lower() == "true"
-    return render_template("index.html", is_render=is_render)
+    return render_template(
+        "index.html",
+        is_render=is_render_env(),
+        gate_locked=not has_beta_access(),
+        gate_error=None,
+    )
 
 
 @app.route("/status")
@@ -592,5 +544,5 @@ def analyzer():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

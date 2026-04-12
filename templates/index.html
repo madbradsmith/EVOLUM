@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V4.5 — PDF RENDER FIX -->
+<!-- V4.8 — REMOVE FAKE LOGINS -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -522,6 +522,22 @@ body.active-build.complete-mode .upload-actions {
 </head>
 
 <body>
+{% if gate_locked %}
+<div style="display:flex;align-items:center;justify-content:center;height:100vh;">
+    <div style="background:#151515;padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);text-align:center;max-width:400px;width:90%;">
+        <h2 style="margin-bottom:10px;">Beta Access</h2>
+        <p style="color:#cfcfcf;">Enter your access code to continue</p>
+        {% if gate_error %}
+        <div style="color:#ff8a8a;margin-bottom:10px;">{{ gate_error }}</div>
+        {% endif %}
+        <form method="POST" action="/beta-access">
+            <input type="password" name="access_code" placeholder="Access Code" required style="width:100%;padding:10px;margin-bottom:10px;">
+            <button class="primary-button" type="submit">Enter</button>
+        </form>
+    </div>
+</div>
+{% else %}
+
 <div class="container">
 <div class="logo">
     <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
@@ -541,11 +557,11 @@ body.active-build.complete-mode .upload-actions {
             </div>
 
             <div class="choice-stack" id="choiceStack">
-                <div class="choice" onclick="requireLogin('analyze')">
+                <div class="choice" onclick="startAnalyzeFlow()">
                     <div class="choice-title">Analyze Script</div>
                     <div class="choice-copy">Run live screenplay analysis and view story breakdown.</div>
                 </div>
-                <div class="choice" onclick="requireLogin('upload')">
+                <div class="choice" onclick="startUploadFlow()">
                     <div class="choice-title">Upload Script</div>
                     <div class="choice-copy">Upload a .txt screenplay and generate a deck.</div>
                 </div>
@@ -634,22 +650,6 @@ body.active-build.complete-mode .upload-actions {
     <div class="footer-powered">Powered by Developum AI Engine</div>
 </div>
 
-<div class="modal" id="loginModal">
-    <div class="modal-content">
-        <div class="modal-close" onclick="closeModal('loginModal')">×</div>
-        <h3 id="loginTitle">Log In</h3>
-        <input type="email" placeholder="Email">
-        <input type="password" placeholder="Password">
-        <div style="text-align: center; margin-top: 20px;">
-            <button class="primary-button" type="button" onclick="continueAfterLogin()" style="display: block; margin: 20px auto 0 auto; width: 200px;">
-    Continue
-</button>
-
-        </div>
-        <div class="login-switch" onclick="toggleLogin()">Switch to Create Account</div>
-    </div>
-</div>
-
 <div class="modal" id="infoModal">
     <div class="modal-content">
         <div class="modal-close" onclick="closeModal('infoModal')">×</div>
@@ -708,8 +708,6 @@ body.active-build.complete-mode .upload-actions {
 
 
 <script>
-let pending = null;
-let loginMode = "login";
 let runStartedAt = null;
 let timerInterval = null;
 let lastStatus = "IDLE";
@@ -732,21 +730,19 @@ function exitActiveBuildMode(){
     document.body.classList.remove("complete-mode");
 }
 
-function requireLogin(action){
-    pending = action;
-    document.getElementById("loginModal").classList.add("show");
+function startAnalyzeFlow(){
+    analyzeFlowMode = "analyze";
+    resetCreateProject();
+    showUploadAnalyzeModal();
 }
 
-function toggleLogin(){
-    const title = document.getElementById("loginTitle");
-    if(loginMode === "login"){
-        loginMode = "create";
-        title.innerText = "Create Account";
-    } else {
-        loginMode = "login";
-        title.innerText = "Log In";
-    }
+function startUploadFlow(){
+    analyzeFlowMode = "upload";
+    resetCreateProject();
+    showUploadAnalyzeModal();
 }
+
+
 
 function hideWorkspacePanels(){
     document.getElementById("analyzerPanel").style.display = "none";
@@ -822,22 +818,6 @@ function openAnalyzePassModal(){
     document.getElementById("analyzePassModal").classList.add("show");
 }
 
-function continueAfterLogin(){
-    closeModal("loginModal");
-    
-    if (pending === "analyze"){
-        analyzeFlowMode = "analyze";
-        resetCreateProject();
-        showUploadAnalyzeModal();
-    } else if (pending === "upload"){
-        analyzeFlowMode = "upload";
-        resetCreateProject();
-        showUploadAnalyzeModal();
-    } else if (pending === "idea"){
-        resetCreateProject();
-        showInfoModal("Start From Idea", "This feature is currently unavailable.");
-    }
-}
 
 async function analyzeSelectedScript(){
     const fileInput = document.getElementById("uploadAnalyzeFile");
@@ -1165,5 +1145,6 @@ updateStatusUI("IDLE");
 setInterval(pollStatus, 1200);
 pollStatus();
 </script>
+{% endif %}
 </body>
 </html>
