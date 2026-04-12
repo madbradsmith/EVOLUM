@@ -1,5 +1,4 @@
-# V4.8 — PASSWORD GATE + PER-CODE LOGGING
-#!EVOLUM CLEAN APP
+# BETA v1.5 BUILD 1.1 — STABLE
 
 from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for, session, redirect, url_for
 from pathlib import Path
@@ -450,11 +449,6 @@ def analyze_script_pass():
     report_output = {
         "title": safe_text(brain.get("title"), "UNTITLED PROJECT"),
         "tagline": safe_text(brain.get("tagline") or brain.get("logline")),
-        "summary_note": safe_text(
-            brain.get("summary_note")
-            or brain.get("why_this_film")
-            or "Your script has been analyzed and your full report is ready to review."
-        ),
         "logline": safe_text(brain.get("logline")),
         "synopsis": safe_text(brain.get("synopsis")),
         "lead_character": safe_text(lead_character),
