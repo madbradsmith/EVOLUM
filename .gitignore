@@ -1,0 +1,32 @@
+# Runtime / Generated Files
+input.txt
+approved_brain_output.json
+slide_plan.json
+status.json
+user_upload_context.json
+pipeline.log
+
+# Output Files
+output/
+*.pdf
+*.pptx
+
+# Uploads
+uploads/
+
+# Logs
+*.log
+beta_access_logs/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Temp / backups
+*.bak
+*.tmp
+
