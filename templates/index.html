@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- V4.8 — REMOVE FAKE LOGINS --- DONE -->
+<!-- BETA v1.5 BUILD 1.1  -- STABLE--->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -79,6 +79,21 @@ body {
     cursor: pointer;
     margin-bottom: 10px;
 }
+    .secondary-button {
+    padding: 12px 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 122, 0, 1);
+    border-radius: 10px;
+    color: #cfcfcf;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.secondary-button:hover {
+    border-color: #ff7a00;
+    color: white;
+}
+
 .button-row {
     width: 520px;
     margin: 20px auto;
@@ -119,7 +134,7 @@ body {
 }
 .choice {
     background: #1a1a1a;
-    padding: 14px;
+    padding: 12px;
     border-radius: 12px;
     cursor: pointer;
     border: 1px solid rgba(255,255,255,0.12);
@@ -144,7 +159,7 @@ body {
 }
 .choice-copy {
     color: #d0d0d0;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.4;
 }
 .workspace-panel {
@@ -157,6 +172,7 @@ body {
     border: 1px solid rgba(255,255,255,0.12);
     max-height: 280px;
     overflow-y: auto;
+    flex: 1;
 }
 #uploadState {
     max-height: 440px;
@@ -257,8 +273,8 @@ textarea {
 .upload-actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 16px;
+    margin-top: 20px;
 }
 .upload-actions .primary-button {
     width: 100%;
@@ -271,7 +287,10 @@ textarea {
     font-size: 11px;
 }
 .field-group {
-    margin-bottom: 10px;
+    text-align: left;
+    max-width: 520px;
+    margin: 0 auto 12px;
+    opacity: 0.8;
 }
 .field-help {
     color: #9f9f9f;
@@ -280,10 +299,12 @@ textarea {
     margin-bottom: 8px;
 }
 .footer-powered {
-    margin-top: 8px;
+    margin-top: auto;
     font-size: 11px;
     color: #8f8f8f;
     text-align: center;
+    padding-top: 10px;
+    opacity: 10.0;
 }
 .info-copy {
     color: #cfcfcf;
@@ -297,6 +318,22 @@ textarea {
     gap: 10px;
     margin-bottom: 8px;
     font-size: 12px;
+}
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    margin-top: 10px;
+    overflow: hidden;
+}
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff7a00, #ffb347);
+    border-radius: 999px;
+    transition: width 0.45s ease;
 }
 .build-status-line {
     color: #52a8ff;
@@ -457,6 +494,7 @@ body.active-build.complete-mode .upload-actions {
     flex-direction: column;
 }
     .upload-actions {
+    margin-top: 16px;
     display: flex;
     justify-content: center;
 }
@@ -507,7 +545,12 @@ body.active-build.complete-mode .upload-actions {
     width: 180px;
     padding: 10px 0;
     font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
+
     .workspace-panel {
     max-height: 70vh;
     overflow-y: auto;
@@ -515,7 +558,32 @@ body.active-build.complete-mode .upload-actions {
     .analysis-scroll {
     max-height: 60vh;
     overflow-y: auto;
-    padding-right: 6px;
+    padding: 12px;
+}
+    #uploadModal .modal-content,
+    #infoModal .modal-content,
+    #uploadPassModal .modal-content,
+    #analyzePassModal .modal-content {
+        text-align: center;
+}
+
+    #uploadModal h3,
+    #uploadModal .info-copy,
+    #infoModal h3,
+    #infoModal .info-copy,
+    #uploadPassModal h3,
+    #uploadPassModal .complete-copy,
+    #analyzePassModal h3,
+    #analyzePassModal .complete-copy {
+        text-align: center;
+}
+    #analyzerPanel .workspace-title,
+    #analyzerPanel .workspace-copy {
+        text-align: center;
+}
+
+    #liveProcessLog {
+        text-align: left;
 }
 
 </style>
@@ -543,7 +611,7 @@ body.active-build.complete-mode .upload-actions {
     <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
 </div>
 
-    <div class="tagline">From Idea → Screenplay → Pitch Package → <b>In Minutes</b></div>
+    <div class="tagline">From Screenplay → Pitch Package → <b>In Minutes</b></div>
 
     <form action="/demo" method="POST" target="_blank" id="demoForm">
         <button class="primary-button" type="submit" style="margin-top: 12px;">Demo Deck</button>
@@ -572,9 +640,12 @@ body.active-build.complete-mode .upload-actions {
             </div>
 
             <div class="workspace-panel" id="analyzerPanel">
-                <div class="workspace-title">Generating Your Pitch Deck</div>
-                <div class="workspace-copy" id="buildCopy">Real-time terminal-style pipeline output during deck generation.</div>
+                <div class="workspace-title">Building Your Pitch Deck</div>
+                <div class="workspace-copy" id="buildCopy">Real-time terminal-style pipeline output during deck generation. The process takes from 1-2 mintues, depending on file size.</div>
                 <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
+                <div class="progress-bar" id="buildProgressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
 
                 <div class="build-meta bottom-build-meta" id="buildMeta">
                     <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
@@ -582,17 +653,14 @@ body.active-build.complete-mode .upload-actions {
                 </div>
 
                 <div class="complete-panel" id="completePanel">
-                    <div class="complete-title">Your pitch deck is ready.</div>
-                    <div class="complete-copy">
-                        Your pitch deck is ready to download. Please have a look at it, and remember—having your PowerPoint means you can open it in Google Slides and fully customize it. This gives you the power to shape the deck into something you’re as proud of as the script you started with.
+                    <div class="complete-title">Your pitch deck is ready!</div>
+                    <div class="complete-copy">Download it now. Open it in Google Slides or PowerPoint to fully customize it, and give each slide your own style. 
                     </div>
             <div class="complete-actions">
                 <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pptx'">Download PowerPoint</button>
-                {% if not is_render %}
                 <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pdf'">Download PDF</button>
-                {% endif %}
-                <button class="primary-button" type="button" onclick="resetCreateProject()">Create Another Project</button>
-</div>
+                <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
+            </div>
 
                     </div>
                 </div>
@@ -603,7 +671,7 @@ body.active-build.complete-mode .upload-actions {
 
             <div class="workspace-panel" id="uploadState">
                 <div class="workspace-title" style="text-align: center;">Upload Script</div>
-                <div class="workspace-copy" style="text-align: center;">Choose your screenplay file to begin the upload workflow.</div>
+                <div class="workspace-copy" style="text-align: center;">If you have your logline and synopsis written, and or images you would like to use in your pitch deck,<br> add them now to begin the generate pitch deck process.</div>
 
                 <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return validateUploadAndStart();">
                      <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf" style="display:none;">
@@ -630,7 +698,7 @@ body.active-build.complete-mode .upload-actions {
                     </div>
 
                     <div class="upload-actions">
-                        <button class="primary-button" type="submit">Generate Deck</button>
+                        <button class="primary-button" type="submit">Generate Pitch Deck</button>
                         <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
                     </div>
                 </form>
@@ -644,10 +712,10 @@ body.active-build.complete-mode .upload-actions {
                     <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
                 </div>
             </div>
+         <div class="footer-powered">Powered by Developum AI Engine -- Beta Version V1.5 - Build 1.1</div>
+    
         </div>
-    </div>
-
-    <div class="footer-powered">Powered by Developum AI Engine</div>
+      </div>
 </div>
 
 <div class="modal" id="infoModal">
@@ -655,7 +723,7 @@ body.active-build.complete-mode .upload-actions {
         <div class="modal-close" onclick="closeModal('infoModal')">×</div>
         <h3 id="infoTitle">Notice</h3>
         <div class="info-copy" id="infoCopy">This feature is currently unavailable.</div>
-        <button class="primary-button" type="button" onclick="closeModal('infoModal')">Continue</button>
+        <button class="primary-button" type="button" onclick="resumeUploadAfterInfo()">Continue</button>
     </div>
 </div>
 
@@ -700,7 +768,7 @@ body.active-build.complete-mode .upload-actions {
 
         <div class="complete-actions">
             <button class="primary-button" type="button" onclick="window.open('/analysis-report/latest.pdf', '_blank')">View Analysis Report</button>
-            <button class="primary-button" type="button" onclick="window.location.href='/analysis-report/latest.pdf'">Download PDF</button>
+            <button class="primary-button" type="button" onclick="window.open('/analysis-report/latest.pdf', '_blank')">Download PDF</button>
             <button class="primary-button" type="button" onclick="resetCreateProject()">Analyze Another Script</button>
         </div>
     </div>
@@ -715,7 +783,9 @@ let approvedScriptFile = null;
 let buildInFlight = false;
 let sawFreshBuildStatus = false;
 let analyzeFlowMode = null;
-
+let progressValue = 0;
+let progressInterval = null;
+    
 function enterFlowMode(){
     document.body.classList.add("flow-mode");
 }
@@ -728,6 +798,53 @@ function enterActiveBuildMode(){
 function exitActiveBuildMode(){
     document.body.classList.remove("active-build");
     document.body.classList.remove("complete-mode");
+}
+    function setProgress(value){
+    progressValue = Math.max(0, Math.min(100, value));
+    const fill = document.getElementById("progressFill");
+    if (fill) fill.style.width = progressValue + "%";
+}
+
+function stopProgressCreep(){
+    if (progressInterval){
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}
+
+function startProgressCreep(target, step, delay){
+    stopProgressCreep();
+    progressInterval = setInterval(() => {
+        if (progressValue >= target){
+            stopProgressCreep();
+            return;
+        }
+        setProgress(progressValue + step);
+    }, delay);
+}
+
+function updateProgressForStatus(status){
+    if (status === "IDLE"){
+        stopProgressCreep();
+        setProgress(0);
+    } else if (status === "UPLOADED"){
+        setProgress(Math.max(progressValue, 12));
+        startProgressCreep(22, 1, 500);
+    } else if (status === "ANALYZING"){
+        setProgress(Math.max(progressValue, 38));
+        startProgressCreep(68, 1.2, 700);
+    } else if (status === "BUILDING"){
+        setProgress(Math.max(progressValue, 78));
+        startProgressCreep(96, 1, 500);
+    } else if (status === "DEMO_RUNNING"){
+        setProgress(Math.max(progressValue, 20));
+        startProgressCreep(60, 1, 650);
+    } else if (status === "COMPLETE"){
+        stopProgressCreep();
+        setProgress(100);
+    } else if (status === "ERROR"){
+        stopProgressCreep();
+    }
 }
 
 function startAnalyzeFlow(){
@@ -748,6 +865,11 @@ function hideWorkspacePanels(){
     document.getElementById("analyzerPanel").style.display = "none";
     document.getElementById("uploadState").style.display = "none";
     document.getElementById("ideaPanel").style.display = "none";
+}
+    
+function resumeUploadAfterInfo(){
+    closeModal("infoModal");
+    document.getElementById("uploadModal").classList.add("show");
 }
 
 function closeModal(id){
@@ -781,6 +903,8 @@ function showUploadState(){
 
 function resetCreateProject(){
     closeAllModals();
+    stopProgressCreep();
+    setProgress(0);
     exitActiveBuildMode();
     exitFlowMode();
     hideWorkspacePanels();
@@ -857,12 +981,6 @@ async function analyzeSelectedScript(){
 
         const data = await response.json();
 
-        const summaryEl = document.getElementById("analysisSummaryCopy");
-        if (summaryEl) {
-            summaryEl.textContent =
-                data.summary_note ||
-                "Your script has been analyzed and your full report is ready to view.";
-        }
         closeModal("uploadModal");
         if (analyzeFlowMode === "analyze") {
     openAnalyzePassModal();
@@ -993,7 +1111,11 @@ function showLiveProcess(){
     exitFlowMode();
     enterActiveBuildMode();
     hideWorkspacePanels();
+    stopProgressCreep();
+    setProgress(0);
+
     document.getElementById("analyzerPanel").style.display = "block";
+    document.getElementById("buildProgressBar").style.display = "block";
     document.getElementById("liveProcessLog").style.display = "block";
     document.getElementById("buildCopy").style.display = "block";
     document.getElementById("buildMeta").style.display = "flex";
@@ -1018,10 +1140,21 @@ function renderLiveProcessLog(status){
     } else if (status === "UPLOADED"){
         lines = ['[system] build request received','','> intake: screenplay file accepted','> preparing canonical input','> initializing pipeline environment','> waiting for analysis stage...'];
     } else if (status === "ANALYZING"){
-        lines = ['[system] screenplay analysis in progress','','> converting uploaded script to working text','> cleaning screenplay content','> sending story into brain pass','> extracting characters','> identifying world and tone','> generating pitch intelligence','> analysis still running...'];
-    } else if (status === "BUILDING"){
-        lines = ['[system] deck generation in progress','','> analysis approved','> creating slide plan','> selecting visual placements','> assembling presentation structure','> building PowerPoint export','> preparing PDF export','> final packaging in progress...'];
-    } else if (status === "DEMO_RUNNING"){
+        lines = ['[system] Analyzing Screenplay...','','> converting script into engine-ready format','> cleaning screenplay content','> sending story into brain pass','> extracting characters','> identifying world and tone','> generating pitch intelligence','> analysis still running...'];
+} else if (status === "BUILDING"){
+    lines = [
+        '[system] deck generation in progress',
+        '',
+        '> analysis approved',
+        '> creating slide plan',
+        '> selecting visual placements',
+        '> assembling presentation structure',
+        '> building PowerPoint file',
+        '> finalizing export package...',
+        '> preparing delivery...'
+    ];
+}
+ else if (status === "DEMO_RUNNING"){
         lines = ['[system] demo build launched','','> loading demo screenplay','> initializing demo pipeline','> analysis queue started','> waiting for deck assembly...'];
     } else if (status === "COMPLETE"){
         lines = ['[system] build complete','','> screenplay processed successfully','> analysis complete','> deck assembly complete','> PowerPoint export ready','> PDF export ready','','[success] files available for download'];
@@ -1081,6 +1214,12 @@ function updateStatusUI(status){
 
     lastStatus = status;
 
+    const progress = document.getElementById("progressFill");
+    if (status === "UPLOADED") progress.style.width = "20%";
+    if (status === "ANALYZING") progress.style.width = "50%";
+    if (status === "BUILDING") progress.style.width = "85%";
+    if (status === "COMPLETE") progress.style.width = "100%";
+
     const activeStatuses = ["UPLOADED", "ANALYZING", "BUILDING", "DEMO_RUNNING"];
     if (activeStatuses.includes(status)) startTimer();
 
@@ -1094,13 +1233,14 @@ function updateStatusUI(status){
     } else if (status === "ANALYZING"){
         inlineStageEl.textContent = "Analyzing script";
     } else if (status === "BUILDING"){
-        inlineStageEl.textContent = "Building deck";
+        inlineStageEl.textContent = "Finalizing deck...";
     } else if (status === "DEMO_RUNNING"){
         inlineStageEl.textContent = "Preparing engine";
     } else if (status === "COMPLETE"){
         stopTimer();
         buildInFlight = false;
         document.body.classList.add("complete-mode");
+        document.getElementById("buildProgressBar").style.display = "none";
         document.getElementById("liveProcessLog").style.display = "none";
         document.getElementById("buildCopy").style.display = "none";
         document.getElementById("buildMeta").style.display = "none";
@@ -1118,7 +1258,7 @@ function updateStatusUI(status){
         inlineStageEl.textContent = "Processing";
         document.body.classList.remove("complete-mode");
     }
-
+    updateProgressForStatus(status);
     renderLiveProcessLog(status);
 }
 
