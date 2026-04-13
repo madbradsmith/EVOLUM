@@ -1,4 +1,4 @@
-# BETA v1.5 BUILD 1.1 — STABLE
+# BETA v1.5 BUILD 1.2 — STABLE
 
 from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for, session, redirect, url_for
 from pathlib import Path
@@ -6,6 +6,7 @@ import json
 import shutil
 import subprocess
 import os
+import time
 from datetime import datetime
 
 from reportlab.lib.pagesizes import LETTER
@@ -68,6 +69,17 @@ def log_beta_access(access_code: str, status: str):
         f.write(log_line)
 
     print(log_line.strip())
+
+
+def log_usage(event, **kwargs):
+    parts = [f"{k}={v}" for k, v in kwargs.items()]
+    
+    if parts:
+        line = f"USAGE | {event} | " + " | ".join(parts)
+    else:
+        line = f"USAGE | {event}"
+    
+    print(line, flush=True)
 
 
 def set_status(text: str):
@@ -269,9 +281,11 @@ def beta_access():
         session["beta_access"] = True
         session["beta_code"] = access_code
         log_beta_access(access_code, "ACCESS GRANTED")
+        log_usage("beta_access", code=access_code, success=True)
         return redirect(url_for("index"))
 
     log_beta_access(access_code or "blank", "ACCESS FAILED")
+    log_usage("beta_access", code=access_code or "blank", success=False)
     return render_template(
         "index.html",
         is_render=is_render_env(),
@@ -310,6 +324,9 @@ def upload():
 
     save_path = UPLOAD_DIR / Path(file.filename).name
     file.save(save_path)
+
+    started_at = time.time()
+    log_usage("generate_start", filename=file.filename)
 
     logline = (request.form.get("logline") or "").strip()
     synopsis = (request.form.get("synopsis") or "").strip()
@@ -388,6 +405,8 @@ def upload():
         return "Latest deck publish failed", 500
 
     set_status("COMPLETE")
+    elapsed = int(time.time() - started_at)
+    log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
     return ("OK", 200)
 
 
@@ -425,6 +444,9 @@ def analyze_script_pass():
     temp_path = UPLOAD_DIR / Path(file.filename).name
     file.save(temp_path)
 
+    started_at = time.time()
+    log_usage("analyze_start", filename=file.filename)
+
     try:
         subprocess.run(
             ["python3", str(BASE_DIR / "single_brain_orchestrator_v3.py"), str(temp_path)],
@@ -432,6 +454,7 @@ def analyze_script_pass():
             check=True,
         )
     except subprocess.CalledProcessError:
+        log_usage("analyze_complete", success=False, filename=file.filename, error="analysis_failed")
         return jsonify({"error": "analysis failed"}), 500
 
     brain_file = BASE_DIR / "approved_brain_output.json"
