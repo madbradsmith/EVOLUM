@@ -1,4 +1,4 @@
-#!V_2 UPDATED FOR NEW CLEAN APP SPACE
+#!BETA version v1.5 - BUILD 1.2
 import os
 import sys
 import json
@@ -215,26 +215,6 @@ def main(input_file):
     )
 
     pptx = find_latest_pptx()
-
-    if pptx:
-        print(f"📄 Found PPTX: {pptx}")
-        is_render = os.environ.get("RENDER", "").lower() == "true"
-
-        if is_render:
-            write_status("pdf_conversion", 90, "Skipping PDF conversion on Render.", start_time, state="running")
-            print("⚠️ Skipping PDF conversion on Render")
-        else:
-            run(
-                f"python3 {APP_DIR}/pptx_to_pdf.py {pptx}",
-                "pdf_conversion",
-                90,
-                "Converting to PDF... (~2 min)",
-                start_time
-            )
-    else:
-        write_status("pdf_conversion", 90, "No PPTX found, skipping PDF conversion.", start_time, state="error")
-        print("⚠️ No PPTX found, skipping PDF")
-        sys.exit(1)
 
     write_status("complete", 100, "Complete", start_time, state="complete")
     print("\n🎉 Pipeline complete")

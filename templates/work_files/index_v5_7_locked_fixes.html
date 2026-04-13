@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BETA v1.5 BUILD 1.2  -- STABLE--->
+<!-- V5.7 — FINAL UI/UX TWEAKS BEFORE BETA LAUNCH --->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -172,7 +172,6 @@ body {
     border: 1px solid rgba(255,255,255,0.12);
     max-height: 280px;
     overflow-y: auto;
-    flex: 1;
 }
 #uploadState {
     max-height: 440px;
@@ -299,12 +298,10 @@ textarea {
     margin-bottom: 8px;
 }
 .footer-powered {
-    margin-top: auto;
+    margin-top: 8px;
     font-size: 11px;
     color: #8f8f8f;
     text-align: center;
-    padding-top: 10px;
-    opacity: 10.0;
 }
 .info-copy {
     color: #cfcfcf;
@@ -611,7 +608,7 @@ body.active-build.complete-mode .upload-actions {
     <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
 </div>
 
-    <div class="tagline">From Screenplay → Pitch Deck → <b>In Minutes</b></div>
+    <div class="tagline">From Idea → Screenplay → Pitch Package → <b>In Minutes</b></div>
 
     <form action="/demo" method="POST" target="_blank" id="demoForm">
         <button class="primary-button" type="submit" style="margin-top: 12px;">Demo Deck</button>
@@ -641,7 +638,7 @@ body.active-build.complete-mode .upload-actions {
 
             <div class="workspace-panel" id="analyzerPanel">
                 <div class="workspace-title">Building Your Pitch Deck</div>
-                <div class="workspace-copy" id="buildCopy">Real-time terminal-style pipeline output during deck generation. The process takes from 1-2 mintues, depending on file size.</div>
+                <div class="workspace-copy" id="buildCopy">Real-time terminal-style pipeline output during deck generation.</div>
                 <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
                 <div class="progress-bar" id="buildProgressBar">
                     <div class="progress-fill" id="progressFill"></div>
@@ -654,12 +651,14 @@ body.active-build.complete-mode .upload-actions {
 
                 <div class="complete-panel" id="completePanel">
                     <div class="complete-title">Your pitch deck is ready!</div>
-                    <div class="complete-copy">Download it now. Open it in Google Slides or PowerPoint to fully customize it, and give each slide your own style. 
+                    <div class="complete-copy">Download it now. Open it in Google Slides or PowerPoint to fully customize it,<br> and give each slide your own style. 
                     </div>
             <div class="complete-actions">
-<button class="primary-button" type="button" onclick="window.location.href='/download/latest.pptx'">Download PowerPoint</button>
-<!-- PDF disabled in beta (Render limitation) -->
-<button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
+                <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pptx'">Download PowerPoint</button>
+                <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pdf'">Download PDF</button>
+                <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
+            </div>
+
                     </div>
                 </div>
 
@@ -669,7 +668,7 @@ body.active-build.complete-mode .upload-actions {
 
             <div class="workspace-panel" id="uploadState">
                 <div class="workspace-title" style="text-align: center;">Upload Script</div>
-                <div class="workspace-copy" style="text-align: center;">If you have your logline and synopsis written, and or images you would like to use in your pitch deck,<br> add them now to begin the generate pitch deck process.</div>
+                <div class="workspace-copy" style="text-align: center;">Choose your screenplay file to begin the upload workflow.</div>
 
                 <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return validateUploadAndStart();">
                      <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf" style="display:none;">
@@ -710,10 +709,10 @@ body.active-build.complete-mode .upload-actions {
                     <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
                 </div>
             </div>
-         <div class="footer-powered">Powered by Developum AI Engine -- Beta Version V1.5 - Build 1.1</div>
-    
         </div>
-      </div>
+    </div>
+
+    <div class="footer-powered">Powered by Developum AI Engine</div>
 </div>
 
 <div class="modal" id="infoModal">
