@@ -181,31 +181,27 @@ def _pick_candidate_with_repeat_control(candidates: list[Path], start_idx: int, 
 
     ordered = [candidates[(start_idx + offset) % len(candidates)] for offset in range(len(candidates))]
 
-    # Pass 1: best case — brand new image, never adjacent repeat.
+    # Pass 1: never reuse an image already used in this deck, and never repeat adjacent slides.
     for offset, candidate in enumerate(ordered):
         if candidate.name == last_used_name:
             continue
         if _image_use_count(candidate) == 0:
             return candidate, (start_idx + offset + 1) % len(candidates)
 
-    # Pass 2: allow one reuse, but never more than twice in a deck.
+    # Pass 2: allow a single reuse only if the deck is running out of options.
     for offset, candidate in enumerate(ordered):
         if candidate.name == last_used_name:
             continue
-        if _image_use_count(candidate) == 1:
+        if _image_use_count(candidate) <= 1:
             return candidate, (start_idx + offset + 1) % len(candidates)
 
-    # Pass 3: emergency fallback — still never repeat adjacent slides,
-    # and still block anything already used twice or more.
+    # Pass 3: emergency fallback — anything except the immediately previous image.
     for offset, candidate in enumerate(ordered):
-        if candidate.name == last_used_name:
-            continue
-        if _image_use_count(candidate) < 2:
+        if candidate.name != last_used_name:
             return candidate, (start_idx + offset + 1) % len(candidates)
 
-    # If the image pool is truly exhausted, return None so the caller can
-    # fall through to a different selection source instead of repeating forever.
-    return None, start_idx
+    candidate = ordered[0]
+    return candidate, (start_idx + 1) % len(candidates)
 
 
 def reset_image_selection_state() -> None:
