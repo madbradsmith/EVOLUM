@@ -1397,10 +1397,22 @@ body {
         </div>
 
         <div class="complete-actions">
-            <button class="primary-button" type="button" onclick="window.open('/output/latest_analysis_report.pdf','_blank')">View Analysis Report</button>
-            <button class="primary-button" type="button" onclick="window.open('/output/latest_analysis_report.pdf','_blank')">Download PDF</button>
-            <button class="primary-button" type="button" onclick="resetCreateProject()">Analyze Another Script</button>
-        </div>
+    <button class="primary-button" type="button"
+        onclick="window.open('/analysis-report/latest.pdf','_blank')">
+        View Analysis Report
+    </button>
+
+    <button class="primary-button" type="button"
+        onclick="window.open('/analysis-report/latest.pdf','_blank')">
+        Download PDF
+    </button>
+
+    <button class="primary-button" type="button"
+        onclick="resetCreateProject()">
+        Analyze Another Script
+    </button>
+</div>
+
     </div>
 </div>
 
@@ -1434,22 +1446,33 @@ body {
 </div>
 
 <div class="modal" id="actorPrepCompleteModal">
-    <div class="modal-content">
-        <div class="modal-close" onclick="closeModal('actorPrepCompleteModal')">×</div>
-        <h3>Success! <b>Actor Preparation Complete!</b></h3>
+   <div class="modal-content">
+    <div class="modal-close" onclick="closeModal('actorPrepCompleteModal')">×</div>
+    <h3>Success! <b>Actor Preparation Complete!</b></h3>
 
-        <div class="complete-copy" id="actorPrepSummaryCopy">
-            Your actor preparation packet for Finn is ready, with character insight, performance beats, and rehearsal-ready prep.
-        </div>
-
-        <div class="complete-actions">
-            <button class="primary-button" type="button" onclick="window.open('/output/latest_actor_prep_report.pdf','_blank')"
->View Preparation</button>
-            <button class="primary-button" type="button" onclick="window.open('/output/latest_actor_prep_report.pdf','_blank')"
->Download Preparation</button>
-            <button class="primary-button" type="button" onclick="closeModal('actorPrepCompleteModal'); startActorPrepFlow();">Analyze Another</button>
-        </div>
+    <div class="complete-copy" id="actorPrepSummaryCopy">
+        Your actor preparation packet for Finn is ready, with character insight, performance beats, and rehearsal-ready prep.
     </div>
+
+    <div class="complete-actions">
+    <button class="primary-button" type="button"
+        onclick="window.open('/analysis-report/latest.pdf','_blank')">
+        View Analysis Report
+    </button>
+
+    <button class="primary-button" type="button"
+        onclick="window.location.href='/analysis-report/latest.pdf'">
+        Download PDF
+    </button>
+
+    <button class="primary-button" type="button"
+        onclick="resetCreateProject()">
+        Analyze Another Script
+    </button>
+</div>
+
+</div>
+
 </div>
 
 <!-- ===== MODALS: ACTOR PREP FLOW END =================== -->
