@@ -10,6 +10,66 @@ APP_DIR = Path(__file__).resolve().parent
 STATUS_FILE = APP_DIR / "status.json"
 
 
+
+# ===== USER UPLOAD OVERRIDE HELPERS START ====================
+def apply_user_text_overrides(project_dir):
+    try:
+        project_path = Path(project_dir)
+
+        override_candidates = [
+            project_path / "user_upload_context.json",
+            project_path / "input" / "user_upload_context.json",
+            Path("/home/madbrad/BETA_OLD/app/user_upload_context.json"),
+        ]
+
+        overrides = None
+        for candidate in override_candidates:
+            if candidate.exists():
+                try:
+                    overrides = json.loads(candidate.read_text(encoding="utf-8"))
+                    break
+                except Exception:
+                    continue
+
+        if not overrides:
+            return
+
+        submitted_logline = str(overrides.get("logline", "") or "").strip()
+        submitted_synopsis = str(overrides.get("synopsis", "") or "").strip()
+
+        if not submitted_logline and not submitted_synopsis:
+            return
+
+        brain_candidates = [
+            project_path / "approved_brain_output.json",
+            project_path / "pipeline" / "analysis" / "approved_brain_output.json",
+            Path("/home/madbrad/BETA_OLD/app/approved_brain_output.json"),
+        ]
+
+        for candidate in brain_candidates:
+            if not candidate.exists():
+                continue
+            try:
+                brain = json.loads(candidate.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+
+            changed = False
+            if submitted_logline:
+                brain["logline"] = submitted_logline
+                changed = True
+            if submitted_synopsis:
+                brain["synopsis"] = submitted_synopsis
+                changed = True
+
+            if changed:
+                candidate.write_text(json.dumps(brain, indent=2), encoding="utf-8")
+                print("✅ Applied user upload overrides to:", str(candidate))
+                return
+    except Exception as e:
+        print("⚠️ Could not apply user upload overrides:", e)
+# ===== USER UPLOAD OVERRIDE HELPERS END ======================
+
 def write_status(step, progress, message, start_time, state="running"):
     elapsed = int(time.time() - start_time)
     payload = {

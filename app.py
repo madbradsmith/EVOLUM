@@ -1,20 +1,38 @@
-# BETA v1.5 BUILD 1.2 — STABLE
+# =====================================================
+# ===== EVOLUM MASTER APP STRUCTURE (V1 BETA) =========
+# =====================================================
 
-from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for, session, redirect, url_for
+# ===== IMPORTS / SETUP START =========================
+# BETA v2_0 BUILD 1.1 — STABLE
+
+from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for
 from pathlib import Path
 import json
+import io
+import contextlib
 import shutil
 import subprocess
 import os
+import importlib.util
 import time
 from datetime import datetime
+from urllib.parse import unquote, quote
 
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
+from pptx import Presentation
+from actor_prep_generator import build_actor_prep_pdf
+from pypdf import PdfReader
 
 
+# ===== IMPORTS / SETUP END ===========================
+
+# ===== GLOBAL CONFIG / PATHS START ===================
 app = Flask(__name__)
+
+_REFINE_BUILDER_MODULE = None
+_LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
 app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -32,6 +50,7 @@ LATEST_PDF = OUTPUT_DIR / "latest.pdf"
 
 LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
+LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
@@ -113,6 +132,293 @@ def newest_generated_file(ext: str):
         return None
 
     return max(files, key=lambda p: p.stat().st_mtime)
+
+def find_latest_slide_plan_file():
+    candidates = []
+
+    direct_candidates = [
+        BASE_DIR / "slide_plan.json",
+        OUTPUT_DIR / "slide_plan.json",
+        BASE_DIR / "pipeline" / "slide_plan.json",
+        BASE_DIR / "pipeline" / "compile" / "slide_plan.json",
+    ]
+    for path in direct_candidates:
+        if path.exists():
+            candidates.append(path)
+
+    search_roots = [
+        BASE_DIR,
+        OUTPUT_DIR,
+        BASE_DIR / "projects",
+        BASE_DIR / "pipeline",
+    ]
+    seen = set()
+    for root in search_roots:
+        if not root.exists():
+            continue
+        for path in root.rglob("slide_plan.json"):
+            if path in seen:
+                continue
+            seen.add(path)
+            candidates.append(path)
+
+    if not candidates:
+        return None
+
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+def safe_relpath(path_obj):
+    try:
+        return str(path_obj.relative_to(BASE_DIR))
+    except Exception:
+        return str(path_obj)
+
+
+def resolve_quiet_image_for_slide(slide_title, stage, layout, slide_number):
+    visuals_root = BASE_DIR / "visuals"
+
+    if not visuals_root.exists():
+        return None
+
+    exts = ("*.jpg", "*.jpeg", "*.png", "*.webp")
+    candidates = []
+
+    for ext in exts:
+        candidates.extend(visuals_root.rglob(ext))
+
+    if not candidates:
+        return None
+
+    title_words = str(slide_title).lower().replace("(", " ").replace(")", " ").split()
+
+    for candidate in candidates:
+        name = candidate.stem.lower()
+
+        for word in title_words:
+            if len(word) >= 4 and word in name:
+                return candidate
+
+    return candidates[0]
+
+def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
+    project_title = safe_text(slide_plan_data.get("title"), "UNTITLED PROJECT")
+    raw_slides = slide_plan_data.get("slides") or []
+    slide_plan_file = Path(slide_plan_file) if slide_plan_file else None
+    project_dir = find_latest_project_dir(slide_plan_file)
+
+    mapped_slides = []
+    last_used_image_name = ""
+
+    for index, slide in enumerate(raw_slides):
+        if not isinstance(slide, dict):
+            continue
+
+        stage = safe_text(slide.get("stage"), "").lower()
+        layout = safe_text(slide.get("layout"), "").lower()
+        title = safe_text(slide.get("title"), f"Slide {index + 1}")
+
+        body = safe_text(
+            slide.get("body")
+            or slide.get("content")
+            or slide.get("text")
+            or slide.get("copy"),
+            "",
+        )
+
+        slide_type = title
+
+        if stage == "title" or layout == "title":
+            slide_type = "Title Slide"
+        elif "logline" in title.lower():
+            slide_type = "Logline"
+        elif "synopsis" in title.lower():
+            slide_type = "Synopsis"
+        elif stage == "character":
+            slide_type = "Characters"
+        elif stage == "why_now":
+            slide_type = "Why This Project"
+
+        subtitle = ""
+
+        if stage == "title" or layout == "title":
+            subtitle = project_title if title.strip().lower() != project_title.strip().lower() else ""
+        elif title.lower() in {
+            "logline",
+            "synopsis",
+            "synopsis (2)",
+            "hook",
+            "conflict",
+            "stakes",
+            "world",
+            "tone",
+            "story engine",
+            "reversal",
+            "why this movie",
+            "protagonist",
+        }:
+            subtitle = title
+        elif stage:
+            subtitle = stage.replace("_", " ").title()
+        elif layout:
+            subtitle = layout.replace("_", " ").title()
+
+        caption_bits = []
+
+        if stage:
+            caption_bits.append(f"Stage: {stage.replace('_', ' ').title()}")
+
+        if layout:
+            caption_bits.append(f"Layout: {layout.replace('_', ' ').title()}")
+
+        resolved_image = resolve_quiet_image_for_slide(
+            slide_title=title,
+            stage=stage,
+            layout=layout,
+            slide_number=index + 1,
+        )
+
+        image_name = resolved_image.name if resolved_image else ""
+        image_rel = safe_relpath(resolved_image) if resolved_image else ""
+        image_url = f"/project-file?path={image_rel}" if image_rel else ""
+
+        if image_name:
+            caption_bits.append(f"Image: {image_name}")
+
+        caption = " • ".join(caption_bits) if caption_bits else f"Generated slide {index + 1}"
+
+        mapped_slides.append({
+            "type": slide_type,
+            "title": title,
+            "subtitle": subtitle,
+            "body": body,
+            "caption": caption,
+            "accent": "#ffb347",
+            "layout": layout,
+            "stage": stage,
+            "source_index": index,
+            "image_name": image_name,
+            "image_url": image_url,
+        })
+
+    return {
+        "title": project_title,
+        "slide_count": len(mapped_slides),
+        "slides": mapped_slides,
+    }
+
+
+def load_deck_builder_module():
+    global _REFINE_BUILDER_MODULE
+    if _REFINE_BUILDER_MODULE is not None:
+        return _REFINE_BUILDER_MODULE
+
+    builder_path = BASE_DIR / "deck_builder_MADBRAD_BRAIN_V_1.py"
+    if not builder_path.exists():
+        _REFINE_BUILDER_MODULE = False
+        return None
+
+    try:
+        spec = importlib.util.spec_from_file_location("deck_builder_madbrad_brain_v1", builder_path)
+        if not spec or not spec.loader:
+            _REFINE_BUILDER_MODULE = False
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        _REFINE_BUILDER_MODULE = module
+        return module
+    except Exception as e:
+        print(f"⚠️ Could not load deck builder for refine image mapping: {e}", flush=True)
+        _REFINE_BUILDER_MODULE = False
+        return None
+
+
+def find_latest_project_dir(slide_plan_file=None):
+    if slide_plan_file and slide_plan_file.exists():
+        return slide_plan_file.parent
+    return BASE_DIR
+
+
+def ensure_relative_to_base(path: Path) -> bool:
+    try:
+        path.resolve().relative_to(BASE_DIR.resolve())
+        return True
+    except Exception:
+        return False
+
+
+def resolve_refine_image_for_slide(project_dir, deck_title, slide, slide_number, last_used_name=""):
+    explicit_candidates = []
+    for key in ("image_path", "image", "image_file", "preview_image"):
+        value = slide.get(key)
+        if value:
+            explicit_candidates.append(Path(str(value)))
+
+    for candidate in explicit_candidates:
+        resolved = candidate if candidate.is_absolute() else (project_dir / candidate)
+        if resolved.exists() and ensure_relative_to_base(resolved):
+            return resolved.resolve()
+
+    builder = load_deck_builder_module()
+    if not builder:
+        return None
+
+    visuals_dir = project_dir / "visuals"
+    approved_brain_output_path = project_dir / "approved_brain_output.json"
+    brain_output = {}
+    if approved_brain_output_path.exists():
+        try:
+            brain_output = json.loads(approved_brain_output_path.read_text(encoding="utf-8"))
+        except Exception:
+            brain_output = {}
+    elif (BASE_DIR / "approved_brain_output.json").exists():
+        try:
+            brain_output = json.loads((BASE_DIR / "approved_brain_output.json").read_text(encoding="utf-8"))
+        except Exception:
+            brain_output = {}
+
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            image_path = builder.find_image_for_slide(
+                visuals_dir=visuals_dir,
+                deck_title=deck_title,
+                slide_title=safe_text(slide.get("title"), f"Slide {slide_number}"),
+                slide_number=slide_number,
+                brain_output=brain_output,
+                last_used_name=last_used_name,
+            )
+    except Exception as e:
+        print(f"⚠️ Refine image resolution failed for slide {slide_number}: {e}", flush=True)
+        return None
+
+    if not image_path or not Path(image_path).exists():
+        return None
+
+    image_path = Path(image_path).resolve()
+    if not ensure_relative_to_base(image_path):
+        return None
+
+    return image_path
+
+
+def build_project_file_url(image_path: Path) -> str:
+    rel = image_path.resolve().relative_to(BASE_DIR.resolve())
+    return "/project-file?path=" + quote(str(rel).replace('\\', '/'))
+
+
+def make_slide_payload_cache_key(slide_plan_file=None):
+    if not slide_plan_file or not slide_plan_file.exists():
+        return "missing"
+    parts = [f"slide:{slide_plan_file}:{slide_plan_file.stat().st_mtime_ns}"]
+    project_dir = find_latest_project_dir(slide_plan_file)
+    abo = project_dir / "approved_brain_output.json"
+    if not abo.exists():
+        abo = BASE_DIR / "approved_brain_output.json"
+    if abo.exists():
+        parts.append(f"abo:{abo}:{abo.stat().st_mtime_ns}")
+    builder_path = BASE_DIR / "deck_builder_MADBRAD_BRAIN_V_1.py"
+    if builder_path.exists():
+        parts.append(f"builder:{builder_path.stat().st_mtime_ns}")
+    return "|".join(parts)
 
 
 def publish_latest_outputs(pptx_source, pdf_source):
@@ -268,11 +574,19 @@ def require_beta_gate():
         return None
 
     if request.method == "GET":
-        return redirect(url_for("index"))
+        try:
+            for _project_dir_name in ["project_dir", "working_dir", "output_dir", "project_path"]:
+                if _project_dir_name in locals() and locals()[_project_dir_name]: apply_upload_text_overrides(locals()[_project_dir_name], submitted_logline, submitted_synopsis)
+                break
+        except Exception:
+            pass
+            
+            return redirect(url_for("index"))
+            
+            return ("Unauthorized", 403)
 
-    return ("Unauthorized", 403)
 
-
+# ===== BETA ACCESS ROUTES START ======================
 @app.route("/beta-access", methods=["POST"])
 def beta_access():
     access_code = (request.form.get("access_code") or "").strip()
@@ -294,6 +608,7 @@ def beta_access():
     )
 
 
+# ===== CORE ROUTES START =============================
 @app.route("/")
 def index():
     return render_template(
@@ -307,10 +622,89 @@ def index():
 @app.route("/status")
 def status():
     return jsonify({"status": get_status()})
+    
+# ===== PITCH DECK ROUTES START =======================
 
+# ===== UPLOAD OVERRIDE HELPERS START ====================
+def apply_upload_text_overrides(project_dir, logline_override="", synopsis_override=""):
+    logline_override = (logline_override or "").strip()
+    synopsis_override = (synopsis_override or "").strip()
+
+    if not logline_override and not synopsis_override:
+        return
+
+    deck_content_candidates = [
+        Path(project_dir) / "deck_content.json",
+        Path(project_dir) / "pipeline" / "compile" / "deck_content.json",
+        Path(project_dir) / "pipeline" / "compile" / "final_compiled_payload.json",
+    ]
+
+    for candidate in deck_content_candidates:
+        if not candidate.exists():
+            continue
+
+        try:
+            data = json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        changed = False
+
+        # Common payload-level keys
+        if logline_override:
+            for key in ["logline", "project_logline", "one_line_pitch"]:
+                if key in data:
+                    data[key] = logline_override
+                    changed = True
+
+        if synopsis_override:
+            for key in ["synopsis", "project_synopsis", "story_overview"]:
+                if key in data:
+                    data[key] = synopsis_override
+                    changed = True
+
+        # Common slide structures
+        slide_collections = []
+        for key in ["slides", "deck_slides", "slide_plan"]:
+            value = data.get(key)
+            if isinstance(value, list):
+                slide_collections.append(value)
+
+        for slides in slide_collections:
+            for slide in slides:
+                if not isinstance(slide, dict):
+                    continue
+
+                slide_title = str(slide.get("title", "") or "").lower()
+                slide_type = str(slide.get("type", "") or "").lower()
+
+                if logline_override and ("logline" in slide_title or "logline" in slide_type):
+                    for field in ["title", "subtitle", "body", "content", "text", "copy", "description"]:
+                        if field in slide:
+                            # preserve title if it's literally "Logline"
+                            if field == "title" and str(slide.get(field, "")).strip().lower() == "logline":
+                                continue
+                            slide[field] = logline_override
+                            changed = True
+                            break
+
+                if synopsis_override and ("synopsis" in slide_title or "synopsis" in slide_type):
+                    for field in ["title", "subtitle", "body", "content", "text", "copy", "description"]:
+                        if field in slide:
+                            if field == "title" and str(slide.get(field, "")).strip().lower() == "synopsis":
+                                continue
+                            slide[field] = synopsis_override
+                            changed = True
+                            break
+
+        if changed:
+            candidate.write_text(json.dumps(data, indent=2), encoding="utf-8")
+# ===== UPLOAD OVERRIDE HELPERS END ======================
 
 @app.route("/upload", methods=["POST"])
 def upload():
+    submitted_logline = (request.form.get("logline") or "").strip()
+    submitted_synopsis = (request.form.get("synopsis") or "").strip()
     file = request.files.get("script")
 
     if not file or file.filename == "":
@@ -372,6 +766,19 @@ def upload():
         encoding="utf-8",
     )
 
+    # === ENSURE OVERRIDE FILE EXISTS IN ALL PIPELINE PATHS ===
+    try:
+        override_data = json.dumps(upload_context, indent=2)
+        (BASE_DIR / "user_upload_context.json").write_text(override_data, encoding="utf-8")
+        (BASE_DIR / "input").mkdir(exist_ok=True)
+        (BASE_DIR / "input" / "user_upload_context.json").write_text(override_data, encoding="utf-8")
+        (BASE_DIR / "pipeline").mkdir(exist_ok=True)
+        (BASE_DIR / "pipeline" / "user_upload_context.json").write_text(override_data, encoding="utf-8")
+        print("✅ Upload overrides written to all known paths")
+    except Exception as e:
+        print("⚠️ Failed to write override files:", e)
+
+
     try:
         set_status("ANALYZING")
         log_path = BASE_DIR / "pipeline.log"
@@ -410,6 +817,7 @@ def upload():
     return ("OK", 200)
 
 
+# ===== DEMO ROUTES START =============================
 @app.route("/demo", methods=["POST"])
 def demo():
     if not DEMO_DECK.exists():
@@ -431,6 +839,7 @@ def download_latest_pdf():
     return send_file(LATEST_PDF, as_attachment=True)
 
 
+# ===== ANALYZE ROUTES START ==========================
 @app.route("/analyze-script-pass", methods=["POST"])
 def analyze_script_pass():
     file = request.files.get("script")
@@ -560,6 +969,189 @@ def analyzer():
     return jsonify(data)
 
 
+
+# ===== REFINE DECK ROUTES START =======================
+@app.route("/latest-slide-plan")
+def latest_slide_plan():
+    slide_plan_file = find_latest_slide_plan_file()
+
+    if not slide_plan_file or not slide_plan_file.exists():
+        return jsonify({
+            "error": "No generated slide plan found yet.",
+            "slides": [],
+            "slide_count": 0,
+        }), 404
+
+    try:
+        with open(slide_plan_file, "r", encoding="utf-8") as f:
+            slide_plan_data = json.load(f)
+    except Exception as e:
+        return jsonify({"error": f"Could not read latest slide plan: {e}"}), 500
+
+    cache_key = make_slide_payload_cache_key(slide_plan_file)
+    if _LATEST_SLIDE_PAYLOAD_CACHE.get("key") == cache_key and _LATEST_SLIDE_PAYLOAD_CACHE.get("payload") is not None:
+        payload = dict(_LATEST_SLIDE_PAYLOAD_CACHE["payload"])
+    else:
+        payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=slide_plan_file)
+        payload["source_file"] = str(slide_plan_file.relative_to(BASE_DIR)) if slide_plan_file.is_relative_to(BASE_DIR) else str(slide_plan_file)
+        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = cache_key
+        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
+    return jsonify(payload)
+
+
+@app.route("/project-file")
+def project_file():
+    raw_path = unquote((request.args.get("path") or "").strip())
+    if not raw_path:
+        abort(404)
+    candidate = (BASE_DIR / raw_path).resolve()
+    if not ensure_relative_to_base(candidate) or not candidate.exists() or not candidate.is_file():
+        abort(404)
+    return send_file(candidate, as_attachment=False, conditional=True)
+
+@app.route("/refine-deck", methods=["POST"])
+def refine_deck():
+    data = request.get_json(silent=True) or {}
+    slides = data.get("slides", [])
+
+    if not slides or not isinstance(slides, list):
+        return jsonify({"error": "No slide data provided."}), 400
+
+    try:
+        prs = Presentation()
+
+        for slide_data in slides:
+            title = str(slide_data.get("title", "") or "").strip()
+            subtitle = str(slide_data.get("subtitle", "") or "").strip()
+            body = str(slide_data.get("body", "") or "").strip()
+
+            slide = prs.slides.add_slide(prs.slide_layouts[1])
+            slide.shapes.title.text = title or "Untitled Slide"
+
+            content = slide.placeholders[1].text_frame
+            content.clear()
+
+            first_line = subtitle or body or ""
+            if first_line:
+                content.paragraphs[0].text = first_line
+
+            if subtitle and body:
+                p = content.add_paragraph()
+                p.text = body
+
+        prs.save(str(LATEST_PPTX))
+
+        slide_plan_payload = {
+            "title": slides[0].get("title", "Refined Deck") if slides else "Refined Deck",
+            "slides": [
+                {
+                    "title": str(slide_data.get("title", "") or "").strip(),
+                    "body": str(slide_data.get("body", "") or "").strip(),
+                    "layout": str(slide_data.get("layout", "") or "text").strip(),
+                    "stage": str(slide_data.get("stage", "") or "refine").strip(),
+                    "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
+                }
+                for slide_data in slides
+            ],
+            "slide_count": len(slides),
+        }
+        try:
+            (BASE_DIR / "slide_plan.json").write_text(
+                json.dumps(slide_plan_payload, indent=2),
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
+
+        return jsonify({
+            "message": "Your refined deck has been rebuilt successfully.",
+            "deck": LATEST_PPTX.name
+        })
+
+    except Exception as e:
+        return jsonify({"error": f"Refine rebuild failed: {e}"}), 500
+
+# ===== REFINE DECK ROUTES END =========================
+
+# ===== ACTOR PREP ROUTES START =======================
+@app.route("/actor-prep-pass", methods=["POST"])
+def actor_prep_pass():
+    character_name = (request.form.get("character_name") or "").strip()
+    pasted_text = (request.form.get("script_text") or "").strip()
+    file = request.files.get("script")
+
+    if not character_name:
+        return jsonify({"error": "Please enter the role you are preparing."}), 400
+
+    script_text = ""
+    source_mode = "paste"
+
+    if file and file.filename:
+        source_mode = "upload"
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
+
+        if not script_text.strip() and not pasted_text:
+            return jsonify({
+                "error": "The formatted script could not be read cleanly.",
+                "needs_paste": True,
+                "message": "Please paste the script text to continue."
+            }), 422
+
+    if pasted_text:
+        script_text = pasted_text
+        source_mode = "paste"
+
+    if not script_text.strip():
+        return jsonify({"error": "No script text was provided."}), 400
+
+    log_usage("actor_prep_start", role=character_name, mode=source_mode)
+
+    try:
+        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
+    except Exception as e:
+        log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
+        return jsonify({"error": f"Actor preparation failed: {e}"}), 500
+
+    if not LATEST_ACTOR_PREP_PDF.exists():
+        log_usage("actor_prep_complete", success=False, role=character_name, error="actor_pdf_missing")
+        return jsonify({"error": "Actor prep PDF was not created."}), 500
+
+    log_usage("actor_prep_complete", success=True, role=character_name)
+
+    return jsonify({
+        "summary_note": f"Your actor preparation packet for {character_name} is ready.",
+        "report_pdf": str(LATEST_ACTOR_PREP_PDF.name),
+    })
+
+
+@app.route("/output/latest_actor_prep_report.pdf")
+def actor_prep_latest_pdf():
+    if not LATEST_ACTOR_PREP_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False)
+
+
+@app.route("/output/latest_actor_prep_report.pdf")
+def actor_prep_latest_download_pdf():
+    if not LATEST_ACTOR_PREP_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=True)
+
+# ===== ACTOR PREP ROUTES END =========================
+
+# ===== APP RUN START =================================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.environ.get("PORT", 7000))
     app.run(host="0.0.0.0", port=port)
+
+
+# ===== APP RUN END ===================================

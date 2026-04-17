@@ -1,0 +1,2326 @@
+<!DOCTYPE html>
+<!-- BETA v2_0 BUILD 1.1  -- STABLE --->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EVOLUM BETA V_2 WORK</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #0b0b0b, #1a1a1a);
+    color: white;
+    overflow: hidden;
+    justify-content: space-between;
+}
+.container {
+    width: 1040px;
+    margin: 0 auto;
+    padding: 6px 9px 4px;
+    text-align: center;
+    box-sizing: border-box;
+    height: 100vh;
+    overflow: hidden;
+    justify-content: space-between;
+    display: flex;
+    flex-direction: column;
+}
+.logo {
+    margin: 0 auto 6px;
+    text-align: center;
+    padding-top: 8px;
+}
+.logo-evolum {
+    font-size: 30px;
+    font-weight: 900;
+    background: linear-gradient(90deg, #ffffff, #dcdcdc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 0.5px;
+}
+.logo-img {
+    width: 200px;
+    max-width: 90%;
+    display: block;
+    margin: 0 auto 4px;
+}
+.logo-divider {
+    font-size: 22px;
+    color: #52a8ff;
+    margin: 0 8px;
+    vertical-align: 2px;
+}
+.logo-sub {
+    font-size: 16px;
+    font-weight: 700;
+    color: #cfcfcf;
+    letter-spacing: 0.2px;
+}
+.logo-line {
+    width: 220px;
+    height: 2px;
+    margin: 4px auto 6px;
+    background: linear-gradient(90deg, transparent, #ff7a00, transparent);
+    opacity: 0.9;
+}
+.tagline {
+    margin-top: -8px;
+    font-weight: 600;
+    font-size: 20px;
+    letter-spacing: 0.5px;
+    opacity: 0.85;
+}
+.primary-button {
+    padding: 12px 20px;
+    background: #ff7a00;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+.secondary-button {
+    padding: 12px 20px;
+    background: transparent;
+    border: 1px solid rgba(255, 122, 0, 1);
+    border-radius: 10px;
+    color: #cfcfcf;
+    font-weight: 600;
+    cursor: pointer;
+}
+.secondary-button:hover {
+    border-color: #ff7a00;
+    color: white;
+}
+.button-row {
+    width: 520px;
+    margin: 20px auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+.shell {
+    width: 100%;
+    max-width: 980px;
+    margin: 0 auto;
+    flex: 1;
+}
+.card {
+    background: #151515;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+    transition: 0.2s;
+}
+.card:hover {
+    border-color: #ff7a00;
+}
+.section-title {
+    font-size: 28px;
+    font-weight: 800;
+    margin-top: 0;
+}
+.section-subtitle {
+    color: #cfcfcf;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+.choice-stack {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+.choice {
+    background: #1a1a1a;
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.12);
+    text-align: center;
+}
+.choice:hover {
+    border-color: #ff7a00;
+}
+.choice.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: rgba(255,255,255,0.08);
+}
+.choice.disabled:hover {
+    border-color: rgba(255,255,255,0.08);
+}
+.choice-title {
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 4px;
+    text-align: center;
+}
+.choice-copy {
+    color: #d0d0d0;
+    font-size: 11px;
+    line-height: 1.4;
+}
+.workspace-panel {
+    display: none;
+    margin-top: 4px;
+    text-align: left;
+    background: #111111;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
+    max-height: 280px;
+    overflow-y: auto;
+    flex: 1;
+}
+#uploadState {
+    max-height: 440px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 10px;
+}
+.workspace-title {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+}
+.workspace-copy {
+    color: #cfcfcf;
+    line-height: 1.35;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+.box {
+    background: #0f0f0f;
+    padding: 6px 8px;
+    border-radius: 10px;
+    margin: 12px auto;
+    width: 520px;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.label {
+    display: block;
+    font-size: 10px;
+    color: #e6b800;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    font-weight: 600;
+    letter-spacing: 0.5;
+}
+.value {
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+.modal.show {
+    display: flex;
+}
+.modal-content {
+    background: #141414;
+    padding: 18px;
+    border-radius: 14px;
+    width: 90%;
+    max-width: 430px;
+    max-height: 85vh;
+    overflow-y: auto;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.15);
+    text-align: center;
+}
+.modal-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 22px;
+    cursor: pointer;
+}
+input[type="file"], input[type="email"], input[type="password"], input[type="text"], textarea {
+    width: 100%;
+    margin: 8px auto;
+    max-width: 520px;
+    margin-top: 6px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: #0c0c0c;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: white;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    display: block;
+}
+textarea {
+    resize: vertical;
+    min-height: 84px;
+}
+.login-switch {
+    margin-top: 10px;
+    color: #aaa;
+    cursor: pointer;
+    font-size: 13px;
+}
+.upload-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 20px;
+}
+.upload-actions .primary-button {
+    width: 100%;
+    margin-bottom: 0;
+    padding: 10px 16px;
+}
+.upload-note {
+    margin-top: 6px;
+    color: #9f9f9f;
+    font-size: 11px;
+}
+.field-group {
+    text-align: left;
+    max-width: 520px;
+    margin: 0 auto 12px;
+    opacity: 0.8;
+}
+.field-help {
+    color: #9f9f9f;
+    font-size: 11px;
+    margin-top: -4px;
+    margin-bottom: 8px;
+}
+.footer-powered {
+    margin-top: auto;
+    font-size: 11px;
+    color: #8f8f8f;
+    text-align: center;
+    padding-top: 3px;
+    opacity: 10.0;
+}
+.info-copy {
+    color: #cfcfcf;
+    line-height: 1.5;
+    margin: 12px 0 16px;
+    text-align: center;
+}
+.build-meta {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    margin-top: 10px;
+    overflow: hidden;
+    justify-content: space-between;
+}
+.progress-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff7a00, #ffb347);
+    border-radius: 999px;
+    transition: width 0.45s ease;
+}
+.build-status-line {
+    color: #52a8ff;
+    font-weight: 700;
+}
+.build-stage-line {
+    color: #cfcfcf;
+}
+.bottom-build-meta {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #0a0a0a;
+    border: 1px solid rgba(82,168,255,0.18);
+    border-radius: 12px;
+}
+.terminal-log {
+    background: #0a0a0a;
+    border: 1px solid rgba(82,168,255,0.18);
+    border-radius: 12px;
+    padding: 10px;
+    min-height: 170px;
+    max-height: 180px;
+    overflow-y: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #cfe7ff;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.complete-panel {
+    max-height: 70vh;
+    overflow: hidden;
+    display: none;
+    background: #0a0a0a;
+    border: 1px solid rgba(82,168,255,0.18);
+    border-radius: 12px;
+    padding: 16px 16px;
+    text-align: center;
+}
+body.active-build.complete-mode .workspace-title {
+    display: none;
+}
+.complete-title {
+    font-size: 28px;
+    font-size: 34px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.complete-copy {
+    color: #cfcfcf;
+    font-size: 18px;
+    line-height: 1.45;
+    margin-bottom: 12px;
+}
+.complete-actions {
+    margin-bottom: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+}
+.complete-actions .primary-button,
+.complete-actions .secondary-button {
+    min-width: 160px;
+    padding: 12px 18px;
+    font-size: 14px;
+    margin-bottom: 0;
+}
+.deck-preview-strip {
+    max-height: 260px;
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 10px 2px 14px;
+    margin: 10px 0 6px;
+    scroll-snap-type: x proximity;
+}
+.deck-preview-card {
+    min-width: 170px;
+    max-width: 170px;
+    background: #101010;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 8px;
+    scroll-snap-align: start;
+    flex-shrink: 0;
+}
+.deck-preview-card img {
+    width: 100%;
+    height: 225px;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.deck-preview-card-title {
+    color: #cfcfcf;
+    font-size: 11px;
+    margin-top: 8px;
+    line-height: 1.35;
+}
+.terminal-prompt { color: #52a8ff; }
+.terminal-accent { color: #ffb25c; }
+.terminal-success { color: #8be28b; }
+
+
+/* PASS 1 — Deck Complete workspace only */
+body.active-build.complete-mode .container {
+    width: min(1280px, calc(100vw - 40px));
+    max-width: 1280px;
+    padding: 10px 20px 8px;
+}
+body.active-build.complete-mode .shell {
+    max-width: 1240px;
+    width: 100%;
+}
+body.active-build.complete-mode .card {
+    padding: 16px 18px 14px;
+    min-height: 700px;
+    display: flex;
+    flex-direction: column;
+}
+body.active-build.complete-mode #analyzerPanel {
+    max-height: none;
+    overflow: hidden;
+}
+body.active-build.complete-mode .complete-panel {
+    flex: 1;
+    max-height: none;
+    min-height: 620px;
+    padding: 20px 22px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+body.active-build.complete-mode .complete-title {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+body.active-build.complete-mode .complete-copy {
+    font-size: 20px;
+    max-width: 900px;
+    margin: 0 auto 12px;
+}
+body.active-build.complete-mode .deck-preview-strip {
+    flex: 1;
+    max-height: none;
+    min-height: 0;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 8px 4px 12px;
+    margin: 8px 0 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+body.active-build.complete-mode .deck-preview-card {
+    min-width: 150px;
+    max-width: 150px;
+    padding: 8px;
+}
+body.active-build.complete-mode .deck-preview-card img {
+    height: 190px;
+}
+body.active-build.complete-mode .deck-preview-card-title {
+    font-size: 12px;
+    margin-top: 6px;
+}
+body.active-build.complete-mode .complete-actions {
+    margin-top: 10px;
+    gap: 12px;
+}
+body.active-build.complete-mode .complete-actions .primary-button,
+body.active-build.complete-mode .complete-actions .secondary-button {
+    min-width: 190px;
+    padding: 13px 22px;
+    font-size: 15px;
+}
+
+
+/* PASS 2 — Vertical compression for deck-complete + refine workspace */
+body.active-build.complete-mode .container {
+    width: min(1320px, calc(100vw - 28px));
+    max-width: 1320px;
+    padding: 6px 14px 4px;
+}
+body.active-build.complete-mode .shell {
+    max-width: 1280px;
+}
+body.active-build.complete-mode .card {
+    padding: 10px 12px 8px;
+    min-height: 0;
+}
+body.active-build.complete-mode #analyzerPanel {
+    padding: 8px;
+    margin-top: 2px;
+}
+body.active-build.complete-mode .complete-panel {
+    min-height: 0;
+    padding: 10px 12px 8px;
+}
+body.active-build.complete-mode .complete-title {
+    font-size: 28px;
+    margin-bottom: 4px;
+    line-height: 1.05;
+}
+body.active-build.complete-mode .complete-copy {
+    font-size: 12px;
+    line-height: 1.3;
+    max-width: 860px;
+    margin: 0 auto 6px;
+}
+body.active-build.complete-mode .deck-preview-strip {
+    gap: 10px;
+    padding: 4px 2px 6px;
+    margin: 4px 0 4px;
+}
+body.active-build.complete-mode .deck-preview-card {
+    min-width: 118px;
+    max-width: 118px;
+    padding: 6px;
+}
+body.active-build.complete-mode .deck-preview-card img {
+    height: 138px;
+}
+body.active-build.complete-mode .deck-preview-card-title {
+    font-size: 10px;
+    line-height: 1.2;
+    margin-top: 4px;
+}
+body.active-build.complete-mode .complete-actions {
+    margin-top: 4px;
+    gap: 8px;
+}
+body.active-build.complete-mode .complete-actions .primary-button,
+body.active-build.complete-mode .complete-actions .secondary-button {
+    min-width: 150px;
+    padding: 8px 14px;
+    font-size: 12px;
+}
+body.active-build.complete-mode .footer-powered {
+    font-size: 10px;
+    padding-top: 4px;
+    margin-top: 4px;
+}
+
+body.active-build.complete-mode #refinementStage .workspace-title {
+    font-size: 16px !important;
+    margin-bottom: 2px !important;
+}
+body.active-build.complete-mode #refinementStage .workspace-copy {
+    margin-bottom: 2px !important;
+}
+body.active-build.complete-mode #refinementStage .refine-meta {
+    margin-bottom: 8px;
+}
+body.active-build.complete-mode #refinementStage .meta-chip {
+    padding: 6px 10px;
+    font-size: 11px;
+}
+body.active-build.complete-mode #refinementStage .refine-layout {
+    max-height: none;
+    gap: 12px;
+}
+body.active-build.complete-mode #refinementStage .preview-panel,
+body.active-build.complete-mode #refinementStage .edit-panel {
+    max-height: none;
+    overflow: hidden;
+    padding: 10px;
+}
+body.active-build.complete-mode #refinementStage .panel-title {
+    font-size: 15px;
+    margin-bottom: 6px;
+}
+body.active-build.complete-mode #refinementStage .slide-preview-wrap {
+    padding: 8px;
+}
+body.active-build.complete-mode #refinementStage .slide-preview-img {
+    height: 180px;
+}
+body.active-build.complete-mode #refinementStage .slide-caption {
+    font-size: 10px;
+    margin-top: 6px;
+    line-height: 1.25;
+}
+body.active-build.complete-mode #refinementStage .slide-list {
+    margin-top: 8px;
+    gap: 6px;
+}
+body.active-build.complete-mode #refinementStage .slide-pill {
+    padding: 4px 8px;
+    font-size: 10px;
+}
+body.active-build.complete-mode #refinementStage .field-group {
+    margin: 0 auto 8px;
+}
+body.active-build.complete-mode #refinementStage .label {
+    font-size: 9px;
+    margin-bottom: 2px;
+}
+body.active-build.complete-mode #refinementStage input[type="text"],
+body.active-build.complete-mode #refinementStage textarea {
+    margin-top: 4px;
+    margin-bottom: 6px;
+    padding: 8px;
+    font-size: 12px;
+}
+body.active-build.complete-mode #refinementStage textarea {
+    min-height: 86px;
+}
+body.active-build.complete-mode #refinementStage .field-help {
+    font-size: 10px;
+    margin-top: -2px;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+body.active-build.complete-mode #refinementStage .upload-actions {
+    gap: 8px;
+    margin-top: 6px;
+}
+body.active-build.complete-mode #refinementStage .upload-actions .primary-button,
+body.active-build.complete-mode #refinementStage .upload-actions .secondary-button {
+    padding: 8px 12px;
+    font-size: 12px;
+}
+
+.flow-mode #demoForm,
+.flow-mode #createHeader {
+    display: none;
+}
+.flow-mode .card {
+    padding-top: 8px;
+}
+.flow-mode #uploadState {
+    margin-top: 0;
+}
+
+.active-build {
+    overflow: hidden;
+    justify-content: space-between;
+}
+.active-build #demoForm,
+.active-build #createHeader,
+.active-build #choiceStack {
+    display: none !important;
+}
+.active-build .container {
+    padding: 8px 16px 4px;
+}
+.active-build .logo-line {
+    margin: 3px auto 4px;
+}
+.active-build .tagline {
+    font-size: 12px;
+    margin: 2px 0 4px;
+}
+.active-build .card {
+    padding: 12px;
+}
+body.active-build .workspace-panel {
+    margin-top: 4px;
+    padding: 10px;
+}
+body.active-build .workspace-title {
+    font-size: 18px;
+    margin-bottom: 4px;
+}
+body.active-build .workspace-copy {
+    font-size: 12px;
+    margin-bottom: 6px;
+}
+body.active-build .build-meta {
+    display: flex;
+}
+body.active-build .terminal-log {
+    min-height: 150px;
+    max-height: 160px;
+    padding: 8px;
+    line-height: 1.35;
+}
+body.active-build .upload-actions {
+    gap: 6px;
+    margin-top: 6px;
+}
+body.active-build .upload-actions .primary-button {
+    padding: 8px 14px;
+    font-size: 12px;
+}
+body.active-build.complete-mode #analyzerPanel > .upload-actions {
+    display: none;
+}
+body.active-build.complete-mode #refinementStage .upload-actions {
+    display: grid !important;
+}
+
+@media (max-width: 980px) {
+    .container {
+        width: min(100%, 960px);
+    }
+    .home-card-grid {
+        max-width: 100%;
+    }
+    .choices-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .home-module-card {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 780px) {
+    body { overflow: auto; }
+    .container { min-height: auto; width: 100%; }
+    .workspace-panel { max-height: none; }
+    #uploadState {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    .logo-evolum { font-size: 26px; }
+    .logo-divider { font-size: 18px; margin: 0 6px; }
+    .logo-sub { font-size: 14px; }
+    .terminal-log { max-height: none; }
+    .build-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .home-intro {
+        font-size: 16px;
+        margin-bottom: 14px;
+    }
+    .choice-title {
+        font-size: 24px;
+    }
+    .choice-copy {
+        font-size: 15px;
+        min-height: 0;
+    }
+}
+#analyzePassModal .modal-content,
+#actorPrepCompleteModal .modal-content {
+    max-width: 760px;
+    width: 92%;
+}
+#analyzePassModal .modal-content,
+#actorPrepCompleteModal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+#actorPrepCompleteModal h3 {
+    text-align: center;
+    color: #00ff88;
+}
+#actorPrepCompleteModal h3,
+#actorPrepCompleteModal .complete-copy {
+    text-align: center;
+}
+.upload-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+.value {
+    text-align: left !important;
+}
+#passTheme {
+    text-align: left !important;
+    display: block;
+    width: 100%;
+}
+#passContinueButton {
+    width: auto;
+    padding: 12px 28px;
+    font-size: 16px;
+}
+#analyzePassModal h3 {
+    text-align: center;
+}
+#analyzePassModal h3 {
+    text-align: center;
+    color: #00ff88;
+}
+input,
+textarea {
+    width: 100%;
+    max-width: 520px;
+    margin: 8px auto;
+    display: block;
+}
+input[type="file"] {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+    display: block;
+}
+.button-row {
+    width: 520px;
+    margin: 20px auto;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+body {
+    overflow-y: hidden;
+}
+.upload-actions .primary-button {
+    width: 180px;
+    padding: 10px 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.workspace-panel {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.analysis-scroll {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 12px;
+}
+#uploadModal .modal-content,
+#infoModal .modal-content,
+#uploadPassModal .modal-content,
+#analyzePassModal .modal-content,
+#actorPrepCompleteModal .modal-content {
+    text-align: center;
+}
+#uploadModal h3,
+#uploadModal .info-copy,
+#infoModal h3,
+#infoModal .info-copy,
+#uploadPassModal h3,
+#uploadPassModal .complete-copy,
+#analyzePassModal h3,
+#analyzePassModal .complete-copy,
+#actorPrepCompleteModal h3,
+#actorPrepCompleteModal .complete-copy {
+    text-align: center;
+}
+#analyzerPanel .workspace-title,
+#analyzerPanel .workspace-copy {
+    text-align: center;
+}
+#liveProcessLog {
+    text-align: left;
+}
+    .home-intro {
+    margin: 6px auto 18px;
+    max-width: 760px;
+    color: #d9d9d9;
+    font-size: 18px;
+    line-height: 1.45;
+    text-align: center;
+}
+.home-card-grid {
+    width: 100%;
+    max-width: 980px;
+    margin: 6px auto 0;
+}
+.choices-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 22px;
+    justify-content: center;
+    align-items: stretch;
+    margin-top: 10px;
+}
+
+.choice {
+    cursor: pointer;
+    border-radius: 18px;
+    transition: 0.2s ease;
+}
+
+.choice:hover {
+    transform: translateY(-4px);
+}
+.home-module-card {
+    min-height: 320px;
+    padding: 18px 18px 16px;
+    background: linear-gradient(180deg, rgba(30,30,30,0.98), rgba(18,18,18,0.98));
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 12px;
+}
+.home-module-card:hover {
+    border-color: rgba(255,122,0,0.9);
+    box-shadow: 0 14px 34px rgba(0,0,0,0.34);
+}
+.home-thumb {
+    width: 100%;
+    height: 120px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.10);
+    overflow: hidden;
+    background: #0f0f0f;
+    position: relative;
+}
+.home-thumb::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.08));
+    pointer-events: none;
+}
+.thumb-analyzer {
+    background:
+        linear-gradient(135deg, rgba(255,122,0,0.18), rgba(82,168,255,0.08)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 420'%3E%3Crect width='800' height='420' fill='%23101010'/%3E%3Crect x='78' y='48' width='290' height='330' rx='18' fill='%23191919' stroke='rgba(255,255,255,0.12)'/%3E%3Crect x='432' y='72' width='290' height='40' rx='10' fill='%23222222'/%3E%3Crect x='432' y='134' width='240' height='18' rx='9' fill='%23ff7a00' opacity='0.72'/%3E%3Crect x='432' y='176' width='260' height='14' rx='7' fill='%23333333'/%3E%3Crect x='432' y='205' width='270' height='14' rx='7' fill='%23333333'/%3E%3Crect x='432' y='234' width='248' height='14' rx='7' fill='%23333333'/%3E%3Crect x='432' y='278' width='160' height='32' rx='12' fill='%23262626' stroke='%23ff7a00'/%3E%3Crect x='108' y='92' width='230' height='22' rx='11' fill='%23292929'/%3E%3Crect x='108' y='134' width='188' height='10' rx='5' fill='%23363636'/%3E%3Crect x='108' y='158' width='210' height='10' rx='5' fill='%23363636'/%3E%3Crect x='108' y='204' width='86' height='86' rx='12' fill='rgba(82,168,255,0.18)' stroke='rgba(82,168,255,0.35)'/%3E%3Crect x='208' y='204' width='110' height='12' rx='6' fill='%23363636'/%3E%3Crect x='208' y='228' width='98' height='12' rx='6' fill='%23363636'/%3E%3Crect x='208' y='252' width='120' height='12' rx='6' fill='%23363636'/%3E%3C/svg%3E") center/cover no-repeat;
+}
+.thumb-deck {
+    background:
+        linear-gradient(135deg, rgba(255,122,0,0.14), rgba(255,183,71,0.08)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 420'%3E%3Crect width='800' height='420' fill='%23101010'/%3E%3Crect x='92' y='54' width='616' height='312' rx='22' fill='%23171717' stroke='rgba(255,255,255,0.12)'/%3E%3Crect x='132' y='86' width='248' height='210' rx='16' fill='%230d0d0d' stroke='rgba(255,255,255,0.10)'/%3E%3Crect x='414' y='98' width='238' height='18' rx='9' fill='%23ffffff' opacity='0.9'/%3E%3Crect x='414' y='136' width='202' height='14' rx='7' fill='%23ff7a00' opacity='0.8'/%3E%3Crect x='414' y='188' width='226' height='14' rx='7' fill='%23373737'/%3E%3Crect x='414' y='217' width='238' height='14' rx='7' fill='%23373737'/%3E%3Crect x='414' y='246' width='210' height='14' rx='7' fill='%23373737'/%3E%3Crect x='132' y='312' width='520' height='10' rx='5' fill='%23272727'/%3E%3Crect x='162' y='120' width='188' height='130' rx='14' fill='rgba(255,183,71,0.16)'/%3E%3Ccircle cx='255' cy='183' r='36' fill='rgba(255,122,0,0.28)'/%3E%3Crect x='190' y='176' width='130' height='16' rx='8' fill='rgba(255,255,255,0.08)'/%3E%3C/svg%3E") center/cover no-repeat;
+}
+.thumb-actor {
+    background:
+        linear-gradient(135deg, rgba(82,168,255,0.14), rgba(255,122,0,0.08)),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 420'%3E%3Crect width='800' height='420' fill='%23101010'/%3E%3Ccircle cx='236' cy='180' r='76' fill='rgba(255,255,255,0.06)'/%3E%3Ccircle cx='236' cy='150' r='40' fill='rgba(82,168,255,0.24)'/%3E%3Crect x='182' y='194' width='108' height='88' rx='28' fill='rgba(82,168,255,0.18)'/%3E%3Crect x='372' y='84' width='276' height='32' rx='10' fill='%23232323'/%3E%3Crect x='372' y='132' width='214' height='14' rx='7' fill='%23ff7a00' opacity='0.75'/%3E%3Crect x='372' y='170' width='246' height='14' rx='7' fill='%23373737'/%3E%3Crect x='372' y='199' width='256' height='14' rx='7' fill='%23373737'/%3E%3Crect x='372' y='228' width='224' height='14' rx='7' fill='%23373737'/%3E%3Crect x='372' y='270' width='170' height='34' rx='12' fill='%23232323' stroke='rgba(255,255,255,0.12)'/%3E%3C/svg%3E") center/cover no-repeat;
+}
+.choice-title {
+    font-size: 29px;
+    line-height: 1.08;
+    font-weight: 700;
+    margin-bottom: 0;
+}
+.choice-copy {
+    font-size: 16px;
+    opacity: 1;
+    line-height: 1.45;
+    color: #d8d8d8;
+    margin-top: 0;
+    min-height: 70px;
+}
+.choice-link {
+    margin-top: auto;
+    font-size: 15px;
+    font-weight: 700;
+    color: #f0c15d;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.footer-powered.home-footer {
+    margin-top: 18px;
+    padding-top: 0;
+    font-size: 12px;
+}
+
+
+.refine-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+    text-align: left;
+}
+.meta-chip {
+    background: #0f0f0f;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #cfcfcf;
+}
+.refine-layout {
+    max-height: 60vh;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    align-items: start;
+}
+.preview-panel, .edit-panel {
+    max-height: 55vh;
+    overflow-y: auto;
+    background: #111111;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: left;
+}
+.panel-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+.slide-preview-wrap {
+    background: #0a0a0a;
+    border: 1px solid rgba(82,168,255,0.18);
+    border-radius: 12px;
+    padding: 12px;
+}
+.slide-preview-img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.12);
+    display: block;
+}
+.slide-caption {
+    color: #9f9f9f;
+    font-size: 12px;
+    margin-top: 8px;
+    line-height: 1.4;
+}
+.slide-list {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.slide-pill {
+    border: 1px solid rgba(255,255,255,0.12);
+    background: #0f0f0f;
+    color: #cfcfcf;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 11px;
+}
+.slide-pill.active {
+    border-color: #ff7a00;
+    color: white;
+}
+@media (max-width: 780px) {
+    .refine-layout {
+    max-height: 60vh;
+    overflow: hidden; grid-template-columns: 1fr; }
+}
+
+
+
+/* Upload Script Height Pass */
+#uploadState {
+    max-height: calc(100vh - 250px) !important;
+    overflow: hidden !important;
+    padding: 8px 8px 0 !important;
+}
+#uploadState .workspace-title {
+    font-size: 18px !important;
+    margin-bottom: 4px !important;
+}
+#uploadState .workspace-copy {
+    font-size: 12px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 6px !important;
+}
+#uploadState form {
+    max-width: 720px;
+    margin: 0 auto;
+}
+#uploadState .field-group {
+    max-width: 520px !important;
+    margin: 0 auto 7px !important;
+}
+#uploadState .label {
+    font-size: 9px !important;
+    margin-bottom: 3px !important;
+}
+#uploadState input[type="text"],
+#uploadState input[type="file"],
+#uploadState textarea {
+    margin-top: 3px !important;
+    margin-bottom: 6px !important;
+    padding: 8px !important;
+}
+#uploadState textarea {
+    min-height: 56px !important;
+    max-height: 70px !important;
+    resize: none !important;
+}
+#uploadState .upload-actions {
+    margin-top: 10px !important;
+    gap: 10px !important;
+}
+#uploadState .upload-actions .primary-button {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+}
+#uploadState .upload-actions:last-of-type {
+    margin-bottom: 0 !important;
+}
+.home-thumb-img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 12px;
+    display: block;
+    margin: 10px 0 12px;
+}
+
+</style>
+</head>
+
+<body>
+{% if gate_locked %}
+<div style="display:flex;align-items:center;justify-content:center;height:100vh;">
+    <div style="background:#151515;padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);text-align:center;max-width:400px;width:90%;">
+        <h2 style="margin-bottom:10px;">Beta Access</h2>
+        <p style="color:#cfcfcf;">Enter your access code to continue</p>
+        {% if gate_error %}
+        <div style="color:#ff8a8a;margin-bottom:10px;">{{ gate_error }}</div>
+        {% endif %}
+        <form method="POST" action="/beta-access">
+            <input type="password" name="access_code" placeholder="Access Code" required autofocus style="width:100%;padding:10px;margin-bottom:10px;">
+            <button class="primary-button" type="submit">Enter</button>
+        </form>
+    </div>
+</div>
+{% else %}
+
+<div class="container">
+<div class="logo">
+    <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
+</div>
+
+<form action="/demo" method="POST" target="_blank" id="demoDeckCardForm" style="display:none;"></form>
+
+
+
+    <div class="shell">
+    <div class="card">
+    <div class="home-card-grid">
+    <div class="choices-row">
+
+    <!-- Script Analyzer -->
+    <div class="choice home-module-card" role="button" tabindex="0" onclick="startAnalyzeFlow()" onkeydown="if(event.key==='Enter'||event.key===' '){ event.preventDefault(); startAnalyzeFlow(); }">
+    <div class="choice-title">Script Analyzer</div>
+    <div class="home-thumb thumb-analyzer"></div>
+    <div class="choice-copy">
+        Break down your story, characters, and structure instantly with a clean, professional analysis workflow.
+    </div>
+    <div class="choice-link" onclick="event.stopPropagation(); window.open('/analysis-report/latest.pdf','_blank')">
+        View Demo Analysis
+    </div>
+</div>
+
+
+    <!-- Generate Pitch Deck -->
+<div class="choice home-module-card" onclick="startUploadFlow()">
+    <div class="choice-title">Create Pitch Deck</div>
+    <img src="/static/generate_thumb.jpg" class="home-thumb-img">
+    <div class="choice-copy">
+        Turn your script into a polished visual pitch deck with cinematic slides, clear packaging, and export-ready presentation flow.
+    </div>
+    <div class="choice-link" onclick="event.stopPropagation(); document.getElementById('demoDeckCardForm').submit();">
+    View Demo Deck
+</div>
+
+</div>
+
+    <!-- Actor Preparation -->
+    <div class="choice home-module-card" onclick="startActorPrepFlow()">
+        <div class="choice-title">Actor Preparation</div>
+        <div class="home-thumb thumb-actor"></div>
+        <div class="choice-copy">
+            Generate performance beats, character insight, and actor-facing prep documents built for real rehearsal use.
+        </div>
+        <div class="choice-link" onclick="event.stopPropagation(); window.open('/sample-prep.pdf','_blank')">
+            View Sample Prep
+        </div>
+    </div>
+
+</div>
+</div>
+
+            <div class="workspace-panel" id="analyzerPanel">
+                <div class="workspace-title">Building Your Pitch Deck</div>
+                <div class="workspace-copy" id="buildCopy">Real-time terminal-style pipeline output during deck generation. The process takes from 1-2 mintues, depending on file size.</div>
+                <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
+                <div class="progress-bar" id="buildProgressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div class="build-meta bottom-build-meta" id="buildMeta">
+                    <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
+                    <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
+                </div>
+
+                
+<div class="complete-panel" id="completePanel">
+    <div id="previewStage">
+        <div class="complete-title">Your deck is complete.</div>
+        <div class="complete-copy">
+            Preview your generated deck below. You can download it now or refine it before final export.
+        </div>
+
+        <div class="deck-preview-strip" id="deckPreviewStrip"></div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pptx'">Download PowerPoint</button>
+            <button class="primary-button" type="button" onclick="openRefinementStage()">Refine Deck</button>
+            <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
+        </div>
+    </div>
+
+    <div id="refinementStage" style="display:none;">
+        <div class="workspace-title" style="text-align:center; margin-bottom:6px;">Refine Deck</div>
+        <div class="workspace-copy" style="text-align:center; margin-bottom:6px;"></div>
+
+        <div class="refine-meta">
+            <div class="meta-chip" id="slideCounter">Slide 1 of 5</div>
+            <div class="meta-chip" id="slideType">Title Slide</div>
+        </div>
+
+        <div class="refine-layout">
+            <div class="preview-panel">
+                <div class="panel-title">Slide Preview</div>
+                <div class="slide-preview-wrap">
+                    <img id="refineSlideImage" class="slide-preview-img" src="" alt="Slide preview">
+                    <div class="slide-caption" id="refineSlideCaption">Preview of the currently selected placeholder slide.</div>
+                </div>
+                <div class="slide-list" id="slideList"></div>
+            </div>
+
+            <div class="edit-panel">
+                <div class="panel-title">Edit Slide Content</div>
+
+                <div class="field-group">
+                    <label class="label" for="refineTitleInput">Headline</label>
+                    <input type="text" id="refineTitleInput" placeholder="Slide headline">
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="refineSubtitleInput">Subheading</label>
+                    <input type="text" id="refineSubtitleInput" placeholder="Slide subheading">
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="refineBodyInput">Body Copy</label>
+                    <textarea id="refineBodyInput" placeholder="Edit slide text here"></textarea>
+                    <div class="field-help">These are real editable fields. Your changes should now stay in place while you move through the refine flow. Image selection is the next pass.</div>
+                </div>
+
+                <div class="upload-actions">
+                    <button class="primary-button" type="button" onclick="changePlaceholderImage()">Change Image</button>
+                    <button class="primary-button" type="button" onclick="saveCurrentRefineSlide()">Update Slide</button>
+                </div>
+
+                <div class="upload-actions">
+                    <button class="secondary-button" id="refineBackBtn" type="button" onclick="goPrevRefineSlide()">Back</button>
+                    <button class="secondary-button" id="refineNextBtn" type="button" onclick="goNextRefineSlide()">Next</button>
+                </div>
+
+                <div class="upload-actions">
+                    <button class="secondary-button" type="button" onclick="returnToPreviewStage()">Back to Preview</button>
+                    <button class="primary-button" type="button" onclick="regenerateDeckPlaceholder()">Regenerate Deck</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="upload-actions">
+                </div>
+            </div>
+
+            <div class="workspace-panel" id="uploadState">
+                <div class="workspace-title" style="text-align: center;">Upload Script</div>
+                <div class="workspace-copy" style="text-align: center;">If you have your logline and synopsis written, and or images you would like to use in your pitch deck,<br> add them now to begin the generate pitch deck process.</div>
+
+                <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return validateUploadAndStart();">
+                     <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf" style="display:none;">
+
+                    <div class="field-group">
+                        <label class="label" for="loglineInput">Logline</label>
+                        <input type="text" name="logline" id="loglineInput" placeholder="Optional: enter your own logline">
+                    </div>
+
+                    <div class="field-group">
+                        <label class="label" for="synopsisInput">Synopsis</label>
+                        <textarea name="synopsis" id="synopsisInput" placeholder="Optional: enter your own synopsis"></textarea>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="label" for="posterInput" style="display: inline-block; margin-right: 10px;">Upload Poster</label>
+                        <input type="file" name="poster" id="posterInput" accept="image/png,image/jpeg,image/webp" style="display: inline-block;">
+                    </div>
+
+                    <div class="field-group">
+                        <label class="label" for="imagesInput">Upload Images - Optional: up to 10 images, 1 MB max each.</label>
+                        <input type="file" name="images" id="imagesInput" accept="image/png,image/jpeg,image/webp" multiple>
+                    </div>
+
+                    <div class="upload-actions">
+                        <button class="primary-button" type="submit">Generate Pitch Deck</button>
+                        <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="workspace-panel" id="ideaPanel">
+                <div class="workspace-title">Start From Idea</div>
+                <div class="workspace-copy">This feature is currently in development and will be available in a future update.</div>
+                <div class="upload-actions">
+                    <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
+                </div>
+            </div>
+
+            <div class="footer-powered home-footer">Powered by Developum AI Engine -- Beta Version V1.6 - Build 1.3</div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="infoModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('infoModal')">×</div>
+        <h3 id="infoTitle">Notice</h3>
+        <div class="info-copy" id="infoCopy">This feature is currently unavailable.</div>
+        <button class="primary-button" type="button" id="infoModalActionButton" onclick="handleInfoModalAction()">Continue</button>
+    </div>
+</div>
+
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('uploadModal')">×</div>
+        <h3>Upload Script</h3>
+        <div class="info-copy">Select your script file so we can check it for proper formatting and input integrity.</div>
+        <input type="file" id="uploadAnalyzeFile" accept=".txt,text/plain,.pdf,application/pdf">
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="analyzeSelectedScript()">Analyze Script</button>
+            <button class="primary-button" type="button" onclick="closeModal('uploadModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="uploadPassModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('uploadPassModal')">×</div>
+        <h3>Success! <b>Script Upload Check Complete!</b></h3>
+
+        <div class="complete-copy" id="uploadSummaryCopy">
+            Your script passed the upload check and is ready to move forward.
+        </div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="continueToApprovedUpload()">Continue to Upload</button>
+            <button class="primary-button" type="button" onclick="closeModal('uploadPassModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="analyzePassModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('analyzePassModal')">×</div>
+        <h3>Success! <b>Script Analysis Complete!</b></h3>
+
+        <div class="complete-copy" id="analysisSummaryCopy">
+            DIME puts Zena at the center of a high-pressure world where identity, ambition, and competition collide. There is strong emotional weight here, along with the kind of grounded sports drama energy that can connect with an audience.
+        </div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="window.open('/analysis-report/latest.pdf', '_blank')">View Analysis Report</button>
+            <button class="primary-button" type="button" onclick="window.open('/analysis-report/latest.pdf', '_blank')">Download PDF</button>
+            <button class="primary-button" type="button" onclick="resetCreateProject()">Analyze Another Script</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ===== MODALS: ACTOR PREP FLOW START ================= -->
+<div class="modal" id="actorPrepModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorPrepModal')">×</div>
+        <h3>Actor Preparation</h3>
+        <div class="info-copy">Enter the role you are preparing and choose the script you want analyzed.</div>
+        <input type="text" id="actorRoleInput" placeholder="Enter Role">
+        <input type="file" id="actorPrepFile" accept=".txt,text/plain,.pdf,application/pdf">
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorPrep()">Analyze</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorPrepModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="actorPrepPasteModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorPrepPasteModal')">×</div>
+        <h3>Paste Script Text</h3>
+        <div class="info-copy">The uploaded file could not be read cleanly. Paste the script text below and continue.</div>
+        <textarea id="actorPrepPasteText" placeholder="Paste script text here"></textarea>
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorPrepPaste()">Continue</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorPrepPasteModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="actorPrepCompleteModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorPrepCompleteModal')">×</div>
+        <h3>Success! <b>Actor Preparation Complete!</b></h3>
+
+        <div class="complete-copy" id="actorPrepSummaryCopy">
+            Your actor preparation packet for Finn is ready, with character insight, performance beats, and rehearsal-ready prep.
+        </div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="window.open('/output/latest_actor_prep_report.pdf','_blank')"
+>View Preparation</button>
+            <button class="primary-button" type="button" onclick="window.open('/output/latest_actor_prep_report.pdf','_blank')"
+>Download Preparation</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorPrepCompleteModal'); startActorPrepFlow();">Analyze Another</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODALS: ACTOR PREP FLOW END =================== -->
+
+<script>
+let runStartedAt = null;
+let timerInterval = null;
+let lastStatus = "IDLE";
+let approvedScriptFile = null;
+let buildInFlight = false;
+let sawFreshBuildStatus = false;
+let analyzeFlowMode = null;
+let progressValue = 0;
+let progressInterval = null;
+let infoModalAction = null;
+let activeCompleteView = "preview";
+let latestSlidesLoadedForComplete = false;
+
+const fallbackSlides = [
+    {
+        type: "Title Slide",
+        title: "COURT JESTER",
+        subtitle: "Animated fantasy comedy with heart, music moments, and chaos.",
+        body: "A gifted misfit stumbles into the royal court and becomes the most dangerous fool in the kingdom.",
+        caption: "Preview of the currently selected placeholder slide.",
+        accent: "#ffb347"
+    },
+    {
+        type: "Logline",
+        title: "Logline",
+        subtitle: "The one-line pitch",
+        body: "When a sharp-tongued outsider is pulled into palace politics, he must outwit enemies, protect the kingdom, and prove that laughter can be a weapon.",
+        caption: "Placeholder logline slide preview.",
+        accent: "#ff9955"
+    },
+    {
+        type: "Synopsis",
+        title: "Synopsis",
+        subtitle: "Story overview",
+        body: "Court Jester follows a clever survivor who becomes an unexpected player inside a kingdom full of secrets, danger, and spectacle.",
+        caption: "Placeholder synopsis slide preview.",
+        accent: "#ffc266"
+    },
+    {
+        type: "Characters",
+        title: "Main Characters",
+        subtitle: "Core ensemble",
+        body: "The Jester, the Princess, the Shadow Adviser, and the King each drive a different part of the conflict.",
+        caption: "Placeholder characters slide preview.",
+        accent: "#ff9c3d"
+    },
+    {
+        type: "Why This Project",
+        title: "Why This Project",
+        subtitle: "Tone + audience + hook",
+        body: "Court Jester blends spectacle, comedy, and emotional storytelling into a world that can support franchise thinking.",
+        caption: "Placeholder closing slide preview.",
+        accent: "#ffcf70"
+    }
+];
+
+let refineSlides = JSON.parse(JSON.stringify(fallbackSlides));
+let latestRefineProjectTitle = "UNTITLED PROJECT";
+let currentRefineSlide = 0;
+
+function enterFlowMode(){
+    document.body.classList.add("flow-mode");
+}
+function exitFlowMode(){
+    document.body.classList.remove("flow-mode");
+}
+function enterActiveBuildMode(){
+    document.body.classList.add("active-build");
+}
+function exitActiveBuildMode(){
+    document.body.classList.remove("active-build");
+    document.body.classList.remove("complete-mode");
+}
+function setProgress(value){
+    progressValue = Math.max(0, Math.min(100, value));
+    const fill = document.getElementById("progressFill");
+    if (fill) fill.style.width = progressValue + "%";
+}
+
+function stopProgressCreep(){
+    if (progressInterval){
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+}
+
+function startProgressCreep(target, step, delay){
+    stopProgressCreep();
+    progressInterval = setInterval(() => {
+        if (progressValue >= target){
+            stopProgressCreep();
+            return;
+        }
+        setProgress(progressValue + step);
+    }, delay);
+}
+
+function updateProgressForStatus(status){
+    if (status === "IDLE"){
+        stopProgressCreep();
+        setProgress(0);
+    } else if (status === "UPLOADED"){
+        setProgress(Math.max(progressValue, 12));
+        startProgressCreep(22, 1, 500);
+    } else if (status === "ANALYZING"){
+        setProgress(Math.max(progressValue, 38));
+        startProgressCreep(68, 1.2, 700);
+    } else if (status === "BUILDING"){
+        setProgress(Math.max(progressValue, 78));
+        startProgressCreep(96, 1, 500);
+    } else if (status === "DEMO_RUNNING"){
+        setProgress(Math.max(progressValue, 20));
+        startProgressCreep(60, 1, 650);
+    } else if (status === "COMPLETE"){
+        stopProgressCreep();
+        setProgress(100);
+    } else if (status === "ERROR"){
+        stopProgressCreep();
+    }
+}
+
+function startAnalyzeFlow(){
+    analyzeFlowMode = "analyze";
+    resetCreateProject();
+    showUploadAnalyzeModal();
+}
+
+function startUploadFlow(){
+    analyzeFlowMode = "upload";
+    resetCreateProject();
+    showUploadAnalyzeModal();
+}
+
+function hideWorkspacePanels(){
+    document.getElementById("analyzerPanel").style.display = "none";
+    document.getElementById("uploadState").style.display = "none";
+    document.getElementById("ideaPanel").style.display = "none";
+}
+
+function resumeUploadAfterInfo(){
+    closeModal("infoModal");
+    infoModalAction = null;
+    document.getElementById("uploadModal").classList.add("show");
+}
+
+function closeModal(id){
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("show");
+}
+
+function closeAllModals(){
+    closeModal("loginModal");
+    closeModal("infoModal");
+    closeModal("uploadModal");
+    closeModal("uploadPassModal");
+    closeModal("analyzeFailModal");
+    closeModal("analyzePassModal");
+    closeModal("actorPrepModal");
+    closeModal("actorPrepPasteModal");
+    closeModal("actorPrepPassModal");
+}
+
+function showInfoModal(title, copy, action = null, buttonLabel = "Continue"){
+    document.getElementById("infoTitle").textContent = title;
+    document.getElementById("infoCopy").textContent = copy;
+    infoModalAction = action;
+    const btn = document.getElementById("infoModalActionButton");
+    if (btn) btn.textContent = buttonLabel;
+    document.getElementById("infoModal").classList.add("show");
+}
+
+function handleInfoModalAction(){
+    closeModal("infoModal");
+    if (typeof infoModalAction === "function"){
+        const fn = infoModalAction;
+        infoModalAction = null;
+        fn();
+    } else {
+        infoModalAction = null;
+    }
+}
+
+function showUploadState(){
+    exitActiveBuildMode();
+    enterFlowMode();
+    hideWorkspacePanels();
+
+    const choicesRow = document.querySelector(".choices-row");
+    const uploadState = document.getElementById("uploadState");
+
+    if (choicesRow) choicesRow.style.display = "none";
+    if (uploadState) uploadState.style.display = "block";
+}
+
+function resetCreateProject(){
+    closeAllModals();
+    stopProgressCreep();
+    setProgress(0);
+    exitActiveBuildMode();
+    exitFlowMode();
+    hideWorkspacePanels();
+
+    approvedScriptFile = null;
+    buildInFlight = false;
+    sawFreshBuildStatus = false;
+    activeCompleteView = "preview";
+    currentRefineSlide = 0;
+    latestSlidesLoadedForComplete = false;
+
+    const approvedScriptBox = document.getElementById("approvedScriptBox");
+    const approvedScriptName = document.getElementById("approvedScriptName");
+    const imagesInput = document.getElementById("imagesInput");
+    const posterInput = document.getElementById("posterInput");
+    const loglineInput = document.getElementById("loglineInput");
+    const synopsisInput = document.getElementById("synopsisInput");
+    const choicesRow = document.querySelector(".choices-row");
+
+    if (approvedScriptBox) approvedScriptBox.style.display = "none";
+    if (approvedScriptName) approvedScriptName.textContent = "-";
+    if (imagesInput) imagesInput.value = "";
+    if (posterInput) posterInput.value = "";
+    if (loglineInput) loglineInput.value = "";
+    if (synopsisInput) synopsisInput.value = "";
+    if (choicesRow) choicesRow.style.display = "flex";
+
+    document.getElementById("liveProcessLog").style.display = "block";
+    document.getElementById("buildMeta").style.display = "none";
+    document.getElementById("buildCopy").style.display = "block";
+    document.getElementById("completePanel").style.display = "none";
+    const previewStage = document.getElementById("previewStage");
+    const refinementStage = document.getElementById("refinementStage");
+    if (previewStage) previewStage.style.display = "block";
+    if (refinementStage) refinementStage.style.display = "none";
+}
+
+function showUploadAnalyzeModal(){
+    document.getElementById("uploadModal").classList.add("show");
+}
+
+function openAnalyzePassModal(){
+    closeAllModals();
+    document.getElementById("analyzePassModal").classList.add("show");
+}
+
+function continueToApprovedUpload(){
+    closeAllModals();
+    showUploadState();
+
+    const scriptInput = document.getElementById("scriptInput");
+
+    if (approvedScriptFile && scriptInput) {
+        try {
+            const dt = new DataTransfer();
+            dt.items.add(approvedScriptFile);
+            scriptInput.files = dt.files;
+        } catch (e) {}
+    }
+}
+
+async function analyzeSelectedScript(){
+    const fileInput = document.getElementById("uploadAnalyzeFile");
+
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0){
+        closeModal("uploadModal");
+        document.getElementById("infoTitle").textContent = "Upload Script";
+        document.getElementById("infoCopy").textContent = "Please choose a script file before continuing.";
+        document.getElementById("infoModal").classList.add("show");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const fileName = (file.name || "").toLowerCase();
+    const passes = fileName.endsWith(".txt") || fileName.endsWith(".pdf");
+
+    if (!passes){
+        closeModal("uploadModal");
+        const failModal = document.getElementById("analyzeFailModal");
+        if (failModal) failModal.classList.add("show");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("script", file);
+
+    try {
+        const response = await fetch("/analyze-script-pass", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok){
+            closeModal("uploadModal");
+            const failModal = document.getElementById("analyzeFailModal");
+            if (failModal) failModal.classList.add("show");
+            return;
+        }
+
+        const data = await response.json();
+
+        const summaryEl = document.getElementById("analysisSummaryCopy");
+        if (summaryEl) {
+            summaryEl.textContent =
+                data.summary_note ||
+                "Your script has been analyzed and your full report is ready to view.";
+        }
+
+        closeModal("uploadModal");
+
+        if (analyzeFlowMode === "analyze") {
+            openAnalyzePassModal();
+        } else {
+            approvedScriptFile = file;
+            continueToApprovedUpload();
+        }
+
+    } catch (err) {
+        closeModal("uploadModal");
+        const failModal = document.getElementById("analyzeFailModal");
+        if (failModal) failModal.classList.add("show");
+    }
+}
+
+function validateUploadAndStart(){
+    const form = document.querySelector('#uploadState form');
+    const imagesInput = document.getElementById("imagesInput");
+
+    if (imagesInput && imagesInput.files && imagesInput.files.length > 10){
+        showInfoModal("Upload Images", "Please upload no more than 10 images.");
+        return false;
+    }
+
+    if (imagesInput && imagesInput.files){
+        for (const file of imagesInput.files){
+            if (file.size > 1024 * 1024){
+                showInfoModal("Upload Images", "Each image must be 1 MB or smaller.");
+                return false;
+            }
+        }
+    }
+
+    buildInFlight = true;
+    sawFreshBuildStatus = false;
+    showLiveProcess();
+    setLocalStatus("UPLOADED");
+
+    const formData = new FormData(form);
+
+    fetch("/upload", {
+        method: "POST",
+        body: formData
+    }).catch(err => {
+        console.error("Upload failed:", err);
+    });
+
+    return false;
+}
+
+function showLiveProcess(){
+    exitFlowMode();
+    enterActiveBuildMode();
+    hideWorkspacePanels();
+    stopProgressCreep();
+    setProgress(0);
+
+    document.getElementById("analyzerPanel").style.display = "block";
+    document.getElementById("buildProgressBar").style.display = "block";
+    document.getElementById("liveProcessLog").style.display = "block";
+    document.getElementById("buildCopy").style.display = "block";
+    document.getElementById("buildMeta").style.display = "flex";
+    document.getElementById("completePanel").style.display = "none";
+    document.body.classList.remove("complete-mode");
+}
+
+function escapeHtml(text){
+    return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+}
+
+function renderLiveProcessLog(status){
+    const logEl = document.getElementById("liveProcessLog");
+    if (!logEl) return;
+
+    let lines = [];
+    if (status === "IDLE"){
+        lines = ['[system] waiting for deck generation...','','> pipeline idle','> upload a script and click Generate Deck to begin'];
+    } else if (status === "UPLOADED"){
+        lines = ['[system] build request received','','> intake: screenplay file accepted','> preparing canonical input','> initializing pipeline environment','> waiting for analysis stage...'];
+    } else if (status === "ANALYZING"){
+        lines = ['[system] Analyzing Screenplay...','','> converting script into engine-ready format','> cleaning screenplay content','> sending story into brain pass','> extracting characters','> identifying world and tone','> generating pitch intelligence','> analysis still running...'];
+    } else if (status === "BUILDING"){
+        lines = [
+            '[system] deck generation in progress',
+            '',
+            '> analysis approved',
+            '> creating slide plan',
+            '> selecting visual placements',
+            '> assembling presentation structure',
+            '> building PowerPoint file',
+            '> finalizing export package...',
+            '> preparing delivery...'
+        ];
+    } else if (status === "DEMO_RUNNING"){
+        lines = ['[system] demo build launched','','> loading demo screenplay','> initializing demo pipeline','> analysis queue started','> waiting for deck assembly...'];
+    } else if (status === "COMPLETE"){
+        lines = ['[system] build complete','','> screenplay processed successfully','> analysis complete','> deck assembly complete','> PowerPoint export ready','','[success] preview ready'];
+    } else if (status === "ERROR"){
+        lines = ['[system] pipeline interrupted','','> build error detected','> story analysis may be incomplete','> deck assembly may have stopped early','> check terminal / backend logs for details'];
+    } else {
+        lines = ['[system] processing...','','> pipeline active'];
+    }
+
+    const html = lines.map((line) => {
+        const safe = escapeHtml(line);
+        if (line.startsWith('[success]')) return '<span class="terminal-success">' + safe + '</span>';
+        if (line.startsWith('[system]')) return '<span class="terminal-prompt">' + safe + '</span>';
+        if (line.startsWith('>')) return '<span class="terminal-accent">' + safe + '</span>';
+        return safe;
+    }).join('<br>')
+
+    logEl.innerHTML = html;
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setLocalStatus(status){
+    updateStatusUI(status);
+}
+
+function formatElapsed(seconds){
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
+}
+
+function startTimer(){
+    if (!runStartedAt){ runStartedAt = Date.now(); }
+    if (timerInterval){ return; }
+    timerInterval = setInterval(() => {
+        if (!runStartedAt) return;
+        const elapsedSeconds = Math.floor((Date.now() - runStartedAt) / 1000);
+        const formatted = formatElapsed(elapsedSeconds);
+        document.getElementById("inlineStatusValue").textContent = lastStatus + " • " + formatted;
+    }, 250);
+}
+
+function stopTimer(){
+    if (timerInterval){
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+}
+
+function resetTimer(){
+    runStartedAt = null;
+    stopTimer();
+    document.getElementById("inlineStatusValue").textContent = "IDLE • 00:00";
+}
+
+function makePreviewSlideDataUri(title, subtitle, accent){
+    const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
+        <defs>
+            <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#111111"/>
+                <stop offset="100%" stop-color="#1b1b1b"/>
+            </linearGradient>
+            <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#ff7a00"/>
+                <stop offset="100%" stop-color="${accent}"/>
+            </linearGradient>
+        </defs>
+        <rect width="720" height="960" fill="url(#bg)"/>
+        <rect x="50" y="52" width="620" height="6" rx="3" fill="url(#accent)"/>
+        <rect x="50" y="120" width="620" height="310" rx="20" fill="#0f0f0f" stroke="rgba(255,255,255,0.12)"/>
+        <circle cx="360" cy="275" r="92" fill="rgba(255,122,0,0.12)"/>
+        <rect x="120" y="228" width="480" height="94" rx="16" fill="rgba(255,255,255,0.03)"/>
+        <text x="60" y="520" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#ffffff">${title}</text>
+        <text x="60" y="575" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#cfcfcf">${subtitle}</text>
+        <rect x="60" y="650" width="600" height="16" rx="8" fill="rgba(255,255,255,0.10)"/>
+        <rect x="60" y="688" width="560" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
+        <rect x="60" y="726" width="585" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
+        <rect x="60" y="764" width="520" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
+        <text x="60" y="890" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8f8f8f">Preview mockup for Beta v1.6 flow</text>
+    </svg>`;
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
+function makeAccentForIndex(index){
+    const accents = ["#ffb347", "#ff9955", "#ffc266", "#ff9c3d", "#ffcf70"];
+    return accents[index % accents.length];
+}
+
+function normalizeSlideForRefine(slide, index){
+    const normalized = slide || {};
+    return {
+        type: normalized.type || normalized.stage || normalized.layout || `Slide ${index + 1}`,
+        title: normalized.title || `Slide ${index + 1}`,
+        subtitle: normalized.subtitle || "",
+        body: normalized.body || normalized.content || normalized.text || normalized.copy || "",
+        caption: normalized.caption || "Generated slide preview.",
+        accent: normalized.accent || makeAccentForIndex(index),
+        layout: normalized.layout || "text",
+        stage: normalized.stage || "refine",
+        image_url: normalized.image_url || "",
+        image_name: normalized.image_name || ""
+    };
+}
+
+
+function previewImageSrcForSlide(slide){
+    if (slide && slide.image_url){
+        return slide.image_url;
+    }
+    return makePreviewSlideDataUri((slide && slide.title) || "", (slide && slide.subtitle) || "", (slide && slide.accent) || "#ffb347");
+}
+
+async function syncLatestSlidesForPreview(){
+    const loaded = await loadLatestRefineSlides();
+    if (loaded) latestSlidesLoadedForComplete = true;
+    renderDeckPreview();
+    if (activeCompleteView === "refine") {
+        renderCurrentRefineSlide();
+    }
+    return loaded;
+}
+
+async function loadLatestRefineSlides(){
+    try {
+        const response = await fetch("/latest-slide-plan", { cache: "no-store" });
+        if (!response.ok){
+            throw new Error("no_live_slide_plan");
+        }
+
+        const data = await response.json();
+        const liveSlides = Array.isArray(data.slides) ? data.slides.map((slide, index) => normalizeSlideForRefine(slide, index)) : [];
+
+        if (!liveSlides.length){
+            throw new Error("empty_live_slide_plan");
+        }
+
+        refineSlides = liveSlides;
+        latestRefineProjectTitle = data.title || "UNTITLED PROJECT";
+        currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
+        return true;
+    } catch (err) {
+        refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
+        latestRefineProjectTitle = "UNTITLED PROJECT";
+        currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
+        return false;
+    }
+}
+
+function renderDeckPreview(){
+    const strip = document.getElementById("deckPreviewStrip");
+    if (!strip) return;
+
+    if (!Array.isArray(refineSlides) || !refineSlides.length){
+        strip.innerHTML = "";
+        return;
+    }
+
+    strip.innerHTML = refineSlides.map((slide, index) => `
+        <div class="deck-preview-card">
+            <img src="${previewImageSrcForSlide(slide)}" alt="Preview slide ${index + 1}">
+            <div class="deck-preview-card-title">Slide ${index + 1} • ${slide.type}</div>
+        </div>
+    `).join("");
+}
+
+function renderRefineSlideList(){
+    const list = document.getElementById("slideList");
+    if (!list) return;
+    list.innerHTML = refineSlides.map((slide, index) => {
+        const active = index === currentRefineSlide ? "active" : "";
+        return `<div class="slide-pill ${active}">${index + 1}. ${slide.type}</div>`;
+    }).join("");
+}
+
+function renderCurrentRefineSlide(){
+    if (!Array.isArray(refineSlides) || !refineSlides.length){
+        return;
+    }
+
+    const slide = refineSlides[currentRefineSlide];
+    document.getElementById("slideCounter").textContent = `Slide ${currentRefineSlide + 1} of ${refineSlides.length}`;
+    document.getElementById("slideType").textContent = slide.type;
+    document.getElementById("refineTitleInput").value = slide.title;
+    document.getElementById("refineSubtitleInput").value = slide.subtitle;
+    document.getElementById("refineBodyInput").value = slide.body;
+    document.getElementById("refineSlideImage").src = previewImageSrcForSlide(slide);
+    document.getElementById("refineSlideCaption").textContent = slide.caption || `Preview for ${latestRefineProjectTitle}`;
+    document.getElementById("refineBackBtn").disabled = currentRefineSlide === 0;
+    document.getElementById("refineNextBtn").disabled = currentRefineSlide === refineSlides.length - 1;
+    renderRefineSlideList();
+}
+
+function saveCurrentRefineSlide(){
+    if (!Array.isArray(refineSlides) || !refineSlides.length){
+        return;
+    }
+    const slide = refineSlides[currentRefineSlide];
+    slide.title = document.getElementById("refineTitleInput").value;
+    slide.subtitle = document.getElementById("refineSubtitleInput").value;
+    slide.body = document.getElementById("refineBodyInput").value;
+    renderCurrentRefineSlide();
+    renderDeckPreview();
+}
+
+async function openRefinementStage(){
+    activeCompleteView = "refine";
+    if (!latestSlidesLoadedForComplete){
+        const loaded = await loadLatestRefineSlides();
+        if (loaded) latestSlidesLoadedForComplete = true;
+    }
+    document.getElementById("previewStage").style.display = "none";
+    document.getElementById("refinementStage").style.display = "block";
+    renderDeckPreview();
+    renderCurrentRefineSlide();
+}
+
+function returnToPreviewStage(){
+    saveCurrentRefineSlide();
+    activeCompleteView = "preview";
+    document.getElementById("refinementStage").style.display = "none";
+    document.getElementById("previewStage").style.display = "block";
+    renderDeckPreview();
+}
+
+function goPrevRefineSlide(){
+    saveCurrentRefineSlide();
+    if (currentRefineSlide > 0){
+        currentRefineSlide -= 1;
+        renderCurrentRefineSlide();
+    }
+}
+
+function goNextRefineSlide(){
+    saveCurrentRefineSlide();
+    if (currentRefineSlide < refineSlides.length - 1){
+        currentRefineSlide += 1;
+        renderCurrentRefineSlide();
+    }
+}
+
+function changePlaceholderImage(){
+    showInfoModal("Change Image", "Image selection is the next pass. For now, refine text first.");
+}
+
+async function regenerateDeckPlaceholder(){
+    saveCurrentRefineSlide();
+
+    try {
+        const response = await fetch("/refine-deck", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: latestRefineProjectTitle, slides: refineSlides })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok){
+            showInfoModal("Regenerate Deck", data.error || "Deck regeneration failed.");
+            return;
+        }
+
+        activeCompleteView = "preview";
+        document.getElementById("refinementStage").style.display = "none";
+        document.getElementById("previewStage").style.display = "block";
+        renderDeckPreview();
+
+        showInfoModal("Deck Updated", data.message || "Your refined deck has been rebuilt successfully.");
+    } catch (err) {
+        showInfoModal("Regenerate Deck", "Connection issue during regeneration.");
+    }
+}
+
+// ===== JAVASCRIPT: ACTOR PREP FLOW START ==============
+function startActorPrepFlow(){
+    resetCreateProject();
+    document.getElementById("actorPrepModal").classList.add("show");
+}
+
+async function submitActorPrep(){
+    const role = (document.getElementById("actorRoleInput").value || "").trim();
+    const fileInput = document.getElementById("actorPrepFile");
+    const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
+
+    if (!role){
+        showInfoModal("Actor Preparation", "Please enter the role you are preparing.");
+        return;
+    }
+
+    if (!file){
+        showInfoModal("Actor Preparation", "Please choose a script before continuing.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("character_name", role);
+    formData.append("script", file);
+
+    try {
+        const response = await fetch("/actor-prep-pass", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+
+        if (response.status === 422 && data.needs_paste){
+            closeModal("actorPrepModal");
+            document.getElementById("actorPrepPasteModal").classList.add("show");
+            return;
+        }
+
+        if (!response.ok){
+            showInfoModal("Actor Preparation", data.error || "Actor preparation failed.");
+            return;
+        }
+
+        document.getElementById("actorPrepSummaryCopy").textContent = data.summary_note || "Your actor preparation packet is ready.";
+        closeModal("actorPrepModal");
+        document.getElementById("actorPrepCompleteModal").classList.add("show");
+    } catch (err) {
+        showInfoModal("Actor Preparation", "Actor preparation failed. Please try again.");
+    }
+}
+
+async function submitActorPrepPaste(){
+    const role = (document.getElementById("actorRoleInput").value || "").trim();
+    const pastedText = (document.getElementById("actorPrepPasteText").value || "").trim();
+
+    if (!role){
+        showInfoModal("Actor Preparation", "Please enter the role you are preparing.");
+        return;
+    }
+
+    if (!pastedText){
+        showInfoModal("Actor Preparation", "Please paste the script text to continue.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("character_name", role);
+    formData.append("script_text", pastedText);
+
+    try {
+        const response = await fetch("/actor-prep-pass", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+
+        if (!response.ok){
+            showInfoModal("Actor Preparation", data.error || "Actor preparation failed.");
+            return;
+        }
+
+        document.getElementById("actorPrepSummaryCopy").textContent = data.summary_note || "Your actor preparation packet is ready.";
+        closeModal("actorPrepPasteModal");
+        document.getElementById("actorPrepCompleteModal").classList.add("show");
+    } catch (err) {
+        showInfoModal("Actor Preparation", "Actor preparation failed. Please try again.");
+    }
+}
+// ===== JAVASCRIPT: ACTOR PREP FLOW END ================
+
+
+function updateStatusUI(status){
+    const inlineStatusEl = document.getElementById("inlineStatusValue");
+    const inlineStageEl = document.getElementById("inlineStageValue");
+    const previousStatus = lastStatus;
+
+    lastStatus = status;
+
+    const progress = document.getElementById("progressFill");
+    if (status === "UPLOADED") progress.style.width = "20%";
+    if (status === "ANALYZING") progress.style.width = "50%";
+    if (status === "BUILDING") progress.style.width = "85%";
+    if (status === "COMPLETE") progress.style.width = "100%";
+
+    const activeStatuses = ["UPLOADED", "ANALYZING", "BUILDING", "DEMO_RUNNING"];
+    if (activeStatuses.includes(status)) startTimer();
+
+    if (status === "IDLE"){
+        resetTimer();
+        inlineStageEl.textContent = "Awaiting input...";
+        document.body.classList.remove("complete-mode");
+    } else if (status === "UPLOADED"){
+        inlineStatusEl.textContent = "UPLOADED • 00:00";
+        inlineStageEl.textContent = "Preparing engine";
+    } else if (status === "ANALYZING"){
+        inlineStageEl.textContent = "Analyzing script";
+    } else if (status === "BUILDING"){
+        inlineStageEl.textContent = "Finalizing deck...";
+    } else if (status === "DEMO_RUNNING"){
+        inlineStageEl.textContent = "Preparing engine";
+    } else if (status === "COMPLETE"){
+        stopTimer();
+        buildInFlight = false;
+        document.body.classList.add("complete-mode");
+        document.getElementById("buildProgressBar").style.display = "none";
+        document.getElementById("liveProcessLog").style.display = "none";
+        document.getElementById("buildCopy").style.display = "none";
+        document.getElementById("buildMeta").style.display = "none";
+        document.getElementById("completePanel").style.display = "block";
+
+        if (activeCompleteView === "refine") {
+            document.getElementById("previewStage").style.display = "none";
+            document.getElementById("refinementStage").style.display = "block";
+            if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
+                syncLatestSlidesForPreview().then(() => {
+                    renderCurrentRefineSlide();
+                });
+            }
+        } else {
+            document.getElementById("previewStage").style.display = "block";
+            document.getElementById("refinementStage").style.display = "none";
+            if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
+                syncLatestSlidesForPreview();
+            }
+        }
+    } else if (status === "ERROR"){
+        stopTimer();
+        buildInFlight = false;
+        inlineStageEl.textContent = "Check terminal / backend";
+        document.body.classList.remove("complete-mode");
+        document.getElementById("liveProcessLog").style.display = "block";
+        document.getElementById("buildCopy").style.display = "block";
+        document.getElementById("buildMeta").style.display = "flex";
+        document.getElementById("completePanel").style.display = "none";
+    } else {
+        inlineStageEl.textContent = "Processing";
+        document.body.classList.remove("complete-mode");
+    }
+    updateProgressForStatus(status);
+    renderLiveProcessLog(status);
+}
+
+async function pollStatus(){
+    try {
+        const response = await fetch("/status", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data && data.status) {
+            if (buildInFlight && !sawFreshBuildStatus) {
+                if (data.status === "ANALYZING" || data.status === "BUILDING") {
+                    sawFreshBuildStatus = true;
+                } else {
+                    return;
+                }
+            }
+            updateStatusUI(data.status);
+        }
+    } catch (e) {}
+}
+
+refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
+renderDeckPreview();
+renderCurrentRefineSlide();
+updateStatusUI("IDLE");
+setInterval(pollStatus, 1200);
+pollStatus();
+</script>
+{% endif %}
+</body>
+</html>

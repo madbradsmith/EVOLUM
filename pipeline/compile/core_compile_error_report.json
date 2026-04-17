@@ -1,9 +1,0 @@
-{
-  "status": "failed",
-  "stage": "core_compile",
-  "missing_fields": [
-    "analysis_output.json or packaging_output.json missing"
-  ],
-  "invalid_fields": [],
-  "message": "Core compile halted due to missing or invalid fields."
-}

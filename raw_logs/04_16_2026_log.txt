@@ -1,0 +1,225 @@
+madbrad@penguin:~/BETA/app$ python3 app.py
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:7000
+ * Running on http://100.115.92.195:7000
+Press CTRL+C to quit
+127.0.0.1 - - [16/Apr/2026 20:47:18] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:18] "GET /favicon.ico HTTP/1.1" 404 -
+2026-04-16 20:47:33 | ACCESS GRANTED | code=madbrad | ip=127.0.0.1 | ua=Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36
+USAGE | beta_access | code=madbrad | success=True
+127.0.0.1 - - [16/Apr/2026 20:47:33] "POST /beta-access HTTP/1.1" 302 -
+127.0.0.1 - - [16/Apr/2026 20:47:33] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:33] "GET /status HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:33] "GET /static/logo.png HTTP/1.1" 304 -
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:34] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:36] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:37] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /latest-slide-plan HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /project-file?path=visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg HTTP/1.1" 304 -
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /project-file?path=visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /latest-slide-plan HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /project-file?path=visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /project-file?path=visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /project-file?path=visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /project-file?path=visuals/14_royal_court/royal_throne_room_grand_interior.jpg HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 20:47:38] "GET /project-file?path=visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg HTTP/1.1" 304 -
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:39] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:40] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:41] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:41] "GET /latest-slide-plan HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:42] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:45] "GET /latest-slide-plan HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:45] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:46] "GET /latest-slide-plan HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:46] "GET /status HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:46] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:50] "GET /latest-slide-plan HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:52] "GET /latest-slide-plan HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:52] "GET /status HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:52] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:52] "GET /status HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:52] "GET /status HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 20:47:53] "GET /status HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:54] "GET /latest-slide-plan HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:56] "GET /latest-slide-plan HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:56] "GET /latest-slide-plan HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Conflict': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Stakes': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Why This Movie': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+127.0.0.1 - - [16/Apr/2026 20:47:58] "GET /latest-slide-plan HTTP/1.1" 200 -
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Tone': /home/madbrad/BETA/app/visuals/14_royal_court/royal_throne_room_grand_interior.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Protagonist': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'Logline': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Story Engine': /home/madbrad/BETA/app/visuals/15_satire_power/exaggerated_scale_object_symbolism.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis (2)': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_towers_dramatic_sky.jpg
+🖼️ Using BRAIN STOCK image for 'Hook': /home/madbrad/BETA/app/visuals/15_satire_power/crowd_uniformity_loss_of_identity.jpg
+🖼️ Using BRAIN STOCK image for 'Synopsis': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg
+🖼️ Using BRAIN STOCK image for 'World': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_street_village_old_world.jpg
+🖼️ Using BRAIN STOCK image for title '***Who Invited You?': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/fantasy_castle_wide_storybook.jpg
+🖼️ Using BRAIN STOCK image for 'Reversal': /home/madbrad/BETA/app/visuals/13_fantasy_kingdom/medieval_architecture_courtyard_old_world.jpg

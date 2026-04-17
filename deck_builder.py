@@ -125,40 +125,43 @@ def load_brain_output(project_dir: Path) -> dict:
 
 
 def _stock_image_files(visuals_dir: Path, exts: set[str]) -> list[Path]:
-    files: list[Path] = []
     if not visuals_dir.exists():
-        return files
+        return []
 
-    allowed_prefixes = tuple(f"{i:02d}_" for i in range(1, 9))
+    import re
 
-    for p in visuals_dir.rglob("*"):
-        if not p.is_file() or p.suffix not in exts:
-            continue
+    numbered_top_dirs = []
 
-        rel_parts = p.relative_to(visuals_dir).parts
-        if not rel_parts:
-            continue
+    # Collect ALL folders like 01_, 02_, ... 18_, etc.
+    for child in visuals_dir.iterdir():
+        if child.is_dir() and re.match(r"^\d{2}_", child.name):
+            numbered_top_dirs.append(child)
 
-        top = rel_parts[0]
-        lowered_parts = {part.lower() for part in rel_parts}
+    # Sort so order stays predictable
+    numbered_top_dirs.sort(key=lambda p: p.name.lower())
 
-        if top.lower() == "user_uploaded":
-            continue
-        if top.upper() == "SAFE":
-            continue
-        if "_deck_cache" in lowered_parts:
-            continue
-        if not top.startswith(allowed_prefixes):
-            continue
+    files = []
 
-        files.append(p)
+    # Recursively grab all images from ALL numbered folders
+    for top_dir in numbered_top_dirs:
+        for p in top_dir.rglob("*"):
+            if p.is_file() and p.suffix.lower() in exts:
+                files.append(p)
 
-    return sorted(files)
-
+    return files
 
 _stock_rotation_counters: dict[str, int] = {}
 _user_rotation_counters: dict[str, int] = {}
 _brain_stock_rotation_counters: dict[str, int] = {}
+_brain_folder_usage_counts: dict[str, int] = {}
+
+
+def _top_visual_folder(path: Path) -> str:
+    try:
+        rel_parts = path.relative_to(APP_DIR / "visuals").parts
+        return rel_parts[0] if rel_parts else ""
+    except Exception:
+        return path.parent.name
 
 
 def _select_user_image(current_files: list[Path], lookup_key: str, last_used_name: str = "") -> Optional[Path]:
@@ -338,8 +341,20 @@ def _select_brain_directed_stock_image(
     if not scored:
         return None
 
-    scored.sort(key=lambda item: (-item[0], item[1].name.lower()))
-    candidates = [p for _, p in scored]
+    # Keep only close-score candidates so we preserve relevance,
+    # then prefer folders that have been used less in this build.
+    best_raw_score = max(score for score, _ in scored)
+    score_window = 6
+    close_scored = [(score, p) for score, p in scored if score >= best_raw_score - score_window]
+
+    close_scored.sort(
+        key=lambda item: (
+            _brain_folder_usage_counts.get(_top_visual_folder(item[1]), 0),
+            -item[0],
+            item[1].name.lower(),
+        )
+    )
+    candidates = [p for _, p in close_scored]
 
     rotation_key = f"brain::{normalize_key(slide_title)}"
     start_idx = _brain_stock_rotation_counters.get(rotation_key, 0)
@@ -348,10 +363,14 @@ def _select_brain_directed_stock_image(
         candidate = candidates[(start_idx + offset) % len(candidates)]
         if len(candidates) == 1 or candidate.name != last_used_name:
             _brain_stock_rotation_counters[rotation_key] = (start_idx + offset + 1) % len(candidates)
+            folder_key = _top_visual_folder(candidate)
+            _brain_folder_usage_counts[folder_key] = _brain_folder_usage_counts.get(folder_key, 0) + 1
             return candidate
 
     candidate = candidates[start_idx % len(candidates)]
     _brain_stock_rotation_counters[rotation_key] = (start_idx + 1) % len(candidates)
+    folder_key = _top_visual_folder(candidate)
+    _brain_folder_usage_counts[folder_key] = _brain_folder_usage_counts.get(folder_key, 0) + 1
     return candidate
 
 

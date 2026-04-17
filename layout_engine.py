@@ -37,6 +37,41 @@ def read_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+# ===== USER UPLOAD OVERRIDES START ====================
+def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[str, Any]:
+    override_candidates = [
+        input_path.parent / "user_upload_context.json",
+        input_path.parent / "input" / "user_upload_context.json",
+        input_path.parent / "pipeline" / "user_upload_context.json",
+        Path.cwd() / "user_upload_context.json",
+        Path.cwd() / "input" / "user_upload_context.json",
+        Path.cwd() / "pipeline" / "user_upload_context.json",
+    ]
+
+    for candidate in override_candidates:
+        if not candidate.exists():
+            continue
+        try:
+            override_payload = json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        submitted_logline = clean(override_payload.get("logline", ""))
+        submitted_synopsis = clean(override_payload.get("synopsis", ""))
+
+        if submitted_logline:
+            data["logline"] = submitted_logline
+            print(f"✅ Using uploaded logline override: {candidate}")
+        if submitted_synopsis:
+            data["synopsis"] = submitted_synopsis
+            print(f"✅ Using uploaded synopsis override: {candidate}")
+
+        return data
+
+    return data
+# ===== USER UPLOAD OVERRIDES END ======================
+
+
 def word_count(text: str) -> int:
     return len(clean(text).split())
 
@@ -209,6 +244,7 @@ def main() -> None:
         raise SystemExit(1)
 
     data = read_json(input_path)
+    data = apply_user_upload_overrides(data, input_path)
     plan = build_slide_plan(data)
     DEFAULT_OUTPUT.write_text(json.dumps(plan, indent=2), encoding="utf-8")
     print("✅ Full slide plan generated")
