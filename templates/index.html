@@ -41,7 +41,7 @@ body {
     letter-spacing: 0.5px;
 }
 .logo-img {
-    width: 200px;
+    width: 230px;
     max-width: 90%;
     display: block;
     margin: 0 auto 4px;
@@ -153,8 +153,8 @@ body {
     border-color: rgba(255,255,255,0.08);
 }
 .choice-title {
-    font-size: 17px;
-    font-weight: 800;
+    font-size: 13px;
+    font-weight: 600;
     color: #ffffff;
     margin-bottom: 4px;
     text-align: center;
@@ -398,15 +398,16 @@ body.active-build.complete-mode .workspace-title {
     display: flex;
     justify-content: center;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     margin-top: 6px;
 }
 .complete-actions .primary-button,
 .complete-actions .secondary-button {
-    min-width: 160px;
-    padding: 12px 18px;
-    font-size: 14px;
+    min-width: 120px;
+    padding: 12px 14px;
+    font-size: 13px;
     margin-bottom: 0;
+    flex: 1;
 }
 .deck-preview-strip {
     max-height: 260px;
@@ -416,7 +417,30 @@ body.active-build.complete-mode .workspace-title {
     padding: 10px 2px 14px;
     margin: 10px 0 6px;
     scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+    scrollbar-color: #ff7a00;
 }
+    
+.deck-preview-strip::-webkit-scrollbar {
+    height: 12px;
+}
+
+.deck-preview-strip::-webkit-scrollbar-track {
+    background: #111111;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.deck-preview-strip::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, #ff7a00, #ffb347);
+    border-radius: 999px;
+    border: 2px solid #111111;
+}
+
+.deck-preview-strip::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, #ff8c1a, #ffc266);
+}
+
 .deck-preview-card {
     min-width: 170px;
     max-width: 170px;
@@ -593,7 +617,7 @@ body.active-build.complete-mode #refinementStage .workspace-copy {
     margin-bottom: 2px !important;
 }
 body.active-build.complete-mode #refinementStage .refine-meta {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 body.active-build.complete-mode #refinementStage .meta-chip {
     padding: 6px 10px;
@@ -601,39 +625,40 @@ body.active-build.complete-mode #refinementStage .meta-chip {
 }
 body.active-build.complete-mode #refinementStage .refine-layout {
     max-height: none;
-    gap: 12px;
+    gap: 10px;
+    grid-template-columns: 0.96fr 1.04fr;
 }
 body.active-build.complete-mode #refinementStage .preview-panel,
 body.active-build.complete-mode #refinementStage .edit-panel {
     max-height: none;
     overflow: hidden;
-    padding: 10px;
-}
-body.active-build.complete-mode #refinementStage .panel-title {
-    font-size: 15px;
-    margin-bottom: 6px;
-}
-body.active-build.complete-mode #refinementStage .slide-preview-wrap {
     padding: 8px;
 }
+body.active-build.complete-mode #refinementStage .panel-title {
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+body.active-build.complete-mode #refinementStage .slide-preview-wrap {
+    padding: 6px;
+}
 body.active-build.complete-mode #refinementStage .slide-preview-img {
-    height: 180px;
+    height: 156px;
 }
 body.active-build.complete-mode #refinementStage .slide-caption {
-    font-size: 10px;
-    margin-top: 6px;
-    line-height: 1.25;
+    font-size: 9px;
+    margin-top: 4px;
+    line-height: 1.2;
 }
 body.active-build.complete-mode #refinementStage .slide-list {
-    margin-top: 8px;
-    gap: 6px;
+    margin-top: 6px;
+    gap: 5px;
 }
 body.active-build.complete-mode #refinementStage .slide-pill {
-    padding: 4px 8px;
-    font-size: 10px;
+    padding: 3px 7px;
+    font-size: 9px;
 }
 body.active-build.complete-mode #refinementStage .field-group {
-    margin: 0 auto 8px;
+    margin: 0 auto 6px;
 }
 body.active-build.complete-mode #refinementStage .label {
     font-size: 9px;
@@ -641,28 +666,28 @@ body.active-build.complete-mode #refinementStage .label {
 }
 body.active-build.complete-mode #refinementStage input[type="text"],
 body.active-build.complete-mode #refinementStage textarea {
-    margin-top: 4px;
-    margin-bottom: 6px;
-    padding: 8px;
+    margin-top: 3px;
+    margin-bottom: 5px;
+    padding: 7px;
     font-size: 12px;
 }
 body.active-build.complete-mode #refinementStage textarea {
-    min-height: 86px;
+    min-height: 72px;
 }
 body.active-build.complete-mode #refinementStage .field-help {
-    font-size: 10px;
-    margin-top: -2px;
-    margin-bottom: 4px;
-    line-height: 1.2;
+    font-size: 9px;
+    margin-top: -1px;
+    margin-bottom: 3px;
+    line-height: 1.15;
 }
 body.active-build.complete-mode #refinementStage .upload-actions {
-    gap: 8px;
-    margin-top: 6px;
+    gap: 6px;
+    margin-top: 4px;
 }
 body.active-build.complete-mode #refinementStage .upload-actions .primary-button,
 body.active-build.complete-mode #refinementStage .upload-actions .secondary-button {
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 7px 10px;
+    font-size: 11px;
 }
 
 .flow-mode #demoForm,
@@ -734,19 +759,26 @@ body.active-build.complete-mode #refinementStage .upload-actions {
     display: grid !important;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
     .container {
-        width: min(100%, 960px);
+        width: min(100%, 1040px);
     }
     .home-card-grid {
         max-width: 100%;
     }
     .choices-row {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 16px;
     }
     .home-module-card {
         min-height: auto;
+    }
+}
+
+@media (max-width: 700px) {
+    .choices-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
     }
 }
 
@@ -903,8 +935,8 @@ body {
 }
 .choices-row {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 22px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
     justify-content: center;
     align-items: stretch;
     margin-top: 10px;
@@ -998,8 +1030,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: 10px;
+    margin-bottom: 10px;
     text-align: left;
 }
 .meta-chip {
@@ -1014,33 +1046,58 @@ body {
     max-height: 60vh;
     overflow: hidden;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 18px;
+    grid-template-columns: 0.96fr 1.04fr;
+    gap: 12px;
     align-items: start;
 }
+.refine-actions-single {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.refine-actions-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.refine-actions-single .primary-button,
+.refine-actions-pair .primary-button,
+.refine-actions-pair .secondary-button {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+}
+
 .preview-panel, .edit-panel {
     max-height: 55vh;
     overflow-y: auto;
     background: #111111;
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 14px;
-    padding: 14px;
+    padding: 10px;
     text-align: left;
 }
 .panel-title {
-    font-size: 18px;
+    font-size: 22px;
     font-weight: 800;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    text-align: center;
 }
 .slide-preview-wrap {
     background: #0a0a0a;
     border: 1px solid rgba(82,168,255,0.18);
     border-radius: 12px;
-    padding: 12px;
+    padding: 8px;
 }
 .slide-preview-img {
     width: 100%;
-    height: 260px;
+    height: 220px;
     object-fit: cover;
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.12);
@@ -1048,14 +1105,14 @@ body {
 }
 .slide-caption {
     color: #9f9f9f;
-    font-size: 12px;
-    margin-top: 8px;
-    line-height: 1.4;
+    font-size: 11px;
+    margin-top: 6px;
+    line-height: 1.3;
 }
 .slide-list {
-    margin-top: 14px;
+    margin-top: 8px;
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
 }
 .slide-pill {
@@ -1063,8 +1120,8 @@ body {
     background: #0f0f0f;
     color: #cfcfcf;
     border-radius: 999px;
-    padding: 6px 10px;
-    font-size: 11px;
+    padding: 4px 8px;
+    font-size: 10px;
 }
 .slide-pill.active {
     border-color: #ff7a00;
@@ -1137,6 +1194,302 @@ body {
     margin: 10px 0 12px;
 }
 
+
+
+/* ===== FEEDBACK + MENU ===== */
+.top-nav-shell {
+    position: fixed;
+    top: 16px;
+    right: 18px;
+    z-index: 1200;
+}
+.hamburger-button {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(20,20,20,0.96);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+    transition: 0.2s ease;
+}
+.hamburger-button:hover {
+    border-color: rgba(255,122,0,0.9);
+    transform: translateY(-1px);
+}
+.hamburger-lines {
+    width: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.hamburger-lines span {
+    display: block;
+    height: 2px;
+    border-radius: 999px;
+    background: white;
+}
+.top-nav-menu {
+    display: none;
+    position: absolute;
+    top: 56px;
+    right: 0;
+    min-width: 220px;
+    background: rgba(18,18,18,0.98);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.34);
+    overflow: hidden;
+}
+.top-nav-menu.show {
+    display: block;
+}
+.top-nav-item {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #e7e7e7;
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.top-nav-item:last-child {
+    border-bottom: none;
+}
+.top-nav-item:hover {
+    background: rgba(255,122,0,0.12);
+    color: white;
+}
+.feedback-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 1200;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: linear-gradient(180deg, rgba(34,34,34,0.98), rgba(20,20,20,0.98));
+    color: white;
+    box-shadow: 0 14px 34px rgba(0,0,0,0.34);
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+.feedback-fab:hover {
+    border-color: rgba(255,122,0,0.9);
+    transform: translateY(-2px);
+}
+.feedback-fab-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    background: #ff7a00;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+}
+.feedback-fab-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+}
+.feedback-fab-label {
+    font-size: 14px;
+    font-weight: 800;
+}
+.feedback-fab-sub {
+    font-size: 11px;
+    color: #cfcfcf;
+}
+.feedback-quick-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.feedback-chip {
+    background: #0f0f0f;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #d8d8d8;
+    padding: 10px 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.feedback-chip.active,
+.feedback-chip:hover {
+    border-color: #ff7a00;
+    color: white;
+}
+.feedback-help-copy {
+    color: #9f9f9f;
+    font-size: 12px;
+    line-height: 1.4;
+    margin-bottom: 10px;
+}
+@media (max-width: 780px) {
+    .top-nav-shell {
+        top: 12px;
+        right: 12px;
+    }
+    .feedback-fab {
+        right: 12px;
+        bottom: 12px;
+        padding: 10px 12px;
+    }
+    .feedback-fab-sub {
+        display: none;
+    }
+}
+.regen-modal-content{
+    max-width: 520px;
+    width: 92%;
+    text-align: center;
+    padding: 28px 24px;
+}
+
+.regen-status-wrap{
+    margin-top: 18px;
+}
+
+.regen-spinner{ display: none; }
+
+.regen-pulse-text{
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ff7a00;
+    letter-spacing: 0.03em;
+    margin-bottom: 18px;
+    animation: regenTextPulse 2s ease-in-out infinite;
+}
+
+@keyframes regenTextPulse{
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+}
+
+.regen-progress-bar{
+    width: 100%;
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.regen-progress-fill{
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff7a00, #ffb347);
+    border-radius: 999px;
+    transition: width 0.8s ease;
+    animation: regenCrawl 90s linear forwards;
+}
+
+@keyframes regenCrawl{
+    0%   { width: 0%; }
+    80%  { width: 88%; }
+    100% { width: 92%; }
+}
+
+
+.image-option-strip{
+    margin-top: 6px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 2px 0 4px;
+}
+.image-option-thumb{
+    min-width: 66px;
+    width: 66px;
+    background: #0c0c0c;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.image-option-thumb.active{
+    border-color: #ff7a00;
+    box-shadow: 0 0 0 1px rgba(255,122,0,0.35) inset;
+}
+.image-option-thumb img{
+    width: 100%;
+    height: 46px;
+    object-fit: cover;
+    display: block;
+    border-radius: 8px;
+    margin-bottom: 3px;
+}
+.image-option-thumb-label{
+    font-size: 8px;
+    line-height: 1.1;
+    color: #d7d7d7;
+    text-align: center;
+}
+.image-option-empty{
+    color: #8f8f8f;
+    font-size: 11px;
+    margin-top: 8px;
+    text-align: center;
+}
+.image-modal-content{
+    max-width: 760px;
+    width: 94%;
+    text-align: center;
+}
+.image-modal-preview-wrap{
+    background: #0c0c0c;
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    padding: 10px;
+    margin: 10px 0 12px;
+}
+.image-modal-preview{
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    border-radius: 10px;
+    display: block;
+    margin: 0 auto;
+}
+.image-modal-meta{
+    font-size: 12px;
+    color: #cfcfcf;
+    line-height: 1.35;
+    margin-top: 8px;
+}
+.image-modal-nav{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+.image-modal-actions{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+}
+body.active-build.complete-mode #refinementStage .slide-preview-img {
+    height: 210px;
+}
+
 </style>
 </head>
 
@@ -1157,6 +1510,30 @@ body {
 </div>
 {% else %}
 
+
+<div class="top-nav-shell">
+    <button class="hamburger-button" type="button" onclick="toggleTopNavMenu()" aria-label="Open menu">
+        <div class="hamburger-lines">
+            <span></span><span></span><span></span>
+        </div>
+    </button>
+    <div class="top-nav-menu" id="topNavMenu">
+        <button class="top-nav-item" type="button" onclick="window.location.href='/'">Home</button>
+        <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
+        <button class="top-nav-item" type="button" onclick="openHelpModal()">Help</button>
+        <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
+        <button class="top-nav-item" type="button" onclick="openBetaNotesModal()">Beta Notes</button>
+    </div>
+</div>
+
+<div class="feedback-fab" onclick="openFeedbackModal()" role="button" tabindex="0">
+    <div class="feedback-fab-icon">💬</div>
+    <div class="feedback-fab-text">
+        <div class="feedback-fab-label">Feedback</div>
+        <div class="feedback-fab-sub">Tell us what’s working</div>
+    </div>
+</div>
+
 <div class="container">
 <div class="logo">
     <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
@@ -1174,39 +1551,56 @@ body {
     <!-- Script Analyzer -->
    <div class="choice home-module-card" role="button" tabindex="0" onclick="startAnalyzeFlow()" onkeydown="if(event.key==='Enter'||event.key===' '){ event.preventDefault(); startAnalyzeFlow(); }">
     <div class="choice-title">Script Analyzer</div>
-    <div class="home-thumb thumb-analyzer"></div>
+    <img src="/static/analyzer_thumb.jpg" class="home-thumb-img">
     <div class="choice-copy">
-        Break down your story, characters, and structure instantly with a clean, professional analysis workflow.
+         Deep script insights in secconds!
     </div>
-    <div class="choice-link" onclick="event.stopPropagation(); window.open('/analysis-report/latest.pdf','_blank')">
-        View Demo Analysis
+    
+    <div class="choice-link" onclick="event.stopPropagation(); window.open('/static/analysis_dark_v3.pdf','_blank')">
+        <button class="secondary-button" type="button">
+        View Sample</button>
     </div>
 </div>
 
 <!-- Generate Pitch Deck -->
 <div class="choice home-module-card" onclick="startUploadFlow()">
-    <div class="choice-title">Create Pitch Deck</div>
-    <img src="/static/generate_thumb.jpg" class="home-thumb-img">
+    <div class="choice-title">Deck Generator</div>
+    <img src="/static/deck_thumb.jpg" class="home-thumb-img">
     <div class="choice-copy">
-        Turn your script into a polished visual pitch deck with cinematic slides, clear packaging, and export-ready presentation flow.
+        Create your pitch deck in minutes!
     </div>
     <div class="choice-link" onclick="event.stopPropagation(); document.getElementById('demoDeckCardForm').submit();">
-        View Demo Deck
+        <button class="secondary-button" type="button">
+        View Sample</button>
     </div>
 </div>
 
 <!-- Actor Preparation -->
 <div class="choice home-module-card" onclick="startActorPrepFlow()">
-    <div class="choice-title">Actor Preparation</div>
-    <div class="home-thumb thumb-actor"></div>
+    <div class="choice-title">Audition Analyzer</div>
+    <img src="/static/audition_thumb.jpg" class="home-thumb-img">
     <div class="choice-copy">
-        Generate performance beats, character insight, and actor-facing prep documents built for real rehearsal use.
+        Let's get you booked using our complete sides analysis!
     </div>
     <div class="choice-link" onclick="event.stopPropagation(); window.open('/output/latest_actor_prep_report.pdf','_blank')">
-        View Sample Prep
+    <button class="secondary-button" type="button">
+        View Sample</button>
     </div>
 </div>
 
+
+<!-- Booked -->
+<div class="choice home-module-card" onclick="startActorBookedFlow()">
+    <div class="choice-title">Booked Role Analyzer</div>
+    <img src="/static/booked_thumb.jpg" class="home-thumb-img">
+    <div class="choice-copy">
+         Get your full character analysis in seconds!
+    </div>
+    <div class="choice-link" onclick="event.stopPropagation(); window.open('/output/latest_actor_booked_report.pdf','_blank')">
+    <button class="secondary-button" type="button">
+        View Sample</button>
+    </div>
+</div>
 
 </div>
 </div>
@@ -1235,13 +1629,13 @@ body {
         <div class="deck-preview-strip" id="deckPreviewStrip"></div>
 
         <div class="complete-actions">
-            <button class="primary-button" type="button" onclick="window.location.href='/download/latest.pptx'">Download PowerPoint</button>
+            <button class="primary-button" type="button" onclick="downloadCurrentDeck()">Download PowerPoint</button>
             <button class="primary-button" type="button" onclick="openRefinementStage()">Refine Deck</button>
             <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
         </div>
     </div>
 
-    <div id="refinementStage" style="display:none;">
+    <div id="refinementStage" style="display:none; max-width:1100px; margin:0 auto;">
         <div class="workspace-title" style="text-align:center; margin-bottom:6px;">Refine Deck</div>
         <div class="workspace-copy" style="text-align:center; margin-bottom:6px;"></div>
 
@@ -1256,6 +1650,8 @@ body {
                 <div class="slide-preview-wrap">
                     <img id="refineSlideImage" class="slide-preview-img" src="" alt="Slide preview">
                     <div class="slide-caption" id="refineSlideCaption">Preview of the currently selected placeholder slide.</div>
+                    <div class="image-option-strip" id="imageOptionStrip"></div>
+                    <div class="image-option-empty" id="imageOptionEmpty" style="display:none;">No alternate images are available for this slide yet.</div>
                 </div>
                 <div class="slide-list" id="slideList"></div>
             </div>
@@ -1279,20 +1675,21 @@ body {
                     <div class="field-help">These are real editable fields. Your changes should now stay in place while you move through the refine flow. Image selection is the next pass.</div>
                 </div>
 
-                <div class="upload-actions">
-                    <button class="primary-button" type="button" onclick="changePlaceholderImage()">Change Image</button>
-                    <button class="primary-button" type="button" onclick="saveCurrentRefineSlide()">Update Slide</button>
-                </div>
+                <div class="upload-actions refine-actions-single">
+    <button class="primary-button" type="button" onclick="saveCurrentRefineSlide()">Update Slide</button>
+</div>
 
-                <div class="upload-actions">
-                    <button class="secondary-button" id="refineBackBtn" type="button" onclick="goPrevRefineSlide()">Back</button>
-                    <button class="secondary-button" id="refineNextBtn" type="button" onclick="goNextRefineSlide()">Next</button>
-                </div>
+<div class="upload-actions refine-actions-pair">
+    <button class="secondary-button" id="refineBackBtn" type="button" onclick="goPrevRefineSlide()">Previous Slide</button>
+    <button class="secondary-button" id="refineNextBtn" type="button" onclick="goNextRefineSlide()">Next Slide</button>
+</div>
 
-                <div class="upload-actions">
-                    <button class="secondary-button" type="button" onclick="returnToPreviewStage()">Back to Preview</button>
-                    <button class="primary-button" type="button" onclick="regenerateDeckPlaceholder()">Regenerate Deck</button>
-                </div>
+<div class="upload-actions refine-actions-pair">
+    <button class="primary-button" type="button" onclick="returnToPreviewStage()">Back to Preview</button>
+    <button class="primary-button" type="button" onclick="regenerateDeckPlaceholder()">Regenerate Deck</button>
+</div>
+
+
             </div>
         </div>
     </div>
@@ -1303,21 +1700,11 @@ body {
             </div>
 
             <div class="workspace-panel" id="uploadState">
-                <div class="workspace-title" style="text-align: center;">Upload Script</div>
-                <div class="workspace-copy" style="text-align: center;">If you have your logline and synopsis written, and or images you would like to use in your pitch deck,<br> add them now to begin the generate pitch deck process.</div>
+                <div class="workspace-title" style="text-align: center;">Almost There!</div>
+                <div class="workspace-copy" style="text-align: center;">Your deck is ready to build. If you have a poster or images you'd like to include, add them now — up to 10 images, 1 MB max each. Otherwise just hit Generate.</div>
 
                 <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return validateUploadAndStart();">
                      <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf" style="display:none;">
-
-                    <div class="field-group">
-                        <label class="label" for="loglineInput">Logline</label>
-                        <input type="text" name="logline" id="loglineInput" placeholder="Optional: enter your own logline">
-                    </div>
-
-                    <div class="field-group">
-                        <label class="label" for="synopsisInput">Synopsis</label>
-                        <textarea name="synopsis" id="synopsisInput" placeholder="Optional: enter your own synopsis"></textarea>
-                    </div>
 
                     <div class="field-group">
                         <label class="label" for="posterInput" style="display: inline-block; margin-right: 10px;">Upload Poster</label>
@@ -1387,8 +1774,9 @@ body {
     </div>
 </div>
 
+
 <div class="modal" id="analyzePassModal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:620px;">
         <div class="modal-close" onclick="closeModal('analyzePassModal')">×</div>
         <h3>Success! <b>Script Analysis Complete!</b></h3>
 
@@ -1396,29 +1784,26 @@ body {
             DIME puts Zena at the center of a high-pressure world where identity, ambition, and competition collide. There is strong emotional weight here, along with the kind of grounded sports drama energy that can connect with an audience.
         </div>
 
-        <div class="complete-actions">
-    <button class="primary-button" type="button"
-        onclick="window.open('/analysis-report/latest.pdf','_blank')">
-        View Analysis Report
-    </button>
+        <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
+            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+                onclick="window.open('/analysis-report/latest.pdf','_blank')">
+                View Report
+            </button>
 
-    <button class="primary-button" type="button"
-        onclick="window.open('/analysis-report/latest.pdf','_blank')">
-        Download PDF
-    </button>
+            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+                onclick="window.location.href='/download/latest_analysis_report.pdf'">
+                Download PDF
+            </button>
 
-    <button class="primary-button" type="button"
-    onclick="window.location.href='/'">
-    Analyze Another Script
-    </button>
-
-</div>
-
+            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;" onclick="startAnalyzeFlow()">
+                Run Another
+            </button>
+        </div>
     </div>
 </div>
 
-
 <!-- ===== MODALS: ACTOR PREP FLOW START ================= -->
+
 <div class="modal" id="actorPrepModal">
     <div class="modal-content">
         <div class="modal-close" onclick="closeModal('actorPrepModal')">×</div>
@@ -1446,36 +1831,153 @@ body {
     </div>
 </div>
 
+
 <div class="modal" id="actorPrepCompleteModal">
-   <div class="modal-content">
+   <div class="modal-content" style="max-width:620px;">
     <div class="modal-close" onclick="closeModal('actorPrepCompleteModal')">×</div>
-    <h3>Success! <b>Actor Preparation Complete!</b></h3>
+    <h3>Success! <b>Audition Analysis Complete!</b></h3>
 
     <div class="complete-copy" id="actorPrepSummaryCopy">
-        Your actor preparation packet for Finn is ready, with character insight, performance beats, and rehearsal-ready prep.
+        Your audition preparation packet is ready.
     </div>
 
-    <div class="complete-actions">
-    <button class="primary-button" type="button"
-        onclick="window.open('/analysis-report/latest.pdf','_blank')">
-        View Analysis Report
-    </button>
+    <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.open('/output/latest_actor_prep_report.pdf','_blank')">
+            View Report
+        </button>
 
-    <button class="primary-button" type="button"
-        onclick="window.location.href='/analysis-report/latest.pdf'">
-        Download PDF
-    </button>
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.location.href='/download/latest_actor_prep_report.pdf'">
+            Download PDF
+        </button>
 
-    <button class="primary-button" type="button"
-    onclick="window.location.href='/'"> Analyze Another Script
-    </button>
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="closeModal('actorPrepCompleteModal'); startActorPrepFlow();">
+            Run Another
+        </button>
+
+    </div>
+   </div>
 </div>
 
+<div class="modal" id="actorBookedModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorBookedModal')">×</div>
+        <h3>Booked Role Analyzer</h3>
+        <div class="info-copy">Enter the role you booked and choose the full script you want analyzed.</div>
+        <input type="text" id="actorBookedRoleInput" placeholder="Enter Role">
+        <input type="file" id="actorBookedFile" accept=".txt,text/plain,.pdf,application/pdf">
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorBooked()">Analyze</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorBookedModal')">Back</button>
+        </div>
+    </div>
 </div>
 
+<div class="modal" id="actorBookedPasteModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorBookedPasteModal')">×</div>
+        <h3>Paste Script Text</h3>
+        <div class="info-copy">The uploaded file could not be read cleanly. Paste the script text below and continue.</div>
+        <textarea id="actorBookedPasteText" placeholder="Paste script text here"></textarea>
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorBookedPaste()">Continue</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorBookedPasteModal')">Back</button>
+        </div>
+    </div>
 </div>
 
-<!-- ===== MODALS: ACTOR PREP FLOW END =================== -->
+<div class="modal" id="actorBookedCompleteModal">
+   <div class="modal-content" style="max-width:620px;">
+    <div class="modal-close" onclick="closeModal('actorBookedCompleteModal')">×</div>
+    <h3>Success! <b>Booked Role Analysis Complete!</b></h3>
+
+    <div class="complete-copy" id="actorBookedSummaryCopy">
+        Your booked role preparation packet is ready.
+    </div>
+
+    <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.open('/output/latest_actor_booked_report.pdf','_blank')">
+            View Report
+        </button>
+
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.location.href='/download/latest_actor_booked_report.pdf'">
+            Download PDF
+        </button>
+
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;" onclick="startActorBookedFlow()">
+            Run Another
+        </button>
+    </div>
+   </div>
+</div>
+
+<div class="modal" id="feedbackModal">
+
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('feedbackModal')">×</div>
+        <h3>Share Feedback</h3>
+        <div class="feedback-help-copy">This beta is still being refined. Tell us what worked, what felt off, or what you want next.</div>
+
+        <div class="feedback-quick-row">
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Bug Report', this)">Bug Report</button>
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Confusing UX', this)">Confusing UX</button>
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Great Result', this)">Great Result</button>
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Feature Request', this)">Feature Request</button>
+        </div>
+
+        <input type="text" id="feedbackName" placeholder="Name (optional)">
+        <input type="text" id="feedbackEmail" placeholder="Email (optional)">
+        <textarea id="feedbackMessage" maxlength="1000" placeholder="Tell us what happened, what you expected, or what you’d love to see next."></textarea>
+
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitFeedback()">Send Feedback</button>
+            <button class="primary-button" type="button" onclick="closeModal('feedbackModal')">Back</button>
+        </div>
+    </div>
+</div>
+    
+<div class="modal" id="imageOptionModal">
+    <div class="modal-content image-modal-content">
+        <div class="modal-close" onclick="closeModal('imageOptionModal')">×</div>
+        <h3 id="imageOptionModalTitle">Preview Image Option</h3>
+        <div class="image-modal-preview-wrap">
+            <img id="imageOptionModalPreview" class="image-modal-preview" src="" alt="Image option preview">
+            <div class="image-modal-meta" id="imageOptionModalMeta"></div>
+        </div>
+        <div class="image-modal-nav">
+            <button class="secondary-button" type="button" onclick="shiftImageOptionModal(-1)">Previous</button>
+            <button class="secondary-button" type="button" onclick="shiftImageOptionModal(1)">Next</button>
+        </div>
+        <div class="image-modal-actions">
+            <button class="primary-button" type="button" onclick="selectCurrentImageOption()">Select Image</button>
+            <button class="primary-button" type="button" onclick="closeModal('imageOptionModal')">Continue</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="regenDeckModal">
+    <div class="modal-content regen-modal-content">
+        <h3 id="regenDeckModalTitle">Regenerating Deck</h3>
+        <div class="complete-copy" id="regenDeckModalCopy">
+            Please wait while your updated deck is rebuilt.
+        </div>
+
+        <div class="regen-status-wrap" id="regenDeckWorkingState">
+            <div class="regen-pulse-text">Generating your deck&hellip;</div>
+            <div class="regen-progress-bar">
+                <div class="regen-progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="complete-actions" id="regenDeckModalActions" style="display:none;">
+            <button class="primary-button" type="button" onclick="finishRegenerateDeckFlow()">Continue</button>
+        </div>
+    </div>
+</div>
 
 <script>
 let runStartedAt = null;
@@ -1537,6 +2039,8 @@ const fallbackSlides = [
 let refineSlides = JSON.parse(JSON.stringify(fallbackSlides));
 let latestRefineProjectTitle = "UNTITLED PROJECT";
 let currentRefineSlide = 0;
+let currentImageOptionModalIndex = 0;
+const BASE_PATH_PREFIX = "/home/madbrad/BETA_V_2/app/";
 
 function enterFlowMode(){
     document.body.classList.add("flow-mode");
@@ -1628,6 +2132,87 @@ function closeModal(id){
     if (el) el.classList.remove("show");
 }
 
+
+let selectedFeedbackType = "";
+
+function toggleTopNavMenu(){
+    const menu = document.getElementById("topNavMenu");
+    if (!menu) return;
+    menu.classList.toggle("show");
+}
+document.addEventListener("click", function(event){
+    const shell = document.querySelector(".top-nav-shell");
+    const menu = document.getElementById("topNavMenu");
+    if (!shell || !menu) return;
+    if (!shell.contains(event.target)){
+        menu.classList.remove("show");
+    }
+});
+
+function openFeedbackModal(){
+    const menu = document.getElementById("topNavMenu");
+    if (menu) menu.classList.remove("show");
+    document.getElementById("feedbackModal").classList.add("show");
+}
+function openHelpModal(){
+    const menu = document.getElementById("topNavMenu");
+    if (menu) menu.classList.remove("show");
+    showInfoModal("Help", "Use Script Analyzer to review a script, Create Pitch Deck to generate packaging materials, and Actor Preparation to build actor-facing prep documents.");
+}
+function openContactModal(){
+    const menu = document.getElementById("topNavMenu");
+    if (menu) menu.classList.remove("show");
+    showInfoModal("Contact", "Contact support through the feedback form for this beta build. Include your email if you want a reply.");
+}
+function openBetaNotesModal(){
+    const menu = document.getElementById("topNavMenu");
+    if (menu) menu.classList.remove("show");
+    showInfoModal("Beta Notes", "This is a live beta. Some features are still being refined, especially image consistency and advanced deck editing tools.");
+}
+function setFeedbackType(type, el){
+    selectedFeedbackType = type;
+    document.querySelectorAll(".feedback-chip").forEach(btn => btn.classList.remove("active"));
+    if (el) el.classList.add("active");
+}
+function submitFeedback(){
+    const name = (document.getElementById("feedbackName") || {}).value || "";
+    const email = (document.getElementById("feedbackEmail") || {}).value || "";
+    const message = (document.getElementById("feedbackMessage") || {}).value || "";
+
+    if (!message.trim()) {
+        alert("Please enter a message before submitting.");
+        return;
+    }
+
+    fetch("/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: selectedFeedbackType, name, email, message })
+    });
+
+    closeModal("feedbackModal");
+    showInfoModal("Feedback Received", "Thanks — your beta feedback has been captured for review.");
+
+    const logEl = document.getElementById("liveProcessLog");
+    if (logEl){
+        const payload = [selectedFeedbackType, name, message].filter(Boolean).join(" | ");
+        logEl.innerHTML += "<br><span class=\"terminal-success\">[feedback]</span> " + payload.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    }
+
+    selectedFeedbackType = "";
+    document.querySelectorAll(".feedback-chip").forEach(btn => btn.classList.remove("active"));
+    if (document.getElementById("feedbackName")) document.getElementById("feedbackName").value = "";
+    if (document.getElementById("feedbackEmail")) document.getElementById("feedbackEmail").value = "";
+    if (document.getElementById("feedbackMessage")) document.getElementById("feedbackMessage").value = "";
+}
+    function downloadCurrentDeck(){
+    if (window.latestGeneratedDeck){
+        window.location.href = "/output-file?name=" + encodeURIComponent(window.latestGeneratedDeck);
+        return;
+    }
+    window.location.href = "/download/latest.pptx";
+}
+
 function closeAllModals(){
     closeModal("loginModal");
     closeModal("infoModal");
@@ -1638,6 +2223,10 @@ function closeAllModals(){
     closeModal("actorPrepModal");
     closeModal("actorPrepPasteModal");
     closeModal("actorPrepPassModal");
+    closeModal("actorBookedModal");
+    closeModal("actorBookedPasteModal");
+    closeModal("actorBookedCompleteModal");
+    closeModal("feedbackModal");
 }
 
 function showInfoModal(title, copy, action = null, buttonLabel = "Continue"){
@@ -1665,9 +2254,11 @@ function showUploadState(){
     enterFlowMode();
     hideWorkspacePanels();
 
+    const homeCardGrid = document.querySelector(".home-card-grid");
     const choicesRow = document.querySelector(".choices-row");
     const uploadState = document.getElementById("uploadState");
 
+    if (homeCardGrid) homeCardGrid.style.display = "none";
     if (choicesRow) choicesRow.style.display = "none";
     if (uploadState) uploadState.style.display = "block";
 }
@@ -1691,17 +2282,15 @@ function resetCreateProject(){
     const approvedScriptName = document.getElementById("approvedScriptName");
     const imagesInput = document.getElementById("imagesInput");
     const posterInput = document.getElementById("posterInput");
-    const loglineInput = document.getElementById("loglineInput");
-    const synopsisInput = document.getElementById("synopsisInput");
+    const homeCardGrid = document.querySelector(".home-card-grid");
     const choicesRow = document.querySelector(".choices-row");
 
     if (approvedScriptBox) approvedScriptBox.style.display = "none";
     if (approvedScriptName) approvedScriptName.textContent = "-";
     if (imagesInput) imagesInput.value = "";
     if (posterInput) posterInput.value = "";
-    if (loglineInput) loglineInput.value = "";
-    if (synopsisInput) synopsisInput.value = "";
-    if (choicesRow) choicesRow.style.display = "flex";
+    if (homeCardGrid) homeCardGrid.style.display = "block";
+    if (choicesRow) choicesRow.style.display = "grid";
 
     document.getElementById("liveProcessLog").style.display = "block";
     document.getElementById("buildMeta").style.display = "none";
@@ -1711,6 +2300,8 @@ function resetCreateProject(){
     const refinementStage = document.getElementById("refinementStage");
     if (previewStage) previewStage.style.display = "block";
     if (refinementStage) refinementStage.style.display = "none";
+
+    showUploadAnalyzeModal();
 }
 
 function showUploadAnalyzeModal(){
@@ -1750,12 +2341,11 @@ async function analyzeSelectedScript(){
 
     const file = fileInput.files[0];
     const fileName = (file.name || "").toLowerCase();
-    const passes = fileName.endsWith(".txt") || fileName.endsWith(".pdf");
+    const passes = fileName.endsWith(".txt") || fileName.endsWith(".pdf") || fileName.endsWith(".fdx") || fileName.endsWith(".docx") || fileName.endsWith(".doc");
 
     if (!passes){
         closeModal("uploadModal");
-        const failModal = document.getElementById("analyzeFailModal");
-        if (failModal) failModal.classList.add("show");
+        showInfoModal("Unsupported File", "Please upload a TXT, PDF, FDX, or DOCX file.");
         return;
     }
 
@@ -1770,12 +2360,14 @@ async function analyzeSelectedScript(){
 
         if (!response.ok){
             closeModal("uploadModal");
-            const failModal = document.getElementById("analyzeFailModal");
-            if (failModal) failModal.classList.add("show");
+            let msg = "Analysis failed. Please check your file and try again.";
+            try { const d = await response.json(); if (d.error) msg = d.error; } catch(_){}
+            showInfoModal("Analysis Failed", msg);
             return;
         }
 
         const data = await response.json();
+        window.latestGeneratedDeck = data.deck || "";
 
         const summaryEl = document.getElementById("analysisSummaryCopy");
         if (summaryEl) {
@@ -1795,8 +2387,7 @@ async function analyzeSelectedScript(){
 
     } catch (err) {
         closeModal("uploadModal");
-        const failModal = document.getElementById("analyzeFailModal");
-        if (failModal) failModal.classList.add("show");
+        showInfoModal("Analysis Failed", "Something went wrong. Please try again.");
     }
 }
 
@@ -1841,6 +2432,11 @@ function showLiveProcess(){
     hideWorkspacePanels();
     stopProgressCreep();
     setProgress(0);
+
+    const homeCardGrid = document.querySelector(".home-card-grid");
+    const choicesRow = document.querySelector(".choices-row");
+    if (homeCardGrid) homeCardGrid.style.display = "none";
+    if (choicesRow) choicesRow.style.display = "none";
 
     document.getElementById("analyzerPanel").style.display = "block";
     document.getElementById("buildProgressBar").style.display = "block";
@@ -1971,8 +2567,35 @@ function makeAccentForIndex(index){
     return accents[index % accents.length];
 }
 
+
+function projectFileUrl(path){
+    if (!path) return "";
+    const rel = String(path).replace(BASE_PATH_PREFIX, "").replace(/^\/+/, "");
+    return "/project-file?path=" + encodeURIComponent(rel);
+}
+
+function normalizeImageOption(option, fallbackSlide, optionIndex){
+    const normalized = option || {};
+    const imagePath = normalized.image_path || "";
+    return {
+        rank: normalized.rank || optionIndex + 1,
+        option_id: normalized.option_id || `option_${optionIndex + 1}`,
+        label: normalized.label || `Option ${optionIndex + 1}`,
+        focus: normalized.focus || "",
+        image_path: imagePath,
+        image_name: normalized.image_name || "",
+        image_source: normalized.image_source || "",
+        image_url: normalized.image_url || projectFileUrl(imagePath)
+    };
+}
+
 function normalizeSlideForRefine(slide, index){
     const normalized = slide || {};
+    const imagePath = normalized.image_path || "";
+    const options = Array.isArray(normalized.image_options)
+        ? normalized.image_options.map((option, optionIndex) => normalizeImageOption(option, normalized, optionIndex))
+        : [];
+
     return {
         type: normalized.type || normalized.stage || normalized.layout || `Slide ${index + 1}`,
         title: normalized.title || `Slide ${index + 1}`,
@@ -1982,15 +2605,21 @@ function normalizeSlideForRefine(slide, index){
         accent: normalized.accent || makeAccentForIndex(index),
         layout: normalized.layout || "text",
         stage: normalized.stage || "refine",
-        image_url: normalized.image_url || "",
-        image_name: normalized.image_name || ""
+        image_url: normalized.image_url || projectFileUrl(imagePath),
+        image_name: normalized.image_name || "",
+        image_path: imagePath,
+        image_source: normalized.image_source || "",
+        image_options: options,
+        selected_option_id: normalized.selected_option_id || (options[0] && options[0].option_id) || "selected"
     };
 }
-
 
 function previewImageSrcForSlide(slide){
     if (slide && slide.image_url){
         return slide.image_url;
+    }
+    if (slide && slide.image_path){
+        return projectFileUrl(slide.image_path);
     }
     return makePreviewSlideDataUri((slide && slide.title) || "", (slide && slide.subtitle) || "", (slide && slide.accent) || "#ffb347");
 }
@@ -2007,20 +2636,14 @@ async function syncLatestSlidesForPreview(){
 
 async function loadLatestRefineSlides(){
     try {
-        const response = await fetch("/latest-slide-plan", { cache: "no-store" });
-        if (!response.ok){
-            throw new Error("no_live_slide_plan");
-        }
+        const response = await fetch("/project-file?path=output/latest_deck_manifest.json", { cache: "no-store" });
+        if (!response.ok) throw new Error("manifest_missing");
 
         const data = await response.json();
-        const liveSlides = Array.isArray(data.slides) ? data.slides.map((slide, index) => normalizeSlideForRefine(slide, index)) : [];
+        if (!Array.isArray(data) || !data.length) throw new Error("manifest_empty");
 
-        if (!liveSlides.length){
-            throw new Error("empty_live_slide_plan");
-        }
-
-        refineSlides = liveSlides;
-        latestRefineProjectTitle = data.title || "UNTITLED PROJECT";
+        refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
+        latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
         return true;
     } catch (err) {
@@ -2057,6 +2680,80 @@ function renderRefineSlideList(){
     }).join("");
 }
 
+
+function renderImageOptionStrip(){
+    const strip = document.getElementById("imageOptionStrip");
+    const empty = document.getElementById("imageOptionEmpty");
+    if (!strip || !empty || !Array.isArray(refineSlides) || !refineSlides.length) return;
+
+    const slide = refineSlides[currentRefineSlide];
+    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
+
+    if (!options.length){
+        strip.innerHTML = "";
+        empty.style.display = "block";
+        return;
+    }
+
+    empty.style.display = "none";
+    strip.innerHTML = options.map((option, optionIndex) => {
+        const active = option.option_id === slide.selected_option_id ? "active" : "";
+        return `
+            <div class="image-option-thumb ${active}" onclick="openImageOptionModal(${optionIndex})">
+                <img src="${option.image_url || previewImageSrcForSlide(slide)}" alt="${option.label || 'Image option'}">
+                <div class="image-option-thumb-label">${option.label || `Option ${optionIndex + 1}`}</div>
+            </div>
+        `;
+    }).join("");
+}
+
+function openImageOptionModal(optionIndex){
+    const slide = refineSlides[currentRefineSlide];
+    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
+    if (!options.length) return;
+    currentImageOptionModalIndex = Math.max(0, Math.min(optionIndex, options.length - 1));
+    renderImageOptionModal();
+    document.getElementById("imageOptionModal").classList.add("show");
+}
+
+function renderImageOptionModal(){
+    const slide = refineSlides[currentRefineSlide];
+    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
+    const option = options[currentImageOptionModalIndex];
+    if (!option) return;
+
+    document.getElementById("imageOptionModalTitle").textContent = option.label || "Preview Image Option";
+    document.getElementById("imageOptionModalPreview").src = option.image_url || previewImageSrcForSlide(slide);
+    document.getElementById("imageOptionModalMeta").textContent =
+        `Slide ${currentRefineSlide + 1} • ${slide.title || slide.type || "Slide"} • ${option.focus || "image option"}`;
+}
+
+function shiftImageOptionModal(direction){
+    const slide = refineSlides[currentRefineSlide];
+    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
+    if (!options.length) return;
+    currentImageOptionModalIndex = (currentImageOptionModalIndex + direction + options.length) % options.length;
+    renderImageOptionModal();
+}
+
+function selectCurrentImageOption(){
+    const slide = refineSlides[currentRefineSlide];
+    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
+    const option = options[currentImageOptionModalIndex];
+    if (!option) return;
+
+    slide.selected_option_id = option.option_id || "selected";
+    slide.image_path = option.image_path || "";
+    slide.image_name = option.image_name || "";
+    slide.image_source = option.image_source || "";
+    slide.image_url = option.image_url || "";
+    document.getElementById("refineSlideImage").src = previewImageSrcForSlide(slide);
+    document.getElementById("refineSlideCaption").textContent = `${option.label || "Current Pick"} • ${slide.image_name || slide.title || "image selected"}`;
+    renderImageOptionStrip();
+    renderDeckPreview();
+    closeModal("imageOptionModal");
+}
+
 function renderCurrentRefineSlide(){
     if (!Array.isArray(refineSlides) || !refineSlides.length){
         return;
@@ -2070,6 +2767,7 @@ function renderCurrentRefineSlide(){
     document.getElementById("refineBodyInput").value = slide.body;
     document.getElementById("refineSlideImage").src = previewImageSrcForSlide(slide);
     document.getElementById("refineSlideCaption").textContent = slide.caption || `Preview for ${latestRefineProjectTitle}`;
+    renderImageOptionStrip();
     document.getElementById("refineBackBtn").disabled = currentRefineSlide === 0;
     document.getElementById("refineNextBtn").disabled = currentRefineSlide === refineSlides.length - 1;
     renderRefineSlideList();
@@ -2089,10 +2787,8 @@ function saveCurrentRefineSlide(){
 
 async function openRefinementStage(){
     activeCompleteView = "refine";
-    if (!latestSlidesLoadedForComplete){
-        const loaded = await loadLatestRefineSlides();
-        if (loaded) latestSlidesLoadedForComplete = true;
-    }
+    const loaded = await loadLatestRefineSlides();
+    if (loaded) latestSlidesLoadedForComplete = true;
     document.getElementById("previewStage").style.display = "none";
     document.getElementById("refinementStage").style.display = "block";
     renderDeckPreview();
@@ -2126,9 +2822,55 @@ function goNextRefineSlide(){
 function changePlaceholderImage(){
     showInfoModal("Change Image", "Image selection is the next pass. For now, refine text first.");
 }
+    function openRegenerateDeckModal(){
+    const modal = document.getElementById("regenDeckModal");
+    const title = document.getElementById("regenDeckModalTitle");
+    const copy = document.getElementById("regenDeckModalCopy");
+    const working = document.getElementById("regenDeckWorkingState");
+    const actions = document.getElementById("regenDeckModalActions");
+
+    title.textContent = "Regenerating Deck";
+    copy.textContent = "Please wait while your updated deck is rebuilt.";
+    working.style.display = "block";
+    actions.style.display = "none";
+    modal.classList.add("show");
+}
+
+function setRegenerateDeckModalSuccess(){
+    const title = document.getElementById("regenDeckModalTitle");
+    const copy = document.getElementById("regenDeckModalCopy");
+    const working = document.getElementById("regenDeckWorkingState");
+    const actions = document.getElementById("regenDeckModalActions");
+
+    title.textContent = "Deck Complete";
+    copy.textContent = "Your refined deck has been rebuilt successfully.";
+    working.style.display = "none";
+    actions.style.display = "flex";
+}
+
+function setRegenerateDeckModalError(message){
+    const title = document.getElementById("regenDeckModalTitle");
+    const copy = document.getElementById("regenDeckModalCopy");
+    const working = document.getElementById("regenDeckWorkingState");
+    const actions = document.getElementById("regenDeckModalActions");
+
+    title.textContent = "Regenerate Deck";
+    copy.textContent = message || "Something went wrong while regenerating the deck.";
+    working.style.display = "none";
+    actions.style.display = "flex";
+}
+
+function finishRegenerateDeckFlow(){
+    closeModal("regenDeckModal");
+    activeCompleteView = "preview";
+    document.getElementById("refinementStage").style.display = "none";
+    document.getElementById("previewStage").style.display = "block";
+    renderDeckPreview();
+}
 
 async function regenerateDeckPlaceholder(){
     saveCurrentRefineSlide();
+    openRegenerateDeckModal();
 
     try {
         const response = await fetch("/refine-deck", {
@@ -2140,20 +2882,18 @@ async function regenerateDeckPlaceholder(){
         const data = await response.json();
 
         if (!response.ok){
-            showInfoModal("Regenerate Deck", data.error || "Deck regeneration failed.");
+            setRegenerateDeckModalError(data.error || "Deck regeneration failed.");
             return;
         }
 
-        activeCompleteView = "preview";
-        document.getElementById("refinementStage").style.display = "none";
-        document.getElementById("previewStage").style.display = "block";
-        renderDeckPreview();
-
-        showInfoModal("Deck Updated", data.message || "Your refined deck has been rebuilt successfully.");
+        await syncLatestSlidesForPreview();
+        latestSlidesLoadedForComplete = true;
+        setRegenerateDeckModalSuccess();
     } catch (err) {
-        showInfoModal("Regenerate Deck", "Connection issue during regeneration.");
+        setRegenerateDeckModalError("Connection issue during regeneration.");
     }
 }
+
 
 // ===== JAVASCRIPT: ACTOR PREP FLOW START ==============
 function startActorPrepFlow(){
@@ -2244,6 +2984,97 @@ async function submitActorPrepPaste(){
     }
 }
 // ===== JAVASCRIPT: ACTOR PREP FLOW END ================
+
+
+// ===== JAVASCRIPT: ACTOR BOOKED FLOW START ==============
+function startActorBookedFlow(){
+    resetCreateProject();
+    document.getElementById("actorBookedModal").classList.add("show");
+}
+
+async function submitActorBooked(){
+    const role = (document.getElementById("actorBookedRoleInput").value || "").trim();
+    const fileInput = document.getElementById("actorBookedFile");
+    const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
+
+    if (!role){
+        showInfoModal("Booked Role Analyzer", "Please enter the role you booked.");
+        return;
+    }
+
+    if (!file){
+        showInfoModal("Booked Role Analyzer", "Please choose a script before continuing.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("character_name", role);
+    formData.append("script", file);
+
+    try {
+        const response = await fetch("/actor-booked-pass", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+
+        if (response.status === 422 && data.needs_paste){
+            closeModal("actorBookedModal");
+            document.getElementById("actorBookedPasteModal").classList.add("show");
+            return;
+        }
+
+        if (!response.ok){
+            showInfoModal("Booked Role Analyzer", data.error || "Booked role analysis failed.");
+            return;
+        }
+
+        document.getElementById("actorBookedSummaryCopy").textContent = data.summary_note || "Your booked role preparation packet is ready.";
+        closeModal("actorBookedModal");
+        document.getElementById("actorBookedCompleteModal").classList.add("show");
+    } catch (err) {
+        showInfoModal("Booked Role Analyzer", "Booked role analysis failed. Please try again.");
+    }
+}
+
+async function submitActorBookedPaste(){
+    const role = (document.getElementById("actorBookedRoleInput").value || "").trim();
+    const pastedText = (document.getElementById("actorBookedPasteText").value || "").trim();
+
+    if (!role){
+        showInfoModal("Booked Role Analyzer", "Please enter the role you booked.");
+        return;
+    }
+
+    if (!pastedText){
+        showInfoModal("Booked Role Analyzer", "Please paste the script text to continue.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("character_name", role);
+    formData.append("script_text", pastedText);
+
+    try {
+        const response = await fetch("/actor-booked-pass", {
+            method: "POST",
+            body: formData
+        });
+        const data = await response.json();
+
+        if (!response.ok){
+            showInfoModal("Booked Role Analyzer", data.error || "Booked role analysis failed.");
+            return;
+        }
+
+        document.getElementById("actorBookedSummaryCopy").textContent = data.summary_note || "Your booked role preparation packet is ready.";
+        closeModal("actorBookedPasteModal");
+        document.getElementById("actorBookedCompleteModal").classList.add("show");
+    } catch (err) {
+        showInfoModal("Booked Role Analyzer", "Booked role analysis failed. Please try again.");
+    }
+}
+// ===== JAVASCRIPT: ACTOR BOOKED FLOW END ================
 
 
 function updateStatusUI(status){

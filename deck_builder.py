@@ -67,6 +67,18 @@ SLIDE_H = Inches(7.5)
 TOP_RULE_Y = Inches(0.36)
 TOP_RULE_H = Inches(0.05)
 
+LAYOUT_THEMES = {
+    "cinematic_grounded":      {"base": (18,18,22), "base2": (34,32,30), "glow": (196,126,76,44),  "accent": (206,210,219)},
+    "cinematic_high_tension":  {"base": (14,10,10), "base2": (28,18,14), "glow": (220,60,40,50),   "accent": (220,100,80)},
+    "contained_nocturnal":     {"base": (8,8,16),   "base2": (16,16,28), "glow": (60,80,200,40),   "accent": (100,140,220)},
+    "institutional_cinematic": {"base": (12,14,18), "base2": (24,28,34), "glow": (80,120,180,36),  "accent": (160,185,210)},
+    "storybook_satirical":     {"base": (20,16,10), "base2": (36,28,18), "glow": (220,180,80,44),  "accent": (220,180,80)},
+    "neon_social_chaos":       {"base": (10,8,18),  "base2": (20,14,30), "glow": (180,40,240,50),  "accent": (180,80,240)},
+    "athletic_prestige":       {"base": (8,14,20),  "base2": (16,26,36), "glow": (40,160,220,44),  "accent": (60,160,220)},
+}
+
+_active_theme: dict = LAYOUT_THEMES["cinematic_grounded"]
+
 
 def rgb(r: int, g: int, b: int) -> RGBColor:
     return RGBColor(r, g, b)
@@ -226,7 +238,7 @@ def _top_visual_folder(path: Path) -> str:
 
 def _select_user_image(current_files: list[Path], lookup_key: str, last_used_name: str = "") -> Optional[Path]:
     if not current_files:
-        return None
+        return None, "none"
 
     candidates = sorted(current_files, key=lambda p: (
         _image_use_count(p),
@@ -423,6 +435,78 @@ def _select_brain_directed_stock_image(
     return candidate
 
 
+def resolve_image_options_for_slide(
+    visuals_dir: Path,
+    slide_info: dict,
+    image_for_slide: Optional[Path],
+    image_source: str,
+    slide_title: str,
+) -> list[dict]:
+    exts = {".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP"}
+    stock_files = _stock_image_files(visuals_dir, exts)
+    raw_options = slide_info.get("image_options") or []
+    resolved_options: list[dict] = []
+    seen_paths: set[str] = set()
+
+    def add_option(payload: dict) -> None:
+        path_val = str(payload.get("image_path", "") or "").strip()
+        if not path_val or path_val in seen_paths:
+            return
+        seen_paths.add(path_val)
+        resolved_options.append(payload)
+
+    if image_for_slide:
+        add_option({
+            "rank": 1,
+            "option_id": "selected",
+            "label": "Current Pick",
+            "focus": "selected",
+            "image_path": str(image_for_slide),
+            "image_name": image_for_slide.name,
+            "image_source": image_source,
+        })
+
+    if isinstance(raw_options, list):
+        for option in raw_options:
+            if not isinstance(option, dict):
+                continue
+            instruction = {
+                "image_query": option.get("image_query", ""),
+                "image_tags": option.get("image_tags", []),
+            }
+            option_rank = int(option.get("rank", len(resolved_options) + 1) or (len(resolved_options) + 1))
+            option_id = clean(option.get("option_id") or f"option_{option_rank}")
+            option_label = clean(option.get("label") or f"Option {option_rank}")
+            option_focus = clean(option.get("focus") or "alternate")
+
+            resolved = _select_brain_directed_stock_image(
+                stock_files,
+                instruction,
+                f"{slide_title}_{option_id}",
+                last_used_name="",
+            )
+            if not resolved:
+                continue
+
+            add_option({
+                "rank": option_rank,
+                "option_id": option_id,
+                "label": option_label,
+                "focus": option_focus,
+                "image_path": str(resolved),
+                "image_name": resolved.name,
+                "image_source": "brain_stock_option",
+            })
+
+            if len(resolved_options) >= 5:
+                break
+
+    for idx, option in enumerate(resolved_options, start=1):
+        option["rank"] = idx
+
+    return resolved_options[:5]
+
+
 def find_image_for_slide(
     visuals_dir: Path,
     deck_title: str,
@@ -430,7 +514,7 @@ def find_image_for_slide(
     slide_number: int,
     brain_output: Optional[dict] = None,
     last_used_name: str = ""
-) -> Optional[Path]:
+) -> tuple[Optional[Path], str]:
     poster_dir = visuals_dir / "user_uploaded" / "poster"
     current_dir = visuals_dir / "user_uploaded" / "current"
     exts = {".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP"}
@@ -454,17 +538,17 @@ def find_image_for_slide(
     if normalized_title not in non_title_slides:
         for p in poster_files:
             print(f"🖼️ Using POSTER for '{deck_title}': {p}")
-            return p
+            return p, "poster"
 
         brain_title = _select_brain_directed_stock_image(stock_files, image_instruction, slide_title, last_used_name)
         if brain_title:
             print(f"🖼️ Using BRAIN STOCK image for title '{deck_title}': {brain_title}")
-            return brain_title
+            return brain_title, "brain_stock"
 
         stock_title = _select_stock_image(stock_files, "__title__", last_used_name)
         if stock_title:
             print(f"🖼️ Using STOCK image for title '{deck_title}': {stock_title}")
-            return stock_title
+            return stock_title, "stock"
 
     key_map = {
         "logline": ["SceneD", "Misdirect", "logline", "frame_1"],
@@ -495,46 +579,51 @@ def find_image_for_slide(
             selected = _select_user_image(matched_files, lookup_key, last_used_name)
             if selected:
                 print(f"🖼️ Using USER image for '{slide_title}': {selected}")
-                return selected
+                return selected, "user"
 
     if current_files:
         selected = _select_user_image(current_files, lookup_key, last_used_name)
         if selected:
             print(f"🖼️ Using USER image fallback for '{slide_title}': {selected}")
-            return selected
+            return selected, "user_fallback"
 
     brain_stock = _select_brain_directed_stock_image(stock_files, image_instruction, slide_title, last_used_name)
     if brain_stock:
         print(f"🖼️ Using BRAIN STOCK image for '{slide_title}': {brain_stock}")
-        return brain_stock
+        return brain_stock, "brain_stock"
 
     stock_match = _select_stock_image(stock_files, lookup_key, last_used_name)
     if stock_match:
         print(f"🖼️ Using STOCK image for '{slide_title}': {stock_match}")
-        return stock_match
+        return stock_match, "stock"
 
-    return None
+    return None, "none"
 
 
 def add_base_background(slide) -> None:
     width_px = 1600
     height_px = 900
 
-    img = Image.new("RGB", (width_px, height_px), (18, 18, 22))
+    theme = _active_theme
+    b1 = theme["base"]
+    b2 = theme["base2"]
+    glow_color = theme["glow"]
+
+    img = Image.new("RGB", (width_px, height_px), b1)
     draw = ImageDraw.Draw(img)
 
     for y in range(height_px):
         t = y / max(1, height_px - 1)
-        r = int(16 + (34 - 16) * t)
-        g = int(16 + (32 - 16) * t)
-        b = int(20 + (30 - 20) * t)
+        r = int(b1[0] + (b2[0] - b1[0]) * t)
+        g = int(b1[1] + (b2[1] - b1[1]) * t)
+        b = int(b1[2] + (b2[2] - b1[2]) * t)
         draw.line((0, y, width_px, y), fill=(r, g, b))
 
     glow = Image.new("RGBA", (width_px, height_px), (0, 0, 0, 0))
     gdraw = ImageDraw.Draw(glow)
     gdraw.ellipse(
         (width_px * 0.18, height_px * 0.15, width_px * 0.82, height_px * 0.95),
-        fill=(196, 126, 76, 44),
+        fill=glow_color,
     )
     glow = glow.filter(ImageFilter.GaussianBlur(120))
     img = Image.alpha_composite(img.convert("RGBA"), glow).convert("RGB")
@@ -627,11 +716,12 @@ def add_title_text(slide, text: str) -> None:
 
 def add_text_box(slide, left, top, width, height, text: str, *, font_size: int = 18,
                  align=PP_ALIGN.LEFT, fill_transparency: float = 0.22) -> None:
+    accent = _active_theme["accent"]
     box = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.ROUNDED_RECTANGLE, left, top, width, height)
     box.fill.solid()
     box.fill.fore_color.rgb = rgb(14, 14, 18)
     box.fill.transparency = fill_transparency
-    box.line.color.rgb = rgb(206, 210, 219)
+    box.line.color.rgb = rgb(*accent)
     box.line.width = Pt(1.2)
 
     tf = box.text_frame
@@ -691,15 +781,22 @@ def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
 
 
 def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path) -> Path:
+    global _active_theme
     reset_image_selection_state()
     plan = load_json(slide_plan_path)
     brain_output = load_brain_output(output_dir)
+
+    layout_strategy = brain_output.get("layout_strategy") or {}
+    layout_style = (layout_strategy.get("layout_style") or "cinematic_grounded").strip()
+    _active_theme = LAYOUT_THEMES.get(layout_style, LAYOUT_THEMES["cinematic_grounded"])
+    print(f"🎨 Layout theme: {layout_style}")
 
     prs = Presentation()
     prs.slide_width = SLIDE_W
     prs.slide_height = SLIDE_H
 
     deck_title = clean(plan.get("title", "Project"))
+    manifest: list[dict] = []
 
     last_used_image_name = ""
 
@@ -711,7 +808,7 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
         slide_number = int(slide_info.get("slide_number", idx))
 
         slide = prs.slides.add_slide(prs.slide_layouts[6])
-        image_for_slide = find_image_for_slide(
+        image_for_slide, image_source = find_image_for_slide(
             visuals_dir=visuals_dir,
             deck_title=deck_title,
             slide_title=slide_title if layout != "title" else deck_title,
@@ -738,8 +835,35 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             add_title_text(slide, slide_title.split("(")[0].strip())
             place_text_by_stage(slide, stage, layout, body)
 
+        resolved_image_options = resolve_image_options_for_slide(
+            visuals_dir=visuals_dir,
+            slide_info=slide_info,
+            image_for_slide=image_for_slide,
+            image_source=image_source,
+            slide_title=slide_title,
+        )
+
+        manifest.append({
+            "slide_number": slide_number,
+            "title": slide_title,
+            "body": body,
+            "layout": layout,
+            "stage": stage,
+            "image_path": str(image_for_slide) if image_for_slide else "",
+            "image_name": image_for_slide.name if image_for_slide else "",
+            "image_source": image_source,
+            "image_query": slide_info.get("image_query", ""),
+            "image_tags": slide_info.get("image_tags", []),
+            "image_score": slide_info.get("image_score", 0),
+            "image_options": resolved_image_options,
+            "selected_option_id": resolved_image_options[0].get("option_id", "selected") if resolved_image_options else "",
+        })
+
     out_path = next_output_path(output_dir)
     prs.save(str(out_path))
+    manifest_path = output_dir / "latest_deck_manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"📦 Deck manifest created: {manifest_path}")
     print(f"✅ Pitch deck created: {out_path}")
     return out_path
 

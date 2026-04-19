@@ -1,8 +1,18 @@
+# ============================================================
+# EVOLUM VX — BUILD X001 CLEANUP PASS
+# File: input_handler_v1.py
+# Role: Input normalization and script ingestion
+# Notes: Cleanup / readability pass only. Behavior intent preserved.
+# ============================================================
+
+# ===== IMPORTS =====
 import re
 import json
 import sys
 import subprocess
+import xml.etree.ElementTree as ET
 from pathlib import Path
+from zipfile import ZipFile
 from pypdf import PdfReader
 
 APP_DIR = Path(__file__).resolve().parent
@@ -10,13 +20,12 @@ ROOT_INPUT_PATH = APP_DIR / "input.txt"
 STATUS_PATH = APP_DIR / "status.json"
 ANALYSIS_ERROR_PATH = APP_DIR / "pipeline" / "analysis" / "analysis_error_report.json"
 
-USER_MSG = "PDF text extraction failed. Please upload a valid screenplay PDF or use TXT/FDX format."
+USER_MSG = "File extraction failed. Please upload a valid screenplay TXT, PDF, FDX, or DOCX file."
 
-
+# ===== FUNCTIONS =====
 def write_root_input(text: str):
     ROOT_INPUT_PATH.write_text(text, encoding="utf-8")
     return str(ROOT_INPUT_PATH)
-
 
 def _looks_like_gibberish_line(line: str) -> bool:
     if not line.strip():
@@ -27,7 +36,6 @@ def _looks_like_gibberish_line(line: str) -> bool:
 
     return symbol_ratio > 0.25 or bool(long_token)
 
-
 def _gibberish_ratio(text: str) -> float:
     lines = text.splitlines()
     if not lines:
@@ -36,11 +44,9 @@ def _gibberish_ratio(text: str) -> float:
     bad = sum(1 for l in lines if _looks_like_gibberish_line(l))
     return bad / len(lines)
 
-
 def _looks_like_readable_text(text: str) -> bool:
     words = re.findall(r"[A-Za-z]{2,}", text)
     return len(words) > 80
-
 
 def validate_pdf_text(text: str):
     text = (text or "").strip()
@@ -65,7 +71,6 @@ def validate_pdf_text(text: str):
 
     return True, ""
 
-
 def score_extraction(text: str) -> tuple:
     text = (text or "").strip()
     if not text:
@@ -76,7 +81,6 @@ def score_extraction(text: str) -> tuple:
     lines = max(len(text.splitlines()), 1)
     return (words, len(text), gib_ratio, lines)
 
-
 def normalize_extracted_text(text: str) -> str:
     text = text or ""
     text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -86,12 +90,10 @@ def normalize_extracted_text(text: str) -> str:
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
-
 def extract_pdf_with_pypdf(input_path: str) -> str:
     reader = PdfReader(input_path)
     text = "\n".join(page.extract_text() or "" for page in reader.pages)
     return normalize_extracted_text(text)
-
 
 def extract_pdf_with_pdftotext(input_path: str) -> str:
     result = subprocess.run(
@@ -103,6 +105,47 @@ def extract_pdf_with_pdftotext(input_path: str) -> str:
     if result.returncode != 0:
         raise RuntimeError(result.stderr.strip() or "pdftotext failed")
     return normalize_extracted_text(result.stdout)
+
+
+def extract_fdx_text(input_path: str) -> str:
+    tree = ET.parse(input_path)
+    root = tree.getroot()
+
+    lines = []
+    for paragraph in root.findall(".//Paragraph"):
+        para_type = (paragraph.attrib.get("Type") or "").strip()
+        texts = []
+        for text_node in paragraph.findall(".//Text"):
+            if text_node.text:
+                texts.append(text_node.text)
+        line = "".join(texts).strip()
+        if not line:
+            continue
+
+        if para_type in {"Scene Heading", "Action", "Character", "Parenthetical", "Dialogue", "Transition", "Shot", "Lyrics"}:
+            lines.append(line)
+        else:
+            lines.append(line)
+
+    return normalize_extracted_text("\n".join(lines))
+
+def extract_docx_text(input_path: str) -> str:
+    paragraphs = []
+    with ZipFile(input_path) as docx_zip:
+        xml_bytes = docx_zip.read("word/document.xml")
+    root = ET.fromstring(xml_bytes)
+
+    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    for p in root.findall(".//w:p", ns):
+        texts = []
+        for t in p.findall(".//w:t", ns):
+            if t.text:
+                texts.append(t.text)
+        line = "".join(texts).strip()
+        if line:
+            paragraphs.append(line)
+
+    return normalize_extracted_text("\n".join(paragraphs))
 
 
 def fail_pipeline(input_path: str, reason: str):
@@ -129,7 +172,6 @@ def fail_pipeline(input_path: str, reason: str):
     print("❌ VALIDATION FAILED:", reason)
     sys.exit(1)
 
-
 def extract_pdf_text(input_path: str) -> str:
     candidates = []
 
@@ -153,7 +195,6 @@ def extract_pdf_text(input_path: str) -> str:
     print(f"📘 Using extractor: {best_method}")
     return best_text
 
-
 def main():
     if len(sys.argv) < 2:
         print("❌ No input file provided")
@@ -165,19 +206,41 @@ def main():
     if ext == ".pdf":
         print("📕 Extracting PDF...")
         text = extract_pdf_text(input_path)
-
         valid, reason = validate_pdf_text(text)
         if not valid:
             fail_pipeline(input_path, reason)
-
         write_root_input(text)
         print("✅ PDF accepted")
+        return
+
+    if ext == ".fdx":
+        print("🎬 Extracting FDX...")
+        try:
+            text = extract_fdx_text(input_path)
+        except Exception as e:
+            fail_pipeline(input_path, f"FDX extraction failed: {e}")
+        if not text.strip():
+            fail_pipeline(input_path, "FDX produced no readable text")
+        write_root_input(text)
+        print("✅ FDX accepted")
+        return
+
+    if ext in (".docx", ".doc"):
+        print("📝 Extracting DOCX...")
+        try:
+            text = extract_docx_text(input_path)
+        except Exception as e:
+            fail_pipeline(input_path, f"DOCX extraction failed: {e}")
+        if not text.strip():
+            fail_pipeline(input_path, "DOCX produced no readable text")
+        write_root_input(text)
+        print("✅ DOCX accepted")
         return
 
     text = Path(input_path).read_text(encoding="utf-8", errors="ignore")
     write_root_input(text)
     print("✅ Input accepted")
 
-
+# ===== ENTRYPOINT =====
 if __name__ == "__main__":
     main()

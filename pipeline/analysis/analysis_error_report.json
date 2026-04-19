@@ -1,6 +1,6 @@
 {
   "status": "failed",
   "stage": "input_validation",
-  "message": "PDF text extraction failed. Please upload a valid screenplay PDF or use TXT/FDX format.",
-  "detail": "Gibberish ratio too high: 0.94"
+  "message": "File extraction failed. Please upload a valid screenplay TXT, PDF, FDX, or DOCX file.",
+  "detail": "Gibberish ratio too high: 0.26"
 }

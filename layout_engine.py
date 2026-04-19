@@ -9,6 +9,11 @@ Purpose:
         2) Escalation
         3) Turn / Consequence
 
+    PATCH V1:
+        - carries forward image-plan metadata into slide_plan.json
+        - supports image_options from newer brain outputs
+        - keeps existing slide planning behavior intact
+
 Usage:
     python3 layout_engine.py /path/to/approved_brain_output.json
 """
@@ -19,7 +24,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 DEFAULT_INPUT = Path("approved_brain_output.json")
 DEFAULT_OUTPUT = Path("slide_plan.json")
@@ -133,15 +138,92 @@ def group_sentences(sentences: List[str]) -> List[str]:
     return merged
 
 
-def add_slide(plan: List[Dict[str, Any]], title: str, body: str, layout: str = "text", stage: str = "") -> None:
+def normalize_image_options(options: Any) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
+    if not isinstance(options, list):
+        return normalized
+
+    for item in options:
+        if not isinstance(item, dict):
+            continue
+        normalized.append({
+            "rank": item.get("rank"),
+            "score": item.get("score"),
+            "option_id": clean(item.get("option_id")),
+            "label": clean(item.get("label")),
+            "focus": clean(item.get("focus")),
+            "image_query": clean(item.get("image_query")),
+            "image_tags": item.get("image_tags", []) if isinstance(item.get("image_tags"), list) else [],
+        })
+    return normalized
+
+
+def build_image_plan_lookup(data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    image_plan = data.get("image_plan", [])
+    lookup: Dict[str, Dict[str, Any]] = {}
+
+    if not isinstance(image_plan, list):
+        return lookup
+
+    for item in image_plan:
+        if not isinstance(item, dict):
+            continue
+
+        title_key = clean(item.get("slide_title", "")).lower()
+        if not title_key:
+            continue
+
+        lookup[title_key] = {
+            "image_query": clean(item.get("image_query", "")),
+            "image_tags": item.get("image_tags", []) if isinstance(item.get("image_tags"), list) else [],
+            "image_score": item.get("image_score"),
+            "image_options": normalize_image_options(item.get("image_options", [])),
+        }
+
+    return lookup
+
+
+def lookup_image_meta(slide_title: str, image_lookup: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    key = clean(slide_title).lower()
+    if key in image_lookup:
+        return dict(image_lookup[key])
+
+    # Map title slide to image plan's "Title" entry.
+    if key and key not in image_lookup and "title" in image_lookup:
+        return dict(image_lookup["title"])
+
+    return {
+        "image_query": "",
+        "image_tags": [],
+        "image_score": None,
+        "image_options": [],
+    }
+
+
+def add_slide(
+    plan: List[Dict[str, Any]],
+    image_lookup: Dict[str, Dict[str, Any]],
+    title: str,
+    body: str,
+    layout: str = "text",
+    stage: str = "",
+) -> None:
     body = clean(body)
     if layout != "title" and not body:
         return
+
+    slide_title = clean(title)
+    image_meta = lookup_image_meta(slide_title, image_lookup)
+
     plan.append({
-        "title": clean(title),
+        "title": slide_title,
         "body": body,
         "layout": layout,
         "stage": clean(stage),
+        "image_query": clean(image_meta.get("image_query", "")),
+        "image_tags": image_meta.get("image_tags", []) if isinstance(image_meta.get("image_tags"), list) else [],
+        "image_score": image_meta.get("image_score"),
+        "image_options": normalize_image_options(image_meta.get("image_options", [])),
     })
 
 
@@ -205,30 +287,31 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         why_this_movie = story_engine or core_conflict
 
     plan: List[Dict[str, Any]] = []
+    image_lookup = build_image_plan_lookup(data)
 
     # Title and core deck spine
-    add_slide(plan, title, logline, "title", "title")
-    add_slide(plan, "Logline", logline, "analysis", "hook")
+    add_slide(plan, image_lookup, title, logline, "title", "title")
+    add_slide(plan, image_lookup, "Logline", logline, "analysis", "hook")
 
     # Cinematic synopsis progression
     for slide in split_synopsis_cinematic(synopsis):
-        add_slide(plan, slide["title"], slide["body"], slide["layout"], slide["stage"])
+        add_slide(plan, image_lookup, slide["title"], slide["body"], slide["layout"], slide["stage"])
 
-    add_slide(plan, "Protagonist", protagonist, "text", "character")
-    add_slide(plan, "World", world, "text", "world")
-    add_slide(plan, "Hook", hook, "analysis", "hook")
-    add_slide(plan, "Conflict", core_conflict, "analysis", "conflict")
-    add_slide(plan, "Stakes", stakes, "analysis", "stakes")
-    add_slide(plan, "Tone", tone, "text", "tone")
+    add_slide(plan, image_lookup, "Protagonist", protagonist, "text", "character")
+    add_slide(plan, image_lookup, "World", world, "text", "world")
+    add_slide(plan, image_lookup, "Hook", hook, "analysis", "hook")
+    add_slide(plan, image_lookup, "Conflict", core_conflict, "analysis", "conflict")
+    add_slide(plan, image_lookup, "Stakes", stakes, "analysis", "stakes")
+    add_slide(plan, image_lookup, "Tone", tone, "text", "tone")
 
     if story_engine:
-        add_slide(plan, "Story Engine", story_engine, "analysis", "engine")
+        add_slide(plan, image_lookup, "Story Engine", story_engine, "analysis", "engine")
     if reversal:
-        add_slide(plan, "Reversal", reversal, "analysis", "turn")
+        add_slide(plan, image_lookup, "Reversal", reversal, "analysis", "turn")
     if themes_text:
-        add_slide(plan, "Themes", themes_text, "text", "themes")
+        add_slide(plan, image_lookup, "Themes", themes_text, "text", "themes")
     if why_this_movie:
-        add_slide(plan, "Why This Movie", why_this_movie, "analysis", "why_now")
+        add_slide(plan, image_lookup, "Why This Movie", why_this_movie, "analysis", "why_now")
 
     return {
         "title": title,
