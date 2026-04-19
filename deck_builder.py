@@ -501,6 +501,38 @@ def resolve_image_options_for_slide(
             if len(resolved_options) >= 5:
                 break
 
+    # Fill remaining slots with images from unused folders for variety
+    if len(resolved_options) < 5 and stock_files:
+        used_paths = {o["image_path"] for o in resolved_options}
+        used_folders = {str(Path(p).parent) for p in used_paths}
+
+        by_folder: dict[str, list[Path]] = {}
+        for f in stock_files:
+            folder = str(f.parent)
+            by_folder.setdefault(folder, []).append(f)
+
+        fill_rank = len(resolved_options) + 1
+        for folder, files in sorted(by_folder.items()):
+            if len(resolved_options) >= 5:
+                break
+            if folder in used_folders:
+                continue
+            candidate = next((f for f in files if str(f) not in used_paths), None)
+            if not candidate:
+                continue
+            used_paths.add(str(candidate))
+            used_folders.add(folder)
+            add_option({
+                "rank": fill_rank,
+                "option_id": f"fill_{fill_rank}",
+                "label": f"Alt {fill_rank - 1}",
+                "focus": "alternate",
+                "image_path": str(candidate),
+                "image_name": candidate.name,
+                "image_source": "folder_fill",
+            })
+            fill_rank += 1
+
     for idx, option in enumerate(resolved_options, start=1):
         option["rank"] = idx
 
