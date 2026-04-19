@@ -601,8 +601,8 @@ def find_image_for_slide(
 
 
 def add_base_background(slide) -> None:
-    width_px = 1600
-    height_px = 900
+    width_px = 640
+    height_px = 360
 
     theme = _active_theme
     b1 = theme["base"]
@@ -625,7 +625,7 @@ def add_base_background(slide) -> None:
         (width_px * 0.18, height_px * 0.15, width_px * 0.82, height_px * 0.95),
         fill=glow_color,
     )
-    glow = glow.filter(ImageFilter.GaussianBlur(120))
+    glow = glow.filter(ImageFilter.GaussianBlur(40))
     img = Image.alpha_composite(img.convert("RGBA"), glow).convert("RGB")
 
     vignette = Image.new("L", (width_px, height_px), 0)
@@ -634,14 +634,15 @@ def add_base_background(slide) -> None:
         (-width_px * 0.05, -height_px * 0.12, width_px * 1.05, height_px * 1.08),
         fill=220,
     )
-    vignette = vignette.filter(ImageFilter.GaussianBlur(150))
+    vignette = vignette.filter(ImageFilter.GaussianBlur(50))
 
     dark = Image.new("RGB", (width_px, height_px), (10, 10, 12))
     img = Image.composite(img, dark, vignette)
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-    img.save(tmp.name, format="JPEG", quality=86, optimize=True)
+    img.save(tmp.name, format="JPEG", quality=80, optimize=True)
     slide.shapes.add_picture(str(tmp.name), 0, 0, width=SLIDE_W, height=SLIDE_H)
+    import os; os.unlink(tmp.name)
 
 
 def add_blur_background(slide, image_path: Optional[Path]) -> None:
@@ -649,15 +650,15 @@ def add_blur_background(slide, image_path: Optional[Path]) -> None:
         return
 
     with Image.open(image_path) as im:
-        img = im.convert("RGB")
-        bg = img.copy()
-        bg.thumbnail((480, 270))
-        bg = bg.resize((1280, 720))
-        bg = bg.filter(ImageFilter.GaussianBlur(14))
-
+        bg = im.convert("RGB")
+        bg.thumbnail((320, 180))
+        bg = bg.resize((640, 360))
+        bg = bg.filter(ImageFilter.GaussianBlur(8))
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-        bg.save(tmp.name, format="JPEG", quality=72, optimize=True)
-        slide.shapes.add_picture(str(tmp.name), 0, 0, width=SLIDE_W, height=SLIDE_H)
+        bg.save(tmp.name, format="JPEG", quality=65, optimize=True)
+
+    slide.shapes.add_picture(str(tmp.name), 0, 0, width=SLIDE_W, height=SLIDE_H)
+    import os; os.unlink(tmp.name)
 
 
 def add_center_image(slide, image_path: Optional[Path], scale_factor: float = 0.68) -> None:
@@ -666,24 +667,23 @@ def add_center_image(slide, image_path: Optional[Path], scale_factor: float = 0.
 
     with Image.open(image_path) as im:
         img = im.convert("RGB")
+        img.thumbnail((960, 540))
         img_w, img_h = img.size
 
         if img_w <= 0 or img_h <= 0:
             return
 
-    scale = min(float(SLIDE_W) / img_w, float(SLIDE_H) / img_h) * scale_factor
-    render_w = int(img_w * scale)
-    render_h = int(img_h * scale)
-    left = int((float(SLIDE_W) - render_w) / 2)
-    top = int((float(SLIDE_H) - render_h) / 2)
+        scale = min(float(SLIDE_W) / img_w, float(SLIDE_H) / img_h) * scale_factor
+        render_w = int(img_w * scale)
+        render_h = int(img_h * scale)
+        left = int((float(SLIDE_W) - render_w) / 2)
+        top = int((float(SLIDE_H) - render_h) / 2)
 
-    slide.shapes.add_picture(
-        str(image_path),
-        left,
-        top,
-        width=render_w,
-        height=render_h,
-    )
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+        img.save(tmp.name, format="JPEG", quality=78, optimize=True)
+
+    slide.shapes.add_picture(str(tmp.name), left, top, width=render_w, height=render_h)
+    import os; os.unlink(tmp.name)
 
 
 def add_full_bleed_image(slide, image_path: Optional[Path]) -> None:
