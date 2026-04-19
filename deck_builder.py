@@ -498,11 +498,11 @@ def resolve_image_options_for_slide(
                 "image_source": "brain_stock_option",
             })
 
-            if len(resolved_options) >= 5:
+            if len(resolved_options) >= 10:
                 break
 
     # Fill remaining slots with images from unused folders for variety
-    if len(resolved_options) < 5 and stock_files:
+    if len(resolved_options) < 10 and stock_files:
         used_paths = {o["image_path"] for o in resolved_options}
         used_folders = {str(Path(p).parent) for p in used_paths}
 
@@ -513,7 +513,7 @@ def resolve_image_options_for_slide(
 
         fill_rank = len(resolved_options) + 1
         for folder, files in sorted(by_folder.items()):
-            if len(resolved_options) >= 5:
+            if len(resolved_options) >= 10:
                 break
             if folder in used_folders:
                 continue
