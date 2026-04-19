@@ -1700,7 +1700,7 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
                 <div class="workspace-copy" style="text-align: center;">Your deck is ready to build. If you have a poster or images you'd like to include, add them now — up to 10 images, 1 MB max each. Otherwise just hit Generate.</div>
 
                 <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return validateUploadAndStart();">
-                     <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf" style="display:none;">
+                     <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc" style="display:none;">
 
                     <div class="field-group">
                         <label class="label" for="posterInput" style="display: inline-block; margin-right: 10px;">Upload Poster</label>
@@ -1746,7 +1746,7 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
         <div class="modal-close" onclick="closeModal('uploadModal')">×</div>
         <h3>Upload Script</h3>
         <div class="info-copy">Select your script file so we can check it for proper formatting and input integrity.</div>
-        <input type="file" id="uploadAnalyzeFile" accept=".txt,text/plain,.pdf,application/pdf">
+        <input type="file" id="uploadAnalyzeFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
         <div class="upload-actions">
             <button class="primary-button" type="button" onclick="analyzeSelectedScript()">Analyze Script</button>
             <button class="primary-button" type="button" onclick="closeModal('uploadModal')">Back</button>
@@ -1806,7 +1806,7 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
         <h3>Actor Preparation</h3>
         <div class="info-copy">Enter the role you are preparing and choose the script you want analyzed.</div>
         <input type="text" id="actorRoleInput" placeholder="Enter Role">
-        <input type="file" id="actorPrepFile" accept=".txt,text/plain,.pdf,application/pdf">
+        <input type="file" id="actorPrepFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
         <div class="upload-actions">
             <button class="primary-button" type="button" onclick="submitActorPrep()">Analyze</button>
             <button class="primary-button" type="button" onclick="closeModal('actorPrepModal')">Back</button>
@@ -1863,7 +1863,7 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
         <h3>Booked Role Analyzer</h3>
         <div class="info-copy">Enter the role you booked and choose the full script you want analyzed.</div>
         <input type="text" id="actorBookedRoleInput" placeholder="Enter Role">
-        <input type="file" id="actorBookedFile" accept=".txt,text/plain,.pdf,application/pdf">
+        <input type="file" id="actorBookedFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
         <div class="upload-actions">
             <button class="primary-button" type="button" onclick="submitActorBooked()">Analyze</button>
             <button class="primary-button" type="button" onclick="closeModal('actorBookedModal')">Back</button>
