@@ -353,6 +353,48 @@ textarea {
     border: 1px solid rgba(82,168,255,0.18);
     border-radius: 12px;
 }
+.build-two-col {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 14px;
+    align-items: start;
+    margin-top: 0;
+}
+.build-quote-card {
+    background: #0a0a0a;
+    border: 1px solid rgba(255,122,0,0.22);
+    border-radius: 12px;
+    padding: 20px 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 228px;
+    text-align: center;
+}
+.quote-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #ff7a00;
+    margin-bottom: 16px;
+    opacity: 0.85;
+}
+.quote-text {
+    font-size: 18px;
+    font-style: italic;
+    font-weight: 500;
+    color: #e8e8e8;
+    line-height: 1.5;
+    margin-bottom: 14px;
+    transition: opacity 0.6s ease;
+}
+.quote-attribution {
+    font-size: 12px;
+    color: #7a7a7a;
+    letter-spacing: 0.3px;
+    transition: opacity 0.6s ease;
+}
 .terminal-log {
     background: #0a0a0a;
     border: 1px solid rgba(82,168,255,0.18);
@@ -489,6 +531,9 @@ body.active-build.complete-mode .card {
 body.active-build.complete-mode #analyzerPanel {
     max-height: none;
     overflow: hidden;
+}
+body.active-build.complete-mode .build-two-col {
+    display: none;
 }
 body.active-build.complete-mode .complete-panel {
     flex: 1;
@@ -1608,15 +1653,25 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
 
             <div class="workspace-panel" id="analyzerPanel">
                 <div class="workspace-title">Building Your Pitch Deck</div>
-                <div class="workspace-copy" id="buildCopy">Real-time terminal-style pipeline output during deck generation. The process takes from 1-2 mintues, depending on file size.</div>
-                <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
-                <div class="progress-bar" id="buildProgressBar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
+                <div class="workspace-copy" id="buildCopy">Your deck is being generated. This takes 1–2 minutes.</div>
 
-                <div class="build-meta bottom-build-meta" id="buildMeta">
-                    <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
-                    <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
+                <div class="build-two-col">
+                    <div>
+                        <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
+                        <div class="progress-bar" id="buildProgressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="build-meta bottom-build-meta" id="buildMeta">
+                            <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
+                            <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
+                        </div>
+                    </div>
+
+                    <div class="build-quote-card" id="buildQuoteCard">
+                        <div class="quote-label" id="quoteLabel">SCREENPLAY</div>
+                        <div class="quote-text" id="quoteText">"Here's looking at you, kid."</div>
+                        <div class="quote-attribution" id="quoteAttribution">— Casablanca</div>
+                    </div>
                 </div>
 
                 
@@ -1986,6 +2041,66 @@ let approvedScriptFile = null;
 let buildInFlight = false;
 let sawFreshBuildStatus = false;
 let analyzeFlowMode = null;
+
+const QUOTES = [
+    { text: "Here's looking at you, kid.", attr: "— Casablanca", type: "SCREENPLAY" },
+    { text: "I'm gonna make him an offer he can't refuse.", attr: "— The Godfather", type: "SCREENPLAY" },
+    { text: "You can't handle the truth!", attr: "— A Few Good Men", type: "SCREENPLAY" },
+    { text: "Get busy living, or get busy dying.", attr: "— The Shawshank Redemption", type: "SCREENPLAY" },
+    { text: "The stuff that dreams are made of.", attr: "— The Maltese Falcon", type: "SCREENPLAY" },
+    { text: "Keep your friends close, but your enemies closer.", attr: "— The Godfather Part II", type: "SCREENPLAY" },
+    { text: "Every passing minute is another chance to turn it all around.", attr: "— Vanilla Sky", type: "SCREENPLAY" },
+    { text: "After all, tomorrow is another day.", attr: "— Gone with the Wind", type: "SCREENPLAY" },
+    { text: "It ain't about how hard you hit. It's about how hard you can get hit and keep moving forward.", attr: "— Rocky Balboa", type: "SCREENPLAY" },
+    { text: "They may take our lives, but they'll never take our freedom!", attr: "— Braveheart", type: "SCREENPLAY" },
+    { text: "Why so serious?", attr: "— The Dark Knight", type: "SCREENPLAY" },
+    { text: "To infinity and beyond.", attr: "— Toy Story", type: "SCREENPLAY" },
+    { text: "Nobody puts Baby in a corner.", attr: "— Dirty Dancing", type: "SCREENPLAY" },
+    { text: "You is kind, you is smart, you is important.", attr: "— The Help", type: "SCREENPLAY" },
+    { text: "I feel the need — the need for speed!", attr: "— Top Gun", type: "SCREENPLAY" },
+    { text: "Speed!", attr: "— Camera rolling", type: "ON SET" },
+    { text: "Quiet on set!", attr: "— First AD", type: "ON SET" },
+    { text: "Picture's up!", attr: "— Ready to roll", type: "ON SET" },
+    { text: "That's a wrap.", attr: "— End of shoot", type: "ON SET" },
+    { text: "We'll fix it in post.", attr: "— Universal set truth", type: "ON SET" },
+    { text: "Check the gate.", attr: "— After every take", type: "ON SET" },
+    { text: "Martini shot.", attr: "— Last shot of the day", type: "ON SET" },
+    { text: "Back to one.", attr: "— Reset", type: "ON SET" },
+    { text: "Crafty is open.", attr: "— The most important announcement", type: "ON SET" },
+    { text: "Talent on set.", attr: "— Here they come", type: "ON SET" },
+    { text: "That's a company move.", attr: "— Packing up", type: "ON SET" },
+    { text: "Lunch is up!", attr: "— The call everyone waits for", type: "ON SET" },
+];
+
+let quoteInterval = null;
+let quoteIndex = Math.floor(Math.random() * QUOTES.length);
+
+function showNextQuote(){
+    const textEl = document.getElementById("quoteText");
+    const attrEl = document.getElementById("quoteAttribution");
+    const labelEl = document.getElementById("quoteLabel");
+    if (!textEl) return;
+    textEl.style.opacity = "0";
+    attrEl.style.opacity = "0";
+    setTimeout(() => {
+        quoteIndex = (quoteIndex + 1) % QUOTES.length;
+        const q = QUOTES[quoteIndex];
+        textEl.textContent = "\u201C" + q.text + "\u201D";
+        attrEl.textContent = q.attr;
+        labelEl.textContent = q.type;
+        textEl.style.opacity = "1";
+        attrEl.style.opacity = "1";
+    }, 600);
+}
+
+function startQuoteRotation(){
+    showNextQuote();
+    quoteInterval = setInterval(showNextQuote, 7000);
+}
+
+function stopQuoteRotation(){
+    if (quoteInterval) { clearInterval(quoteInterval); quoteInterval = null; }
+}
 let progressValue = 0;
 let progressInterval = null;
 let infoModalAction = null;
@@ -2444,6 +2559,7 @@ function showLiveProcess(){
     document.getElementById("buildMeta").style.display = "flex";
     document.getElementById("completePanel").style.display = "none";
     document.body.classList.remove("complete-mode");
+    startQuoteRotation();
 }
 
 function escapeHtml(text){
@@ -3107,6 +3223,7 @@ function updateStatusUI(status){
         inlineStageEl.textContent = "Preparing engine";
     } else if (status === "COMPLETE"){
         stopTimer();
+        stopQuoteRotation();
         buildInFlight = false;
         document.body.classList.add("complete-mode");
         document.getElementById("buildProgressBar").style.display = "none";
