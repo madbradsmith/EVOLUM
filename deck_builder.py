@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import tempfile
 from pathlib import Path
@@ -774,42 +775,142 @@ def add_text_box(slide, left, top, width, height, text: str, *, font_size: int =
     p.alignment = align
 
 
+def _auto_font_size(text: str, base: int) -> int:
+    n = len(text)
+    if n > 300: return max(10, base - 5)
+    if n > 220: return max(11, base - 4)
+    if n > 160: return max(12, base - 3)
+    if n > 110: return max(13, base - 2)
+    if n > 70:  return max(14, base - 1)
+    return base
+
+
+def build_slide_split_panel(slide, image_path: Optional[Path], slide_title: str, body: str) -> None:
+    """Layout B — image fills left 55%, dark text panel right 45%."""
+    add_base_background(slide)
+    accent = _active_theme["accent"]
+
+    panel_w = int(float(SLIDE_W) * 0.55)
+    panel_h = int(float(SLIDE_H))
+
+    if image_path and image_path.exists():
+        try:
+            with Image.open(image_path) as im:
+                img = im.convert("RGB")
+                img_ratio = img.width / img.height
+                panel_ratio = panel_w / panel_h
+                if img_ratio > panel_ratio:
+                    new_h = panel_h
+                    new_w = int(new_h * img_ratio)
+                else:
+                    new_w = panel_w
+                    new_h = int(new_w / img_ratio)
+                img = img.resize((new_w, new_h), Image.LANCZOS)
+                lc = (new_w - panel_w) // 2
+                tc = (new_h - panel_h) // 2
+                img = img.crop((lc, tc, lc + panel_w, tc + panel_h))
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                img.save(tmp.name, format="JPEG", quality=82, optimize=True)
+            slide.shapes.add_picture(str(tmp.name), 0, 0, width=panel_w, height=SLIDE_H)
+            os.unlink(tmp.name)
+        except Exception:
+            pass
+
+    # Dark right panel
+    right_x = int(float(SLIDE_W) * 0.54)
+    right_w = int(float(SLIDE_W) - right_x)
+    panel = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, right_x, 0, right_w, SLIDE_H)
+    panel.fill.solid()
+    panel.fill.fore_color.rgb = rgb(10, 10, 14)
+    panel.fill.transparency = 0.0
+    panel.line.fill.background()
+
+    # Accent divider line
+    div = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, right_x, 0, Inches(0.04), SLIDE_H)
+    div.fill.solid()
+    div.fill.fore_color.rgb = rgb(*accent)
+    div.fill.transparency = 0.35
+    div.line.fill.background()
+
+    # Title in right panel
+    tx_left = right_x + int(Inches(0.28))
+    tx_w = right_w - int(Inches(0.56))
+    tx = slide.shapes.add_textbox(tx_left, Inches(0.48), tx_w, Inches(0.9))
+    tf = tx.text_frame
+    tf.clear()
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = clean(slide_title.split("(")[0].strip())
+    run.font.size = Pt(15)
+    run.font.bold = True
+    run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.LEFT
+
+    # Body in right panel — generous height, auto font
+    font_size = _auto_font_size(body, base=17)
+    add_text_box(slide, tx_left, Inches(1.55), tx_w, Inches(5.2),
+                 body, font_size=font_size, align=PP_ALIGN.LEFT, fill_transparency=0.0)
+
+
+def build_slide_editorial(slide, image_path: Optional[Path], slide_title: str, body: str) -> None:
+    """Layout C — image floats center-top, title below it, wide body box at bottom."""
+    add_base_background(slide)
+    accent = _active_theme["accent"]
+
+    if image_path and image_path.exists():
+        add_center_image(slide, image_path, scale_factor=0.52)
+
+    # Title centered below image area
+    tx = slide.shapes.add_textbox(Inches(1.0), Inches(4.3), Inches(11.3), Inches(0.6))
+    tf = tx.text_frame
+    tf.clear()
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = clean(slide_title.split("(")[0].strip())
+    run.font.size = Pt(14)
+    run.font.bold = True
+    run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.CENTER
+
+    # Wide body box at bottom
+    font_size = _auto_font_size(body, base=16)
+    add_text_box(slide, Inches(0.7), Inches(5.1), Inches(11.93), Inches(2.0),
+                 body, font_size=font_size, align=PP_ALIGN.CENTER, fill_transparency=0.18)
+
+
 def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
     stage = clean(stage).lower()
     layout = clean(layout).lower()
 
     if layout == "title":
-        add_text_box(slide, Inches(0.72), Inches(5.12), Inches(11.9), Inches(1.02),
-                     body, font_size=19, align=PP_ALIGN.CENTER, fill_transparency=0.26)
-        return
-
-    if stage == "setup" or layout == "narrative_setup":
-        add_text_box(slide, Inches(6.7), Inches(1.6), Inches(5.0), Inches(3.0),
-                     body, font_size=20, align=PP_ALIGN.LEFT, fill_transparency=0.24)
+        fs = _auto_font_size(body, 19)
+        add_text_box(slide, Inches(0.72), Inches(5.12), Inches(11.9), Inches(1.28),
+                     body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.26)
         return
 
     if stage == "escalation" or layout == "narrative_escalation":
-        add_text_box(slide, Inches(1.05), Inches(4.55), Inches(10.95), Inches(1.42),
-                     body, font_size=17, align=PP_ALIGN.CENTER, fill_transparency=0.20)
+        fs = _auto_font_size(body, 17)
+        add_text_box(slide, Inches(1.05), Inches(4.55), Inches(10.95), Inches(1.72),
+                     body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.20)
         return
 
     if stage in {"turn", "aftermath"} or layout in {"narrative_turn", "narrative_aftermath"}:
-        add_text_box(slide, Inches(0.58), Inches(3.04), Inches(4.5), Inches(2.32),
-                     body, font_size=19, align=PP_ALIGN.LEFT, fill_transparency=0.24)
+        fs = _auto_font_size(body, 19)
+        add_text_box(slide, Inches(0.58), Inches(3.04), Inches(4.5), Inches(2.80),
+                     body, font_size=fs, align=PP_ALIGN.LEFT, fill_transparency=0.24)
         return
 
     if stage in {"hook", "conflict", "stakes", "engine", "why_now", "analysis"} or layout == "analysis":
-        add_text_box(slide, Inches(0.7), Inches(4.95), Inches(11.95), Inches(0.96),
-                     body, font_size=18, align=PP_ALIGN.CENTER, fill_transparency=0.20)
+        fs = _auto_font_size(body, 18)
+        add_text_box(slide, Inches(0.7), Inches(4.65), Inches(11.95), Inches(1.56),
+                     body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.20)
         return
 
-    if stage in {"character", "world", "tone", "themes"} or layout == "text":
-        add_text_box(slide, Inches(0.32), Inches(4.9), Inches(12.68), Inches(0.98),
-                     body, font_size=20, align=PP_ALIGN.CENTER, fill_transparency=0.20)
-        return
-
-    add_text_box(slide, Inches(0.7), Inches(4.95), Inches(11.95), Inches(0.96),
-                 body, font_size=18, align=PP_ALIGN.CENTER, fill_transparency=0.22)
+    fs = _auto_font_size(body, 18)
+    add_text_box(slide, Inches(0.7), Inches(4.65), Inches(11.95), Inches(1.56),
+                 body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.22)
 
 
 def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path) -> Path:
@@ -852,6 +953,8 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             last_used_image_name = image_for_slide.name
             _mark_image_used(image_for_slide)
 
+        stage_lower = clean(stage).lower()
+
         if layout == "title":
             add_base_background(slide)
             print("TITLE POSTER PATH:", POSTER_PATH)
@@ -860,6 +963,10 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             if not image_for_slide:
                 add_title_text(slide, deck_title)
             place_text_by_stage(slide, stage, layout, body)
+        elif stage_lower in {"setup", "character", "narrative_setup"}:
+            build_slide_split_panel(slide, image_for_slide, slide_title, body)
+        elif stage_lower in {"world", "themes", "tone", "text"}:
+            build_slide_editorial(slide, image_for_slide, slide_title, body)
         else:
             add_base_background(slide)
             add_full_bleed_image(slide, image_for_slide)
