@@ -839,6 +839,7 @@ def beta_access():
         is_render=is_render_env(),
         gate_locked=True,
         gate_error="Incorrect access code. Please try again.",
+        base_path_prefix=str(BASE_DIR) + "/",
     )
 
 
@@ -850,6 +851,7 @@ def index():
         is_render=is_render_env(),
         gate_locked=not has_beta_access(),
         gate_error=None,
+        base_path_prefix=str(BASE_DIR) + "/",
     )
 
 
