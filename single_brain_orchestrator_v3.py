@@ -4,6 +4,7 @@
 
 import sys
 import json
+import os
 import re
 from pathlib import Path
 
@@ -1244,6 +1245,63 @@ def infer_set_ready_checklist(story_map: dict) -> list[str]:
         "Protect continuity more than novelty."
     ]
 
+def enhance_with_api(story_map: dict, script_text: str) -> dict:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        return {}
+    try:
+        import anthropic
+    except ImportError:
+        return {}
+
+    protagonist = story_map.get("protagonist", "Protagonist").title()
+    world = story_map.get("world", "")
+    tone = story_map.get("tone", "")
+    characters = [c.title() for c in story_map.get("characters", [])[:5]]
+    core_conflict = story_map.get("core_conflict", "")
+    reversal = story_map.get("reversal", "")
+    script_excerpt = script_text
+
+    system = (
+        "You are a professional Hollywood screenplay analyst and pitch writer. "
+        "Given a screenplay excerpt and story data, write five things for a pitch package:\n"
+        "1. logline — one sentence under 50 words: protagonist + pressure + stakes\n"
+        "2. tagline — punchy marketing one-liner under 12 words: the core tension or promise, title-card style\n"
+        "3. synopsis — two paragraphs, 150-200 words total: what happens, what is at stake\n"
+        "4. theme — one sentence under 20 words: what the story is really about\n"
+        "5. protagonist_summary — one sentence under 25 words: who they are and what they carry\n\n"
+        "Return ONLY a raw JSON object with keys: logline, tagline, synopsis, theme, protagonist_summary. "
+        "No markdown. No explanation. No code fences."
+    )
+
+    user_prompt = (
+        f"Title: {story_map.get('title', 'Untitled')}\n"
+        f"Genre/World: {world}\n"
+        f"Tone: {tone}\n"
+        f"Protagonist: {protagonist}\n"
+        f"Key Characters: {', '.join(characters)}\n"
+        f"Core Conflict: {core_conflict}\n"
+        f"Reversal: {reversal}\n\n"
+        f"FULL SCRIPT:\n{script_excerpt}"
+    )
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=700,
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        raw = next((b.text for b in message.content if hasattr(b, "text")), "")
+        if not raw:
+            return {}
+        result = json.loads(raw.strip())
+        return {k: v for k, v in result.items() if k in ("logline", "tagline", "synopsis", "theme", "protagonist_summary")}
+    except Exception:
+        return {}
+
+
 def build_story_map(text: str) -> dict:
     title = extract_title(text)
     dialogue_counts, dialogue_first, dialogue_support = analyze_dialogue_characters(text)
@@ -1283,6 +1341,19 @@ def build_story_map(text: str) -> dict:
     }
     story_map["logline"] = build_logline_from_story_map(story_map)
     story_map["synopsis"] = build_synopsis_from_story_map(story_map)
+
+    # Engine-only tagline fallback — first clause of logline (up to comma/dash/semicolon)
+    raw_logline = story_map.get("logline", "")
+    import re as _re
+    _first_clause = _re.split(r"[,;—–]", raw_logline)[0].strip() if raw_logline else ""
+    story_map["tagline"] = _first_clause[:80] if _first_clause else story_map.get("story_engine", "")[:80]
+
+    api_enhancements = enhance_with_api(story_map, text)
+    if api_enhancements:
+        story_map.update(api_enhancements)
+        if "protagonist_summary" in api_enhancements:
+            story_map["protagonist_profile"]["summary"] = api_enhancements["protagonist_summary"]
+
     story_map["presentation_modes"] = infer_presentation_scores(story_map)
     story_map["presentation_controls"] = infer_presentation_controls(story_map)
     story_map["layout_strategy"] = infer_layout_strategy(story_map)

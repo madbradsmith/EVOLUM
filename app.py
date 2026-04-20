@@ -1,9 +1,9 @@
 # =====================================================
-# ===== EVOLUM MASTER APP STRUCTURE (V1 BETA) =========
+# ===== EVOLUM MASTER APP STRUCTURE (VX BETA) =========
 # =====================================================
 
 # ===== IMPORTS / SETUP START =========================
-# BETA v2_0 BUILD 1.1 — STABLE
+# FULL v1_0 BUILD 1.1 — STABLE
 
 from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for
 from pathlib import Path
@@ -23,8 +23,7 @@ from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from pptx import Presentation
-from actor_prep_generator_AUDITION_REDESIGN_V1 import build_actor_prep_pdf
-from actor_prep_generator_BOOKED_REDESIGN_V1 import build_actor_booked_pdf
+from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf
 from pypdf import PdfReader
 
 
@@ -35,12 +34,12 @@ app = Flask(__name__)
 
 _REFINE_BUILDER_MODULE = None
 _LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
-app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
+app.secret_key = os.environ.get("SECRET_KEY")
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "output"
-STATUS_FILE = BASE_DIR / "status.txt"
+STATUS_FILE = BASE_DIR / "status.json"
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -57,6 +56,57 @@ LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
 LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf", ".fdx", ".docx", ".doc"}
+
+
+def extract_script_text(file) -> str:
+    import xml.etree.ElementTree as ET
+    from zipfile import ZipFile
+    import io
+
+    filename = file.filename.lower()
+
+    if filename.endswith(".txt"):
+        return file.read().decode("utf-8", errors="ignore")
+
+    if filename.endswith(".pdf"):
+        try:
+            reader = PdfReader(file)
+            return "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+        except Exception:
+            return ""
+
+    if filename.endswith(".fdx"):
+        try:
+            tree = ET.parse(file)
+            root = tree.getroot()
+            lines = []
+            for p in root.findall(".//Paragraph"):
+                texts = [t.text for t in p.findall(".//Text") if t.text]
+                line = "".join(texts).strip()
+                if line:
+                    lines.append(line)
+            return "\n".join(lines)
+        except Exception:
+            return ""
+
+    if filename.endswith(".docx") or filename.endswith(".doc"):
+        try:
+            raw = file.read()
+            with ZipFile(io.BytesIO(raw)) as z:
+                xml_bytes = z.read("word/document.xml")
+            root = ET.fromstring(xml_bytes)
+            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            lines = []
+            for p in root.findall(".//w:p", ns):
+                texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
+                line = "".join(texts).strip()
+                if line:
+                    lines.append(line)
+            return "\n".join(lines)
+        except Exception:
+            return ""
+
+    return ""
 
 ACCESS_CODES = [
     "beta1",
@@ -106,13 +156,22 @@ def log_usage(event, **kwargs):
 
 
 def set_status(text: str):
-    STATUS_FILE.write_text(text, encoding="utf-8")
+    try:
+        existing = json.loads(STATUS_FILE.read_text(encoding="utf-8")) if STATUS_FILE.exists() else {}
+    except Exception:
+        existing = {}
+    existing["state"] = text
+    STATUS_FILE.write_text(json.dumps(existing, indent=2), encoding="utf-8")
 
 
 def get_status() -> str:
     if not STATUS_FILE.exists():
         return "IDLE"
-    return STATUS_FILE.read_text(encoding="utf-8").strip() or "IDLE"
+    try:
+        data = json.loads(STATUS_FILE.read_text(encoding="utf-8"))
+        return data.get("state", "IDLE") or "IDLE"
+    except Exception:
+        return "IDLE"
 
 
 def allowed_file(filename: str) -> bool:
@@ -494,315 +553,6 @@ def draw_wrapped_text(pdf, text, x, y, max_width=500, font_name="Helvetica", fon
     return y
 
 
-def build_simple_analysis_pdf(report_output: dict, out_path: Path):
-    from reportlab.lib.utils import simpleSplit as _split
-
-    W, H = LETTER
-    L, R = 42, W - 42
-    UW = R - L
-
-    charcoal = colors.HexColor("#111111")
-    panel    = colors.HexColor("#1a1a1a")
-    panel2   = colors.HexColor("#1f1f1f")
-    gold     = colors.HexColor("#f0c15d")
-    blue     = colors.HexColor("#4C88C7")
-    white    = colors.white
-    muted    = colors.HexColor("#cfcfcf")
-    soft     = colors.HexColor("#8f8f8f")
-    rule     = colors.HexColor("#2b2b2b")
-
-    def ww(text, font, size, max_w):
-        return _split(str(text or ""), font, size, max_w)
-
-    def footer(pdf, page_no):
-        pdf.setStrokeColor(rule)
-        pdf.line(L, 28, R, 28)
-        pdf.setFillColor(soft)
-        pdf.setFont("Helvetica", 8)
-        pdf.drawString(L, 16, "Powered by Developum AI Engine")
-        pdf.drawRightString(R, 16, f"Page {page_no}")
-
-    def new_pg(pdf, page_no):
-        footer(pdf, page_no)
-        pdf.showPage()
-        pdf.setFillColor(charcoal)
-        pdf.rect(0, 0, W, H, stroke=0, fill=1)
-        return H - 56, page_no + 1
-
-    def ensure(pdf, y, page_no, needed):
-        if y - needed < 52:
-            y, page_no = new_pg(pdf, page_no)
-        return y, page_no
-
-    def section_band(pdf, y, text):
-        pdf.setFillColor(panel2)
-        pdf.roundRect(L, y - 20, UW, 26, 8, stroke=0, fill=1)
-        pdf.setFillColor(gold)
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(L + 12, y - 4, text)
-        return y - 38
-
-    def info_row(pdf, y, label, value):
-        lines = ww(str(value or "-"), "Helvetica", 10.5, UW - 120)
-        pdf.setFillColor(white)
-        pdf.setFont("Helvetica-Bold", 10.5)
-        pdf.drawString(L, y, label)
-        pdf.setFillColor(muted)
-        pdf.setFont("Helvetica", 10.5)
-        yy = y
-        for line in lines:
-            pdf.drawString(L + 120, yy, line); yy -= 14
-        return yy - 4
-
-    def gold_label(pdf, y, text):
-        pdf.setFillColor(gold)
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(L, y, text.upper())
-        pdf.setStrokeColor(gold)
-        pdf.line(L, y - 6, L + len(text) * 7, y - 6)
-        return y - 20
-
-    title        = safe_text(report_output.get("title"), "UNTITLED PROJECT").upper()
-    genre        = safe_text(report_output.get("genre") or report_output.get("world"))
-    tone         = safe_text(report_output.get("tone"))
-    logline      = safe_text(report_output.get("logline"))
-    synopsis     = safe_text(report_output.get("synopsis"))
-    theme        = safe_text(report_output.get("theme"))
-    world        = safe_text(report_output.get("world"))
-    core         = safe_text(report_output.get("core_conflict"))
-    engine       = safe_text(report_output.get("story_engine"))
-    reversal     = safe_text(report_output.get("reversal"))
-    lead         = safe_text(report_output.get("lead_character") or report_output.get("protagonist"))
-    supports     = report_output.get("supporting_characters") or []
-    top_chars    = (report_output.get("character_analysis") or {}).get("top_characters", [])
-    comparables  = report_output.get("tone_comparables") or []
-    strength     = report_output.get("strength_index") or {}
-    commercial   = safe_text(report_output.get("commercial_positioning"))
-    audience     = report_output.get("audience_profile") or []
-    setting      = safe_text(report_output.get("setting"))
-    time_frame   = safe_text(report_output.get("time_frame"))
-    exec_summary = safe_text(report_output.get("executive_summary"))
-
-    pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
-    pdf.setTitle(f"{title} Analysis Report")
-    page_no = 1
-
-    # ── COVER ────────────────────────────────────────────────────
-    pdf.setFillColor(charcoal)
-    pdf.rect(0, 0, W, H, stroke=0, fill=1)
-    pdf.setFillColor(gold)
-    pdf.rect(0, H - 6, W, 6, stroke=0, fill=1)
-
-    pdf.setFillColor(soft)
-    pdf.setFont("Helvetica", 9)
-    pdf.drawString(L, H - 30, "EVOLUM  ·  DEVELOPUM AI ENGINE")
-
-    pdf.setFillColor(gold)
-    pdf.setFont("Helvetica-Bold", 40)
-    pdf.drawString(L, H - 80, "SCRIPT")
-    pdf.setFillColor(white)
-    pdf.setFont("Helvetica-Bold", 28)
-    pdf.drawString(L, H - 116, "ANALYSIS REPORT")
-
-    pdf.setStrokeColor(gold)
-    pdf.setLineWidth(1)
-    pdf.line(L, H - 132, R, H - 132)
-
-    pdf.setFillColor(soft)
-    pdf.setFont("Helvetica", 10)
-    pdf.drawString(L, H - 154, "PROJECT")
-    pdf.setFillColor(white)
-    pdf.setFont("Helvetica-Bold", 20)
-    ty = H - 174
-    for tl in ww(title, "Helvetica-Bold", 20, UW):
-        pdf.drawString(L, ty, tl); ty -= 26
-
-    cover_y = ty - 10
-
-    if genre:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(L, cover_y, "GENRE"); cover_y -= 14
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-        for gl in ww(genre, "Helvetica", 11, UW):
-            pdf.drawString(L, cover_y, gl); cover_y -= 14
-        cover_y -= 4
-
-    if tone:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(L, cover_y, "TONE"); cover_y -= 14
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-        for tl in ww(tone, "Helvetica", 11, UW):
-            pdf.drawString(L, cover_y, tl); cover_y -= 14
-        cover_y -= 6
-
-    if comparables:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(L, cover_y, "COMPARABLE TO"); cover_y -= 14
-        comp_text = "  ·  ".join(str(c) for c in comparables[:4] if str(c).strip())
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Oblique", 11)
-        for cl in ww(comp_text, "Helvetica-Oblique", 11, UW):
-            pdf.drawString(L, cover_y, cl); cover_y -= 14
-        cover_y -= 8
-
-    if logline:
-        llines = ww(logline, "Helvetica-Oblique", 11, UW - 36)
-        ph = len(llines) * 15 + 28
-        pdf.setFillColor(panel)
-        pdf.roundRect(L, cover_y - ph + 10, UW, ph, 12, stroke=0, fill=1)
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(L + 16, cover_y - 6, "LOGLINE")
-        ly = cover_y - 22
-        pdf.setFillColor(muted); pdf.setFont("Helvetica-Oblique", 11)
-        for ll in llines:
-            pdf.drawString(L + 16, ly, ll); ly -= 15
-        cover_y -= ph + 14
-
-    if strength:
-        score_items = [
-            ("CONCEPT",   strength.get("concept", 0)),
-            ("CHARACTER", strength.get("character", 0)),
-            ("MARKET",    strength.get("marketability", 0)),
-            ("ORIGINAL",  strength.get("originality", 0)),
-        ]
-        score_items = [(lbl, v) for lbl, v in score_items if v]
-        if score_items:
-            pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
-            pdf.drawString(L, cover_y, "STRENGTH INDEX"); cover_y -= 14
-            badge_w = (UW - 12) / 4
-            for bi, (lbl, val) in enumerate(score_items[:4]):
-                bx = L + bi * (badge_w + 4)
-                pdf.setFillColor(panel)
-                pdf.roundRect(bx, cover_y - 20, badge_w, 26, 6, stroke=0, fill=1)
-                pdf.setFillColor(soft); pdf.setFont("Helvetica", 7.5)
-                pdf.drawString(bx + 6, cover_y - 4, lbl)
-                pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 14)
-                pdf.drawRightString(bx + badge_w - 8, cover_y - 16, f"{val}")
-                pdf.setFillColor(soft); pdf.setFont("Helvetica", 7.5)
-                pdf.drawString(bx + badge_w - 20, cover_y - 16, "/10")
-            cover_y -= 36
-
-    cover_y -= 4
-    contents = [
-        "Story Snapshot  (setting, world, theme, conflict, reversal)",
-        "Full Logline + Synopsis",
-        "Market Position  (commercial, audience, comparables)",
-        "Character Lineup & Top Characters by Scene Count",
-    ]
-    pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(L, cover_y, "THIS REPORT INCLUDES"); cover_y -= 16
-    for item in contents:
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(L, cover_y, "—")
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-        pdf.drawString(L + 16, cover_y, item); cover_y -= 16
-
-    pdf.setFillColor(gold)
-    pdf.rect(0, 0, W, 4, stroke=0, fill=1)
-    footer(pdf, page_no)
-    pdf.showPage(); page_no += 1
-
-    # ── PAGE 2 — STORY DETAILS ───────────────────────────────────
-    pdf.setFillColor(charcoal)
-    pdf.rect(0, 0, W, H, stroke=0, fill=1)
-    y = H - 56
-
-    y, page_no = ensure(pdf, y, page_no, 180)
-    y = section_band(pdf, y, "STORY SNAPSHOT")
-    y = info_row(pdf, y, "Tagline",       report_output.get("tagline") or logline)
-    y = info_row(pdf, y, "World",         world)
-    if setting:
-        y = info_row(pdf, y, "Setting",   setting)
-    if time_frame:
-        y = info_row(pdf, y, "Time Frame", time_frame)
-    y = info_row(pdf, y, "Theme",         theme)
-    y = info_row(pdf, y, "Core Conflict", core)
-    y = info_row(pdf, y, "Story Engine",  engine)
-    y = info_row(pdf, y, "Reversal",      reversal)
-    y -= 16
-
-    y, page_no = ensure(pdf, y, page_no, 80)
-    y = gold_label(pdf, y, "Logline")
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 12)
-    for line in ww(logline, "Helvetica-Bold", 12, UW):
-        y, page_no = ensure(pdf, y, page_no, 20)
-        pdf.drawString(L, y, line); y -= 16
-    y -= 8
-
-    y, page_no = ensure(pdf, y, page_no, 60)
-    y = gold_label(pdf, y, "Synopsis")
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10.5)
-    for line in ww(synopsis, "Helvetica", 10.5, UW):
-        y, page_no = ensure(pdf, y, page_no, 16)
-        pdf.drawString(L, y, line); y -= 15
-    y -= 10
-
-    if lead or supports:
-        y, page_no = ensure(pdf, y, page_no, 60)
-        y = gold_label(pdf, y, "Character Lineup")
-        if lead:
-            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 11)
-            pdf.drawString(L, y, lead); y -= 16
-        if supports:
-            pdf.setFillColor(muted); pdf.setFont("Helvetica", 10.5)
-            sup_text = ",  ".join(str(s) for s in supports if str(s).strip())
-            for line in ww(sup_text, "Helvetica", 10.5, UW):
-                y, page_no = ensure(pdf, y, page_no, 16)
-                pdf.drawString(L, y, line); y -= 15
-
-    if exec_summary:
-        y -= 8
-        y, page_no = ensure(pdf, y, page_no, 60)
-        y = gold_label(pdf, y, "Executive Summary")
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 10.5)
-        for line in ww(exec_summary, "Helvetica", 10.5, UW):
-            y, page_no = ensure(pdf, y, page_no, 16)
-            pdf.drawString(L, y, line); y -= 15
-
-    if commercial or audience:
-        y -= 8
-        y, page_no = ensure(pdf, y, page_no, 40)
-        y = section_band(pdf, y, "MARKET POSITION")
-        if commercial:
-            y = info_row(pdf, y, "Positioning",  commercial)
-        if audience:
-            aud_text = ",  ".join(str(a) for a in audience if str(a).strip())
-            y = info_row(pdf, y, "Audience",     aud_text)
-
-    footer(pdf, page_no)
-
-    # ── PAGE 3 — TOP CHARACTERS ──────────────────────────────────
-    if top_chars:
-        pdf.showPage(); page_no += 1
-        pdf.setFillColor(charcoal)
-        pdf.rect(0, 0, W, H, stroke=0, fill=1)
-        y = H - 56
-
-        y = section_band(pdf, y, "TOP CHARACTERS")
-        colx = [L, L + 140, L + 230, L + 330]
-        headers = ["Character", "Dialogue", "Action", "First Seen"]
-        pdf.setFillColor(blue)
-        pdf.roundRect(L, y - 16, UW, 22, 8, stroke=0, fill=1)
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
-        for hx, ht in zip(colx, headers):
-            pdf.drawString(hx + 8, y - 2, ht)
-        y -= 26
-
-        for i, entry in enumerate(top_chars[:10]):
-            if i % 2 == 0:
-                pdf.setFillColor(panel)
-                pdf.roundRect(L, y - 16, UW, 20, 6, stroke=0, fill=1)
-            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9.5)
-            pdf.drawString(colx[0] + 8, y - 3, safe_text(entry.get("name")))
-            pdf.setFont("Helvetica", 9.5)
-            pdf.drawString(colx[1] + 8, y - 3, str(entry.get("dialogue_count", 0)))
-            pdf.drawString(colx[2] + 8, y - 3, str(entry.get("action_count", 0)))
-            pdf.drawString(colx[3] + 8, y - 3, str(entry.get("first_seen", 0)))
-            y -= 22
-
-        footer(pdf, page_no)
-
-    pdf.save()
-
 
 @app.before_request
 def require_beta_gate():
@@ -1148,6 +898,8 @@ def analyze_script_pass():
         "strength_index": brain.get("strength_index") or {},
         "executive_summary": safe_text(brain.get("executive_summary")),
         "packaging_potential": safe_text(brain.get("packaging_potential")),
+        "protagonist_summary": safe_text(brain.get("protagonist_summary")),
+        "character_leverage": safe_text(brain.get("character_leverage")),
         "story_insights": [
             f"Top characters identified: {', '.join(characters[:5])}" if characters else "Top characters identified.",
             f"Protagonist detected: {lead_character}",
@@ -1362,49 +1114,7 @@ def actor_prep_pass():
 
     if file and file.filename:
         source_mode = "upload"
-        filename = file.filename.lower()
-
-        if filename.endswith(".txt"):
-            script_text = file.read().decode("utf-8", errors="ignore")
-        elif filename.endswith(".pdf"):
-            try:
-                reader = PdfReader(file)
-                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
-                script_text = ""
-        elif filename.endswith(".fdx"):
-            try:
-                import xml.etree.ElementTree as ET
-                tree = ET.parse(file)
-                root = tree.getroot()
-                lines = []
-                for p in root.findall(".//Paragraph"):
-                    texts = [t.text for t in p.findall(".//Text") if t.text]
-                    line = "".join(texts).strip()
-                    if line:
-                        lines.append(line)
-                script_text = "\n".join(lines)
-            except Exception:
-                script_text = ""
-        elif filename.endswith(".docx") or filename.endswith(".doc"):
-            try:
-                import xml.etree.ElementTree as ET
-                from zipfile import ZipFile
-                import io
-                raw = file.read()
-                with ZipFile(io.BytesIO(raw)) as z:
-                    xml_bytes = z.read("word/document.xml")
-                root = ET.fromstring(xml_bytes)
-                ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-                lines = []
-                for p in root.findall(".//w:p", ns):
-                    texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
-                    line = "".join(texts).strip()
-                    if line:
-                        lines.append(line)
-                script_text = "\n".join(lines)
-            except Exception:
-                script_text = ""
+        script_text = extract_script_text(file)
 
         if not script_text.strip() and not pasted_text:
             return jsonify({
@@ -1464,49 +1174,7 @@ def actor_booked_pass():
 
     if file and file.filename:
         source_mode = "upload"
-        filename = file.filename.lower()
-
-        if filename.endswith(".txt"):
-            script_text = file.read().decode("utf-8", errors="ignore")
-        elif filename.endswith(".pdf"):
-            try:
-                reader = PdfReader(file)
-                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
-                script_text = ""
-        elif filename.endswith(".fdx"):
-            try:
-                import xml.etree.ElementTree as ET
-                tree = ET.parse(file)
-                root = tree.getroot()
-                lines = []
-                for p in root.findall(".//Paragraph"):
-                    texts = [t.text for t in p.findall(".//Text") if t.text]
-                    line = "".join(texts).strip()
-                    if line:
-                        lines.append(line)
-                script_text = "\n".join(lines)
-            except Exception:
-                script_text = ""
-        elif filename.endswith(".docx") or filename.endswith(".doc"):
-            try:
-                import xml.etree.ElementTree as ET
-                from zipfile import ZipFile
-                import io
-                raw = file.read()
-                with ZipFile(io.BytesIO(raw)) as z:
-                    xml_bytes = z.read("word/document.xml")
-                root = ET.fromstring(xml_bytes)
-                ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-                lines = []
-                for p in root.findall(".//w:p", ns):
-                    texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
-                    line = "".join(texts).strip()
-                    if line:
-                        lines.append(line)
-                script_text = "\n".join(lines)
-            except Exception:
-                script_text = ""
+        script_text = extract_script_text(file)
 
         if not script_text.strip() and not pasted_text:
             return jsonify({

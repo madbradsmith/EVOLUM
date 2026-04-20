@@ -25,6 +25,7 @@ New in this version:
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import os
 import re
@@ -137,7 +138,13 @@ def load_brain_output(project_dir: Path) -> dict:
     return {}
 
 
+_stock_image_files_cache: dict[str, list[Path]] = {}
+
 def _stock_image_files(visuals_dir: Path, exts: set[str]) -> list[Path]:
+    cache_key = str(visuals_dir)
+    if cache_key in _stock_image_files_cache:
+        return _stock_image_files_cache[cache_key]
+
     if not visuals_dir.exists():
         return []
 
@@ -145,22 +152,19 @@ def _stock_image_files(visuals_dir: Path, exts: set[str]) -> list[Path]:
 
     numbered_top_dirs = []
 
-    # Collect ALL folders like 01_, 02_, ... 18_, etc.
     for child in visuals_dir.iterdir():
         if child.is_dir() and re.match(r"^\d{2}_", child.name):
             numbered_top_dirs.append(child)
 
-    # Sort so order stays predictable
     numbered_top_dirs.sort(key=lambda p: p.name.lower())
 
     files = []
-
-    # Recursively grab all images from ALL numbered folders
     for top_dir in numbered_top_dirs:
         for p in top_dir.rglob("*"):
             if p.is_file() and p.suffix.lower() in exts:
                 files.append(p)
 
+    _stock_image_files_cache[cache_key] = files
     return files
 
 _stock_rotation_counters: dict[str, int] = {}
@@ -400,8 +404,8 @@ def _select_brain_directed_stock_image(
         return None
 
     scored: list[tuple[int, Path]] = []
-    for p in stock_files:
-        score = _score_stock_file_against_tags(p, normalized_tags)
+    for p, combined in _get_precomputed(stock_files):
+        score = _score_combined(combined, normalized_tags)
         if score > 0:
             scored.append((score, p))
 
@@ -499,11 +503,11 @@ def resolve_image_options_for_slide(
                 "image_source": "brain_stock_option",
             })
 
-            if len(resolved_options) >= 10:
+            if len(resolved_options) >= 4:
                 break
 
     # Fill remaining slots with images from unused folders for variety
-    if len(resolved_options) < 10 and stock_files:
+    if len(resolved_options) < 4 and stock_files:
         used_paths = {o["image_path"] for o in resolved_options}
         used_folders = {str(Path(p).parent) for p in used_paths}
 
@@ -514,7 +518,7 @@ def resolve_image_options_for_slide(
 
         fill_rank = len(resolved_options) + 1
         for folder, files in sorted(by_folder.items()):
-            if len(resolved_options) >= 10:
+            if len(resolved_options) >= 4:
                 break
             if folder in used_folders:
                 continue
@@ -633,18 +637,50 @@ def find_image_for_slide(
     return None, "none"
 
 
-def add_base_background(slide) -> None:
-    width_px = 640
-    height_px = 360
+# Pre-computed (path, combined_search_text) pairs — keyed by id of the cached file list
+_stock_precomputed_cache: dict[int, list[tuple]] = {}
 
-    theme = _active_theme
+
+def _get_precomputed(stock_files: list[Path]) -> list[tuple]:
+    """Return (path, combined_normalized_text) for every file — computed once per list object."""
+    cache_key = id(stock_files)
+    if cache_key not in _stock_precomputed_cache:
+        visuals_base = APP_DIR / "visuals"
+        result = []
+        for p in stock_files:
+            try:
+                rel_text = normalize_key(str(p.relative_to(visuals_base)))
+            except Exception:
+                rel_text = normalize_key(str(p))
+            combined = f"{rel_text} {normalize_key(p.stem)}"
+            result.append((p, combined))
+        _stock_precomputed_cache[cache_key] = result
+    return _stock_precomputed_cache[cache_key]
+
+
+def _score_combined(combined: str, normalized_tags: list[str]) -> int:
+    score = 0
+    for tag in normalized_tags:
+        if not tag:
+            continue
+        if tag in combined:
+            score += 8
+        score += sum(3 for part in tag.split() if part in combined)
+    return score
+
+
+# Cache rendered base backgrounds — one expensive render per theme per process
+_base_bg_cache: dict[int, bytes] = {}
+
+
+def _render_base_bg(theme: dict) -> bytes:
+    width_px, height_px = 640, 360
     b1 = theme["base"]
     b2 = theme["base2"]
     glow_color = theme["glow"]
 
     img = Image.new("RGB", (width_px, height_px), b1)
     draw = ImageDraw.Draw(img)
-
     for y in range(height_px):
         t = y / max(1, height_px - 1)
         r = int(b1[0] + (b2[0] - b1[0]) * t)
@@ -668,14 +704,25 @@ def add_base_background(slide) -> None:
         fill=220,
     )
     vignette = vignette.filter(ImageFilter.GaussianBlur(50))
-
     dark = Image.new("RGB", (width_px, height_px), (10, 10, 12))
     img = Image.composite(img, dark, vignette)
 
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=80, optimize=True)
+    return buf.getvalue()
+
+
+def add_base_background(slide) -> None:
+    theme = _active_theme
+    cache_key = id(theme)
+    if cache_key not in _base_bg_cache:
+        _base_bg_cache[cache_key] = _render_base_bg(theme)
+
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-    img.save(tmp.name, format="JPEG", quality=80, optimize=True)
-    slide.shapes.add_picture(str(tmp.name), 0, 0, width=SLIDE_W, height=SLIDE_H)
-    import os; os.unlink(tmp.name)
+    tmp.write(_base_bg_cache[cache_key])
+    tmp.close()
+    slide.shapes.add_picture(tmp.name, 0, 0, width=SLIDE_W, height=SLIDE_H)
+    os.unlink(tmp.name)
 
 
 def add_blur_background(slide, image_path: Optional[Path]) -> None:
@@ -793,22 +840,27 @@ def build_slide_split_panel(slide, image_path: Optional[Path], slide_title: str,
     panel_w = int(float(SLIDE_W) * 0.55)
     panel_h = int(float(SLIDE_H))
 
+    # Pixel dimensions for image processing (EMU units above are not pixels)
+    panel_w_px = 704
+    panel_h_px = 720
+
     if image_path and image_path.exists():
         try:
             with Image.open(image_path) as im:
                 img = im.convert("RGB")
+                img.thumbnail((panel_w_px * 2, panel_h_px * 2))
                 img_ratio = img.width / img.height
-                panel_ratio = panel_w / panel_h
+                panel_ratio = panel_w_px / panel_h_px
                 if img_ratio > panel_ratio:
-                    new_h = panel_h
+                    new_h = panel_h_px
                     new_w = int(new_h * img_ratio)
                 else:
-                    new_w = panel_w
+                    new_w = panel_w_px
                     new_h = int(new_w / img_ratio)
                 img = img.resize((new_w, new_h), Image.LANCZOS)
-                lc = (new_w - panel_w) // 2
-                tc = (new_h - panel_h) // 2
-                img = img.crop((lc, tc, lc + panel_w, tc + panel_h))
+                lc = (new_w - panel_w_px) // 2
+                tc = (new_h - panel_h_px) // 2
+                img = img.crop((lc, tc, lc + panel_w_px, tc + panel_h_px))
                 tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
                 img.save(tmp.name, format="JPEG", quality=82, optimize=True)
             slide.shapes.add_picture(str(tmp.name), 0, 0, width=panel_w, height=SLIDE_H)
@@ -921,8 +973,9 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
 
     layout_strategy = brain_output.get("layout_strategy") or {}
     layout_style = (layout_strategy.get("layout_style") or "cinematic_grounded").strip()
+    composition_bias = (layout_strategy.get("composition_bias") or "image_forward").strip()
     _active_theme = LAYOUT_THEMES.get(layout_style, LAYOUT_THEMES["cinematic_grounded"])
-    print(f"🎨 Layout theme: {layout_style}")
+    print(f"🎨 Layout theme: {layout_style} | Composition: {composition_bias}")
 
     prs = Presentation()
     prs.slide_width = SLIDE_W
@@ -941,14 +994,33 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
         slide_number = int(slide_info.get("slide_number", idx))
 
         slide = prs.slides.add_slide(prs.slide_layouts[6])
-        image_for_slide, image_source = find_image_for_slide(
-            visuals_dir=visuals_dir,
-            deck_title=deck_title,
-            slide_title=slide_title if layout != "title" else deck_title,
-            slide_number=slide_number,
-            brain_output=brain_output,
-            last_used_name=last_used_image_name
-        )
+
+        explicit_path_str = str(slide_info.get("image_path") or "").strip()
+        if explicit_path_str:
+            explicit = Path(explicit_path_str)
+            if not explicit.is_absolute():
+                explicit = (APP_DIR / explicit).resolve()
+            if explicit.exists():
+                image_for_slide = explicit
+                image_source = str(slide_info.get("image_source") or "user_selected")
+            else:
+                image_for_slide, image_source = find_image_for_slide(
+                    visuals_dir=visuals_dir,
+                    deck_title=deck_title,
+                    slide_title=slide_title if layout != "title" else deck_title,
+                    slide_number=slide_number,
+                    brain_output=brain_output,
+                    last_used_name=last_used_image_name
+                )
+        else:
+            image_for_slide, image_source = find_image_for_slide(
+                visuals_dir=visuals_dir,
+                deck_title=deck_title,
+                slide_title=slide_title if layout != "title" else deck_title,
+                slide_number=slide_number,
+                brain_output=brain_output,
+                last_used_name=last_used_image_name
+            )
         if image_for_slide:
             last_used_image_name = image_for_slide.name
             _mark_image_used(image_for_slide)
@@ -957,22 +1029,42 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
 
         if layout == "title":
             add_base_background(slide)
-            print("TITLE POSTER PATH:", POSTER_PATH)
             add_title_poster_image(slide, Path(POSTER_PATH) if POSTER_PATH else image_for_slide)
             add_top_rule(slide)
-            if not image_for_slide:
-                add_title_text(slide, deck_title)
+            add_title_text(slide, deck_title)
             place_text_by_stage(slide, stage, layout, body)
-        elif stage_lower in {"setup", "character", "narrative_setup"}:
-            build_slide_split_panel(slide, image_for_slide, slide_title, body)
-        elif stage_lower in {"world", "themes", "tone", "text"}:
-            build_slide_editorial(slide, image_for_slide, slide_title, body)
-        else:
+        elif composition_bias == "full_bleed":
+            # Action / thriller / nightlife: visual dominance, no split panels
             add_base_background(slide)
             add_full_bleed_image(slide, image_for_slide)
             add_top_rule(slide)
             add_title_text(slide, slide_title.split("(")[0].strip())
             place_text_by_stage(slide, stage, layout, body)
+        elif composition_bias == "illustrative":
+            # Satire / fantasy comedy: text-forward editorial throughout
+            build_slide_editorial(slide, image_for_slide, slide_title, body)
+        elif composition_bias == "split_text_image":
+            # Legal / courtroom: split panel for all body slides
+            if body:
+                build_slide_split_panel(slide, image_for_slide, slide_title, body)
+            else:
+                add_base_background(slide)
+                add_full_bleed_image(slide, image_for_slide)
+                add_top_rule(slide)
+                add_title_text(slide, slide_title.split("(")[0].strip())
+                place_text_by_stage(slide, stage, layout, body)
+        else:
+            # Default (image_forward / hero_image): stage-based routing
+            if stage_lower in {"setup", "character", "narrative_setup"}:
+                build_slide_split_panel(slide, image_for_slide, slide_title, body)
+            elif stage_lower in {"world", "themes", "tone", "text"}:
+                build_slide_editorial(slide, image_for_slide, slide_title, body)
+            else:
+                add_base_background(slide)
+                add_full_bleed_image(slide, image_for_slide)
+                add_top_rule(slide)
+                add_title_text(slide, slide_title.split("(")[0].strip())
+                place_text_by_stage(slide, stage, layout, body)
 
         resolved_image_options = resolve_image_options_for_slide(
             visuals_dir=visuals_dir,

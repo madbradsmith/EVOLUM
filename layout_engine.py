@@ -266,6 +266,7 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     protagonist = clean(data.get("protagonist", ""))
     world = clean(data.get("world", ""))
     logline = clean(data.get("logline", ""))
+    tagline = clean(data.get("tagline", "")) or logline
     synopsis = clean(data.get("synopsis", ""))
 
     story_engine = clean(data.get("story_engine", ""))
@@ -273,8 +274,8 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     reversal = clean(data.get("reversal", ""))
     why_this_movie = clean(data.get("why_this_movie", ""))
 
-    hook = clean(data.get("hook", "")) or first_sentence(logline) or story_engine
-    stakes = clean(data.get("stakes", "")) or core_conflict or reversal or logline
+    hook = clean(data.get("hook", ""))
+    stakes = clean(data.get("stakes", ""))
     tone = clean(data.get("tone", "")) or world
 
     themes = data.get("themes", "")
@@ -283,25 +284,31 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         themes_text = clean(themes)
 
+    theme_field = clean(data.get("theme", ""))
     if not why_this_movie:
-        why_this_movie = story_engine or core_conflict
+        why_this_movie = theme_field or reversal
 
     plan: List[Dict[str, Any]] = []
     image_lookup = build_image_plan_lookup(data)
 
     # Title and core deck spine
-    add_slide(plan, image_lookup, title, logline, "title", "title")
+    add_slide(plan, image_lookup, title, tagline, "title", "title")
     add_slide(plan, image_lookup, "Logline", logline, "analysis", "hook")
 
     # Cinematic synopsis progression
     for slide in split_synopsis_cinematic(synopsis):
         add_slide(plan, image_lookup, slide["title"], slide["body"], slide["layout"], slide["stage"])
 
-    add_slide(plan, image_lookup, "Protagonist", protagonist, "text", "character")
+    protagonist_summary = clean(data.get("protagonist_summary", ""))
+    protagonist_body = protagonist_summary or protagonist
+    add_slide(plan, image_lookup, protagonist or "Protagonist", protagonist_body, "text", "character")
     add_slide(plan, image_lookup, "World", world, "text", "world")
-    add_slide(plan, image_lookup, "Hook", hook, "analysis", "hook")
-    add_slide(plan, image_lookup, "Conflict", core_conflict, "analysis", "conflict")
-    add_slide(plan, image_lookup, "Stakes", stakes, "analysis", "stakes")
+    if hook and hook != logline:
+        add_slide(plan, image_lookup, "Hook", hook, "analysis", "hook")
+    if core_conflict:
+        add_slide(plan, image_lookup, "Conflict", core_conflict, "analysis", "conflict")
+    if stakes and stakes != core_conflict:
+        add_slide(plan, image_lookup, "Stakes", stakes, "analysis", "stakes")
     add_slide(plan, image_lookup, "Tone", tone, "text", "tone")
 
     if story_engine:
@@ -310,8 +317,20 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         add_slide(plan, image_lookup, "Reversal", reversal, "analysis", "turn")
     if themes_text:
         add_slide(plan, image_lookup, "Themes", themes_text, "text", "themes")
-    if why_this_movie:
+    if why_this_movie and why_this_movie not in {story_engine, core_conflict, logline}:
         add_slide(plan, image_lookup, "Why This Movie", why_this_movie, "analysis", "why_now")
+
+    # Remove any slides whose body text is an exact duplicate of an earlier slide
+    seen_bodies: set[str] = set()
+    deduped: List[Dict[str, Any]] = []
+    for slide in plan:
+        body = slide.get("body", "")
+        layout = slide.get("layout", "")
+        if layout == "title" or body not in seen_bodies:
+            deduped.append(slide)
+            if body:
+                seen_bodies.add(body)
+    plan = deduped
 
     return {
         "title": title,
