@@ -7,6 +7,7 @@ import json
 import os
 import re
 from pathlib import Path
+from pypdf import PdfReader
 
 APP_DIR = Path(__file__).resolve().parent
 OUT = Path(__file__).parent / "approved_brain_output.json"
@@ -1824,7 +1825,15 @@ def main():
         print("❌ No input provided")
         sys.exit(1)
 
-    text = Path(sys.argv[1]).read_text(errors="ignore")
+    input_path = Path(sys.argv[1])
+    if input_path.suffix.lower() == ".pdf":
+        try:
+            reader = PdfReader(input_path)
+            text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+        except Exception:
+            text = ""
+    else:
+        text = input_path.read_text(errors="ignore")
     story_map = build_story_map(text)
 
     print(f"🔥 TOP CHARACTER CANDIDATES: {story_map['characters']}")
