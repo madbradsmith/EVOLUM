@@ -265,6 +265,9 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     title = clean(data.get("title", "Project"))
     protagonist = clean(data.get("protagonist", ""))
     world = clean(data.get("world", ""))
+    setting = clean(data.get("setting", ""))
+    # Use descriptive setting prose when available — world is a format tag like "feature / crime drama"
+    world_body = setting if setting else world
     logline = clean(data.get("logline", ""))
     tagline = clean(data.get("tagline", "")) or logline
     synopsis = clean(data.get("synopsis", ""))
@@ -276,7 +279,7 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
 
     hook = clean(data.get("hook", ""))
     stakes = clean(data.get("stakes", ""))
-    tone = clean(data.get("tone", "")) or world
+    tone = clean(data.get("tone", ""))
 
     themes = data.get("themes", "")
     if isinstance(themes, list):
@@ -302,7 +305,7 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     protagonist_summary = clean(data.get("protagonist_summary", ""))
     protagonist_body = protagonist_summary or protagonist
     add_slide(plan, image_lookup, protagonist or "Protagonist", protagonist_body, "text", "character")
-    add_slide(plan, image_lookup, "World", world, "text", "world")
+    add_slide(plan, image_lookup, "World", world_body, "text", "world")
     if hook and hook != logline:
         add_slide(plan, image_lookup, "Hook", hook, "analysis", "hook")
     if core_conflict:

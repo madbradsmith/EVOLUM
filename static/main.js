@@ -535,7 +535,6 @@ function validateUploadAndStart(){
 
     buildInFlight = true;
     sawFreshBuildStatus = false;
-    openBuildProgressModal();
     showLiveProcess();
     setLocalStatus("UPLOADED");
 
