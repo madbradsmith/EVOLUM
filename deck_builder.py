@@ -588,7 +588,7 @@ _GENRE_STYLE = {
 
 _PERIOD_KEYWORDS = [
     # (trigger keywords, content description, rendering style)
-    (["medieval", "kingdom", "castle", "court", "jester", "knight", "throne", "king", "queen", "lord", "valoria"],
+    (["medieval", "kingdom", "castle", "jester", "knight", "throne", "feudal", "valoria", "sorcery", "realm", "peasant", "dungeon", "jousting", "royal court", "nobleman"],
      "medieval kingdom setting, period-accurate costume, stone castle, torchlight",
      "oil painting style, medieval illuminated manuscript aesthetic, rich jewel tones, Renaissance painting"),
     (["space", "spaceship", "galaxy", "planet", "alien", "starship", "orbit"],
