@@ -511,6 +511,7 @@ function validateUploadAndStart(){
 
     buildInFlight = true;
     sawFreshBuildStatus = false;
+    openBuildProgressModal();
     showLiveProcess();
     setLocalStatus("UPLOADED");
 
@@ -1026,6 +1027,47 @@ function goNextRefineSlide(){
 function changePlaceholderImage(){
     showInfoModal("Change Image", "Image selection is the next pass. For now, refine text first.");
 }
+function openBuildProgressModal(){
+    const modal = document.getElementById("buildProgressModal");
+    document.getElementById("buildProgressTitle").textContent = "Building Your Deck";
+    document.getElementById("buildProgressCopy").textContent = "This takes about 30–60 seconds while we generate your images.";
+    document.getElementById("buildProgressStage").textContent = "Analyzing script\u2026";
+    document.getElementById("buildProgressFill").style.width = "10%";
+    document.getElementById("buildProgressWorking").style.display = "block";
+    document.getElementById("buildProgressActions").style.display = "none";
+    modal.classList.add("show");
+}
+
+function updateBuildProgressModal(status){
+    const modal = document.getElementById("buildProgressModal");
+    if (!modal.classList.contains("show")) return;
+    const fill = document.getElementById("buildProgressFill");
+    const stage = document.getElementById("buildProgressStage");
+    if (status === "ANALYZING"){
+        stage.textContent = "Analyzing script with Developum AI Engine\u2026";
+        fill.style.width = "35%";
+    } else if (status === "BUILDING"){
+        stage.textContent = "Generating images and building deck\u2026";
+        fill.style.width = "75%";
+    } else if (status === "COMPLETE"){
+        fill.style.width = "100%";
+        document.getElementById("buildProgressWorking").style.display = "none";
+        document.getElementById("buildProgressTitle").textContent = "Deck Ready";
+        document.getElementById("buildProgressCopy").textContent = "Your pitch deck has been generated.";
+        document.getElementById("buildProgressActions").style.display = "flex";
+    } else if (status === "ERROR"){
+        document.getElementById("buildProgressWorking").style.display = "none";
+        document.getElementById("buildProgressTitle").textContent = "Build Failed";
+        document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please try again.";
+        document.getElementById("buildProgressActions").style.display = "flex";
+        document.getElementById("buildProgressActions").querySelector("button").textContent = "Close";
+    }
+}
+
+function closeBuildProgressModal(){
+    document.getElementById("buildProgressModal").classList.remove("show");
+}
+
     function openRegenerateDeckModal(){
     const modal = document.getElementById("regenDeckModal");
     const title = document.getElementById("regenDeckModalTitle");
@@ -1320,11 +1362,14 @@ function updateStatusUI(status){
         inlineStageEl.textContent = "Preparing engine";
     } else if (status === "ANALYZING" || status === "running"){
         inlineStageEl.textContent = "Analyzing script";
+        updateBuildProgressModal("ANALYZING");
     } else if (status === "BUILDING"){
         inlineStageEl.textContent = "Finalizing deck...";
+        updateBuildProgressModal("BUILDING");
     } else if (status === "DEMO_RUNNING"){
         inlineStageEl.textContent = "Preparing engine";
     } else if (status === "COMPLETE"){
+        updateBuildProgressModal("COMPLETE");
         stopTimer();
         stopQuoteRotation();
         buildInFlight = false;
@@ -1351,6 +1396,7 @@ function updateStatusUI(status){
             }
         }
     } else if (status === "ERROR"){
+        updateBuildProgressModal("ERROR");
         stopTimer();
         buildInFlight = false;
         inlineStageEl.textContent = "Check terminal / backend";
