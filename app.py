@@ -1338,6 +1338,28 @@ def submit_contact():
 
     return jsonify({"ok": True})
 
+# ===== STARTUP CLEANUP START =========================
+def _clear_stock_images_once():
+    visuals_dir = BASE_DIR / "visuals"
+    sentinel = visuals_dir / ".stock_cleared"
+    if sentinel.exists():
+        return
+    if not visuals_dir.exists():
+        return
+    cleared = 0
+    for child in visuals_dir.iterdir():
+        if child.is_dir() and child.name != "user_uploaded":
+            try:
+                shutil.rmtree(child)
+                cleared += 1
+            except Exception as e:
+                print(f"⚠️ Could not remove {child.name}: {e}")
+    sentinel.touch()
+    print(f"🧹 Stock images cleared on startup ({cleared} folders removed)")
+
+_clear_stock_images_once()
+# ===== STARTUP CLEANUP END ===========================
+
 # ===== APP RUN START =================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7000))
