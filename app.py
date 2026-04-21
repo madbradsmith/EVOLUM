@@ -491,6 +491,7 @@ def resolve_refine_image_for_slide(project_dir, deck_title, slide, slide_number,
                 slide_number=slide_number,
                 brain_output=brain_output,
                 last_used_name=last_used_name,
+                slide_body=safe_text(slide.get("body"), ""),
             )
     except Exception as e:
         print(f"⚠️ Refine image resolution failed for slide {slide_number}: {e}", flush=True)

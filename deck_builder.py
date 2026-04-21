@@ -622,7 +622,6 @@ _PERIOD_KEYWORDS = [
 
 
 def _detect_period_style(brain_output: dict):
-    # Pull every text field that might contain setting/period clues
     fields = [
         brain_output.get("world", ""),
         brain_output.get("genre", ""),
@@ -636,14 +635,21 @@ def _detect_period_style(brain_output: dict):
     ]
     combined = " ".join(str(f) for f in fields if f).lower()
     for keywords, content_style, render_style in _PERIOD_KEYWORDS:
-        if any(k in combined for k in keywords):
+        if any(re.search(rf"\b{re.escape(k)}\b", combined) for k in keywords):
             return content_style, render_style
     return "", ""
 
 
-def build_image_prompt(slide_title: str, brain_output: dict) -> str:
+def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "") -> str:
     normalized = normalize_key(slide_title)
     concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting")
+
+    # Use the actual slide body as the core scene description when available
+    _raw_scene = slide_body.replace("\n", " ").strip()[:200] if slide_body else ""
+    # Trim at last word boundary to avoid cutting mid-word
+    if len(_raw_scene) == 200 and " " in _raw_scene:
+        _raw_scene = _raw_scene[:_raw_scene.rfind(" ")]
+    scene = _raw_scene
 
     genre = str(brain_output.get("genre", "drama")).lower()
     genre_style = ""
@@ -660,19 +666,21 @@ def build_image_prompt(slide_title: str, brain_output: dict) -> str:
     period_content, period_render = _detect_period_style(brain_output)
 
     if period_render:
-        # Historical / stylized period — lead with render style, no modern photography terms
+        scene_hint = f", scene depicting: {scene}" if scene else f", {concept}"
         tone_hint = f", {tone[:50]}" if tone else ""
         prompt = (
-            f"{period_render}, {period_content}, {concept}, "
+            f"{period_render}, {period_content}{scene_hint}, "
             f"{genre_style}{tone_hint}, "
             f"highly detailed, dramatic lighting, no text, no watermarks, no logos, 16:9 aspect ratio"
         )
     else:
-        # Contemporary — photorealistic film still
-        world_hint = f", {world[:80]}" if world else ""
+        scene_hint = f"scene depicting: {scene}, " if scene else f"{concept}, "
+        # Skip world if it's a format tag (e.g. "feature / crime drama") — not a visual description
+        visual_world = world if world and not world.startswith("feature /") else ""
+        world_hint = f", {visual_world[:80]}" if visual_world else ""
         tone_hint = f", {tone[:60]}" if tone else ""
         prompt = (
-            f"{concept}, {genre_style}{world_hint}{tone_hint}, "
+            f"{scene_hint}{genre_style}{world_hint}{tone_hint}, "
             f"professional film still, 35mm, shallow depth of field, no text, no watermarks, "
             f"ultra-detailed, photorealistic, 16:9 aspect ratio"
         )
@@ -725,7 +733,8 @@ def find_image_for_slide(
     slide_title: str,
     slide_number: int,
     brain_output: Optional[dict] = None,
-    last_used_name: str = ""
+    last_used_name: str = "",
+    slide_body: str = ""
 ) -> tuple[Optional[Path], str]:
     poster_dir = visuals_dir / "user_uploaded" / "poster"
     current_dir = visuals_dir / "user_uploaded" / "current"
@@ -801,7 +810,7 @@ def find_image_for_slide(
             return selected, "user_fallback"
 
     if FAL_API_KEY and brain_output:
-        prompt = build_image_prompt(slide_title, brain_output)
+        prompt = build_image_prompt(slide_title, brain_output, slide_body)
         cache_dir = visuals_dir.parent / "generated_images" / EVOLUM_SESSION_ID
         safe_title = re.sub(r"[^a-z0-9_]", "_", normalized_title)
         cache_path = cache_dir / f"{slide_number:02d}_{safe_title}.jpg"
@@ -1256,7 +1265,8 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
                     slide_title=slide_title if layout != "title" else deck_title,
                     slide_number=slide_number,
                     brain_output=brain_output,
-                    last_used_name=last_used_image_name
+                    last_used_name=last_used_image_name,
+                    slide_body=body
                 )
         else:
             image_for_slide, image_source = find_image_for_slide(
@@ -1265,7 +1275,8 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
                 slide_title=slide_title if layout != "title" else deck_title,
                 slide_number=slide_number,
                 brain_output=brain_output,
-                last_used_name=last_used_image_name
+                last_used_name=last_used_image_name,
+                slide_body=body
             )
         if image_for_slide:
             last_used_image_name = image_for_slide.name
