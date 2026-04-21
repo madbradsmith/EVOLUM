@@ -320,6 +320,30 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     if why_this_movie and why_this_movie not in {story_engine, core_conflict, logline}:
         add_slide(plan, image_lookup, "Why This Movie", why_this_movie, "analysis", "why_now")
 
+    # Comparables slide
+    comparable_films = data.get("comparable_films", [])
+    if comparable_films:
+        comp_titles = "  ·  ".join(
+            f.get("title", str(f)) if isinstance(f, dict) else str(f)
+            for f in comparable_films[:3]
+        )
+        add_slide(plan, image_lookup, "Comparables", comp_titles, "analysis", "market")
+
+    # Market Projections slide
+    market_projections = data.get("market_projections", {})
+    if market_projections:
+        proj_parts = []
+        if market_projections.get("estimated_budget_tier"):
+            proj_parts.append(f"Budget: {market_projections['estimated_budget_tier']}")
+        if market_projections.get("distribution_angle"):
+            proj_parts.append(f"Distribution: {market_projections['distribution_angle']}")
+        if market_projections.get("awards_potential"):
+            proj_parts.append(f"Awards: {market_projections['awards_potential']}")
+        if market_projections.get("franchise_potential"):
+            proj_parts.append(f"Franchise: {market_projections['franchise_potential']}")
+        if proj_parts:
+            add_slide(plan, image_lookup, "Market Projections", "  ·  ".join(proj_parts), "analysis", "market")
+
     # Remove any slides whose body text is an exact duplicate of an earlier slide
     seen_bodies: set[str] = set()
     deduped: List[Dict[str, Any]] = []

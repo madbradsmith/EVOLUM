@@ -273,6 +273,7 @@ def _stock_candidates_for_key(stock_files: list[Path], lookup_key: str) -> list[
         "visual style": ["01_cinematic_tension", "07_night_isolation", "02_emotional_grounded"],
         "comparables": ["01_cinematic_tension", "06_controlled_clean", "03_urban_pressure"],
         "market position": ["06_controlled_clean", "01_cinematic_tension", "03_urban_pressure"],
+        "market projections": ["06_controlled_clean", "01_cinematic_tension", "09_institutional_authority"],
         "director vision": ["01_cinematic_tension", "02_emotional_grounded", "03_urban_pressure"],
         "casting ideas": ["02_emotional_grounded", "06_controlled_clean", "03_urban_pressure"],
         "production scope": ["06_controlled_clean", "08_daylight_release", "02_emotional_grounded"],
@@ -569,7 +570,8 @@ def find_image_for_slide(
         "conflict", "conflict engine", "stakes", "tone", "story engine",
         "reversal", "theme", "themes", "why this movie", "why this film",
         "audience", "visual style", "comparables", "market position",
-        "director vision", "casting ideas", "production scope", "closing statement"
+        "market projections", "director vision", "casting ideas", "production scope",
+        "closing statement"
     }
 
     if normalized_title not in non_title_slides:

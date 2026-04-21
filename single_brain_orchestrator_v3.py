@@ -1107,6 +1107,107 @@ def infer_tone_comparables(story_map: dict) -> list[str]:
     return ["Prisoners", "Little Miss Sunshine", "Argo"]
 
 
+def infer_comparable_films(story_map: dict) -> list[dict]:
+    world = story_map.get("world", "")
+    tone = story_map.get("tone", "")
+    if "fantasy satire comedy" in world:
+        return [
+            {"title": "The Princess Bride", "why": "Satirical fairy-tale with sharp wit — earns its heart by never playing it straight.", "budget_tier": "mid", "box_office": "$30M"},
+            {"title": "Shrek", "why": "Irreverent genre deconstruction balancing broad comedy with genuine emotional stakes.", "budget_tier": "studio", "box_office": "$484M"},
+            {"title": "The Grand Budapest Hotel", "why": "Heightened world and absurdist power structures turned into prestige cinema.", "budget_tier": "mid", "box_office": "$175M"},
+        ]
+    if "contained urban thriller" in world:
+        return [
+            {"title": "Collateral", "why": "Single-night pressure-cooker with a trapped lead whose choices escalate uncontrollably.", "budget_tier": "mid-to-studio", "box_office": "$218M"},
+            {"title": "Nightcrawler", "why": "Morally complex urban thriller built entirely around a performance and a contained premise.", "budget_tier": "low-mid", "box_office": "$32M"},
+            {"title": "Phone Booth", "why": "Ultra-contained single-location thriller — premise and performance carry the entire feature.", "budget_tier": "low", "box_office": "$98M"},
+        ]
+    if "legal / courtroom drama" in world:
+        return [
+            {"title": "A Few Good Men", "why": "Military legal drama driven by institutional power, buried truth, and a young lawyer forced to find his spine.", "budget_tier": "studio", "box_office": "$243M"},
+            {"title": "Michael Clayton", "why": "Prestige legal thriller that rewards intelligence — a blueprint for morally charged drama.", "budget_tier": "mid-to-studio", "box_office": "$92M"},
+            {"title": "The Firm", "why": "Commercial legal thriller with strong crossover — institutional corruption made viscerally personal.", "budget_tier": "studio", "box_office": "$270M"},
+        ]
+    if "nightlife comedy" in world:
+        return [
+            {"title": "After Hours", "why": "Single-night escalating social disaster — dark, funny, and relentless.", "budget_tier": "low", "box_office": "$10M"},
+            {"title": "Superbad", "why": "Chaotic one-night comedy driven by embarrassment, friendship, and the gap between intention and reality.", "budget_tier": "low-mid", "box_office": "$170M"},
+            {"title": "Booksmart", "why": "Tight, energetic single-night comedy with genuine character depth beneath the chaos.", "budget_tier": "low-mid", "box_office": "$25M"},
+        ]
+    if "sports drama" in world:
+        return [
+            {"title": "Creed", "why": "Sports drama that earns its emotion through identity and character, not just competition.", "budget_tier": "mid", "box_office": "$173M"},
+            {"title": "Remember the Titans", "why": "Inspirational team-driven drama with broad crossover and emotional accessibility.", "budget_tier": "mid", "box_office": "$115M"},
+            {"title": "Friday Night Lights", "why": "Grounded and pressured — a sports film that feels like lived experience.", "budget_tier": "mid", "box_office": "$61M"},
+        ]
+    if "playful" in tone:
+        return [
+            {"title": "Knives Out", "why": "Smart, playful, and commercially successful — proves tone and premise can anchor a prestige theatrical.", "budget_tier": "mid", "box_office": "$311M"},
+            {"title": "The Grand Budapest Hotel", "why": "Singular comedic voice achieving both awards traction and commercial reach.", "budget_tier": "mid", "box_office": "$175M"},
+            {"title": "Jojo Rabbit", "why": "Tonally risky — humor as a delivery system for emotional truth.", "budget_tier": "low-mid", "box_office": "$90M"},
+        ]
+    return [
+        {"title": "Prisoners", "why": "Grounded, morally complex thriller with strong performance appeal and awards-worthy tension.", "budget_tier": "mid", "box_office": "$122M"},
+        {"title": "Little Miss Sunshine", "why": "Contained ensemble drama with commercial breakthrough potential from a clear voice.", "budget_tier": "low-mid", "box_office": "$100M"},
+        {"title": "Argo", "why": "Prestige thriller with broad crossover — tension, performance, and a hook that travels.", "budget_tier": "mid-to-studio", "box_office": "$232M"},
+    ]
+
+
+def infer_market_projections(story_map: dict) -> dict:
+    world = story_map.get("world", "")
+    if "action espionage" in world:
+        budget_tier = "mid-to-studio  ($15M–$50M)"
+        distribution_angle = "Theatrical or premium streaming — trailer-ready with broad commercial ceiling"
+        awards_potential = "Moderate — genre action with crossover performance upside"
+        audience_reach = "Wide — thriller audiences, action fans, crossover streaming"
+        franchise_potential = "Strong — operative world supports recurring stories"
+    elif "contained urban thriller" in world:
+        budget_tier = "low-to-mid  ($2M–$12M)"
+        distribution_angle = "Streaming-first or limited theatrical — strong word-of-mouth ceiling"
+        awards_potential = "Moderate — single-performance showcase in a tight package"
+        audience_reach = "Targeted — thriller and urban suspense audiences"
+        franchise_potential = "Low — contained, complete story"
+    elif "legal / courtroom drama" in world:
+        budget_tier = "mid  ($8M–$25M)"
+        distribution_angle = "Prestige theatrical or premium streamer — performance-driven awards play"
+        awards_potential = "High — strong script, moral pressure, institutional conflict"
+        audience_reach = "Core prestige + broad crossover via streaming"
+        franchise_potential = "Low — standalone dramatic arc"
+    elif "fantasy satire comedy" in world:
+        budget_tier = "mid  ($10M–$30M)"
+        distribution_angle = "Theatrical or streaming — visual world with franchise upside"
+        awards_potential = "Low-to-moderate — comedy builds cultural profile more than trophies"
+        audience_reach = "Broad — family, comedy, and fantasy audiences"
+        franchise_potential = "High — world and characters support sequels or series"
+    elif "nightlife comedy" in world:
+        budget_tier = "low-to-mid  ($3M–$15M)"
+        distribution_angle = "Streaming-first — fast-paced social comedy with strong word-of-mouth"
+        awards_potential = "Low — genre comedy rarely awards-tracked"
+        audience_reach = "Young adult + streaming audiences"
+        franchise_potential = "Low — self-contained night"
+    elif "sports drama" in world:
+        budget_tier = "mid  ($8M–$20M)"
+        distribution_angle = "Theatrical or streaming — inspirational crossover with broad demographic appeal"
+        awards_potential = "Moderate — strong performance arc with emotional resonance"
+        audience_reach = "Wide — sports fans, inspirational drama viewers, broad crossover"
+        franchise_potential = "Moderate — character can carry a sequel if the world is built"
+    else:
+        budget_tier = "low-to-mid  ($3M–$15M)"
+        distribution_angle = "Streaming-first with potential limited theatrical"
+        awards_potential = "Moderate — dependent on execution and performance"
+        audience_reach = "Core dramatic + streaming audiences"
+        franchise_potential = "Low — story-dependent"
+
+    return {
+        "estimated_budget_tier": budget_tier,
+        "distribution_angle": distribution_angle,
+        "awards_potential": awards_potential,
+        "audience_reach": audience_reach,
+        "franchise_potential": franchise_potential,
+        "sales_hook": story_map.get("commercial_positioning", "A commercially viable story package with clear pitch angles."),
+    }
+
+
 def infer_executive_summary(story_map: dict) -> str:
     title = story_map.get("title", "This project")
     protagonist = story_map.get("protagonist", "the lead")
@@ -1246,6 +1347,128 @@ def infer_set_ready_checklist(story_map: dict) -> list[str]:
         "Protect continuity more than novelty."
     ]
 
+def _tmdb_lookup(title: str, token: str) -> dict:
+    import urllib.request
+    import urllib.parse
+    try:
+        query = urllib.parse.quote(title)
+        search_url = f"https://api.themoviedb.org/3/search/movie?query={query}&language=en-US&page=1"
+        req = urllib.request.Request(search_url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req, timeout=6) as resp:
+            results = json.loads(resp.read()).get("results", [])
+        if not results:
+            return {}
+        movie_id = results[0]["id"]
+
+        detail_url = f"https://api.themoviedb.org/3/movie/{movie_id}?language=en-US"
+        req2 = urllib.request.Request(detail_url, headers={"Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req2, timeout=6) as resp2:
+            details = json.loads(resp2.read())
+
+        budget_raw = details.get("budget", 0) or 0
+        revenue_raw = details.get("revenue", 0) or 0
+        release = details.get("release_date", "") or ""
+        year = release[:4] if release else ""
+
+        def fmt(n):
+            if n >= 1_000_000:
+                return f"${n / 1_000_000:.0f}M"
+            return f"${n:,}" if n > 0 else ""
+
+        if budget_raw >= 100_000_000:
+            budget_tier = "studio"
+        elif budget_raw >= 25_000_000:
+            budget_tier = "mid-to-studio"
+        elif budget_raw >= 10_000_000:
+            budget_tier = "mid"
+        elif budget_raw >= 3_000_000:
+            budget_tier = "low-mid"
+        elif budget_raw > 0:
+            budget_tier = "low"
+        else:
+            budget_tier = ""
+
+        return {
+            "box_office": fmt(revenue_raw),
+            "budget": fmt(budget_raw),
+            "budget_tier": budget_tier,
+            "year": year,
+        }
+    except Exception:
+        return {}
+
+
+def fetch_comparable_films(story_map: dict) -> list[dict]:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    tmdb_token = os.environ.get("TMDB_API_TOKEN")
+    if not api_key:
+        return []
+    try:
+        import anthropic
+    except ImportError:
+        return []
+
+    world = story_map.get("world", "")
+    tone = story_map.get("tone", "")
+    logline = story_map.get("logline", "")
+    synopsis = story_map.get("synopsis", "")
+
+    system = (
+        "You are a Hollywood development executive and film analyst. "
+        "Given a screenplay's story data, identify exactly 3 real comparable films (comps). "
+        "Choose films that genuinely match in tone, genre, budget tier, and commercial positioning. "
+        "For each comp, write a 'why' explanation under 20 words. "
+        "Return ONLY a raw JSON array of exactly 3 objects with keys: title, why. "
+        "Use real film titles only. No markdown. No explanation. No code fences."
+    )
+    user_prompt = (
+        f"Genre/World: {world}\n"
+        f"Tone: {tone}\n"
+        f"Logline: {logline}\n"
+        f"Synopsis: {synopsis}\n\n"
+        "Return 3 comparable films as a JSON array."
+    )
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=300,
+            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_prompt}],
+        )
+        raw = next((b.text for b in message.content if hasattr(b, "text")), "")
+        if not raw:
+            return []
+        films = json.loads(raw.strip())
+        if not isinstance(films, list):
+            return []
+    except Exception:
+        return []
+
+    enriched = []
+    for film in films[:3]:
+        if not isinstance(film, dict) or not film.get("title"):
+            continue
+        entry = {
+            "title": film.get("title", ""),
+            "why": film.get("why", ""),
+            "budget_tier": "",
+            "box_office": "",
+            "year": "",
+        }
+        if tmdb_token:
+            try:
+                tmdb = _tmdb_lookup(film["title"], tmdb_token)
+                entry["budget_tier"] = tmdb.get("budget_tier", "")
+                entry["box_office"] = tmdb.get("box_office", "")
+                entry["year"] = tmdb.get("year", "")
+            except Exception:
+                pass
+        enriched.append(entry)
+    return enriched
+
+
 def enhance_with_api(story_map: dict, script_text: str) -> dict:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -1366,7 +1589,14 @@ def build_story_map(text: str) -> dict:
     story_map["packaging_potential"] = infer_packaging_potential(story_map)
     story_map["character_leverage"] = infer_character_leverage(story_map)
     story_map["tone_comparables"] = infer_tone_comparables(story_map)
+    story_map["comparable_films"] = infer_comparable_films(story_map)
+    story_map["market_projections"] = infer_market_projections(story_map)
     story_map["executive_summary"] = infer_executive_summary(story_map)
+
+    api_comparables = fetch_comparable_films(story_map)
+    if api_comparables:
+        story_map["comparable_films"] = api_comparables
+        story_map["tone_comparables"] = [f["title"] for f in api_comparables]
 
     story_map["actor_objective"] = infer_actor_objective(story_map)
     story_map["playable_tactics"] = infer_playable_tactics(story_map)

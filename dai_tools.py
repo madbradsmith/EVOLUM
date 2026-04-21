@@ -902,8 +902,10 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     protagonist_sum = _safe(report_output.get("protagonist_summary"))
     char_leverage   = _safe(report_output.get("character_leverage"))
     top_chars       = (report_output.get("character_analysis") or {}).get("top_characters", [])
-    comparables     = report_output.get("tone_comparables") or []
-    strength        = report_output.get("strength_index") or {}
+    comparables        = report_output.get("tone_comparables") or []
+    comparable_films   = report_output.get("comparable_films") or []
+    market_projections = report_output.get("market_projections") or {}
+    strength           = report_output.get("strength_index") or {}
     commercial      = _safe(report_output.get("commercial_positioning"))
     audience        = report_output.get("audience_profile") or []
     packaging       = _safe(report_output.get("packaging_potential"))
@@ -1004,7 +1006,8 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         "The Protagonist",
         "Character Landscape",
         "Market & Packaging",
-        "Strength Index & Comparables",
+        "Comparable Films  (with context and budget tier)",
+        "Market Projections  (budget, distribution, awards, franchise)",
     ]
     pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(L, cy, "THIS REPORT INCLUDES"); cy -= 14
@@ -1136,11 +1139,50 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     if audience:
         aud_text = ",  ".join(str(a) for a in audience if str(a).strip())
         ctx.info_row("Audience", aud_text)
-    if comparables:
+    if comparable_films:
+        ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 44, ctx.page_no, charcoal)
+        pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(L, ctx.y, "COMPARABLE FILMS"); ctx.y -= 16
+        for film in comparable_films[:3]:
+            if not isinstance(film, dict):
+                continue
+            ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 52, ctx.page_no, charcoal)
+            pdf.setFillColor(panel)
+            pdf.roundRect(L, ctx.y - 38, UW, 44, 8, stroke=0, fill=1)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10.5)
+            pdf.drawString(L + 12, ctx.y - 6, _safe(film.get("title")))
+            budget = _safe(film.get("budget_tier"))
+            box_office = _safe(film.get("box_office"))
+            if budget or box_office:
+                badge = f"{budget}  ·  {box_office}" if budget and box_office else budget or box_office
+                pdf.setFillColor(soft); pdf.setFont("Helvetica", 8)
+                pdf.drawRightString(L + UW - 12, ctx.y - 6, badge)
+            why_lines = simpleSplit(_safe(film.get("why")), "Helvetica", 9.5, UW - 24)
+            wy = ctx.y - 20
+            pdf.setFillColor(muted); pdf.setFont("Helvetica", 9.5)
+            for wl in why_lines[:2]:
+                pdf.drawString(L + 12, wy, wl); wy -= 13
+            ctx.y -= 52
+        ctx.y -= 6
+    elif comparables:
         ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 44, ctx.page_no, charcoal)
         pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
         pdf.drawString(L, ctx.y, "COMPARABLES"); ctx.y -= 14
         ctx.chip_row(comparables, chip_color=gold)
+
+    if market_projections:
+        ctx.section_band("MARKET PROJECTIONS")
+        if market_projections.get("estimated_budget_tier"):
+            ctx.info_row("Budget Tier", market_projections["estimated_budget_tier"])
+        if market_projections.get("distribution_angle"):
+            ctx.info_row("Distribution", market_projections["distribution_angle"])
+        if market_projections.get("awards_potential"):
+            ctx.info_row("Awards", market_projections["awards_potential"])
+        if market_projections.get("audience_reach"):
+            ctx.info_row("Audience", market_projections["audience_reach"])
+        if market_projections.get("franchise_potential"):
+            ctx.info_row("Franchise", market_projections["franchise_potential"])
+
     ctx.y -= 14
 
     # KEY OBSERVATIONS

@@ -112,7 +112,7 @@ ACCESS_CODES = [
     "beta1",
     "beta2",
     "beta3",
-    "beta4",
+    "beta4", 
     "beta5",
     "beta6",
     "beta7",
@@ -120,7 +120,7 @@ ACCESS_CODES = [
     "beta9",
     "beta10",
     "beta11",
-    "beta12",
+    "beta12",    
     "beta13",
     "beta14",
     "beta15",
@@ -913,6 +913,8 @@ def analyze_script_pass():
         "commercial_positioning": safe_text(brain.get("commercial_positioning")),
         "audience_profile": brain.get("audience_profile") or [],
         "tone_comparables": brain.get("tone_comparables") or [],
+        "comparable_films": brain.get("comparable_films") or [],
+        "market_projections": brain.get("market_projections") or {},
         "strength_index": brain.get("strength_index") or {},
         "executive_summary": safe_text(brain.get("executive_summary")),
         "packaging_potential": safe_text(brain.get("packaging_potential")),
@@ -1289,7 +1291,7 @@ def submit_feedback():
 
 # ===== APP RUN START =================================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 7000))
     app.run(host="0.0.0.0", port=port)
 
 
