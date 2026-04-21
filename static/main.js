@@ -781,6 +781,7 @@ function renderImageOptionStrip(){
     }
 
     empty.style.display = "none";
+    const noImageActive = slide.image_path === "__none__" ? "active" : "";
     strip.innerHTML = options.map((option, optionIndex) => {
         const active = option.option_id === slide.selected_option_id ? "active" : "";
         return `
@@ -789,7 +790,12 @@ function renderImageOptionStrip(){
                 <div class="image-option-thumb-label">${option.label || `Option ${optionIndex + 1}`}</div>
             </div>
         `;
-    }).join("");
+    }).join("") + `
+        <div class="image-option-thumb no-image-tile ${noImageActive}" onclick="selectNoImage()" title="Text only — no background image">
+            <div class="no-image-icon">T</div>
+            <div class="image-option-thumb-label">No Image</div>
+        </div>
+    `;
 }
 
 function openImageOptionModal(optionIndex){
@@ -837,6 +843,19 @@ function selectCurrentImageOption(){
     renderImageOptionStrip();
     renderDeckPreview();
     closeModal("imageOptionModal");
+}
+
+function selectNoImage(){
+    const slide = refineSlides[currentRefineSlide];
+    slide.selected_option_id = "__none__";
+    slide.image_path = "__none__";
+    slide.image_name = "none";
+    slide.image_source = "text_only";
+    slide.image_url = "";
+    document.getElementById("refineSlideImage").src = "";
+    document.getElementById("refineSlideCaption").textContent = "Text Only — no background image";
+    renderImageOptionStrip();
+    renderDeckPreview();
 }
 
 function renderCurrentRefineSlide(){

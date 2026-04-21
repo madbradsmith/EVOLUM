@@ -30,6 +30,7 @@ import json
 import os
 import re
 import tempfile
+import urllib.request
 from pathlib import Path
 from typing import Optional
 
@@ -545,6 +546,109 @@ def resolve_image_options_for_slide(
     return resolved_options[:5]
 
 
+FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
+
+_SLIDE_VISUAL_CONCEPTS = {
+    "logline":              "cinematic establishing shot, wide angle, dramatic lighting",
+    "synopsis":             "cinematic scene, atmospheric, narrative moment",
+    "synopsis 2":           "cinematic scene, mid-shot, dramatic tension",
+    "synopsis 3":           "cinematic scene, close-up, emotional intensity",
+    "protagonist":          "cinematic portrait, single character, dramatic lighting, film still",
+    "antagonist":           "cinematic portrait, menacing figure, dramatic shadows, film still",
+    "supporting characters":"cinematic ensemble shot, multiple characters, film still",
+    "world":                "cinematic landscape, establishing shot, rich environment",
+    "hook":                 "cinematic close-up, tension, dramatic moment",
+    "conflict":             "cinematic confrontation, dramatic tension, high stakes",
+    "stakes":               "cinematic wide shot, weight of consequence, dramatic",
+    "tone":                 "cinematic mood shot, atmospheric lighting, visual tone",
+    "story engine":         "cinematic action, driving force, momentum",
+    "reversal":             "cinematic turning point, dramatic shift, pivotal moment",
+    "themes":               "cinematic symbolic imagery, thematic visual metaphor",
+    "why this movie":       "cinematic wide shot, cultural moment, compelling imagery",
+    "comparables":          "cinematic collage feel, prestige film aesthetic",
+    "market projections":   "cinematic wide shot, commercial appeal, high production value",
+    "closing statement":    "cinematic final frame, powerful, memorable",
+}
+
+_GENRE_STYLE = {
+    "horror":       "dark, unsettling, atmospheric horror, shadows, practical effects aesthetic",
+    "thriller":     "tense, noir-influenced, sharp contrast, suspenseful",
+    "comedy":       "warm lighting, vibrant colors, playful composition",
+    "drama":        "naturalistic lighting, intimate, emotionally grounded",
+    "action":       "dynamic, kinetic energy, bold framing, high contrast",
+    "sci-fi":       "futuristic, cool tones, technological, epic scale",
+    "fantasy":      "magical, rich colors, otherworldly, painterly lighting",
+    "romance":      "warm golden tones, soft focus, intimate, emotional",
+    "documentary":  "gritty realism, candid, natural light, observational",
+    "animation":    "stylized, vibrant, expressive, dynamic",
+}
+
+
+def build_image_prompt(slide_title: str, brain_output: dict) -> str:
+    normalized = normalize_key(slide_title)
+    concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting, film still")
+
+    genre = str(brain_output.get("genre", "drama")).lower()
+    genre_style = ""
+    for g, style in _GENRE_STYLE.items():
+        if g in genre:
+            genre_style = style
+            break
+    if not genre_style:
+        genre_style = "cinematic, naturalistic lighting, film aesthetic"
+
+    tone = str(brain_output.get("tone", "")).lower()
+    world = str(brain_output.get("world", "")).replace("\n", " ").strip()
+    world_hint = f", set in {world[:80]}" if world else ""
+
+    tone_hint = f", {tone[:60]}" if tone else ""
+
+    prompt = (
+        f"{concept}, {genre_style}{world_hint}{tone_hint}, "
+        f"professional film still, 35mm, shallow depth of field, no text, no watermarks, "
+        f"ultra-detailed, photorealistic, 16:9 aspect ratio"
+    )
+    return prompt
+
+
+def generate_fal_image(prompt: str, cache_path: Path) -> Optional[Path]:
+    if not FAL_API_KEY:
+        return None
+    if cache_path.exists():
+        return cache_path
+
+    import urllib.error
+    url = "https://fal.run/fal-ai/flux/schnell"
+    payload = json.dumps({
+        "prompt": prompt,
+        "image_size": "landscape_16_9",
+        "num_inference_steps": 4,
+        "num_images": 1,
+        "enable_safety_checker": True,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Authorization": f"Key {FAL_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        image_url = result["images"][0]["url"]
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(image_url, cache_path)
+        print(f"✨ FAL generated image for prompt: {prompt[:60]}...")
+        return cache_path
+    except Exception as e:
+        print(f"⚠️  FAL image generation failed: {e}")
+        return None
+
+
 def find_image_for_slide(
     visuals_dir: Path,
     deck_title: str,
@@ -625,6 +729,15 @@ def find_image_for_slide(
         if selected:
             print(f"🖼️ Using USER image fallback for '{slide_title}': {selected}")
             return selected, "user_fallback"
+
+    if FAL_API_KEY and brain_output:
+        prompt = build_image_prompt(slide_title, brain_output)
+        cache_dir = visuals_dir.parent / "generated_images"
+        safe_title = re.sub(r"[^a-z0-9_]", "_", normalized_title)
+        cache_path = cache_dir / f"{slide_number:02d}_{safe_title}.jpg"
+        generated = generate_fal_image(prompt, cache_path)
+        if generated:
+            return generated, "fal_generated"
 
     brain_stock = _select_brain_directed_stock_image(stock_files, image_instruction, slide_title, last_used_name)
     if brain_stock:
@@ -907,6 +1020,32 @@ def build_slide_split_panel(slide, image_path: Optional[Path], slide_title: str,
                  body, font_size=font_size, align=PP_ALIGN.LEFT, fill_transparency=0.0)
 
 
+def build_slide_text_only(slide, slide_title: str, body: str) -> None:
+    """Text-only layout — no image. Big centered body text fills the slide."""
+    add_base_background(slide)
+    accent = _active_theme["accent"]
+    add_top_rule(slide)
+
+    # Title band
+    tx = slide.shapes.add_textbox(Inches(1.0), Inches(0.52), Inches(11.3), Inches(0.7))
+    tf = tx.text_frame
+    tf.clear()
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = clean(slide_title.split("(")[0].strip())
+    run.font.size = Pt(16)
+    run.font.bold = True
+    run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.CENTER
+
+    # Large body — fills most of slide
+    font_size = _auto_font_size(body, base=22)
+    font_size = max(font_size, 20)
+    add_text_box(slide, Inches(1.0), Inches(1.5), Inches(11.3), Inches(5.4),
+                 body, font_size=font_size, align=PP_ALIGN.CENTER, fill_transparency=0.0)
+
+
 def build_slide_editorial(slide, image_path: Optional[Path], slide_title: str, body: str) -> None:
     """Layout C — image floats center-top, title below it, wide body box at bottom."""
     add_base_background(slide)
@@ -998,7 +1137,10 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
         slide = prs.slides.add_slide(prs.slide_layouts[6])
 
         explicit_path_str = str(slide_info.get("image_path") or "").strip()
-        if explicit_path_str:
+        if explicit_path_str == "__none__":
+            image_for_slide = None
+            image_source = "text_only"
+        elif explicit_path_str:
             explicit = Path(explicit_path_str)
             if not explicit.is_absolute():
                 explicit = (APP_DIR / explicit).resolve()
@@ -1029,7 +1171,9 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
 
         stage_lower = clean(stage).lower()
 
-        if layout == "title":
+        if image_source == "text_only":
+            build_slide_text_only(slide, slide_title, body)
+        elif layout == "title":
             add_base_background(slide)
             add_title_poster_image(slide, Path(POSTER_PATH) if POSTER_PATH else image_for_slide)
             add_top_rule(slide)
