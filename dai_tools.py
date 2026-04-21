@@ -993,10 +993,8 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
                 pdf.setFillColor(panel); pdf.roundRect(bx, cy - 20, badge_w, 26, 6, stroke=0, fill=1)
                 pdf.setFillColor(soft); pdf.setFont("Helvetica", 7.5)
                 pdf.drawString(bx + 6, cy - 4, lbl)
-                pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 14)
-                pdf.drawRightString(bx + badge_w - 8, cy - 16, f"{val}")
-                pdf.setFillColor(soft); pdf.setFont("Helvetica", 7.5)
-                pdf.drawString(bx + badge_w - 20, cy - 16, "/10")
+                pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 13)
+                pdf.drawRightString(bx + badge_w - 6, cy - 17, f"{val}/10")
             cy -= 36
 
     cy -= 4
