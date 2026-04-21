@@ -621,8 +621,20 @@ _PERIOD_KEYWORDS = [
 ]
 
 
-def _detect_period_style(world: str, genre: str, tone: str):
-    combined = f"{world} {genre} {tone}".lower()
+def _detect_period_style(brain_output: dict):
+    # Pull every text field that might contain setting/period clues
+    fields = [
+        brain_output.get("world", ""),
+        brain_output.get("genre", ""),
+        brain_output.get("tone", ""),
+        brain_output.get("logline", ""),
+        brain_output.get("title", ""),
+        brain_output.get("story_engine", ""),
+        brain_output.get("tagline", ""),
+        brain_output.get("synopsis", ""),
+        brain_output.get("setting", ""),
+    ]
+    combined = " ".join(str(f) for f in fields if f).lower()
     for keywords, content_style, render_style in _PERIOD_KEYWORDS:
         if any(k in combined for k in keywords):
             return content_style, render_style
@@ -645,7 +657,7 @@ def build_image_prompt(slide_title: str, brain_output: dict) -> str:
     tone = str(brain_output.get("tone", "")).lower()
     world = str(brain_output.get("world", "")).replace("\n", " ").strip()
 
-    period_content, period_render = _detect_period_style(world, genre, tone)
+    period_content, period_render = _detect_period_style(brain_output)
 
     if period_render:
         # Historical / stylized period — lead with render style, no modern photography terms

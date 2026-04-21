@@ -1355,21 +1355,14 @@ def generate_slide_options():
         except Exception:
             pass
 
-    genre = str(brain.get("genre", "drama")).lower()
-    tone = str(brain.get("tone", "")).lower()
-    world = str(brain.get("world", "")).replace("\n", " ").strip()
-
-    base = f"cinematic scene, {slide_title}"
-    if world:
-        base += f", {world[:80]}"
-    if tone:
-        base += f", {tone[:50]}"
+    from deck_builder import build_image_prompt
+    base = build_image_prompt(slide_title, brain)
     if user_prompt:
-        base += f", {user_prompt}"
+        base = base.replace(", 16:9 aspect ratio", f", {user_prompt}, 16:9 aspect ratio")
 
     variations = [
-        f"{base}, wide establishing shot, epic scale, golden hour light, no text, photorealistic, 16:9",
-        f"{base}, dramatic close-up, intense emotion, shallow depth of field, no text, photorealistic, 16:9",
+        base.replace(", 16:9 aspect ratio", ", wide establishing shot, epic scale, golden hour light, 16:9 aspect ratio"),
+        base.replace(", 16:9 aspect ratio", ", dramatic close-up, intense emotion, shallow depth of field, 16:9 aspect ratio"),
     ]
 
     regen_dir = BASE_DIR / "generated_images" / "regen"
@@ -1443,18 +1436,10 @@ def regenerate_slide_image():
         except Exception:
             pass
 
-    genre = str(brain.get("genre", "drama")).lower()
-    tone = str(brain.get("tone", "")).lower()
-    world = str(brain.get("world", "")).replace("\n", " ").strip()
-
-    base_prompt = f"cinematic scene, {slide_title}, {slide_body[:80]}"
-    if world:
-        base_prompt += f", set in {world[:80]}"
-    if tone:
-        base_prompt += f", {tone[:60]}"
+    from deck_builder import build_image_prompt
+    base_prompt = build_image_prompt(slide_title, brain)
     if user_prompt:
-        base_prompt += f", {user_prompt}"
-    base_prompt += ", professional film still, 35mm, no text, no watermarks, ultra-detailed, photorealistic, 16:9"
+        base_prompt = base_prompt.replace(", 16:9 aspect ratio", f", {user_prompt}, 16:9 aspect ratio")
 
     payload = json.dumps({
         "prompt": base_prompt,
