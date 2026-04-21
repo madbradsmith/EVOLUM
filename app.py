@@ -892,7 +892,7 @@ def analyze_script_pass():
 }, indent=2), encoding="utf-8")
 
 STATUS_TXT.write_text("Analyzing script...", encoding="utf-8")
-    file = request.files.get("script")
+file = request.files.get("script")
 
     if not file or file.filename == "":
         return jsonify({"error": "No file"}), 400
