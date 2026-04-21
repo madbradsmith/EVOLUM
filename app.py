@@ -1289,6 +1289,25 @@ def submit_feedback():
     return jsonify({"ok": True})
 # ===== FEEDBACK ROUTE END ============================
 
+@app.route("/contact", methods=["POST"])
+def submit_contact():
+    data = request.get_json(silent=True) or {}
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip()
+    message = data.get("message", "").strip()
+
+    if not message:
+        return jsonify({"ok": False, "error": "No message"}), 400
+
+    contact_file = OUTPUT_DIR / "contact.txt"
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{timestamp}] name={name or 'anon'} | email={email or 'none'} | {message}\n"
+
+    with open(contact_file, "a", encoding="utf-8") as f:
+        f.write(line)
+
+    return jsonify({"ok": True})
+
 # ===== APP RUN START =================================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7000))

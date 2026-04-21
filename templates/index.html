@@ -36,9 +36,8 @@
     <div class="top-nav-menu" id="topNavMenu">
         <button class="top-nav-item" type="button" onclick="window.location.href='/'">Home</button>
         <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
-        <button class="top-nav-item" type="button" onclick="openHelpModal()">Help</button>
         <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
-        <button class="top-nav-item" type="button" onclick="openBetaNotesModal()">Beta Notes</button>
+        <button class="top-nav-item" type="button" onclick="openPrivacyModal()">Privacy</button>
     </div>
 </div>
 
@@ -464,6 +463,67 @@
     </div>
 </div>
     
+<div class="modal" id="contactModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('contactModal')">×</div>
+        <h3>Contact Us</h3>
+        <div class="feedback-help-copy">Have a question, a problem, or just want to say something? We read everything.</div>
+        <input type="text" id="contactName" placeholder="Your name">
+        <input type="text" id="contactEmail" placeholder="Your email">
+        <textarea id="contactMessage" maxlength="1000" placeholder="What's on your mind?"></textarea>
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitContact()">Send Message</button>
+            <button class="primary-button" type="button" onclick="closeModal('contactModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="privacyModal">
+    <div class="modal-content privacy-modal-content">
+        <div class="modal-close" onclick="closeModal('privacyModal')">×</div>
+        <h3>Privacy &amp; Your Script</h3>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">Your Script Is Yours</div>
+            <p>When you upload a script to EVOLUM, it belongs to you. We do not claim any rights to your work, your story, your characters, or your ideas. Full stop.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">What Happens to Your Script</div>
+            <p>Your script is uploaded, processed by the Developum AI Engine, and then <strong>deleted immediately</strong> from our servers. We do not store your script after analysis is complete. We do not read it. We do not archive it.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">AI Processing</div>
+            <p>Analysis is powered by the Anthropic Claude API. Your script content is sent to Anthropic's API for processing under their data usage policies. Anthropic does not use API-submitted content to train their models. You can review Anthropic's privacy policy at anthropic.com.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">What We Do Store</div>
+            <p>We store your generated pitch deck, analysis report, and any images you upload (poster, character art). These are kept on our servers so you can download them. We do not share these with anyone.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">No Selling. No Sharing.</div>
+            <p>We do not sell, license, share, or otherwise distribute your creative work or personal information to any third party. Ever.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">Beta Period</div>
+            <p>EVOLUM is currently in private beta. During this period, feedback and usage data may be reviewed by our team to improve the platform. No creative content is included in this review.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">Questions</div>
+            <p>If you have any privacy concerns, use the Contact form and we will respond directly.</p>
+        </div>
+
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="closeModal('privacyModal')">Got It</button>
+        </div>
+    </div>
+</div>
+
 <div class="modal" id="imageOptionModal">
     <div class="modal-content image-modal-content">
         <div class="modal-close" onclick="closeModal('imageOptionModal')">×</div>

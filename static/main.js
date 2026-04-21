@@ -232,20 +232,36 @@ function openFeedbackModal(){
     if (menu) menu.classList.remove("show");
     document.getElementById("feedbackModal").classList.add("show");
 }
-function openHelpModal(){
-    const menu = document.getElementById("topNavMenu");
-    if (menu) menu.classList.remove("show");
-    showInfoModal("Help", "Use Script Analyzer to review a script, Create Pitch Deck to generate packaging materials, and Actor Preparation to build actor-facing prep documents.");
-}
 function openContactModal(){
     const menu = document.getElementById("topNavMenu");
     if (menu) menu.classList.remove("show");
-    showInfoModal("Contact", "Contact support through the feedback form for this beta build. Include your email if you want a reply.");
+    document.getElementById("contactModal").classList.add("show");
 }
-function openBetaNotesModal(){
+function openPrivacyModal(){
     const menu = document.getElementById("topNavMenu");
     if (menu) menu.classList.remove("show");
-    showInfoModal("Beta Notes", "This is a live beta. Some features are still being refined, especially image consistency and advanced deck editing tools.");
+    document.getElementById("privacyModal").classList.add("show");
+}
+async function submitContact(){
+    const name = (document.getElementById("contactName").value || "").trim();
+    const email = (document.getElementById("contactEmail").value || "").trim();
+    const message = (document.getElementById("contactMessage").value || "").trim();
+    if (!message){ showInfoModal("Contact", "Please write a message before sending."); return; }
+    try {
+        const resp = await fetch("/contact", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({name, email, message})
+        });
+        const data = await resp.json();
+        closeModal("contactModal");
+        document.getElementById("contactName").value = "";
+        document.getElementById("contactEmail").value = "";
+        document.getElementById("contactMessage").value = "";
+        showInfoModal("Message Sent", "Thanks for reaching out. We'll get back to you soon.");
+    } catch(e) {
+        showInfoModal("Contact", "Something went wrong. Please try again.");
+    }
 }
 function setFeedbackType(type, el){
     selectedFeedbackType = type;

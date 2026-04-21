@@ -1554,5 +1554,29 @@ body {
 body.active-build.complete-mode #refinementStage .slide-preview-img {
     height: 210px;
 }
+.privacy-modal-content{
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.privacy-section{
+    margin-bottom: 18px;
+}
+.privacy-heading{
+    color: #ff7a00;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.privacy-section p{
+    color: #c8c8c8;
+    font-size: 13px;
+    line-height: 1.6;
+    margin: 0;
+}
+.privacy-section strong{
+    color: #ffffff;
+}
 
 </style>
