@@ -443,8 +443,17 @@ async function analyzeSelectedScript(){
         return;
     }
 
-    const btn = document.querySelector("button[onclick='analyzeSelectedScript()']");
-    if (btn){ btn.disabled = true; btn.textContent = "Analyzing..."; btn.classList.add("analyzing"); }
+    closeModal("uploadModal");
+
+    // Show progress modal
+    const progressModal = document.getElementById("buildProgressModal");
+    document.getElementById("buildProgressTitle").textContent = "Analyzing Your Script";
+    document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is reading your script. This takes about 30–60 seconds.";
+    document.getElementById("buildProgressStage").textContent = "Analyzing script with Developum AI Engine…";
+    document.getElementById("buildProgressFill").style.width = "35%";
+    document.getElementById("buildProgressWorking").style.display = "block";
+    document.getElementById("buildProgressActions").style.display = "none";
+    progressModal.classList.add("show");
 
     const formData = new FormData();
     formData.append("script", file);
@@ -456,11 +465,13 @@ async function analyzeSelectedScript(){
         });
 
         if (!response.ok){
-            if (btn){ btn.disabled = false; btn.textContent = "Analyze Script"; btn.classList.remove("analyzing"); }
-            closeModal("uploadModal");
-            let msg = "Analysis failed. Please check your file and try again.";
-            try { const d = await response.json(); if (d.error) msg = d.error; } catch(_){}
-            showInfoModal("Analysis Failed", msg);
+            document.getElementById("buildProgressWorking").style.display = "none";
+            document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
+            document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please check your file and try again.";
+            const actionsEl = document.getElementById("buildProgressActions");
+            actionsEl.style.display = "flex";
+            actionsEl.querySelector("button").textContent = "Close";
+            actionsEl.querySelector("button").onclick = closeBuildProgressModal;
             return;
         }
 
@@ -474,20 +485,33 @@ async function analyzeSelectedScript(){
                 "Your script has been analyzed and your full report is ready to view.";
         }
 
-        if (btn){ btn.disabled = false; btn.textContent = "✓ Done"; btn.classList.remove("analyzing"); }
-        closeModal("uploadModal");
+        document.getElementById("buildProgressFill").style.width = "100%";
+        document.getElementById("buildProgressWorking").style.display = "none";
+        document.getElementById("buildProgressTitle").textContent = "Analysis Complete";
+        document.getElementById("buildProgressCopy").textContent = "Your script has been analyzed by the Developum AI Engine.";
+        const actionsEl = document.getElementById("buildProgressActions");
+        actionsEl.style.display = "flex";
 
         if (analyzeFlowMode === "analyze") {
-            openAnalyzePassModal();
+            actionsEl.querySelector("button").textContent = "View Results";
+            actionsEl.querySelector("button").onclick = function(){
+                closeBuildProgressModal();
+                openAnalyzePassModal();
+            };
         } else {
             approvedScriptFile = file;
+            closeBuildProgressModal();
             continueToApprovedUpload();
         }
 
     } catch (err) {
-        if (btn){ btn.disabled = false; btn.textContent = "Analyze Script"; btn.classList.remove("analyzing"); }
-        closeModal("uploadModal");
-        showInfoModal("Analysis Failed", "Something went wrong. Please try again.");
+        document.getElementById("buildProgressWorking").style.display = "none";
+        document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
+        document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please try again.";
+        const actionsEl = document.getElementById("buildProgressActions");
+        actionsEl.style.display = "flex";
+        actionsEl.querySelector("button").textContent = "Close";
+        actionsEl.querySelector("button").onclick = closeBuildProgressModal;
     }
 }
 
