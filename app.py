@@ -784,7 +784,19 @@ def upload():
         print("⚠️ Failed to write override files:", e)
 
 
+    # Delete previous session's generated images before starting new build
+    prev_session_file = BASE_DIR / "current_session_id.txt"
+    if prev_session_file.exists():
+        try:
+            prev_id = prev_session_file.read_text().strip()
+            prev_dir = BASE_DIR / "generated_images" / prev_id
+            if prev_dir.exists():
+                shutil.rmtree(prev_dir)
+        except Exception:
+            pass
+
     session_id = uuid.uuid4().hex
+    prev_session_file.write_text(session_id)
     build_env = {**os.environ, "EVOLUM_SESSION_ID": session_id}
 
     try:
@@ -809,12 +821,6 @@ def upload():
     finally:
         try:
             save_path.unlink(missing_ok=True)
-        except Exception:
-            pass
-        try:
-            gen_dir = BASE_DIR / "generated_images" / session_id
-            if gen_dir.exists():
-                shutil.rmtree(gen_dir)
         except Exception:
             pass
 
@@ -1117,7 +1123,18 @@ def refine_deck():
 
         LATEST_DECK_MANIFEST_JSON.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
 
+        refine_session_file = BASE_DIR / "current_refine_session_id.txt"
+        if refine_session_file.exists():
+            try:
+                prev_id = refine_session_file.read_text().strip()
+                prev_dir = BASE_DIR / "generated_images" / prev_id
+                if prev_dir.exists():
+                    shutil.rmtree(prev_dir)
+            except Exception:
+                pass
+
         refine_session_id = uuid.uuid4().hex
+        refine_session_file.write_text(refine_session_id)
         refine_env = {**os.environ, "EVOLUM_SESSION_ID": refine_session_id}
         subprocess.run(
             ["python3", str(BASE_DIR / "deck_builder.py"), str(slide_plan_path)],
@@ -1125,12 +1142,6 @@ def refine_deck():
             check=True,
             env=refine_env,
         )
-        try:
-            gen_dir = BASE_DIR / "generated_images" / refine_session_id
-            if gen_dir.exists():
-                shutil.rmtree(gen_dir)
-        except Exception:
-            pass
 
         fresh_pptx = newest_generated_file(".pptx")
         fresh_pdf = newest_generated_file(".pdf")
