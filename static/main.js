@@ -861,6 +861,48 @@ function selectCurrentImageOption(){
     closeModal("imageOptionModal");
 }
 
+async function regenerateSlideImage(){
+    const slide = refineSlides[currentRefineSlide];
+    const title = document.getElementById("refineTitleInput").value || slide.title || "";
+    const body = document.getElementById("refineBodyInput").value || slide.body || "";
+    const userPrompt = (document.getElementById("refineImagePrompt").value || "").trim();
+    const btn = document.getElementById("regenImageBtn");
+
+    btn.disabled = true;
+    btn.textContent = "Generating…";
+
+    try {
+        const resp = await fetch("/regenerate-slide-image", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                slide_title: title,
+                slide_body: body,
+                user_prompt: userPrompt,
+                slide_number: currentRefineSlide + 1,
+            })
+        });
+        const data = await resp.json();
+        if (data.image_url) {
+            slide.image_url = data.image_url;
+            slide.image_path = data.image_path || "";
+            slide.image_source = "fal_generated";
+            slide.selected_option_id = "regen";
+            document.getElementById("refineSlideImage").src = data.image_url;
+            document.getElementById("refineSlideCaption").textContent = "Regenerated image";
+            renderImageOptionStrip();
+            renderDeckPreview();
+        } else {
+            showInfoModal("Image Generation", data.error || "Generation failed. Try again.");
+        }
+    } catch(e) {
+        showInfoModal("Image Generation", "Something went wrong. Try again.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Regenerate Image";
+    }
+}
+
 function selectNoImage(){
     const slide = refineSlides[currentRefineSlide];
     slide.selected_option_id = "__none__";

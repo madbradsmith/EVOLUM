@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import os
 import importlib.util
+import re
 import time
 import uuid
 from datetime import datetime
@@ -1329,6 +1330,73 @@ def submit_feedback():
 
     return jsonify({"ok": True})
 # ===== FEEDBACK ROUTE END ============================
+
+@app.route("/regenerate-slide-image", methods=["POST"])
+def regenerate_slide_image():
+    import urllib.request as _urlreq
+    import urllib.error as _urlerr
+
+    data = request.get_json(silent=True) or {}
+    slide_title = (data.get("slide_title") or "").strip()
+    slide_body = (data.get("slide_body") or "").strip()
+    user_prompt = (data.get("user_prompt") or "").strip()
+    slide_number = int(data.get("slide_number") or 1)
+
+    fal_key = os.environ.get("FAL_API_KEY", "")
+    if not fal_key:
+        return jsonify({"error": "Image generation not configured"}), 503
+
+    brain_file = BASE_DIR / "approved_brain_output.json"
+    brain = {}
+    if brain_file.exists():
+        try:
+            brain = json.loads(brain_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    genre = str(brain.get("genre", "drama")).lower()
+    tone = str(brain.get("tone", "")).lower()
+    world = str(brain.get("world", "")).replace("\n", " ").strip()
+
+    base_prompt = f"cinematic scene, {slide_title}, {slide_body[:80]}"
+    if world:
+        base_prompt += f", set in {world[:80]}"
+    if tone:
+        base_prompt += f", {tone[:60]}"
+    if user_prompt:
+        base_prompt += f", {user_prompt}"
+    base_prompt += ", professional film still, 35mm, no text, no watermarks, ultra-detailed, photorealistic, 16:9"
+
+    payload = json.dumps({
+        "prompt": base_prompt,
+        "image_size": "landscape_16_9",
+        "num_inference_steps": 4,
+        "num_images": 1,
+        "enable_safety_checker": True,
+    }).encode("utf-8")
+
+    req = _urlreq.Request(
+        "https://fal.run/fal-ai/flux/schnell",
+        data=payload,
+        headers={"Authorization": f"Key {fal_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with _urlreq.urlopen(req, timeout=60) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        image_url = result["images"][0]["url"]
+
+        regen_dir = BASE_DIR / "generated_images" / "regen"
+        regen_dir.mkdir(parents=True, exist_ok=True)
+        safe_title = re.sub(r"[^a-z0-9_]", "_", slide_title.lower())[:40]
+        save_path = regen_dir / f"{slide_number:02d}_{safe_title}.jpg"
+        _urlreq.urlretrieve(image_url, save_path)
+
+        serve_url = f"/project-file?path=generated_images/regen/{save_path.name}"
+        return jsonify({"image_url": serve_url, "image_path": str(save_path)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route("/contact", methods=["POST"])
 def submit_contact():

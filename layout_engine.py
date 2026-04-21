@@ -344,6 +344,11 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         if proj_parts:
             add_slide(plan, image_lookup, "Market Projections", "  ·  ".join(proj_parts), "analysis", "market")
 
+    # Closing slide — tagline + title as mic drop
+    tagline = clean(data.get("tagline") or data.get("story_engine") or "")
+    closing_body = tagline[:120] if tagline else title
+    add_slide(plan, image_lookup, "Closing", closing_body, "title", "closing")
+
     # Remove any slides whose body text is an exact duplicate of an earlier slide
     seen_bodies: set[str] = set()
     deduped: List[Dict[str, Any]] = []

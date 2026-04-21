@@ -1554,6 +1554,23 @@ body {
 body.active-build.complete-mode #refinementStage .slide-preview-img {
     height: 210px;
 }
+.label-optional{
+    color: #777;
+    font-weight: 400;
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0;
+}
+.refine-actions-single{
+    display: flex;
+    gap: 10px;
+}
+.refine-actions-single .secondary-button{
+    flex: 1;
+}
+.refine-actions-single .primary-button{
+    flex: 1;
+}
 .privacy-modal-content{
     max-height: 80vh;
     overflow-y: auto;

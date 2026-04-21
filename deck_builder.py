@@ -569,6 +569,7 @@ _SLIDE_VISUAL_CONCEPTS = {
     "comparables":          "cinematic collage feel, prestige film aesthetic",
     "market projections":   "cinematic wide shot, commercial appeal, high production value",
     "closing statement":    "cinematic final frame, powerful, memorable",
+    "closing":              "cinematic hero shot, wide epic frame, powerful final image, golden light",
 }
 
 _GENRE_STYLE = {
@@ -676,7 +677,7 @@ def find_image_for_slide(
         "reversal", "theme", "themes", "why this movie", "why this film",
         "audience", "visual style", "comparables", "market position",
         "market projections", "director vision", "casting ideas", "production scope",
-        "closing statement"
+        "closing statement", "closing"
     }
 
     if normalized_title not in non_title_slides:
@@ -1174,6 +1175,12 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
 
         if image_source == "text_only":
             build_slide_text_only(slide, slide_title, body)
+        elif stage_lower == "closing":
+            add_base_background(slide)
+            add_full_bleed_image(slide, image_for_slide)
+            add_top_rule(slide)
+            add_title_text(slide, deck_title)
+            place_text_by_stage(slide, "closing", "title", body)
         elif layout == "title":
             add_base_background(slide)
             add_title_poster_image(slide, Path(POSTER_PATH) if POSTER_PATH else image_for_slide)

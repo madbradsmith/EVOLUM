@@ -197,11 +197,17 @@
                 <div class="field-group">
                     <label class="label" for="refineBodyInput">Body Copy</label>
                     <textarea id="refineBodyInput" placeholder="Edit slide text here"></textarea>
-                    <div class="field-help">These are real editable fields. Your changes should now stay in place while you move through the refine flow. Image selection is the next pass.</div>
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="refineImagePrompt">Image Direction <span class="label-optional">(optional)</span></label>
+                    <input type="text" id="refineImagePrompt" placeholder="e.g. animated style, night scene, wide epic shot…">
+                    <div class="field-help">Describe the look you want for this slide's image. Leave blank to use the script's tone automatically.</div>
                 </div>
 
                 <div class="upload-actions refine-actions-single">
     <button class="primary-button" type="button" onclick="saveCurrentRefineSlide()">Update Slide</button>
+    <button class="secondary-button" type="button" id="regenImageBtn" onclick="regenerateSlideImage()">Regenerate Image</button>
 </div>
 
 <div class="upload-actions refine-actions-pair">
