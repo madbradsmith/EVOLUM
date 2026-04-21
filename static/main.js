@@ -861,6 +861,48 @@ function selectCurrentImageOption(){
     closeModal("imageOptionModal");
 }
 
+async function loadSlideImageOptions(){
+    const slide = refineSlides[currentRefineSlide];
+    const title = document.getElementById("refineTitleInput").value || slide.title || "";
+    const body = document.getElementById("refineBodyInput").value || slide.body || "";
+    const userPrompt = (document.getElementById("refineImagePrompt").value || "").trim();
+    const btn = document.getElementById("loadOptionsBtn");
+
+    btn.disabled = true;
+    btn.textContent = "Generating options…";
+
+    try {
+        const resp = await fetch("/generate-slide-options", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                slide_title: title,
+                slide_body: body,
+                user_prompt: userPrompt,
+                slide_number: currentRefineSlide + 1,
+                current_image_path: slide.image_path || "",
+                current_image_url: slide.image_url || "",
+            })
+        });
+        const data = await resp.json();
+        if (data.options && data.options.length) {
+            slide.image_options = [
+                ...(slide.image_options || []).filter(o => o.option_id === "selected"),
+                ...data.options
+            ];
+            renderImageOptionStrip();
+            showInfoModal("Image Options", `${data.options.length} new options loaded. Browse them in the image strip below.`);
+        } else {
+            showInfoModal("Image Options", data.error || "Could not generate options. Try again.");
+        }
+    } catch(e) {
+        showInfoModal("Image Options", "Something went wrong. Try again.");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "Load Image Options";
+    }
+}
+
 async function regenerateSlideImage(){
     const slide = refineSlides[currentRefineSlide];
     const title = document.getElementById("refineTitleInput").value || slide.title || "";

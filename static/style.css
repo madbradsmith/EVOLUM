@@ -1554,6 +1554,9 @@ body {
 body.active-build.complete-mode #refinementStage .slide-preview-img {
     height: 210px;
 }
+.full-width-btn{
+    width: 100%;
+}
 .label-optional{
     color: #777;
     font-weight: 400;

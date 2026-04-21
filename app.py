@@ -1331,6 +1331,95 @@ def submit_feedback():
     return jsonify({"ok": True})
 # ===== FEEDBACK ROUTE END ============================
 
+@app.route("/generate-slide-options", methods=["POST"])
+def generate_slide_options():
+    import urllib.request as _urlreq
+
+    data = request.get_json(silent=True) or {}
+    slide_title = (data.get("slide_title") or "").strip()
+    slide_body = (data.get("slide_body") or "").strip()
+    user_prompt = (data.get("user_prompt") or "").strip()
+    slide_number = int(data.get("slide_number") or 1)
+    current_image_path = (data.get("current_image_path") or "").strip()
+    current_image_url = (data.get("current_image_url") or "").strip()
+
+    fal_key = os.environ.get("FAL_API_KEY", "")
+    if not fal_key:
+        return jsonify({"error": "Image generation not configured"}), 503
+
+    brain_file = BASE_DIR / "approved_brain_output.json"
+    brain = {}
+    if brain_file.exists():
+        try:
+            brain = json.loads(brain_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    genre = str(brain.get("genre", "drama")).lower()
+    tone = str(brain.get("tone", "")).lower()
+    world = str(brain.get("world", "")).replace("\n", " ").strip()
+
+    base = f"cinematic scene, {slide_title}"
+    if world:
+        base += f", {world[:80]}"
+    if tone:
+        base += f", {tone[:50]}"
+    if user_prompt:
+        base += f", {user_prompt}"
+
+    variations = [
+        f"{base}, wide establishing shot, epic scale, golden hour light, no text, photorealistic, 16:9",
+        f"{base}, dramatic close-up, intense emotion, shallow depth of field, no text, photorealistic, 16:9",
+    ]
+
+    regen_dir = BASE_DIR / "generated_images" / "regen"
+    regen_dir.mkdir(parents=True, exist_ok=True)
+
+    options = []
+    if current_image_path and current_image_path != "__none__":
+        options.append({
+            "option_id": "selected",
+            "label": "Current Pick",
+            "image_path": current_image_path,
+            "image_url": current_image_url,
+            "image_source": "fal_generated",
+        })
+
+    labels = ["Wide Shot", "Close-Up"]
+    for i, prompt in enumerate(variations):
+        safe_title = re.sub(r"[^a-z0-9_]", "_", slide_title.lower())[:30]
+        save_path = regen_dir / f"{slide_number:02d}_{safe_title}_opt{i+1}.jpg"
+        payload = json.dumps({
+            "prompt": prompt,
+            "image_size": "landscape_16_9",
+            "num_inference_steps": 4,
+            "num_images": 1,
+            "enable_safety_checker": True,
+        }).encode("utf-8")
+        req = _urlreq.Request(
+            "https://fal.run/fal-ai/flux/schnell",
+            data=payload,
+            headers={"Authorization": f"Key {fal_key}", "Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with _urlreq.urlopen(req, timeout=60) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+            image_url = result["images"][0]["url"]
+            _urlreq.urlretrieve(image_url, save_path)
+            options.append({
+                "option_id": f"opt_{i+1}",
+                "label": labels[i],
+                "image_path": str(save_path),
+                "image_url": f"/project-file?path=generated_images/regen/{save_path.name}",
+                "image_source": "fal_generated",
+            })
+        except Exception as e:
+            print(f"⚠️ Option {i+1} generation failed: {e}")
+
+    return jsonify({"options": options})
+
+
 @app.route("/regenerate-slide-image", methods=["POST"])
 def regenerate_slide_image():
     import urllib.request as _urlreq

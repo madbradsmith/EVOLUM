@@ -908,8 +908,30 @@ def add_center_image(slide, image_path: Optional[Path], scale_factor: float = 0.
 
 
 def add_full_bleed_image(slide, image_path: Optional[Path]) -> None:
-    add_blur_background(slide, image_path)
-    add_center_image(slide, image_path, scale_factor=0.68)
+    if not image_path or not image_path.exists():
+        return
+    SLIDE_W_PX, SLIDE_H_PX = 1280, 720
+    try:
+        with Image.open(image_path) as im:
+            img = im.convert("RGB")
+            img_ratio = img.width / img.height
+            slide_ratio = SLIDE_W_PX / SLIDE_H_PX
+            if img_ratio > slide_ratio:
+                new_h = SLIDE_H_PX
+                new_w = int(new_h * img_ratio)
+            else:
+                new_w = SLIDE_W_PX
+                new_h = int(new_w / img_ratio)
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+            lc = (new_w - SLIDE_W_PX) // 2
+            tc = (new_h - SLIDE_H_PX) // 2
+            img = img.crop((lc, tc, lc + SLIDE_W_PX, tc + SLIDE_H_PX))
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            img.save(tmp.name, format="JPEG", quality=88, optimize=True)
+        slide.shapes.add_picture(tmp.name, 0, 0, width=SLIDE_W, height=SLIDE_H)
+        os.unlink(tmp.name)
+    except Exception as e:
+        print(f"⚠️ Full bleed image error: {e}")
 
 
 def add_title_poster_image(slide, image_path: Optional[Path]) -> None:
@@ -1172,7 +1194,8 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
         slide = prs.slides.add_slide(prs.slide_layouts[6])
 
         explicit_path_str = str(slide_info.get("image_path") or "").strip()
-        if explicit_path_str == "__none__":
+        image_source_hint = str(slide_info.get("image_source") or "").strip()
+        if explicit_path_str == "__none__" or image_source_hint == "text_only":
             image_for_slide = None
             image_source = "text_only"
         elif explicit_path_str:
@@ -1239,7 +1262,7 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             "body": body,
             "layout": layout,
             "stage": stage,
-            "image_path": str(image_for_slide) if image_for_slide else "",
+            "image_path": "__none__" if image_source == "text_only" else (str(image_for_slide) if image_for_slide else ""),
             "image_name": image_for_slide.name if image_for_slide else "",
             "image_source": image_source,
             "image_query": slide_info.get("image_query", ""),
