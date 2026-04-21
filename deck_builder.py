@@ -587,30 +587,51 @@ _GENRE_STYLE = {
 
 
 _PERIOD_KEYWORDS = [
-    (["medieval", "kingdom", "castle", "court", "jester", "knight", "throne", "king", "queen", "lord", "valoria"], "medieval fantasy, period accurate, castle, kingdom aesthetic"),
-    (["space", "spaceship", "galaxy", "planet", "alien", "starship", "orbit"], "outer space, sci-fi, futuristic spacecraft"),
-    (["future", "cyberpunk", "neon", "dystopia", "android", "robot"], "near-future dystopia, cyberpunk neon lighting"),
-    (["western", "frontier", "cowboy", "saloon", "sheriff"], "american western, frontier, dusty plains"),
-    (["victorian", "1800s", "19th century", "gaslight", "corset"], "victorian era, 1800s period costume"),
-    (["1920", "1930", "prohibition", "jazz age", "noir", "gangster"], "1930s noir, prohibition era, art deco"),
-    (["war", "wwii", "battlefield", "soldier", "trench", "military"], "wartime, gritty military realism"),
-    (["ancient", "roman", "greek", "egypt", "pyramid", "colosseum"], "ancient world, epic historical"),
-    (["pirate", "ship", "ocean", "sail", "treasure", "sea"], "age of sail, pirate adventure, tall ships"),
-    (["animation", "animated", "cartoon", "pixar", "anime"], "stylized animation, vibrant illustration"),
+    # (trigger keywords, content description, rendering style)
+    (["medieval", "kingdom", "castle", "court", "jester", "knight", "throne", "king", "queen", "lord", "valoria"],
+     "medieval kingdom setting, period-accurate costume, stone castle, torchlight",
+     "oil painting style, medieval illuminated manuscript aesthetic, rich jewel tones, Renaissance painting"),
+    (["space", "spaceship", "galaxy", "planet", "alien", "starship", "orbit"],
+     "outer space, futuristic spacecraft, alien world",
+     "sci-fi concept art, dramatic cosmic lighting, highly detailed illustration"),
+    (["future", "cyberpunk", "neon", "dystopia", "android", "robot"],
+     "near-future dystopian city, neon-lit streets, rain-slicked pavement",
+     "cyberpunk digital art, neon illustration, cinematic concept art"),
+    (["western", "frontier", "cowboy", "saloon", "sheriff"],
+     "american frontier, dusty plains, period-accurate western setting",
+     "painted western landscape, golden hour, cinematic wide oil painting"),
+    (["victorian", "1800s", "19th century", "gaslight", "corset"],
+     "victorian era street, period costume, gaslight atmosphere",
+     "Victorian oil portrait style, dramatic chiaroscuro, 1800s painting aesthetic"),
+    (["1920", "1930", "prohibition", "jazz age", "noir", "gangster"],
+     "1930s city, prohibition era, art deco interior",
+     "1930s noir illustration, art deco style, high contrast dramatic painting"),
+    (["war", "wwii", "battlefield", "soldier", "trench", "military"],
+     "wartime battlefield, period military uniform, gritty realism",
+     "wartime painted illustration, dramatic military art, painterly realism"),
+    (["ancient", "roman", "greek", "egypt", "pyramid", "colosseum"],
+     "ancient world, marble columns, epic historical setting",
+     "neoclassical painting style, ancient epic art, dramatic historical illustration"),
+    (["pirate", "ship", "ocean", "sail", "treasure", "sea"],
+     "tall ship, age of sail, ocean adventure, period-accurate nautical",
+     "swashbuckling painted adventure, maritime oil painting, dramatic seascape"),
+    (["animation", "animated", "cartoon", "pixar", "anime"],
+     "stylized animated world, expressive characters",
+     "vibrant stylized illustration, animated film concept art"),
 ]
 
 
-def _detect_period_style(world: str, genre: str, tone: str) -> str:
+def _detect_period_style(world: str, genre: str, tone: str):
     combined = f"{world} {genre} {tone}".lower()
-    for keywords, style in _PERIOD_KEYWORDS:
+    for keywords, content_style, render_style in _PERIOD_KEYWORDS:
         if any(k in combined for k in keywords):
-            return style
-    return ""
+            return content_style, render_style
+    return "", ""
 
 
 def build_image_prompt(slide_title: str, brain_output: dict) -> str:
     normalized = normalize_key(slide_title)
-    concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting, film still")
+    concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting")
 
     genre = str(brain_output.get("genre", "drama")).lower()
     genre_style = ""
@@ -619,21 +640,32 @@ def build_image_prompt(slide_title: str, brain_output: dict) -> str:
             genre_style = style
             break
     if not genre_style:
-        genre_style = "cinematic, naturalistic lighting, film aesthetic"
+        genre_style = "cinematic, naturalistic lighting"
 
     tone = str(brain_output.get("tone", "")).lower()
     world = str(brain_output.get("world", "")).replace("\n", " ").strip()
 
-    period_style = _detect_period_style(world, genre, tone)
-    period_hint = f", {period_style}" if period_style else ""
-    world_hint = f", {world[:80]}" if world and not period_style else ""
-    tone_hint = f", {tone[:60]}" if tone else ""
+    period_content, period_render = _detect_period_style(world, genre, tone)
 
-    prompt = (
-        f"{concept}, {genre_style}{period_hint}{world_hint}{tone_hint}, "
-        f"professional film still, 35mm, shallow depth of field, no text, no watermarks, "
-        f"ultra-detailed, photorealistic, 16:9 aspect ratio"
-    )
+    if period_render:
+        # Historical / stylized period — lead with render style, no modern photography terms
+        tone_hint = f", {tone[:50]}" if tone else ""
+        prompt = (
+            f"{period_render}, {period_content}, {concept}, "
+            f"{genre_style}{tone_hint}, "
+            f"highly detailed, dramatic lighting, no text, no watermarks, no logos, 16:9 aspect ratio"
+        )
+    else:
+        # Contemporary — photorealistic film still
+        world_hint = f", {world[:80]}" if world else ""
+        tone_hint = f", {tone[:60]}" if tone else ""
+        prompt = (
+            f"{concept}, {genre_style}{world_hint}{tone_hint}, "
+            f"professional film still, 35mm, shallow depth of field, no text, no watermarks, "
+            f"ultra-detailed, photorealistic, 16:9 aspect ratio"
+        )
+
+    print(f"🎨 FAL prompt [{slide_title}]: {prompt}")
     return prompt
 
 
