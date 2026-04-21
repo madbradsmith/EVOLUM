@@ -112,7 +112,7 @@ ACCESS_CODES = [
     "beta1",
     "beta2",
     "beta3",
-    "beta4", 
+    "beta4",
     "beta5",
     "beta6",
     "beta7",
@@ -120,7 +120,7 @@ ACCESS_CODES = [
     "beta9",
     "beta10",
     "beta11",
-    "beta12",    
+    "beta12",
     "beta13",
     "beta14",
     "beta15",
@@ -1289,7 +1289,7 @@ def submit_feedback():
 
 # ===== APP RUN START =================================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 7000))
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
 
 
