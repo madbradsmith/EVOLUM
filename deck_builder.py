@@ -586,6 +586,28 @@ _GENRE_STYLE = {
 }
 
 
+_PERIOD_KEYWORDS = [
+    (["medieval", "kingdom", "castle", "court", "jester", "knight", "throne", "king", "queen", "lord", "valoria"], "medieval fantasy, period accurate, castle, kingdom aesthetic"),
+    (["space", "spaceship", "galaxy", "planet", "alien", "starship", "orbit"], "outer space, sci-fi, futuristic spacecraft"),
+    (["future", "cyberpunk", "neon", "dystopia", "android", "robot"], "near-future dystopia, cyberpunk neon lighting"),
+    (["western", "frontier", "cowboy", "saloon", "sheriff"], "american western, frontier, dusty plains"),
+    (["victorian", "1800s", "19th century", "gaslight", "corset"], "victorian era, 1800s period costume"),
+    (["1920", "1930", "prohibition", "jazz age", "noir", "gangster"], "1930s noir, prohibition era, art deco"),
+    (["war", "wwii", "battlefield", "soldier", "trench", "military"], "wartime, gritty military realism"),
+    (["ancient", "roman", "greek", "egypt", "pyramid", "colosseum"], "ancient world, epic historical"),
+    (["pirate", "ship", "ocean", "sail", "treasure", "sea"], "age of sail, pirate adventure, tall ships"),
+    (["animation", "animated", "cartoon", "pixar", "anime"], "stylized animation, vibrant illustration"),
+]
+
+
+def _detect_period_style(world: str, genre: str, tone: str) -> str:
+    combined = f"{world} {genre} {tone}".lower()
+    for keywords, style in _PERIOD_KEYWORDS:
+        if any(k in combined for k in keywords):
+            return style
+    return ""
+
+
 def build_image_prompt(slide_title: str, brain_output: dict) -> str:
     normalized = normalize_key(slide_title)
     concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting, film still")
@@ -601,12 +623,14 @@ def build_image_prompt(slide_title: str, brain_output: dict) -> str:
 
     tone = str(brain_output.get("tone", "")).lower()
     world = str(brain_output.get("world", "")).replace("\n", " ").strip()
-    world_hint = f", set in {world[:80]}" if world else ""
 
+    period_style = _detect_period_style(world, genre, tone)
+    period_hint = f", {period_style}" if period_style else ""
+    world_hint = f", {world[:80]}" if world and not period_style else ""
     tone_hint = f", {tone[:60]}" if tone else ""
 
     prompt = (
-        f"{concept}, {genre_style}{world_hint}{tone_hint}, "
+        f"{concept}, {genre_style}{period_hint}{world_hint}{tone_hint}, "
         f"professional film still, 35mm, shallow depth of field, no text, no watermarks, "
         f"ultra-detailed, photorealistic, 16:9 aspect ratio"
     )
@@ -939,6 +963,37 @@ def add_text_box(slide, left, top, width, height, text: str, *, font_size: int =
     p.alignment = align
 
 
+def add_cinematic_caption(slide, body: str, font_size: int = 18) -> None:
+    """Full-width dark band anchored at the bottom — no border, text sits on the image."""
+    if not body:
+        return
+    band_h = Inches(1.55)
+    band_top = SLIDE_H - band_h
+    band = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, band_top, SLIDE_W, band_h)
+    band.fill.solid()
+    band.fill.fore_color.rgb = rgb(6, 6, 8)
+    band.fill.transparency = 0.18
+    band.line.fill.background()
+
+    tx = slide.shapes.add_textbox(Inches(0.6), band_top, SLIDE_W - Inches(1.2), band_h)
+    tf = tx.text_frame
+    tf.clear()
+    tf.word_wrap = True
+    tf.margin_left = Inches(0.1)
+    tf.margin_right = Inches(0.1)
+    tf.margin_top = Inches(0.18)
+    tf.margin_bottom = Inches(0.1)
+    tf.vertical_anchor = MSO_ANCHOR.MIDDLE
+
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = clean(body)
+    run.font.size = Pt(font_size)
+    run.font.bold = True
+    run.font.color.rgb = rgb(255, 255, 255)
+    p.alignment = PP_ALIGN.CENTER
+
+
 def _auto_font_size(text: str, base: int) -> int:
     n = len(text)
     if n > 300: return max(10, base - 5)
@@ -1078,34 +1133,12 @@ def build_slide_editorial(slide, image_path: Optional[Path], slide_title: str, b
 def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
     stage = clean(stage).lower()
     layout = clean(layout).lower()
-
-    if layout == "title":
-        fs = _auto_font_size(body, 19)
-        add_text_box(slide, Inches(0.72), Inches(5.12), Inches(11.9), Inches(1.28),
-                     body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.26)
+    if not body:
         return
-
-    if stage == "escalation" or layout == "narrative_escalation":
-        fs = _auto_font_size(body, 17)
-        add_text_box(slide, Inches(1.05), Inches(4.55), Inches(10.95), Inches(1.72),
-                     body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.20)
-        return
-
-    if stage in {"turn", "aftermath"} or layout in {"narrative_turn", "narrative_aftermath"}:
-        fs = _auto_font_size(body, 19)
-        add_text_box(slide, Inches(0.58), Inches(3.04), Inches(4.5), Inches(2.80),
-                     body, font_size=fs, align=PP_ALIGN.LEFT, fill_transparency=0.24)
-        return
-
-    if stage in {"hook", "conflict", "stakes", "engine", "why_now", "analysis"} or layout == "analysis":
-        fs = _auto_font_size(body, 18)
-        add_text_box(slide, Inches(0.7), Inches(4.65), Inches(11.95), Inches(1.56),
-                     body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.20)
-        return
-
     fs = _auto_font_size(body, 18)
-    add_text_box(slide, Inches(0.7), Inches(4.65), Inches(11.95), Inches(1.56),
-                 body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.22)
+    if layout in {"title", "closing"}:
+        fs = _auto_font_size(body, 19)
+    add_cinematic_caption(slide, body, font_size=fs)
 
 
 def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path) -> Path:
@@ -1175,50 +1208,22 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
 
         if image_source == "text_only":
             build_slide_text_only(slide, slide_title, body)
-        elif stage_lower == "closing":
-            add_base_background(slide)
-            add_full_bleed_image(slide, image_for_slide)
-            add_top_rule(slide)
-            add_title_text(slide, deck_title)
-            place_text_by_stage(slide, "closing", "title", body)
         elif layout == "title":
             add_base_background(slide)
             add_title_poster_image(slide, Path(POSTER_PATH) if POSTER_PATH else image_for_slide)
             add_top_rule(slide)
             add_title_text(slide, deck_title)
             place_text_by_stage(slide, stage, layout, body)
-        elif composition_bias == "full_bleed":
-            # Action / thriller / nightlife: visual dominance, no split panels
+        else:
+            # Full bleed — every non-title slide
             add_base_background(slide)
             add_full_bleed_image(slide, image_for_slide)
             add_top_rule(slide)
-            add_title_text(slide, slide_title.split("(")[0].strip())
+            if stage_lower != "closing":
+                add_title_text(slide, slide_title.split("(")[0].strip())
+            else:
+                add_title_text(slide, deck_title)
             place_text_by_stage(slide, stage, layout, body)
-        elif composition_bias == "illustrative":
-            # Satire / fantasy comedy: text-forward editorial throughout
-            build_slide_editorial(slide, image_for_slide, slide_title, body)
-        elif composition_bias == "split_text_image":
-            # Legal / courtroom: split panel for all body slides
-            if body:
-                build_slide_split_panel(slide, image_for_slide, slide_title, body)
-            else:
-                add_base_background(slide)
-                add_full_bleed_image(slide, image_for_slide)
-                add_top_rule(slide)
-                add_title_text(slide, slide_title.split("(")[0].strip())
-                place_text_by_stage(slide, stage, layout, body)
-        else:
-            # Default (image_forward / hero_image): stage-based routing
-            if stage_lower in {"setup", "character", "narrative_setup"}:
-                build_slide_split_panel(slide, image_for_slide, slide_title, body)
-            elif stage_lower in {"world", "themes", "tone", "text"}:
-                build_slide_editorial(slide, image_for_slide, slide_title, body)
-            else:
-                add_base_background(slide)
-                add_full_bleed_image(slide, image_for_slide)
-                add_top_rule(slide)
-                add_title_text(slide, slide_title.split("(")[0].strip())
-                place_text_by_stage(slide, stage, layout, body)
 
         resolved_image_options = resolve_image_options_for_slide(
             visuals_dir=visuals_dir,
