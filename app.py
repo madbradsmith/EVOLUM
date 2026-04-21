@@ -15,6 +15,7 @@ import subprocess
 import os
 import importlib.util
 import time
+import uuid
 from datetime import datetime
 from urllib.parse import unquote, quote
 
@@ -783,6 +784,9 @@ def upload():
         print("⚠️ Failed to write override files:", e)
 
 
+    session_id = uuid.uuid4().hex
+    build_env = {**os.environ, "EVOLUM_SESSION_ID": session_id}
+
     try:
         set_status("ANALYZING")
         log_path = BASE_DIR / "pipeline.log"
@@ -795,12 +799,24 @@ def upload():
                 stderr=log_file,
                 text=True,
                 check=True,
+                env=build_env,
             )
 
         set_status("BUILDING")
     except subprocess.CalledProcessError:
         set_status("ERROR")
         return "Engine failed", 500
+    finally:
+        try:
+            save_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        try:
+            gen_dir = BASE_DIR / "generated_images" / session_id
+            if gen_dir.exists():
+                shutil.rmtree(gen_dir)
+        except Exception:
+            pass
 
     fresh_pptx = newest_generated_file(".pptx")
     fresh_pdf = newest_generated_file(".pdf")
@@ -881,6 +897,11 @@ def analyze_script_pass():
     except subprocess.CalledProcessError:
         log_usage("analyze_complete", success=False, filename=file.filename, error="analysis_failed")
         return jsonify({"error": "analysis failed"}), 500
+    finally:
+        try:
+            temp_path.unlink(missing_ok=True)
+        except Exception:
+            pass
 
     brain_file = BASE_DIR / "approved_brain_output.json"
 
@@ -1096,11 +1117,20 @@ def refine_deck():
 
         LATEST_DECK_MANIFEST_JSON.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
 
+        refine_session_id = uuid.uuid4().hex
+        refine_env = {**os.environ, "EVOLUM_SESSION_ID": refine_session_id}
         subprocess.run(
             ["python3", str(BASE_DIR / "deck_builder.py"), str(slide_plan_path)],
             cwd=str(BASE_DIR),
             check=True,
+            env=refine_env,
         )
+        try:
+            gen_dir = BASE_DIR / "generated_images" / refine_session_id
+            if gen_dir.exists():
+                shutil.rmtree(gen_dir)
+        except Exception:
+            pass
 
         fresh_pptx = newest_generated_file(".pptx")
         fresh_pdf = newest_generated_file(".pdf")

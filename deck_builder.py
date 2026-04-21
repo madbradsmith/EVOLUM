@@ -547,6 +547,7 @@ def resolve_image_options_for_slide(
 
 
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
+EVOLUM_SESSION_ID = os.environ.get("EVOLUM_SESSION_ID", "shared")
 
 _SLIDE_VISUAL_CONCEPTS = {
     "logline":              "cinematic establishing shot, wide angle, dramatic lighting",
@@ -732,7 +733,7 @@ def find_image_for_slide(
 
     if FAL_API_KEY and brain_output:
         prompt = build_image_prompt(slide_title, brain_output)
-        cache_dir = visuals_dir.parent / "generated_images"
+        cache_dir = visuals_dir.parent / "generated_images" / EVOLUM_SESSION_ID
         safe_title = re.sub(r"[^a-z0-9_]", "_", normalized_title)
         cache_path = cache_dir / f"{slide_number:02d}_{safe_title}.jpg"
         generated = generate_fal_image(prompt, cache_path)
