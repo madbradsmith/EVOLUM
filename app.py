@@ -103,6 +103,7 @@ LATEST_PPTX = OUTPUT_DIR / "latest.pptx"
 LATEST_PDF = OUTPUT_DIR / "latest.pdf"
 LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
+
 LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
