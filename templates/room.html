@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EVOLUM Collaboration Room</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='session_room.css') }}">
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="title">Collaboration Room</div>
+            <div class="sub">Session: {{ session_id }} · Shared deck room prototype</div>
+        </div>
+        <div class="sub">Driver: <span class="driver">{{ driver }}</span></div>
+    </div>
+
+    <div class="shell">
+        <section class="panel room-panel">
+            <h2>Preview Panel</h2>
+            <div class="panel-copy">Shared live preview of the current deck state.</div>
+            <div class="preview-strip" id="previewStrip">
+                {% for slide in slides %}
+                <div class="slide">
+                    <div class="slide-title">{{ loop.index }}. {{ slide.title }}</div>
+                    <div class="slide-body">{{ slide.body }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="panel room-panel">
+            <h2>Refine Panel</h2>
+            <div class="panel-copy">Single-driver editing area for slide text and rebuild actions.</div>
+            <div class="field">
+                <label>Slide Title</label>
+                <input id="slideTitleInput" value="{{ slides[0].title if slides else 'Title Slide' }}">
+            </div>
+            <div class="field">
+                <label>Slide Body</label>
+                <textarea id="slideBodyInput">{{ slides[0].body if slides else 'Refine content here.' }}</textarea>
+            </div>
+            <div id="saveFlash" class="flash"></div>
+            <div class="actions">
+                <button class="primary" type="button" onclick="saveCurrentSlide('{{ session_id }}')">Save Changes</button>
+                <button class="primary" type="button">Rebuild Deck</button>
+                <button class="secondary" type="button" onclick="window.location.reload()">Preview Mode</button>
+                <button class="secondary" type="button">Pass Control</button>
+            </div>
+        </section>
+
+        <section class="panel room-panel">
+            <h2>Session Control</h2>
+            <div class="panel-copy">Shared room controls, collaborator info, and meeting link area.</div>
+            <div class="status-card">
+                <div class="status-label">Session Status</div>
+                <div class="status-value">{{ status }}</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Current Driver</div>
+                <div class="status-value driver">{{ driver }}</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">Meeting Link</div>
+                <div class="small">Paste a Zoom or Google Meet link here for the room.</div>
+                <div class="linkbox">{{ meeting_link }}</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">How This Works</div>
+                <div class="small">Multiple collaborators can join the same room. One person drives edits at a time. Others review, discuss, and pass control when needed.</div>
+            </div>
+            <div class="actions">
+                <button class="primary" type="button">Copy Invite</button>
+                <button class="secondary" type="button">Leave Room</button>
+            </div>
+        </section>
+    </div>
+<script src="{{ url_for('static', filename='session_room.js') }}"></script>
+</body>
+</html>

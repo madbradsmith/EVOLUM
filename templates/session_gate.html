@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EVOLUM Session Gate</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='session_room.css') }}">
+</head>
+<body>
+    <div class="card gate-card">
+        <h1>EVOLUM</h1>
+        <div class="sub">Choose your lane. Enter the beta as normal, or join a live deck collaboration session.</div>
+
+        <div class="toggle-row">
+            <button class="toggle active" id="betaTab" type="button" onclick="showPanel('beta')">Enter Beta</button>
+            <button class="toggle" id="sessionTab" type="button" onclick="showPanel('session')">Join Session</button>
+        </div>
+
+        <div class="panel active" id="betaPanel">
+            <form action="{{ url_for('enter_beta') }}" method="get">
+                <button class="primary full" type="submit">Go To Main Beta</button>
+            </form>
+            <div class="helper">This keeps your current beta flow untouched.</div>
+        </div>
+
+        <div class="panel" id="sessionPanel">
+            <form action="{{ url_for('join_session') }}" method="post">
+                <label for="session_id">Session ID</label>
+                <input id="session_id" name="session_id" placeholder="e.g. courtjester-v1" required>
+
+                <label for="session_password">Session Password</label>
+                <input id="session_password" name="session_password" type="password" placeholder="Enter session password" required>
+
+                <button class="primary full" type="submit">Join Collaboration Room</button>
+            </form>
+            <div class="helper">This opens the shared room with Preview, Refine, and Session Control panels.</div>
+        </div>
+
+        <div class="note">Standalone collaboration prototype — separate from app.py</div>
+    </div>
+<script src="{{ url_for('static', filename='session_room.js') }}"></script>
+</body>
+</html>
