@@ -26,7 +26,6 @@ from pptx import Presentation
 from actor_prep_generator_AUDITION_REDESIGN_V1 import build_actor_prep_pdf
 from actor_prep_generator_BOOKED_REDESIGN_V1 import build_actor_booked_pdf
 from pypdf import PdfReader
-from sqlalchemy import create_engine, text
 
 
 # ===== IMPORTS / SETUP END ===========================
@@ -37,57 +36,6 @@ app = Flask(__name__)
 _REFINE_BUILDER_MODULE = None
 _LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
 app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
-
-DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-DB_ENGINE = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
-
-def db_check() -> bool:
-    if not DB_ENGINE:
-        return False
-    with DB_ENGINE.connect() as conn:
-        conn.execute(text("SELECT 1"))
-    return True
-
-def db_init() -> None:
-    if not DB_ENGINE:
-        raise RuntimeError("DATABASE_URL is not configured")
-    with DB_ENGINE.begin() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS beta_users (
-                id SERIAL PRIMARY KEY,
-                email TEXT UNIQUE,
-                name TEXT,
-                password_hash TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS activity_events (
-                id SERIAL PRIMARY KEY,
-                user_email TEXT,
-                event_type TEXT NOT NULL,
-                route TEXT,
-                metadata_json TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-
-def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
-    if not DB_ENGINE:
-        return
-    try:
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO activity_events (user_email, event_type, route, metadata_json)
-                VALUES (:user_email, :event_type, :route, :metadata_json)
-            """), {
-                "user_email": user_email or "",
-                "event_type": event_type,
-                "route": route or "",
-                "metadata_json": json.dumps(metadata or {}),
-            })
-    except Exception as e:
-        print(f"⚠️ Activity log write failed: {e}", flush=True)
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -106,7 +54,6 @@ LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
 LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
-LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
@@ -256,6 +203,31 @@ def resolve_quiet_image_for_slide(slide_title, stage, layout, slide_number):
 
     return candidates[0]
 
+
+
+def normalize_project_file_path(path_value):
+    value = str(path_value or "").strip().replace("\\", "/")
+    if not value:
+        return ""
+    prefixes = [
+        "/opt/render/project/src/",
+        "opt/render/project/src/",
+    ]
+    for prefix in prefixes:
+        if value.startswith(prefix):
+            value = value[len(prefix):]
+            break
+    if value.startswith(str(BASE_DIR).replace("\\", "/") + "/"):
+        value = value[len(str(BASE_DIR).replace("\\", "/")) + 1:]
+    return value.lstrip("/")
+
+
+def project_file_url_for_path(path_value):
+    rel = normalize_project_file_path(path_value)
+    if not rel:
+        return ""
+    return "/project-file?path=" + quote(rel)
+
 def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
     project_title = safe_text(slide_plan_data.get("title"), "UNTITLED PROJECT")
     raw_slides = slide_plan_data.get("slides") or []
@@ -326,7 +298,7 @@ def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
         if layout:
             caption_bits.append(f"Layout: {layout.replace('_', ' ').title()}")
 
-        configured_image_path = safe_text(slide.get("image_path"), "")
+        configured_image_path = normalize_project_file_path(safe_text(slide.get("image_path"), ""))
         configured_image_name = safe_text(slide.get("image_name"), "")
         configured_image_url = safe_text(slide.get("image_url"), "")
         image_options = normalize_manifest_image_options(slide.get("image_options") or [])
@@ -374,6 +346,7 @@ def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
             "stage": stage,
             "source_index": index,
             "image_name": image_name,
+            "image_path": configured_image_path,
             "image_url": image_url,
             "image_options": image_options,
             "selected_option_id": selected_option_id,
@@ -1051,12 +1024,20 @@ def download_latest_pdf():
 # ===== ANALYZE ROUTES START ==========================
 @app.route("/analyze-script-pass", methods=["POST"])
 def analyze_script_pass():
-    set_status("ANALYZING")
+    STATUS_JSON.write_text(json.dumps({
+        "status": "ANALYZING",
+        "phase": "analyzing",
+        "message": "Analyzing script...",
+        "progress": 0,
+        "complete": False,
+        "error": ""
+    }, indent=2), encoding="utf-8")
+
+    STATUS_TXT.write_text("Analyzing script...", encoding="utf-8")
     file = request.files.get("script")
 
     if not file or file.filename == "":
         return jsonify({"error": "No file"}), 400
-
 
     if not allowed_file(file.filename):
         return jsonify({"error": "Only .txt and .pdf supported"}), 400
@@ -1212,27 +1193,13 @@ def latest_slide_plan():
 
 @app.route("/project-file")
 def project_file():
-    raw_path = (request.args.get("path") or "").strip()
-    candidate = resolve_project_file_candidate(raw_path)
-    if not candidate:
+    raw_path = unquote((request.args.get("path") or "").strip())
+    if not raw_path:
+        abort(404)
+    candidate = (BASE_DIR / raw_path).resolve()
+    if not ensure_relative_to_base(candidate) or not candidate.exists() or not candidate.is_file():
         abort(404)
     return send_file(candidate, as_attachment=False, conditional=True)
-
-
-@app.route("/generate-slide-options", methods=["POST"])
-def generate_slide_options():
-    slide_plan_file = find_latest_slide_plan_file()
-    if not slide_plan_file or not slide_plan_file.exists():
-        return jsonify({"error": "No generated slide plan found yet."}), 404
-
-    try:
-        with open(slide_plan_file, "r", encoding="utf-8") as f:
-            slide_plan_data = json.load(f)
-    except Exception as e:
-        return jsonify({"error": f"Could not read latest slide plan: {e}"}), 500
-
-    payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=slide_plan_file)
-    return jsonify(payload)
 
 @app.route("/refine-deck", methods=["POST"])
 def refine_deck():
@@ -1252,7 +1219,7 @@ def refine_deck():
                     "layout": str(slide_data.get("layout", "") or "text").strip(),
                     "stage": str(slide_data.get("stage", "") or "refine").strip(),
                     "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": normalize_project_path_string(slide_data.get("image_path", "") or ""),
+                    "image_path": normalize_project_file_path(slide_data.get("image_path", "")),
                     "image_name": str(slide_data.get("image_name", "") or "").strip(),
                     "image_url": str(slide_data.get("image_url", "") or "").strip(),
                     "image_source": str(slide_data.get("image_source", "") or "").strip(),
@@ -1277,8 +1244,7 @@ def refine_deck():
                 "body": str(slide_data.get("body", "") or "").strip(),
                 "layout": str(slide_data.get("layout", "") or "").strip(),
                 "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": normalize_project_path_string(slide_data.get("image_path", "") or ""),
-
+                "image_path": normalize_project_file_path(slide_data.get("image_path", "")),
                 "image_name": str(slide_data.get("image_name", "") or "").strip(),
                 "image_url": str(slide_data.get("image_url", "") or "").strip(),
                 "image_source": str(slide_data.get("image_source", "") or "").strip(),
@@ -1461,33 +1427,8 @@ def actor_prep_latest_download_pdf():
 
 # ===== ACTOR PREP ROUTES END =========================
 
-@app.route("/db-check")
-def db_check_route():
-    try:
-        ok = db_check()
-        return jsonify({"ok": ok, "database_configured": bool(DATABASE_URL)})
-    except Exception as e:
-        return jsonify({"ok": False, "database_configured": bool(DATABASE_URL), "error": str(e)}), 500
-
-
-@app.route("/db-init")
-def db_init_route():
-    try:
-        db_init()
-        return jsonify({"ok": True, "message": "database initialized"})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
 # ===== APP RUN START =================================
 if __name__ == "__main__":
-    try:
-        if DB_ENGINE:
-            db_init()
-            print("✅ Database ready", flush=True)
-        else:
-            print("⚠️ DATABASE_URL not configured; database features disabled", flush=True)
-    except Exception as e:
-        print(f"⚠️ Database init skipped: {e}", flush=True)
     port = int(os.environ.get("PORT", 7000))
     app.run(host="0.0.0.0", port=port)
 
