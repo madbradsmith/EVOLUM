@@ -695,9 +695,15 @@ function makeAccentForIndex(index){
 
 function projectFileUrl(path){
     if (!path) return "";
-    const rel = String(path).replace(BASE_PATH_PREFIX, "").replace(/^\/+/, "");
+
+    const rel = String(path)
+        .replace(BASE_PATH_PREFIX || "", "")
+        .replace(/^\/?opt\/render\/project\/src\//, "")
+        .replace(/^\/+/, "");
+
     return "/project-file?path=" + encodeURIComponent(rel);
 }
+
 
 function normalizeImageOption(option, fallbackSlide, optionIndex){
     const normalized = option || {};
