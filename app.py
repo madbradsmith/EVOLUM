@@ -39,54 +39,55 @@ _LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
 app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-
-engine = None
-if DATABASE_URL:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-
+DB_ENGINE = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
 
 def db_check() -> bool:
-    if engine is None:
+    if not DB_ENGINE:
         return False
-    with engine.connect() as conn:
+    with DB_ENGINE.connect() as conn:
         conn.execute(text("SELECT 1"))
     return True
 
+def db_init() -> None:
+    if not DB_ENGINE:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS beta_users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE,
+                name TEXT,
+                password_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS activity_events (
+                id SERIAL PRIMARY KEY,
+                user_email TEXT,
+                event_type TEXT NOT NULL,
+                route TEXT,
+                metadata_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
 
-def init_db():
-    if engine is None:
-        return False, "DATABASE_URL is not configured"
-
-    create_beta_users_sql = """
-    CREATE TABLE IF NOT EXISTS beta_users (
-        id SERIAL PRIMARY KEY,
-        email TEXT UNIQUE,
-        password_hash TEXT,
-        display_name TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        last_login_at TIMESTAMPTZ
-    )
-    """
-
-    create_activity_events_sql = """
-    CREATE TABLE IF NOT EXISTS activity_events (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES beta_users(id) ON DELETE SET NULL,
-        event_type TEXT NOT NULL,
-        route TEXT,
-        project_id TEXT,
-        session_id TEXT,
-        metadata_json JSONB,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-    """
-
-    with engine.begin() as conn:
-        conn.execute(text(create_beta_users_sql))
-        conn.execute(text(create_activity_events_sql))
-
-    return True, "Database tables are ready"
-
+def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
+    if not DB_ENGINE:
+        return
+    try:
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO activity_events (user_email, event_type, route, metadata_json)
+                VALUES (:user_email, :event_type, :route, :metadata_json)
+            """), {
+                "user_email": user_email or "",
+                "event_type": event_type,
+                "route": route or "",
+                "metadata_json": json.dumps(metadata or {}),
+            })
+    except Exception as e:
+        print(f"⚠️ Activity log write failed: {e}", flush=True)
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -1452,43 +1453,34 @@ def actor_prep_latest_download_pdf():
 
 # ===== ACTOR PREP ROUTES END =========================
 
-
 @app.route("/db-check")
 def db_check_route():
     try:
         ok = db_check()
-        return jsonify({
-            "ok": ok,
-            "database_url_configured": bool(DATABASE_URL),
-            "message": "Database connection OK" if ok else "Database engine not configured"
-        }), 200 if ok else 500
+        return jsonify({"ok": ok, "database_configured": bool(DATABASE_URL)})
     except Exception as e:
-        return jsonify({
-            "ok": False,
-            "database_url_configured": bool(DATABASE_URL),
-            "error": str(e)
-        }), 500
+        return jsonify({"ok": False, "database_configured": bool(DATABASE_URL), "error": str(e)}), 500
 
 
 @app.route("/db-init")
 def db_init_route():
     try:
-        ok, message = init_db()
-        return jsonify({"ok": ok, "message": message}), 200 if ok else 500
+        db_init()
+        return jsonify({"ok": True, "message": "database initialized"})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
-
-try:
-    if DATABASE_URL:
-        init_db()
-except Exception as e:
-    print(f"⚠️ Database init skipped: {e}", flush=True)
-
-
 # ===== APP RUN START =================================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    try:
+        if DB_ENGINE:
+            db_init()
+            print("✅ Database ready", flush=True)
+        else:
+            print("⚠️ DATABASE_URL not configured; database features disabled", flush=True)
+    except Exception as e:
+        print(f"⚠️ Database init skipped: {e}", flush=True)
+    port = int(os.environ.get("PORT", 7000))
     app.run(host="0.0.0.0", port=port)
 
 
