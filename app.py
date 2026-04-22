@@ -1,9 +1,9 @@
 # =====================================================
-# ===== EVOLUM MASTER APP STRUCTURE (VX BETA) =========
+# ===== EVOLUM MASTER APP STRUCTURE (V1 BETA) =========
 # =====================================================
 
 # ===== IMPORTS / SETUP START =========================
-# FULL v1_0 BUILD 1.1 — STABLE
+# BETA v2_0 BUILD 1.1 — STABLE
 
 from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for
 from pathlib import Path
@@ -14,9 +14,7 @@ import shutil
 import subprocess
 import os
 import importlib.util
-import re
 import time
-import uuid
 from datetime import datetime
 from urllib.parse import unquote, quote
 
@@ -25,8 +23,10 @@ from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from pptx import Presentation
-from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf
+from actor_prep_generator_AUDITION_REDESIGN_V1 import build_actor_prep_pdf
+from actor_prep_generator_BOOKED_REDESIGN_V1 import build_actor_booked_pdf
 from pypdf import PdfReader
+from sqlalchemy import create_engine, text
 
 
 # ===== IMPORTS / SETUP END ===========================
@@ -36,12 +36,62 @@ app = Flask(__name__)
 
 _REFINE_BUILDER_MODULE = None
 _LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
-app.secret_key = os.environ.get("SECRET_KEY")
+app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
+
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+
+engine = None
+if DATABASE_URL:
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+
+
+def db_check() -> bool:
+    if engine is None:
+        return False
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    return True
+
+
+def init_db():
+    if engine is None:
+        return False, "DATABASE_URL is not configured"
+
+    create_beta_users_sql = """
+    CREATE TABLE IF NOT EXISTS beta_users (
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE,
+        password_hash TEXT,
+        display_name TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        last_login_at TIMESTAMPTZ
+    )
+    """
+
+    create_activity_events_sql = """
+    CREATE TABLE IF NOT EXISTS activity_events (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES beta_users(id) ON DELETE SET NULL,
+        event_type TEXT NOT NULL,
+        route TEXT,
+        project_id TEXT,
+        session_id TEXT,
+        metadata_json JSONB,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+    """
+
+    with engine.begin() as conn:
+        conn.execute(text(create_beta_users_sql))
+        conn.execute(text(create_activity_events_sql))
+
+    return True, "Database tables are ready"
+
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "output"
-STATUS_FILE = BASE_DIR / "status.json"
+STATUS_FILE = BASE_DIR / "status.txt"
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -55,82 +105,12 @@ LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
 LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
-LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
-ALLOWED_EXTENSIONS = {".txt", ".pdf", ".fdx", ".docx", ".doc"}
-
-
-def extract_script_text(file) -> str:
-    import xml.etree.ElementTree as ET
-    from zipfile import ZipFile
-    import io
-
-    filename = file.filename.lower()
-
-    if filename.endswith(".txt"):
-        return file.read().decode("utf-8", errors="ignore")
-
-    if filename.endswith(".pdf"):
-        try:
-            reader = PdfReader(file)
-            return "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-        except Exception:
-            return ""
-
-    if filename.endswith(".fdx"):
-        try:
-            tree = ET.parse(file)
-            root = tree.getroot()
-            lines = []
-            for p in root.findall(".//Paragraph"):
-                texts = [t.text for t in p.findall(".//Text") if t.text]
-                line = "".join(texts).strip()
-                if line:
-                    lines.append(line)
-            return "\n".join(lines)
-        except Exception:
-            return ""
-
-    if filename.endswith(".docx") or filename.endswith(".doc"):
-        try:
-            raw = file.read()
-            with ZipFile(io.BytesIO(raw)) as z:
-                xml_bytes = z.read("word/document.xml")
-            root = ET.fromstring(xml_bytes)
-            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-            lines = []
-            for p in root.findall(".//w:p", ns):
-                texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
-                line = "".join(texts).strip()
-                if line:
-                    lines.append(line)
-            return "\n".join(lines)
-        except Exception:
-            return ""
-
-    return ""
+ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
 ACCESS_CODES = [
     "beta1",
     "beta2",
-    "beta3",
-    "beta4", 
-    "beta5",
-    "beta6",
-    "beta7",
-    "beta8",
-    "beta9",
-    "beta10",
-    "beta11",
-    "beta12",    
-    "beta13",
-    "beta14",
-    "beta15",
-    "beta16",
-    "beta17",
-    "beta18",
-    "beta19",
-    "beta20",
     "vip",
     "madbrad",
 ]
@@ -176,22 +156,13 @@ def log_usage(event, **kwargs):
 
 
 def set_status(text: str):
-    try:
-        existing = json.loads(STATUS_FILE.read_text(encoding="utf-8")) if STATUS_FILE.exists() else {}
-    except Exception:
-        existing = {}
-    existing["state"] = text
-    STATUS_FILE.write_text(json.dumps(existing, indent=2), encoding="utf-8")
+    STATUS_FILE.write_text(text, encoding="utf-8")
 
 
 def get_status() -> str:
     if not STATUS_FILE.exists():
         return "IDLE"
-    try:
-        data = json.loads(STATUS_FILE.read_text(encoding="utf-8"))
-        return data.get("state", "IDLE") or "IDLE"
-    except Exception:
-        return "IDLE"
+    return STATUS_FILE.read_text(encoding="utf-8").strip() or "IDLE"
 
 
 def allowed_file(filename: str) -> bool:
@@ -491,7 +462,6 @@ def resolve_refine_image_for_slide(project_dir, deck_title, slide, slide_number,
                 slide_number=slide_number,
                 brain_output=brain_output,
                 last_used_name=last_used_name,
-                slide_body=safe_text(slide.get("body"), ""),
             )
     except Exception as e:
         print(f"⚠️ Refine image resolution failed for slide {slide_number}: {e}", flush=True)
@@ -574,6 +544,231 @@ def draw_wrapped_text(pdf, text, x, y, max_width=500, font_name="Helvetica", fon
     return y
 
 
+def build_simple_analysis_pdf(report_output: dict, out_path: Path):
+    pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
+    width, height = LETTER
+
+    left = 54
+    right = width - 54
+    content_w = right - left
+    top = height - 54
+    bottom = 48
+    y = top
+
+    palette = {
+        "bg": colors.HexColor("#111111"),
+        "panel": colors.HexColor("#171717"),
+        "panel_2": colors.HexColor("#1f1f1f"),
+        "gold": colors.HexColor("#D9A441"),
+        "blue": colors.HexColor("#4C88C7"),
+        "text": colors.white,
+        "muted": colors.HexColor("#C9C9C9"),
+        "rule": colors.HexColor("#2C2C2C"),
+        "chip": colors.HexColor("#202020"),
+    }
+
+    def page_bg():
+        pdf.setFillColor(palette["bg"])
+        pdf.rect(0, 0, width, height, fill=1, stroke=0)
+
+    def footer(page_no: int):
+        pdf.setStrokeColor(palette["rule"])
+        pdf.line(left, 28, right, 28)
+        pdf.setFont("Helvetica", 8)
+        pdf.setFillColor(palette["muted"])
+        pdf.drawString(left, 16, "Powered by Developum AI Engine")
+        pdf.drawRightString(right, 16, f"Page {page_no}")
+
+    page_no = 1
+    page_bg()
+
+    def new_page():
+        nonlocal y, page_no
+        footer(page_no)
+        pdf.showPage()
+        page_no += 1
+        page_bg()
+        y = top
+
+    def ensure_space(points_needed=72):
+        nonlocal y
+        if y - points_needed < bottom:
+            new_page()
+
+    def section_label(text, band=False):
+        nonlocal y
+        ensure_space(40)
+        if band:
+            pdf.setFillColor(palette["panel_2"])
+            pdf.roundRect(left, y-20, content_w, 26, 8, fill=1, stroke=0)
+            pdf.setFillColor(palette["gold"])
+            pdf.setFont("Helvetica-Bold", 12)
+            pdf.drawString(left + 12, y-4, text.upper())
+            y -= 34
+        else:
+            pdf.setFillColor(palette["gold"])
+            pdf.setFont("Helvetica-Bold", 12)
+            pdf.drawString(left, y, text.upper())
+            pdf.setStrokeColor(palette["gold"])
+            pdf.line(left, y-6, left+92, y-6)
+            y -= 18
+
+    def paragraph(text, font_name="Helvetica", font_size=10.5, leading=14, color=None, indent=0):
+        nonlocal y
+        text = safe_text(text, "")
+        if not text:
+            return
+        lines = wrap_text(text, font_name=font_name, font_size=font_size, max_width=content_w-indent)
+        ensure_space((len(lines)+1)*leading)
+        pdf.setFillColor(color or palette["muted"])
+        pdf.setFont(font_name, font_size)
+        for line in lines:
+            pdf.drawString(left + indent, y, line)
+            y -= leading
+        y -= 2
+
+    def bullet_list(title, items):
+        nonlocal y
+        items = [safe_text(i, "") for i in (items or []) if safe_text(i, "")]
+        if not items:
+            return
+        section_label(title)
+        for item in items:
+            lines = wrap_text(item, font_name="Helvetica", font_size=10.5, max_width=content_w-16)
+            ensure_space((len(lines)+1)*14)
+            pdf.setFillColor(palette["text"])
+            pdf.circle(left+4, y+3, 1.8, fill=1, stroke=0)
+            pdf.setFont("Helvetica", 10.5)
+            yy = y
+            for line in lines:
+                pdf.drawString(left+14, yy, line)
+                yy -= 14
+            y = yy - 4
+
+    def info_row(label, value, value_width=content_w-130):
+        nonlocal y
+        value = safe_text(value)
+        lines = wrap_text(value, font_name="Helvetica", font_size=10.5, max_width=value_width)
+        ensure_space((len(lines)+1)*14)
+        pdf.setFillColor(palette["text"])
+        pdf.setFont("Helvetica-Bold", 10.5)
+        pdf.drawString(left, y, label)
+        pdf.setFillColor(palette["muted"])
+        pdf.setFont("Helvetica", 10.5)
+        yy = y
+        for line in lines:
+            pdf.drawString(left+110, yy, line)
+            yy -= 14
+        y = yy - 3
+
+    def chip_row(items):
+        nonlocal y
+        items = [(a,b) for a,b in items if safe_text(b,"") and safe_text(b,"") != '-']
+        if not items:
+            return
+        chip_h = 40
+        gap = 10
+        chip_w = (content_w - gap*(len(items)-1))/max(1,len(items))
+        ensure_space(chip_h + 16)
+        x = left
+        for label, value in items:
+            pdf.setFillColor(palette["chip"])
+            pdf.roundRect(x, y-chip_h+8, chip_w, chip_h, 10, fill=1, stroke=0)
+            pdf.setFillColor(palette["gold"])
+            pdf.setFont("Helvetica-Bold", 8)
+            pdf.drawString(x+10, y-2, label.upper())
+            pdf.setFillColor(palette["text"])
+            pdf.setFont("Helvetica-Bold", 10)
+            val = safe_text(value)
+            if pdf.stringWidth(val, "Helvetica-Bold", 10) > chip_w - 20:
+                val = val[:max(8,int((chip_w-40)/5))] + '...'
+            pdf.drawString(x+10, y-16, val)
+            x += chip_w + gap
+        y -= chip_h + 10
+
+    title = safe_text(report_output.get("title"), "UNTITLED PROJECT")
+    pdf.setTitle(f"{title} Analysis Report")
+
+    # cover / opening page
+    pdf.setFillColor(palette["gold"])
+    pdf.rect(left, y-6, 120, 4, fill=1, stroke=0)
+    y -= 24
+    pdf.setFillColor(palette["text"])
+    pdf.setFont("Helvetica-Bold", 24)
+    for line in wrap_text(title, font_name="Helvetica-Bold", font_size=24, max_width=content_w):
+        pdf.drawString(left, y, line)
+        y -= 28
+    pdf.setFillColor(palette["gold"])
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(left, y, "SCRIPT ANALYSIS REPORT")
+    y -= 22
+    paragraph(report_output.get("summary_note"), font_size=11, leading=15, color=palette["muted"])
+    y -= 4
+
+    chip_row([
+        ("Lead", report_output.get("lead_character") or report_output.get("protagonist")),
+        ("Genre", report_output.get("genre") or report_output.get("world")),
+        ("Tone", report_output.get("tone")),
+    ])
+
+    section_label("Story Snapshot", band=True)
+    info_row("Tagline", report_output.get("tagline") or report_output.get("logline"))
+    info_row("World", report_output.get("world"))
+    info_row("Theme", report_output.get("theme"))
+    info_row("Core Conflict", report_output.get("core_conflict"))
+    info_row("Story Engine", report_output.get("story_engine"))
+    info_row("Reversal", report_output.get("reversal"))
+
+    bullet_list("Story Insights", report_output.get("story_insights", []))
+
+    new_page()
+    section_label("Logline")
+    paragraph(report_output.get("logline"), font_name="Helvetica-Bold", font_size=12, leading=16, color=palette["text"])
+    y -= 6
+    section_label("Synopsis")
+    paragraph(report_output.get("synopsis"), font_size=10.5, leading=15)
+
+    supports = report_output.get("supporting_characters") or []
+    if supports:
+        section_label("Character Lineup")
+        paragraph(safe_text(report_output.get("lead_character") or report_output.get("protagonist")), font_name="Helvetica-Bold", font_size=11, color=palette["text"])
+        paragraph(", ".join(str(s) for s in supports if str(s).strip()), font_size=10.5, color=palette["muted"])
+
+    top_characters = (report_output.get("character_analysis") or {}).get("top_characters", [])
+    if top_characters:
+        section_label("Top Characters", band=True)
+        header_y = y
+        colx = [left, left+120, left+210, left+305]
+        headers = ["Character", "Dialogue", "Action", "First Seen"]
+        pdf.setFillColor(palette["blue"])
+        pdf.roundRect(left, header_y-16, content_w, 22, 8, fill=1, stroke=0)
+        pdf.setFillColor(colors.white)
+        pdf.setFont("Helvetica-Bold", 9)
+        for hx, htxt in zip(colx, headers):
+            pdf.drawString(hx+8, header_y-2, htxt)
+        y -= 26
+        row_h = 22
+        for i, entry in enumerate(top_characters[:10]):
+            ensure_space(row_h+8)
+            if i % 2 == 0:
+                pdf.setFillColor(palette["panel"])
+                pdf.roundRect(left, y-16, content_w, 20, 6, fill=1, stroke=0)
+            pdf.setFillColor(palette["text"])
+            pdf.setFont("Helvetica-Bold", 9.5)
+            pdf.drawString(colx[0]+8, y-3, safe_text(entry.get('name')))
+            pdf.setFont("Helvetica", 9.5)
+            pdf.drawString(colx[1]+8, y-3, str(entry.get('dialogue_count', 0)))
+            pdf.drawString(colx[2]+8, y-3, str(entry.get('action_count', 0)))
+            pdf.drawString(colx[3]+8, y-3, str(entry.get('first_seen', 0)))
+            y -= row_h
+        y -= 4
+
+    bullet_list("What's Working", report_output.get("whats_working", []))
+    bullet_list("What Needs Work", report_output.get("what_needs_work", []))
+
+    footer(page_no)
+    pdf.save()
+
 
 @app.before_request
 def require_beta_gate():
@@ -586,9 +781,16 @@ def require_beta_gate():
         return None
 
     if request.method == "GET":
-        return redirect(url_for("index"))
-
-    return ("Unauthorized", 403)
+        try:
+            for _project_dir_name in ["project_dir", "working_dir", "output_dir", "project_path"]:
+                if _project_dir_name in locals() and locals()[_project_dir_name]: apply_upload_text_overrides(locals()[_project_dir_name], submitted_logline, submitted_synopsis)
+                break
+        except Exception:
+            pass
+            
+            return redirect(url_for("index"))
+            
+            return ("Unauthorized", 403)
 
 
 # ===== BETA ACCESS ROUTES START ======================
@@ -610,7 +812,6 @@ def beta_access():
         is_render=is_render_env(),
         gate_locked=True,
         gate_error="Incorrect access code. Please try again.",
-        base_path_prefix=str(BASE_DIR) + "/",
     )
 
 
@@ -622,7 +823,6 @@ def index():
         is_render=is_render_env(),
         gate_locked=not has_beta_access(),
         gate_error=None,
-        base_path_prefix=str(BASE_DIR) + "/",
     )
 
 
@@ -718,7 +918,7 @@ def upload():
         return "No file uploaded", 400
 
     if not allowed_file(file.filename):
-        return "Unsupported file type. Please upload a TXT, PDF, FDX, or DOCX file.", 400
+        return "Only .txt and .pdf supported", 400
 
     clear_latest_targets()
     set_status("UPLOADED")
@@ -786,21 +986,6 @@ def upload():
         print("⚠️ Failed to write override files:", e)
 
 
-    # Delete previous session's generated images before starting new build
-    prev_session_file = BASE_DIR / "current_session_id.txt"
-    if prev_session_file.exists():
-        try:
-            prev_id = prev_session_file.read_text().strip()
-            prev_dir = BASE_DIR / "generated_images" / prev_id
-            if prev_dir.exists():
-                shutil.rmtree(prev_dir)
-        except Exception:
-            pass
-
-    session_id = uuid.uuid4().hex
-    prev_session_file.write_text(session_id)
-    build_env = {**os.environ, "EVOLUM_SESSION_ID": session_id}
-
     try:
         set_status("ANALYZING")
         log_path = BASE_DIR / "pipeline.log"
@@ -813,18 +998,12 @@ def upload():
                 stderr=log_file,
                 text=True,
                 check=True,
-                env=build_env,
             )
 
         set_status("BUILDING")
     except subprocess.CalledProcessError:
         set_status("ERROR")
         return "Engine failed", 500
-    finally:
-        try:
-            save_path.unlink(missing_ok=True)
-        except Exception:
-            pass
 
     fresh_pptx = newest_generated_file(".pptx")
     fresh_pdf = newest_generated_file(".pdf")
@@ -844,18 +1023,6 @@ def upload():
     log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
     return ("OK", 200)
 
-
-@app.route("/output-file")
-def output_file():
-    name = (request.args.get("name") or "").strip()
-    if not name:
-        abort(404)
-
-    candidate = (OUTPUT_DIR / name).resolve()
-    if not ensure_relative_to_base(candidate) or not candidate.exists() or not candidate.is_file():
-        abort(404)
-
-    return send_file(candidate, as_attachment=True, conditional=True)
 
 # ===== DEMO ROUTES START =============================
 @app.route("/demo", methods=["POST"])
@@ -883,22 +1050,22 @@ def download_latest_pdf():
 @app.route("/analyze-script-pass", methods=["POST"])
 def analyze_script_pass():
     STATUS_JSON.write_text(json.dumps({
-    "status": "ANALYZING",
-    "phase": "analyzing",
-    "message": "Analyzing script...",
-    "progress": 0,
-    "complete": False,
-    "error": ""
-}, indent=2), encoding="utf-8")
+        "status": "ANALYZING",
+        "phase": "analyzing",
+        "message": "Analyzing script...",
+        "progress": 0,
+        "complete": False,
+        "error": ""
+    }, indent=2), encoding="utf-8")
 
-STATUS_TXT.write_text("Analyzing script...", encoding="utf-8")
-file = request.files.get("script")
+    STATUS_TXT.write_text("Analyzing script...", encoding="utf-8")
+    file = request.files.get("script")
 
     if not file or file.filename == "":
         return jsonify({"error": "No file"}), 400
 
     if not allowed_file(file.filename):
-        return jsonify({"error": "Unsupported file type. Please upload a TXT, PDF, FDX, or DOCX file."}), 400
+        return jsonify({"error": "Only .txt and .pdf supported"}), 400
 
     temp_path = UPLOAD_DIR / Path(file.filename).name
     file.save(temp_path)
@@ -915,11 +1082,6 @@ file = request.files.get("script")
     except subprocess.CalledProcessError:
         log_usage("analyze_complete", success=False, filename=file.filename, error="analysis_failed")
         return jsonify({"error": "analysis failed"}), 500
-    finally:
-        try:
-            temp_path.unlink(missing_ok=True)
-        except Exception:
-            pass
 
     brain_file = BASE_DIR / "approved_brain_output.json"
 
@@ -947,18 +1109,6 @@ file = request.files.get("script")
         "core_conflict": safe_text(brain.get("core_conflict")),
         "story_engine": safe_text(brain.get("story_engine")),
         "reversal": safe_text(brain.get("reversal")),
-        "setting": safe_text(brain.get("setting")),
-        "time_frame": safe_text(brain.get("time_frame")),
-        "commercial_positioning": safe_text(brain.get("commercial_positioning")),
-        "audience_profile": brain.get("audience_profile") or [],
-        "tone_comparables": brain.get("tone_comparables") or [],
-        "comparable_films": brain.get("comparable_films") or [],
-        "market_projections": brain.get("market_projections") or {},
-        "strength_index": brain.get("strength_index") or {},
-        "executive_summary": safe_text(brain.get("executive_summary")),
-        "packaging_potential": safe_text(brain.get("packaging_potential")),
-        "protagonist_summary": safe_text(brain.get("protagonist_summary")),
-        "character_leverage": safe_text(brain.get("character_leverage")),
         "story_insights": [
             f"Top characters identified: {', '.join(characters[:5])}" if characters else "Top characters identified.",
             f"Protagonist detected: {lead_character}",
@@ -1021,12 +1171,6 @@ def analysis_report_latest_pdf():
     if not LATEST_ANALYSIS_PDF.exists():
         abort(404)
     return send_file(LATEST_ANALYSIS_PDF, as_attachment=False)
-
-@app.route("/download/latest_analysis_report.pdf")
-def analysis_report_download():
-    if not LATEST_ANALYSIS_PDF.exists():
-        abort(404)
-    return send_file(LATEST_ANALYSIS_PDF, as_attachment=True)
 
 
 @app.route("/analyzer")
@@ -1135,24 +1279,10 @@ def refine_deck():
 
         LATEST_DECK_MANIFEST_JSON.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
 
-        refine_session_file = BASE_DIR / "current_refine_session_id.txt"
-        if refine_session_file.exists():
-            try:
-                prev_id = refine_session_file.read_text().strip()
-                prev_dir = BASE_DIR / "generated_images" / prev_id
-                if prev_dir.exists():
-                    shutil.rmtree(prev_dir)
-            except Exception:
-                pass
-
-        refine_session_id = uuid.uuid4().hex
-        refine_session_file.write_text(refine_session_id)
-        refine_env = {**os.environ, "EVOLUM_SESSION_ID": refine_session_id}
         subprocess.run(
             ["python3", str(BASE_DIR / "deck_builder.py"), str(slide_plan_path)],
             cwd=str(BASE_DIR),
             check=True,
-            env=refine_env,
         )
 
         fresh_pptx = newest_generated_file(".pptx")
@@ -1187,7 +1317,16 @@ def actor_prep_pass():
 
     if file and file.filename:
         source_mode = "upload"
-        script_text = extract_script_text(file)
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
 
         if not script_text.strip() and not pasted_text:
             return jsonify({
@@ -1203,18 +1342,10 @@ def actor_prep_pass():
     if not script_text.strip():
         return jsonify({"error": "No script text was provided."}), 400
 
-    brain_data = {}
-    try:
-        brain_file = OUTPUT_DIR / "approved_brain_output.json"
-        if brain_file.exists():
-            brain_data = json.loads(brain_file.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-
     log_usage("actor_prep_start", role=character_name, mode=source_mode)
 
     try:
-        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF, brain_data=brain_data)
+        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
     except Exception as e:
         log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
         return jsonify({"error": f"Actor preparation failed: {e}"}), 500
@@ -1247,7 +1378,16 @@ def actor_booked_pass():
 
     if file and file.filename:
         source_mode = "upload"
-        script_text = extract_script_text(file)
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
 
         if not script_text.strip() and not pasted_text:
             return jsonify({
@@ -1263,18 +1403,10 @@ def actor_booked_pass():
     if not script_text.strip():
         return jsonify({"error": "No script text was provided."}), 400
 
-    brain_data = {}
-    try:
-        brain_file = OUTPUT_DIR / "approved_brain_output.json"
-        if brain_file.exists():
-            brain_data = json.loads(brain_file.read_text(encoding="utf-8"))
-    except Exception:
-        pass
-
     log_usage("actor_booked_start", role=character_name, mode=source_mode)
 
     try:
-        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF, brain_data=brain_data)
+        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF)
     except Exception as e:
         log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
         return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
@@ -1286,7 +1418,7 @@ def actor_booked_pass():
     log_usage("actor_booked_complete", success=True, role=character_name)
 
     return jsonify({
-        "summary_note": f"{character_name.title()} is ready for the set. Your full role preparation packet breaks down every speaking beat, scene by scene, with continuity notes and performance priorities built in.",
+        "summary_note": f"Your booked role analysis for {character_name} is ready.",
         "report_pdf": str(LATEST_ACTOR_BOOKED_PDF.name),
     })
 
@@ -1320,209 +1452,39 @@ def actor_prep_latest_download_pdf():
 
 # ===== ACTOR PREP ROUTES END =========================
 
-# ===== FEEDBACK ROUTE START ==========================
-@app.route("/feedback", methods=["POST"])
-def submit_feedback():
-    data = request.get_json(silent=True) or {}
-    feedback_type = data.get("type", "").strip()
-    name = data.get("name", "").strip()
-    email = data.get("email", "").strip()
-    message = data.get("message", "").strip()
 
-    if not message:
-        return jsonify({"ok": False, "error": "No message"}), 400
-
-    feedback_file = OUTPUT_DIR / "feedback.txt"
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    line = f"[{timestamp}] type={feedback_type or 'none'} | name={name or 'anon'} | email={email or 'none'} | {message}\n"
-
-    with open(feedback_file, "a", encoding="utf-8") as f:
-        f.write(line)
-
-    return jsonify({"ok": True})
-# ===== FEEDBACK ROUTE END ============================
-
-@app.route("/generate-slide-options", methods=["POST"])
-def generate_slide_options():
-    import urllib.request as _urlreq
-
-    data = request.get_json(silent=True) or {}
-    slide_title = (data.get("slide_title") or "").strip()
-    slide_body = (data.get("slide_body") or "").strip()
-    user_prompt = (data.get("user_prompt") or "").strip()
-    slide_number = int(data.get("slide_number") or 1)
-    current_image_path = (data.get("current_image_path") or "").strip()
-    current_image_url = (data.get("current_image_url") or "").strip()
-
-    fal_key = os.environ.get("FAL_API_KEY", "")
-    if not fal_key:
-        return jsonify({"error": "Image generation not configured"}), 503
-
-    brain_file = BASE_DIR / "approved_brain_output.json"
-    brain = {}
-    if brain_file.exists():
-        try:
-            brain = json.loads(brain_file.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-
-    from deck_builder import build_image_prompt
-    base = build_image_prompt(slide_title, brain)
-    if user_prompt:
-        base = base.replace(", 16:9 aspect ratio", f", {user_prompt}, 16:9 aspect ratio")
-
-    variations = [
-        base.replace(", 16:9 aspect ratio", ", wide establishing shot, epic scale, golden hour light, 16:9 aspect ratio"),
-        base.replace(", 16:9 aspect ratio", ", dramatic close-up, intense emotion, shallow depth of field, 16:9 aspect ratio"),
-    ]
-
-    regen_dir = BASE_DIR / "generated_images" / "regen"
-    regen_dir.mkdir(parents=True, exist_ok=True)
-
-    options = []
-    if current_image_path and current_image_path != "__none__":
-        options.append({
-            "option_id": "selected",
-            "label": "Current Pick",
-            "image_path": current_image_path,
-            "image_url": current_image_url,
-            "image_source": "fal_generated",
-        })
-
-    labels = ["Wide Shot", "Close-Up"]
-    for i, prompt in enumerate(variations):
-        safe_title = re.sub(r"[^a-z0-9_]", "_", slide_title.lower())[:30]
-        save_path = regen_dir / f"{slide_number:02d}_{safe_title}_opt{i+1}.jpg"
-        payload = json.dumps({
-            "prompt": prompt,
-            "image_size": "landscape_16_9",
-            "num_inference_steps": 4,
-            "num_images": 1,
-            "enable_safety_checker": True,
-        }).encode("utf-8")
-        req = _urlreq.Request(
-            "https://fal.run/fal-ai/flux/schnell",
-            data=payload,
-            headers={"Authorization": f"Key {fal_key}", "Content-Type": "application/json"},
-            method="POST",
-        )
-        try:
-            with _urlreq.urlopen(req, timeout=60) as resp:
-                result = json.loads(resp.read().decode("utf-8"))
-            image_url = result["images"][0]["url"]
-            _urlreq.urlretrieve(image_url, save_path)
-            options.append({
-                "option_id": f"opt_{i+1}",
-                "label": labels[i],
-                "image_path": str(save_path),
-                "image_url": f"/project-file?path=generated_images/regen/{save_path.name}",
-                "image_source": "fal_generated",
-            })
-        except Exception as e:
-            print(f"⚠️ Option {i+1} generation failed: {e}")
-
-    return jsonify({"options": options})
-
-
-@app.route("/regenerate-slide-image", methods=["POST"])
-def regenerate_slide_image():
-    import urllib.request as _urlreq
-    import urllib.error as _urlerr
-
-    data = request.get_json(silent=True) or {}
-    slide_title = (data.get("slide_title") or "").strip()
-    slide_body = (data.get("slide_body") or "").strip()
-    user_prompt = (data.get("user_prompt") or "").strip()
-    slide_number = int(data.get("slide_number") or 1)
-
-    fal_key = os.environ.get("FAL_API_KEY", "")
-    if not fal_key:
-        return jsonify({"error": "Image generation not configured"}), 503
-
-    brain_file = BASE_DIR / "approved_brain_output.json"
-    brain = {}
-    if brain_file.exists():
-        try:
-            brain = json.loads(brain_file.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-
-    from deck_builder import build_image_prompt
-    base_prompt = build_image_prompt(slide_title, brain)
-    if user_prompt:
-        base_prompt = base_prompt.replace(", 16:9 aspect ratio", f", {user_prompt}, 16:9 aspect ratio")
-
-    payload = json.dumps({
-        "prompt": base_prompt,
-        "image_size": "landscape_16_9",
-        "num_inference_steps": 4,
-        "num_images": 1,
-        "enable_safety_checker": True,
-    }).encode("utf-8")
-
-    req = _urlreq.Request(
-        "https://fal.run/fal-ai/flux/schnell",
-        data=payload,
-        headers={"Authorization": f"Key {fal_key}", "Content-Type": "application/json"},
-        method="POST",
-    )
+@app.route("/db-check")
+def db_check_route():
     try:
-        with _urlreq.urlopen(req, timeout=60) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
-        image_url = result["images"][0]["url"]
-
-        regen_dir = BASE_DIR / "generated_images" / "regen"
-        regen_dir.mkdir(parents=True, exist_ok=True)
-        safe_title = re.sub(r"[^a-z0-9_]", "_", slide_title.lower())[:40]
-        save_path = regen_dir / f"{slide_number:02d}_{safe_title}.jpg"
-        _urlreq.urlretrieve(image_url, save_path)
-
-        serve_url = f"/project-file?path=generated_images/regen/{save_path.name}"
-        return jsonify({"image_url": serve_url, "image_path": str(save_path)})
+        ok = db_check()
+        return jsonify({
+            "ok": ok,
+            "database_url_configured": bool(DATABASE_URL),
+            "message": "Database connection OK" if ok else "Database engine not configured"
+        }), 200 if ok else 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "ok": False,
+            "database_url_configured": bool(DATABASE_URL),
+            "error": str(e)
+        }), 500
 
 
-@app.route("/contact", methods=["POST"])
-def submit_contact():
-    data = request.get_json(silent=True) or {}
-    name = data.get("name", "").strip()
-    email = data.get("email", "").strip()
-    message = data.get("message", "").strip()
+@app.route("/db-init")
+def db_init_route():
+    try:
+        ok, message = init_db()
+        return jsonify({"ok": ok, "message": message}), 200 if ok else 500
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
-    if not message:
-        return jsonify({"ok": False, "error": "No message"}), 400
 
-    contact_file = OUTPUT_DIR / "contact.txt"
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    line = f"[{timestamp}] name={name or 'anon'} | email={email or 'none'} | {message}\n"
+try:
+    if DATABASE_URL:
+        init_db()
+except Exception as e:
+    print(f"⚠️ Database init skipped: {e}", flush=True)
 
-    with open(contact_file, "a", encoding="utf-8") as f:
-        f.write(line)
-
-    return jsonify({"ok": True})
-
-# ===== STARTUP CLEANUP START =========================
-def _clear_stock_images_once():
-    visuals_dir = BASE_DIR / "visuals"
-    sentinel = visuals_dir / ".stock_cleared"
-    if sentinel.exists():
-        return
-    if not visuals_dir.exists():
-        return
-    cleared = 0
-    for child in visuals_dir.iterdir():
-        if child.is_dir() and child.name != "user_uploaded":
-            try:
-                shutil.rmtree(child)
-                cleared += 1
-            except Exception as e:
-                print(f"⚠️ Could not remove {child.name}: {e}")
-    sentinel.touch()
-    print(f"🧹 Stock images cleared on startup ({cleared} folders removed)")
-
-_clear_stock_images_once()
-# ===== STARTUP CLEANUP END ===========================
 
 # ===== APP RUN START =================================
 if __name__ == "__main__":
