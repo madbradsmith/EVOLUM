@@ -158,7 +158,6 @@ function showPanel(mode){
 </script>
 </body>
 </html>
-"""
 
 ROOM_HTML = """
 <!DOCTYPE html>
