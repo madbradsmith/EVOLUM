@@ -101,8 +101,6 @@ DEMO_DECK = BASE_DIR / "static" / "NOT_TODAY_Pitch_Deck_FINAL.pdf"
 
 LATEST_PPTX = OUTPUT_DIR / "latest.pptx"
 LATEST_PDF = OUTPUT_DIR / "latest.pdf"
-LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
-
 
 LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
