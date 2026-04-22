@@ -1237,7 +1237,7 @@ def refine_deck():
                     "layout": str(slide_data.get("layout", "") or "text").strip(),
                     "stage": str(slide_data.get("stage", "") or "refine").strip(),
                     "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": str(slide_data.get("image_path", "") or "").strip(),
+                    "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
                     "image_name": str(slide_data.get("image_name", "") or "").strip(),
                     "image_url": str(slide_data.get("image_url", "") or "").strip(),
                     "image_source": str(slide_data.get("image_source", "") or "").strip(),
@@ -1262,7 +1262,8 @@ def refine_deck():
                 "body": str(slide_data.get("body", "") or "").strip(),
                 "layout": str(slide_data.get("layout", "") or "").strip(),
                 "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": str(slide_data.get("image_path", "") or "").strip(),
+                "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
+
                 "image_name": str(slide_data.get("image_name", "") or "").strip(),
                 "image_url": str(slide_data.get("image_url", "") or "").strip(),
                 "image_source": str(slide_data.get("image_source", "") or "").strip(),
