@@ -1050,20 +1050,12 @@ def download_latest_pdf():
 # ===== ANALYZE ROUTES START ==========================
 @app.route("/analyze-script-pass", methods=["POST"])
 def analyze_script_pass():
-    STATUS_JSON.write_text(json.dumps({
-        "status": "ANALYZING",
-        "phase": "analyzing",
-        "message": "Analyzing script...",
-        "progress": 0,
-        "complete": False,
-        "error": ""
-    }, indent=2), encoding="utf-8")
-
-    STATUS_TXT.write_text("Analyzing script...", encoding="utf-8")
+    set_status("ANALYZING")
     file = request.files.get("script")
 
     if not file or file.filename == "":
         return jsonify({"error": "No file"}), 400
+
 
     if not allowed_file(file.filename):
         return jsonify({"error": "Only .txt and .pdf supported"}), 400
