@@ -313,7 +313,6 @@ async function saveCurrentSlide(){
 </script>
 </body>
 </html>
-""""""
 
 
 def session_dir(session_id: str) -> Path:
