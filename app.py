@@ -106,7 +106,6 @@ LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
 LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
-LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
@@ -1212,27 +1211,13 @@ def latest_slide_plan():
 
 @app.route("/project-file")
 def project_file():
-    raw_path = (request.args.get("path") or "").strip()
-    candidate = resolve_project_file_candidate(raw_path)
-    if not candidate:
+    raw_path = unquote((request.args.get("path") or "").strip())
+    if not raw_path:
+        abort(404)
+    candidate = (BASE_DIR / raw_path).resolve()
+    if not ensure_relative_to_base(candidate) or not candidate.exists() or not candidate.is_file():
         abort(404)
     return send_file(candidate, as_attachment=False, conditional=True)
-
-
-@app.route("/generate-slide-options", methods=["POST"])
-def generate_slide_options():
-    slide_plan_file = find_latest_slide_plan_file()
-    if not slide_plan_file or not slide_plan_file.exists():
-        return jsonify({"error": "No generated slide plan found yet."}), 404
-
-    try:
-        with open(slide_plan_file, "r", encoding="utf-8") as f:
-            slide_plan_data = json.load(f)
-    except Exception as e:
-        return jsonify({"error": f"Could not read latest slide plan: {e}"}), 500
-
-    payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=slide_plan_file)
-    return jsonify(payload)
 
 @app.route("/refine-deck", methods=["POST"])
 def refine_deck():
@@ -1252,7 +1237,7 @@ def refine_deck():
                     "layout": str(slide_data.get("layout", "") or "text").strip(),
                     "stage": str(slide_data.get("stage", "") or "refine").strip(),
                     "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": normalize_project_path_string(slide_data.get("image_path", "") or ""),
+                    "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
                     "image_name": str(slide_data.get("image_name", "") or "").strip(),
                     "image_url": str(slide_data.get("image_url", "") or "").strip(),
                     "image_source": str(slide_data.get("image_source", "") or "").strip(),
@@ -1277,7 +1262,7 @@ def refine_deck():
                 "body": str(slide_data.get("body", "") or "").strip(),
                 "layout": str(slide_data.get("layout", "") or "").strip(),
                 "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": normalize_project_path_string(slide_data.get("image_path", "") or ""),
+                "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
 
                 "image_name": str(slide_data.get("image_name", "") or "").strip(),
                 "image_url": str(slide_data.get("image_url", "") or "").strip(),
