@@ -1050,20 +1050,12 @@ def download_latest_pdf():
 # ===== ANALYZE ROUTES START ==========================
 @app.route("/analyze-script-pass", methods=["POST"])
 def analyze_script_pass():
-    STATUS_JSON.write_text(json.dumps({
-        "status": "ANALYZING",
-        "phase": "analyzing",
-        "message": "Analyzing script...",
-        "progress": 0,
-        "complete": False,
-        "error": ""
-    }, indent=2), encoding="utf-8")
-
-    STATUS_TXT.write_text("Analyzing script...", encoding="utf-8")
+    set_status("ANALYZING")
     file = request.files.get("script")
 
     if not file or file.filename == "":
         return jsonify({"error": "No file"}), 400
+
 
     if not allowed_file(file.filename):
         return jsonify({"error": "Only .txt and .pdf supported"}), 400
@@ -1245,7 +1237,7 @@ def refine_deck():
                     "layout": str(slide_data.get("layout", "") or "text").strip(),
                     "stage": str(slide_data.get("stage", "") or "refine").strip(),
                     "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": str(slide_data.get("image_path", "") or "").strip(),
+                    "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
                     "image_name": str(slide_data.get("image_name", "") or "").strip(),
                     "image_url": str(slide_data.get("image_url", "") or "").strip(),
                     "image_source": str(slide_data.get("image_source", "") or "").strip(),
@@ -1270,7 +1262,8 @@ def refine_deck():
                 "body": str(slide_data.get("body", "") or "").strip(),
                 "layout": str(slide_data.get("layout", "") or "").strip(),
                 "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": str(slide_data.get("image_path", "") or "").strip(),
+                "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
+
                 "image_name": str(slide_data.get("image_name", "") or "").strip(),
                 "image_url": str(slide_data.get("image_url", "") or "").strip(),
                 "image_source": str(slide_data.get("image_source", "") or "").strip(),
