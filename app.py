@@ -230,6 +230,48 @@ def safe_relpath(path_obj):
         return str(path_obj)
 
 
+
+def normalize_project_relative_path(raw_path: str) -> str:
+    raw = (str(raw_path or "").strip()).replace("\\", "/")
+    if not raw:
+        return ""
+    raw = raw.replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/")
+    try:
+        candidate = Path(raw)
+        if not candidate.is_absolute():
+            candidate = (BASE_DIR / candidate).resolve()
+        else:
+            candidate = candidate.resolve()
+        if ensure_relative_to_base(candidate):
+            return str(candidate.relative_to(BASE_DIR)).replace("\\", "/")
+    except Exception:
+        pass
+    return raw
+
+def normalize_project_path_string(raw_path: str) -> str:
+    return normalize_project_relative_path(raw_path)
+
+def project_file_url_for_path(raw_path: str) -> str:
+    rel = normalize_project_relative_path(raw_path)
+    if not rel:
+        return ""
+    return "/project-file?path=" + quote(rel)
+
+def normalize_manifest_image_options(options):
+    normalized = []
+    if not isinstance(options, list):
+        return normalized
+    for item in options:
+        if not isinstance(item, dict):
+            continue
+        image_path = normalize_project_relative_path(item.get("image_path", "") or "")
+        option = dict(item)
+        option["image_path"] = image_path
+        option["image_url"] = item.get("image_url") or project_file_url_for_path(image_path)
+        normalized.append(option)
+    return normalized
+
+
 def resolve_quiet_image_for_slide(slide_title, stage, layout, slide_number):
     visuals_root = BASE_DIR / "visuals"
 
@@ -1212,27 +1254,47 @@ def latest_slide_plan():
 
 @app.route("/project-file")
 def project_file():
-    raw_path = (request.args.get("path") or "").strip()
-    candidate = resolve_project_file_candidate(raw_path)
-    if not candidate:
+    raw_path = unquote((request.args.get("path") or "").strip())
+    if not raw_path:
         abort(404)
-    return send_file(candidate, as_attachment=False, conditional=True)
 
+    candidates = []
+
+    cleaned = raw_path.replace("\\", "/").strip()
+    if cleaned:
+        if cleaned.startswith("/opt/render/project/src/") or cleaned.startswith("opt/render/project/src/"):
+            trimmed = cleaned.replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/")
+            candidates.append((BASE_DIR / trimmed).resolve())
+        else:
+            candidates.append((BASE_DIR / cleaned.lstrip("/")).resolve())
+            try:
+                p = Path(cleaned)
+                if p.is_absolute():
+                    candidates.append(p.resolve())
+            except Exception:
+                pass
+
+    for candidate in candidates:
+        if ensure_relative_to_base(candidate) and candidate.exists() and candidate.is_file():
+            return send_file(candidate, as_attachment=False, conditional=True)
+
+    abort(404)
 
 @app.route("/generate-slide-options", methods=["POST"])
 def generate_slide_options():
-    slide_plan_file = find_latest_slide_plan_file()
-    if not slide_plan_file or not slide_plan_file.exists():
-        return jsonify({"error": "No generated slide plan found yet."}), 404
-
     try:
-        with open(slide_plan_file, "r", encoding="utf-8") as f:
-            slide_plan_data = json.load(f)
-    except Exception as e:
-        return jsonify({"error": f"Could not read latest slide plan: {e}"}), 500
+        slide_plan_file = find_latest_slide_plan_file()
+        if not slide_plan_file or not slide_plan_file.exists():
+            return jsonify({"error": "No slide plan found."}), 404
 
-    payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=slide_plan_file)
-    return jsonify(payload)
+        slide_plan_data = json.loads(slide_plan_file.read_text(encoding="utf-8"))
+        payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=slide_plan_file)
+        payload["source_file"] = str(slide_plan_file.relative_to(BASE_DIR)) if slide_plan_file.is_relative_to(BASE_DIR) else str(slide_plan_file)
+        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = make_slide_payload_cache_key(slide_plan_file)
+        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
+        return jsonify(payload)
+    except Exception as e:
+        return jsonify({"error": f"Could not load new images: {e}"}), 500
 
 @app.route("/refine-deck", methods=["POST"])
 def refine_deck():
@@ -1252,7 +1314,7 @@ def refine_deck():
                     "layout": str(slide_data.get("layout", "") or "text").strip(),
                     "stage": str(slide_data.get("stage", "") or "refine").strip(),
                     "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": normalize_project_path_string(slide_data.get("image_path", "") or ""),
+                    "image_path": normalize_project_relative_path(slide_data.get("image_path", "") or ""),
                     "image_name": str(slide_data.get("image_name", "") or "").strip(),
                     "image_url": str(slide_data.get("image_url", "") or "").strip(),
                     "image_source": str(slide_data.get("image_source", "") or "").strip(),
@@ -1277,7 +1339,7 @@ def refine_deck():
                 "body": str(slide_data.get("body", "") or "").strip(),
                 "layout": str(slide_data.get("layout", "") or "").strip(),
                 "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": normalize_project_path_string(slide_data.get("image_path", "") or ""),
+                "image_path": normalize_project_relative_path(slide_data.get("image_path", "") or ""),
 
                 "image_name": str(slide_data.get("image_name", "") or "").strip(),
                 "image_url": str(slide_data.get("image_url", "") or "").strip(),
