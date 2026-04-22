@@ -168,166 +168,37 @@ ROOM_HTML = """
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EVOLUM Collaboration Room</title>
 <style>
-body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-    background:linear-gradient(135deg,#0b0b0b,#1a1a1a);
-    color:#fff;
-}
-.header{
-    padding:14px 18px;
-    border-bottom:1px solid rgba(255,255,255,0.10);
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:12px;
-    background:#111;
-}
-.title{
-    font-size:20px;
-    font-weight:800;
-}
-.sub{
-    color:#cfcfcf;
-    font-size:12px;
-}
-.shell{
-    display:grid;
-    grid-template-columns:1.05fr 1.05fr 0.9fr;
-    gap:12px;
-    padding:12px;
-    height:calc(100vh - 74px);
-    box-sizing:border-box;
-}
-.panel{
-    background:#141414;
-    border:1px solid rgba(255,255,255,0.12);
-    border-radius:16px;
-    padding:14px;
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    min-height:0;
-}
-.panel h2{
-    margin:0 0 6px 0;
-    font-size:16px;
-}
-.panel-copy{
-    color:#bfbfbf;
-    font-size:12px;
-    line-height:1.4;
-    margin-bottom:10px;
-}
-.preview-strip{
-    flex:1;
-    overflow:auto;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    padding-right:4px;
-}
-.slide{
-    background:#0d0d0d;
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:12px;
-    padding:10px;
-}
-.slide-title{
-    font-weight:800;
-    margin-bottom:6px;
-}
-.slide-body{
-    color:#d6d6d6;
-    font-size:13px;
-    line-height:1.45;
-}
-.field{
-    margin-bottom:10px;
-}
-label{
-    display:block;
-    font-size:10px;
-    color:#e6b800;
-    margin-bottom:4px;
-    font-weight:700;
-}
-input, textarea{
-    width:100%;
-    box-sizing:border-box;
-    padding:10px;
-    background:#0c0c0c;
-    border:1px solid rgba(255,255,255,0.12);
-    color:#fff;
-    border-radius:8px;
-}
-textarea{
-    min-height:160px;
-    resize:vertical;
-}
-.actions{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:8px;
-    margin-top:auto;
-}
-button{
-    padding:11px 14px;
-    border:none;
-    border-radius:10px;
-    font-weight:800;
-    cursor:pointer;
-}
-.primary{
-    background:#ff7a00;
-    color:white;
-}
-.secondary{
-    background:#0f0f0f;
-    color:#d8d8d8;
-    border:1px solid rgba(255,255,255,0.12);
-}
-.status-card{
-    background:#0d0d0d;
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:12px;
-    padding:10px;
-    margin-bottom:10px;
-}
-.status-label{
-    color:#8f8f8f;
-    font-size:10px;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    margin-bottom:4px;
-}
-.status-value{
-    font-size:14px;
-    font-weight:800;
-}
-.driver{
-    color:#52a8ff;
-}
-.small{
-    color:#bfbfbf;
-    font-size:12px;
-    line-height:1.45;
-}
-.linkbox{
-    background:#0c0c0c;
-    border:1px solid rgba(255,255,255,0.10);
-    border-radius:10px;
-    padding:10px;
-    word-break:break-all;
-    color:#d9d9d9;
-    margin-top:6px;
-}
-@media (max-width: 1100px){
-    .shell{
-        grid-template-columns:1fr;
-        height:auto;
-    }
-}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#0b0b0b,#1a1a1a);color:#fff;}
+.header{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.10);display:flex;justify-content:space-between;align-items:center;gap:12px;background:#111;}
+.title{font-size:20px;font-weight:800;}
+.sub{color:#cfcfcf;font-size:12px;}
+.shell{display:grid;grid-template-columns:1.05fr 1.05fr 0.9fr;gap:12px;padding:12px;height:calc(100vh - 74px);box-sizing:border-box;}
+.panel{background:#141414;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.panel h2{margin:0 0 6px 0;font-size:16px;}
+.panel-copy{color:#bfbfbf;font-size:12px;line-height:1.4;margin-bottom:10px;}
+.preview-strip{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;}
+.slide{background:#0d0d0d;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px;}
+.slide-title{font-weight:800;margin-bottom:6px;}
+.slide-body{color:#d6d6d6;font-size:13px;line-height:1.45;}
+.field{margin-bottom:10px;}
+label{display:block;font-size:10px;color:#e6b800;margin-bottom:4px;font-weight:700;}
+input, textarea{width:100%;box-sizing:border-box;padding:10px;background:#0c0c0c;border:1px solid rgba(255,255,255,0.12);color:#fff;border-radius:8px;}
+textarea{min-height:160px;resize:vertical;}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto;}
+button{padding:11px 14px;border:none;border-radius:10px;font-weight:800;cursor:pointer;}
+.primary{background:#ff7a00;color:white;}
+.secondary{background:#0f0f0f;color:#d8d8d8;border:1px solid rgba(255,255,255,0.12);}
+.status-card{background:#0d0d0d;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:10px;margin-bottom:10px;}
+.status-label{color:#8f8f8f;font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.status-value{font-size:14px;font-weight:800;}
+.driver{color:#52a8ff;}
+.small{color:#bfbfbf;font-size:12px;line-height:1.45;}
+.linkbox{background:#0c0c0c;border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:10px;word-break:break-all;color:#d9d9d9;margin-top:6px;}
+.flash{display:none;margin-top:10px;padding:10px;border-radius:10px;font-size:12px;font-weight:700;}
+.flash.show{display:block;}
+.flash.ok{background:rgba(66, 184, 131, .15);color:#9ff0c5;border:1px solid rgba(66, 184, 131, .25);}
+.flash.err{background:rgba(255, 122, 0, .12);color:#ffc78d;border:1px solid rgba(255, 122, 0, .25);}
+@media (max-width: 1100px){ .shell{grid-template-columns:1fr;height:auto;} }
 </style>
 </head>
 <body>
@@ -343,7 +214,7 @@ button{
         <section class="panel">
             <h2>Preview Panel</h2>
             <div class="panel-copy">Shared live preview of the current deck state.</div>
-            <div class="preview-strip">
+            <div class="preview-strip" id="previewStrip">
                 {% for slide in slides %}
                 <div class="slide">
                     <div class="slide-title">{{ loop.index }}. {{ slide.title }}</div>
@@ -359,18 +230,20 @@ button{
 
             <div class="field">
                 <label>Slide Title</label>
-                <input value="{{ slides[0].title if slides else 'Title Slide' }}">
+                <input id="slideTitleInput" value="{{ slides[0].title if slides else 'Title Slide' }}">
             </div>
 
             <div class="field">
                 <label>Slide Body</label>
-                <textarea>{{ slides[0].body if slides else 'Refine content here.' }}</textarea>
+                <textarea id="slideBodyInput">{{ slides[0].body if slides else 'Refine content here.' }}</textarea>
             </div>
 
+            <div id="saveFlash" class="flash"></div>
+
             <div class="actions">
-                <button class="primary" type="button">Save Changes</button>
+                <button class="primary" type="button" onclick="saveCurrentSlide()">Save Changes</button>
                 <button class="primary" type="button">Rebuild Deck</button>
-                <button class="secondary" type="button">Preview Mode</button>
+                <button class="secondary" type="button" onclick="window.location.reload()">Preview Mode</button>
                 <button class="secondary" type="button">Pass Control</button>
             </div>
         </section>
@@ -409,9 +282,38 @@ button{
             </div>
         </section>
     </div>
+
+<script>
+async function saveCurrentSlide(){
+    const title = document.getElementById("slideTitleInput").value;
+    const body = document.getElementById("slideBodyInput").value;
+    const flash = document.getElementById("saveFlash");
+    flash.className = "flash show ok";
+    flash.textContent = "Saving...";
+    try{
+        const resp = await fetch("/save-slide/{{ session_id }}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({slide_index: 0, title, body})
+        });
+        const data = await resp.json();
+        if(!resp.ok){
+            flash.className = "flash show err";
+            flash.textContent = data.error || "Save failed.";
+            return;
+        }
+        flash.className = "flash show ok";
+        flash.textContent = "Saved. Refresh the other device to see the update.";
+        setTimeout(() => { window.location.reload(); }, 300);
+    }catch(err){
+        flash.className = "flash show err";
+        flash.textContent = "Save failed.";
+    }
+}
+</script>
 </body>
 </html>
-"""
+""""""
 
 
 def session_dir(session_id: str) -> Path:
@@ -502,6 +404,37 @@ def room(session_id):
         slides=slides,
     )
 
+
+
+
+@app.route("/save-slide/<session_id>", methods=["POST"])
+def save_slide(session_id):
+    path = session_dir(session_id)
+    manifest_file = path / "latest_deck_manifest.json"
+    if not manifest_file.exists():
+        return jsonify({"error": "Manifest not found"}), 404
+
+    try:
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+    except Exception:
+        return jsonify({"error": "Manifest could not be read"}), 500
+
+    data = request.get_json(silent=True) or {}
+    slide_index = int(data.get("slide_index", 0))
+    title = (data.get("title") or "").strip()
+    body = (data.get("body") or "").strip()
+
+    if not isinstance(manifest, list) or not manifest:
+        return jsonify({"error": "Manifest is empty"}), 400
+    if slide_index < 0 or slide_index >= len(manifest):
+        return jsonify({"error": "Slide index out of range"}), 400
+
+    slide = manifest[slide_index]
+    slide["title"] = title or slide.get("title", "Slide")
+    slide["body"] = body
+
+    manifest_file.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    return jsonify({"ok": True, "slide_index": slide_index})
 
 @app.route("/session-meta/<session_id>", methods=["GET"])
 def session_meta(session_id):
