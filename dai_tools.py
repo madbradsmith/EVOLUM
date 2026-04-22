@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,6 +25,41 @@ class BeatEntry:
     playable_note: str
 
 
+# ── AI HELPERS (OPTIONAL / SAFE FALLBACKS) ───────────────────────────────────
+
+def _call_text_ai(system_prompt: str, user_prompt: str, max_tokens: int = 350) -> str:
+    """Best-effort text AI helper. Falls back silently if API/package isn't available."""
+    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("D_AI_OPENAI_API_KEY")
+    model = os.getenv("D_AI_TEXT_MODEL", "gpt-4.1-mini")
+    if not api_key:
+        return ""
+    try:
+        from openai import OpenAI  # type: ignore
+        client = OpenAI(api_key=api_key)
+        resp = client.chat.completions.create(
+            model=model,
+            temperature=0.4,
+            max_tokens=max_tokens,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        return (resp.choices[0].message.content or "").strip()
+    except Exception:
+        return ""
+
+
+def _methodology_lines() -> List[str]:
+    return [
+        "Uploaded script or sides supplied by the user.",
+        "Developum AI extraction and scene/character parsing.",
+        "Manifest / brain-derived story fields already available in the system.",
+        "AI editorial assistance for concise summaries, framing, and report language when available.",
+        "Public market-reference metadata only when already supplied to the system.",
+    ]
+
+
 # ── SHARED SCRIPT PARSING UTILITIES ──────────────────────────────────────────
 
 def normalize_character_name(name: str) -> str:
@@ -37,8 +73,12 @@ def _clean_text(text: str) -> str:
     text = text.replace("\u2019", "'").replace("\u2018", "'")
     text = text.replace("\u201c", '"').replace("\u201d", '"')
     text = text.replace("\x0c", "\n")
+    text = text.replace("\ufffe", " ")
+    # common transfer / OCR junk
     text = re.sub(r'\d{4,}\s*-\s*\w+ \d{1,2},\s*\d{4}\s*\d{1,2}:\d{2}\s*[AP]M\s*-?\s*', '', text)
     text = re.sub(r'([A-Z]{2,6}-){3,}[A-Z]{2,6}', '', text)
+    text = re.sub(r'\b(TYPE|FILTER|LENGTH|RESOURCES|CONTENTS)\b(?=\s|$)', '', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
     return text
 
 
@@ -80,37 +120,37 @@ def _infer_beat(dialogue: str, scene_heading: str) -> Tuple[str, str, str]:
     if any(k in lower for k in ["who", "what", "where", "why", "how"]):
         return (
             "Pressure for Information",
-            "The character is pushing for answers and trying to control what gets revealed.",
-            "Play the question like a tactic, not simple curiosity.",
+            "The character is trying to get clarity while still keeping leverage.",
+            "Ask like it matters. Curiosity is not enough here.",
         )
     if any(k in lower for k in ["calm down", "sit down", "listen", "hold on", "wait"]):
         return (
             "Control the Room",
-            "The character is taking command and forcing the scene back under control.",
-            "Use stillness and certainty rather than volume.",
+            "The character is slowing the chaos down and forcing the scene back under control.",
+            "Use calm authority. The power is in the certainty, not the volume.",
         )
     if any(k in lower for k in ["don't", "do not", "can't", "cannot", "won't", "stop"]):
         return (
             "Set a Boundary",
-            "The character is drawing a line and making the other person feel it.",
-            "Keep the delivery clipped and definite.",
+            "The character is drawing a line and making the other person feel the limit.",
+            "Keep it clear and definite. This beat lands when the line feels real.",
         )
     if any(k in lower for k in ["good", "okay", "alright", "cool"]):
         return (
             "Reset and Move Forward",
-            "The character absorbs the moment quickly and redirects the action.",
-            "Treat it like a professional pivot, not relief.",
+            "The character absorbs the moment and redirects the energy instead of sitting in it.",
+            "Treat it like a pivot, not relief.",
         )
     if scene_heading and ("OFFICE" in scene_heading.upper() or "INTERROGATION" in scene_heading.upper()):
         return (
             "Apply Pressure",
-            "The character is reading the other person and pressing for leverage.",
-            "Let the intelligence do the work.",
+            "The character is reading the other person and leaning in for leverage.",
+            "Push with intelligence. Let the pressure come from focus, not force.",
         )
     return (
         "Hold Authority",
         "The character is managing the scene from a position of control.",
-        "Keep it grounded, specific, and in command.",
+        "Stay grounded and specific. Quiet command usually wins this beat.",
     )
 
 
@@ -151,6 +191,7 @@ def extract_beats(script_text: str, character_name: str) -> List[BeatEntry]:
                     j += 1
 
                 dialogue = " ".join(dialogue_lines).strip()
+                dialogue = re.sub(r'\s{2,}', ' ', dialogue)
                 if dialogue:
                     beat, subtext, playable = _infer_beat(dialogue, current_scene)
                     beats.append(
@@ -172,6 +213,23 @@ def extract_beats(script_text: str, character_name: str) -> List[BeatEntry]:
         global_line_index += 1
 
     return beats
+
+
+# ── FRIENDLIER CUSTOMER-FACING LANGUAGE ──────────────────────────────────────
+
+_FRIENDLY_BEAT_TITLES: Dict[str, List[str]] = {
+    "Pressure for Information": ["Push for Answers", "Get the Truth", "Lean In for Clarity"],
+    "Control the Room": ["Take Control", "Steady the Room", "Own the Moment"],
+    "Set a Boundary": ["Draw the Line", "Hold Your Ground", "Make the Limit Clear"],
+    "Reset and Move Forward": ["Shift the Energy", "Reset and Move On", "Pivot Cleanly"],
+    "Apply Pressure": ["Turn Up the Pressure", "Lean In", "Press the Point"],
+    "Hold Authority": ["Stay in Command", "Lead Quietly", "Keep Control"],
+}
+
+
+def _friendly_beat_title(beat: str, index: int) -> str:
+    options = _FRIENDLY_BEAT_TITLES.get(beat, [beat])
+    return options[(index - 1) % len(options)]
 
 
 # ── SHARED PDF DRAWING UTILITIES ──────────────────────────────────────────────
@@ -214,8 +272,6 @@ def _ensure_space(pdf: canvas.Canvas, width: float, height: float, y: float, nee
     return y, page_no
 
 
-# ── SHARED HELPERS FOR ALL THREE PDF BUILDERS ─────────────────────────────────
-
 def _safe(val, fallback: str = "") -> str:
     if val is None:
         return fallback
@@ -224,27 +280,43 @@ def _safe(val, fallback: str = "") -> str:
     return str(val).strip() or fallback
 
 
-class _PDFCtx:
-    """Mutable drawing state — y-cursor and page counter as instance attributes."""
+def _clean_characters(chars: List) -> List[str]:
+    bad = {"TYPE", "FILTER", "LENGTH", "RESOURCES", "CONTENTS"}
+    out = []
+    for c in chars or []:
+        s = str(c).strip()
+        if not s or s.upper() in bad:
+            continue
+        if len(s) > 40:
+            continue
+        out.append(s)
+    return out
 
+
+class _PDFCtx:
     def __init__(self, pdf: canvas.Canvas, width: float, height: float, left: float,
                  usable_width: float, charcoal, gold, blue, white, muted, soft, panel):
-        self.pdf      = pdf
-        self.width    = width
-        self.height   = height
-        self.left     = left
-        self.uw       = usable_width
+        self.pdf = pdf
+        self.width = width
+        self.height = height
+        self.left = left
+        self.uw = usable_width
         self.charcoal = charcoal
-        self.gold     = gold
-        self.blue     = blue
-        self.white    = white
-        self.muted    = muted
-        self.soft     = soft
-        self.panel    = panel
-        self.y        = height - 56
-        self.page_no  = 2
+        self.gold = gold
+        self.blue = blue
+        self.white = white
+        self.muted = muted
+        self.soft = soft
+        self.panel = panel
+        self.y = height - 56
+        self.page_no = 2
 
-    def section_header(self, title: str, subtitle: str = "") -> None:
+    def new_page(self):
+        self.y = _new_page(self.pdf, self.width, self.height, self.page_no, self.charcoal)
+        self.page_no += 1
+        self.pdf.setFillColor(self.white)
+
+    def section_header(self, title: str, subtitle: str = ""):
         self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, 44, self.page_no, self.charcoal)
         self.pdf.setFillColor(self.gold)
         self.pdf.setFont("Helvetica-Bold", 15)
@@ -256,15 +328,14 @@ class _PDFCtx:
                                  self.left, self.y, 12, "Helvetica", 10, self.soft)
             self.y -= 6
 
-    def text_block(self, text: str, color=None, font_name: str = "Helvetica",
-                   font_size: int = 11, leading: int = 14, inset: int = 0) -> None:
+    def text_block(self, text: str, color=None, font_name: str = "Helvetica", font_size: int = 11, leading: int = 14, inset: int = 0):
         color = color if color is not None else self.muted
         lines = _split_lines(self.pdf, text, font_name, font_size, self.uw - inset)
         self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y,
                                              max(40, len(lines) * leading + 10), self.page_no, self.charcoal)
         self.y = _draw_lines(self.pdf, lines, self.left + inset, self.y, leading, font_name, font_size, color)
 
-    def bullet_list(self, items: List[str], bullet_color=None) -> None:
+    def bullet_list(self, items: List[str], bullet_color=None):
         bc = bullet_color or self.blue
         for item in items:
             lines = _split_lines(self.pdf, item, "Helvetica", 10, self.uw - 26)
@@ -276,17 +347,31 @@ class _PDFCtx:
             self.y = _draw_lines(self.pdf, lines, self.left + 14, self.y, 13, "Helvetica", 10, self.muted)
             self.y -= 3
 
-    def section_band(self, label: str) -> None:
-        panel2 = colors.HexColor("#1f1f1f")
-        self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, 44, self.page_no, self.charcoal)
-        self.pdf.setFillColor(panel2)
-        self.pdf.roundRect(self.left, self.y - 20, self.uw, 26, 8, stroke=0, fill=1)
-        self.pdf.setFillColor(self.gold)
-        self.pdf.setFont("Helvetica-Bold", 12)
-        self.pdf.drawString(self.left + 12, self.y - 4, label)
-        self.y -= 38
+    def chip_row(self, items: List[str], chip_color=None):
+        color = chip_color or self.blue
+        x = self.left
+        y = self.y
+        max_h = 22
+        for item in items:
+            label = str(item).strip()
+            if not label:
+                continue
+            w = min(max(54, 8 + len(label) * 5.6), self.uw)
+            if x + w > self.left + self.uw:
+                x = self.left
+                y -= max_h + 6
+                self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, y, max_h + 10, self.page_no, self.charcoal)
+            self.pdf.setFillColor(self.panel)
+            self.pdf.roundRect(x, y - 16, w, max_h, 8, stroke=0, fill=1)
+            self.pdf.setStrokeColor(color)
+            self.pdf.roundRect(x, y - 16, w, max_h, 8, stroke=1, fill=0)
+            self.pdf.setFillColor(color)
+            self.pdf.setFont("Helvetica-Bold", 9)
+            self.pdf.drawString(x + 8, y - 4, label[:26])
+            x += w + 6
+        self.y = y - max_h - 8
 
-    def info_row(self, label: str, value: str) -> None:
+    def info_row(self, label: str, value: str):
         lines = simpleSplit(str(value or "-"), "Helvetica", 10.5, self.uw - 120)
         self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y,
                                              len(lines) * 14 + 10, self.page_no, self.charcoal)
@@ -301,44 +386,99 @@ class _PDFCtx:
             yy -= 14
         self.y = yy - 4
 
-    def gold_label(self, label: str) -> None:
-        self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, 32, self.page_no, self.charcoal)
+    def methodology_box(self):
+        lines: List[str] = []
+        for item in _methodology_lines():
+            lines.extend(_split_lines(self.pdf, item, "Helvetica", 9, self.uw - 26))
+        box_h = max(84, len(lines) * 11 + 34)
+        self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, box_h + 10, self.page_no, self.charcoal)
+        self.pdf.setFillColor(self.panel)
+        self.pdf.roundRect(self.left, self.y - box_h + 10, self.uw, box_h, 12, stroke=0, fill=1)
         self.pdf.setFillColor(self.gold)
         self.pdf.setFont("Helvetica-Bold", 12)
-        self.pdf.drawString(self.left, self.y, label.upper())
-        self.pdf.setStrokeColor(self.gold)
-        self.pdf.line(self.left, self.y - 6, self.left + len(label) * 7, self.y - 6)
-        self.y -= 20
-
-    def chip_row(self, items: List[str], chip_color=None) -> None:
-        cc = chip_color or self.gold
-        x = self.left
-        chip_h = 20
-        self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, chip_h + 12, self.page_no, self.charcoal)
-        for item in items:
-            w = len(str(item)) * 6.5 + 16
-            if x + w > self.left + self.uw:
-                self.y -= chip_h + 6
-                x = self.left
-                self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, chip_h + 6, self.page_no, self.charcoal)
-            self.pdf.setFillColor(self.panel)
-            self.pdf.roundRect(x, self.y - chip_h + 4, w, chip_h, 6, stroke=0, fill=1)
-            self.pdf.setFillColor(cc)
-            self.pdf.setFont("Helvetica-Bold", 9)
-            self.pdf.drawString(x + 8, self.y - 10, str(item))
-            x += w + 8
-        self.y -= chip_h + 10
-
-    def new_page(self) -> None:
-        _footer(self.pdf, self.width, self.page_no)
-        self.pdf.showPage()
-        self.page_no += 1
-        self.pdf.setFillColor(self.charcoal)
-        self.pdf.rect(0, 0, self.width, self.height, stroke=0, fill=1)
-        self.y = self.height - 56
+        self.pdf.drawString(self.left + 14, self.y - 10, "Sources & Methodology")
+        yy = self.y - 28
+        for item in _methodology_lines():
+            self.pdf.setFillColor(self.gold)
+            self.pdf.setFont("Helvetica-Bold", 10)
+            self.pdf.drawString(self.left + 14, yy, "•")
+            block = _split_lines(self.pdf, item, "Helvetica", 9, self.uw - 34)
+            yy = _draw_lines(self.pdf, block, self.left + 28, yy, 11, "Helvetica", 9, self.muted)
+            yy -= 2
+        self.y -= box_h + 10
 
 
-# ── MODE 1: AUDITION ANALYZER ─────────────────────────────────────────────────
+# ── LIGHT SYNTHESIS HELPERS ───────────────────────────────────────────────────
+
+def _fallback_audition_snapshot(character_name: str, beats: List[BeatEntry]) -> str:
+    top = beats[0].beat if beats else "Hold Authority"
+    return (
+        f"{character_name.title()} reads as a role carried by pressure, control, and quick decisions. "
+        f"Across the current sides, the material most often asks for '{top}'. "
+        f"The strongest audition choice is usually specific, contained, and alive in the listening."
+    )
+
+
+def _fallback_booked_snapshot(character_name: str, beats: List[BeatEntry]) -> str:
+    top = beats[0].beat if beats else "Hold Authority"
+    scene_count = len(list(dict.fromkeys([b.scene_heading for b in beats if b.scene_heading])))
+    return (
+        f"{character_name.title()} currently reads like a role shaped by control, timing, and scene pressure. "
+        f"The present extraction finds {len(beats)} speaking beats across {scene_count or 1} scene(s), with the role most often living inside '{top}'. "
+        f"The job in booked-mode is continuity: keep the core behavior stable while allowing pressure to change pace, patience, and openness."
+    )
+
+
+def _fallback_exec_summary(title: str, genre: str, tone: str, logline: str) -> str:
+    return (
+        f"{title.title()} currently presents as {genre or 'a feature screenplay'} with a tone that leans {tone or 'grounded and commercial'}. "
+        f"At its best, the material works because the central pressure line is easy to understand and the story engine is clear. "
+        f"The clearest commercial hook remains: {logline or 'the protagonist is forced into a high-pressure situation that escalates toward a reversal.'}"
+    )
+
+
+def _smart_summary(mode: str, title: str, character_name: str, logline: str, synopsis: str, beats: List[BeatEntry], extra: str = "") -> str:
+    if mode == "audition":
+        user = (
+            f"Write a 90-word actor-facing audition snapshot for the role {character_name}. "
+            f"Conversational, concise, helpful for a novice actor. No fluff. "
+            f"Use this context: logline={logline}; synopsis={synopsis}; top beats={[b.beat for b in beats[:5]]}; extra={extra}."
+        )
+        out = _call_text_ai(
+            "You write concise, conversational actor prep copy for audition packets. Avoid robotic labels. Do not mention AI.",
+            user,
+            max_tokens=180,
+        )
+        return out or _fallback_audition_snapshot(character_name, beats)
+    if mode == "booked":
+        user = (
+            f"Write a 110-word booked-role overview for the role {character_name}. "
+            f"Conversational but professional. Focus on continuity, pressure, and role behavior. "
+            f"Use: logline={logline}; synopsis={synopsis}; beats={[b.beat for b in beats[:8]]}; extra={extra}."
+        )
+        out = _call_text_ai(
+            "You write clear, practical actor continuity notes. Avoid jargon overload. Do not mention AI.",
+            user,
+            max_tokens=220,
+        )
+        return out or _fallback_booked_snapshot(character_name, beats)
+    user = (
+        f"Write a 110-word executive summary for the screenplay {title}. Professional, concise, market-aware, novice-friendly. "
+        f"Use only this info: genre={extra}; logline={logline}; synopsis={synopsis}."
+    )
+    out = _call_text_ai(
+        "You write concise, professional script analysis summaries for development reports. No hype. No fluff. Do not mention AI.",
+        user,
+        max_tokens=220,
+    )
+    return out or _fallback_exec_summary(title, extra, "", logline)
+
+
+def _unique_scenes(beats: List[BeatEntry]) -> List[str]:
+    return list(dict.fromkeys([b.scene_heading for b in beats if b.scene_heading]))
+
+
+# ── MODE 1: AUDITION QUICKPACK ───────────────────────────────────────────────
 
 def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str | Path, brain_data: Optional[Dict] = None) -> Path:
     output_path = Path(output_path)
@@ -353,98 +493,82 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     usable_width = right - left
 
     charcoal = colors.HexColor("#111111")
-    panel    = colors.HexColor("#1a1a1a")
-    gold     = colors.HexColor("#f0c15d")
-    blue     = colors.HexColor("#52a8ff")
-    white    = colors.white
-    muted    = colors.HexColor("#cfcfcf")
-    soft     = colors.HexColor("#8f8f8f")
+    panel = colors.HexColor("#1a1a1a")
+    gold = colors.HexColor("#f0c15d")
+    blue = colors.HexColor("#52a8ff")
+    white = colors.white
+    muted = colors.HexColor("#cfcfcf")
+    soft = colors.HexColor("#8f8f8f")
 
-    tone            = _safe(brain_data.get("tone"))
-    logline         = _safe(brain_data.get("logline"))
-    protagonist_sum = _safe(brain_data.get("protagonist_summary"))
+    tone = _safe(brain_data.get("tone"))
+    logline = _safe(brain_data.get("logline"))
+    synopsis = _safe(brain_data.get("synopsis"))
     actor_objective = _safe(brain_data.get("actor_objective"))
-    danger_zones    = brain_data.get("audition_danger_zones") or []
-    tactics         = brain_data.get("playable_tactics") or []
-    triggers        = brain_data.get("emotional_triggers") or []
-    chemistry_tips  = brain_data.get("reader_chemistry_tips") or []
+    danger_zones = brain_data.get("audition_danger_zones") or []
+    tactics = brain_data.get("playable_tactics") or []
+    triggers = brain_data.get("emotional_triggers") or []
+    chemistry_tips = brain_data.get("reader_chemistry_tips") or []
+    casting_tests = brain_data.get("casting_tests") or []
+    role_essence = _safe(brain_data.get("role_essence"))
+    ai_snapshot = _smart_summary("audition", "", character_name, logline, synopsis, beats, extra=role_essence)
 
-    # ── COVER ────────────────────────────────────────────────────
     pdf.setFillColor(charcoal)
     pdf.rect(0, 0, width, height, stroke=0, fill=1)
     pdf.setFillColor(gold)
     pdf.rect(0, height - 6, width, 6, stroke=0, fill=1)
-
     pdf.setFillColor(soft)
     pdf.setFont("Helvetica", 9)
     pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR PREPARATION")
-
     pdf.setFillColor(gold)
     pdf.setFont("Helvetica-Bold", 40)
     pdf.drawString(left, height - 80, "AUDITION")
     pdf.setFillColor(white)
     pdf.setFont("Helvetica-Bold", 28)
-    pdf.drawString(left, height - 116, "PREP PACKET")
-
+    pdf.drawString(left, height - 116, "QUICKPACK")
     pdf.setStrokeColor(gold)
-    pdf.setLineWidth(1)
     pdf.line(left, height - 132, right, height - 132)
-
     pdf.setFillColor(soft)
     pdf.setFont("Helvetica", 10)
-    pdf.drawString(left, height - 154, "CHARACTER")
+    pdf.drawString(left, height - 154, "ROLE")
     pdf.setFillColor(white)
     pdf.setFont("Helvetica-Bold", 20)
     pdf.drawString(left, height - 174, character_name.title())
 
-    cy = height - 200
-    beat_label = f"{len(beats)} speaking beat{'s' if len(beats) != 1 else ''} detected" if beats else "No beats detected"
+    cy = height - 202
+    beat_label = f"{len(beats)} playable beat{'s' if len(beats) != 1 else ''} detected" if beats else "No beats detected"
     pdf.setFillColor(soft)
     pdf.setFont("Helvetica", 10)
     pdf.drawString(left, cy, beat_label)
-    cy -= 20
-
+    cy -= 18
     if tone:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(left, cy, "TONE"); cy -= 13
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+        pdf.setFillColor(muted)
+        pdf.setFont("Helvetica", 10)
         for tl in simpleSplit(tone, "Helvetica", 10, usable_width):
-            pdf.drawString(left, cy, tl); cy -= 13
-        cy -= 6
+            pdf.drawString(left, cy, tl)
+            cy -= 12
+        cy -= 4
 
-    if actor_objective:
-        obj_lines = simpleSplit(actor_objective, "Helvetica-Oblique", 11, usable_width - 32)
-        obj_h = len(obj_lines) * 15 + 30
-        pdf.setFillColor(panel)
-        pdf.roundRect(left, cy - obj_h + 10, usable_width, obj_h, 12, stroke=0, fill=1)
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(left + 16, cy - 6, "ACTOR OBJECTIVE")
-        oy = cy - 22
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Oblique", 11)
-        for ol in obj_lines:
-            pdf.drawString(left + 16, oy, ol); oy -= 15
-        cy -= obj_h + 10
+    snap_lines = simpleSplit(ai_snapshot, "Helvetica", 11, usable_width - 32)
+    snap_h = len(snap_lines) * 15 + 30
+    pdf.setFillColor(panel)
+    pdf.roundRect(left, cy - snap_h + 10, usable_width, snap_h, 12, stroke=0, fill=1)
+    pdf.setFillColor(gold)
+    pdf.setFont("Helvetica-Bold", 8)
+    pdf.drawString(left + 16, cy - 6, "60-SECOND ROLE SNAPSHOT")
+    sy = cy - 22
+    pdf.setFillColor(white)
+    pdf.setFont("Helvetica", 11)
+    for line in snap_lines:
+        pdf.drawString(left + 16, sy, line)
+        sy -= 15
+    cy -= snap_h + 10
 
-    if logline:
-        ll_lines = simpleSplit(logline, "Helvetica-Oblique", 10, usable_width - 32)
-        ll_h = len(ll_lines) * 14 + 26
-        pdf.setFillColor(colors.HexColor("#161616"))
-        pdf.roundRect(left, cy - ll_h + 10, usable_width, ll_h, 12, stroke=0, fill=1)
-        pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(left + 16, cy - 6, "LOGLINE")
-        ly = cy - 20
-        pdf.setFillColor(muted); pdf.setFont("Helvetica-Oblique", 10)
-        for ll in ll_lines:
-            pdf.drawString(left + 16, ly, ll); ly -= 14
-        cy -= ll_h + 10
-
-    cy -= 8
     contents = [
-        "The Role in 60 Seconds",
-        "What Casting Is Testing",
-        "What the Sides Are Really Telling You  (inference)",
-        f"Beat Breakdown  ({len(beats)} beats)",
-        "Self-Tape Checklist",
+        "Role snapshot",
+        "What casting is likely testing",
+        "What the sides are telling you",
+        f"Beat breakdown ({len(beats)} beats)",
+        "Self-tape checklist",
     ]
     pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(left, cy, "THIS PACKET INCLUDES"); cy -= 14
@@ -459,138 +583,89 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     _footer(pdf, width, 1)
     pdf.showPage()
 
-    # ── CONTENT PAGES ────────────────────────────────────────────
     pdf.setFillColor(charcoal)
     pdf.rect(0, 0, width, height, stroke=0, fill=1)
-
     ctx = _PDFCtx(pdf, width, height, left, usable_width, charcoal, gold, blue, white, muted, soft, panel)
-
-    def beat_card(idx: int, beat: BeatEntry) -> None:
-        dialogue_lines = _split_lines(pdf, f"{beat.cue_line}: {beat.dialogue}", "Helvetica", 9, usable_width - 28)
-        note_lines = _split_lines(pdf, beat.playable_note, "Helvetica", 9, usable_width - 28)
-        card_h = max(46 + len(dialogue_lines) * 11 + len(note_lines) * 11 + 14, 100)
-        ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, card_h + 10, ctx.page_no, charcoal)
-        pdf.setFillColor(panel)
-        pdf.roundRect(left, ctx.y - card_h + 10, usable_width, card_h, 12, stroke=0, fill=1)
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(left + 14, ctx.y - 8, f"Beat {idx}  —  {beat.beat}")
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(left + 14, ctx.y - 22, f"{beat.reference}  |  {beat.scene_heading}")
-        by = ctx.y - 40
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(left + 14, by, "Script line"); by -= 12
-        by = _draw_lines(pdf, dialogue_lines, left + 14, by, 11, "Helvetica", 9, muted)
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(left + 14, by - 2, "Playable note"); by -= 14
-        _draw_lines(pdf, note_lines, left + 14, by, 11, "Helvetica", 9, muted)
-        ctx.y -= card_h + 10
 
     if not beats:
         ctx.section_header("No matching dialogue found")
         ctx.text_block("The extraction did not detect dialogue for this role. Try entering the character name exactly as it appears in the script.")
+        ctx.methodology_box()
         _footer(pdf, width, ctx.page_no)
         pdf.save()
         return output_path
 
-    # THE ROLE IN 60 SECONDS
-    ctx.section_header("The Role in 60 Seconds", "Fast read. Audition-focused.")
-    if protagonist_sum:
-        ctx.text_block(protagonist_sum, color=white, font_size=12, leading=16)
-        ctx.y -= 4
-    beat_names = [b.beat for b in beats]
-    top_beat = beat_names[0] if beat_names else "Hold Authority"
-    ctx.text_block(f"Detected {len(beats)} playable beat{'s' if len(beats) != 1 else ''} in the sides. The strongest energy reads closest to '{top_beat}'. Clarity, listening, and specificity will win this room more than volume.", leading=14)
-    ctx.y -= 12
+    ctx.section_header("What Casting Is Likely Testing", "Plain English notes for actors on a deadline.")
+    tests = casting_tests if casting_tests else [
+        "Can you establish the role quickly without over-explaining it?",
+        "Can you hold pressure without forcing the performance?",
+        "Can you let pauses, reactions, and listening do some of the work?",
+    ]
+    ctx.bullet_list(tests, bullet_color=blue)
+    ctx.y -= 8
 
-    # WHAT CASTING IS TESTING
-    ctx.section_header("What Casting Is Testing", "Inferred from the material — not generic advice.")
-    if danger_zones:
-        ctx.text_block("These are the specific traps in this material. Avoiding them is how you show you can read a room:", color=soft, font_size=10)
-        ctx.y -= 4
-        ctx.bullet_list(danger_zones, bullet_color=blue)
-    else:
-        ctx.bullet_list([
-            "Can you establish presence without announcing it?",
-            "Can you hold pressure without forcing the scene?",
-            "Can you let pauses and listening do the work?",
-        ], bullet_color=blue)
-    ctx.y -= 12
-
-    # WHAT THE SIDES ARE REALLY TELLING YOU
-    ctx.section_header("What the Sides Are Really Telling You", "This is the inference section. Most actors miss this.")
-    ctx.y -= 4
-
+    ctx.section_header("What the Sides Are Really Telling You", "This is the conversational read of the moment.")
     if actor_objective:
-        ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 50, ctx.page_no, charcoal)
-        pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(left, ctx.y, "The core objective")
-        ctx.y -= 14
-        ctx.text_block(actor_objective, color=white, font_size=11, leading=14)
-        ctx.y -= 8
-
+        ctx.info_row("Main objective", actor_objective)
+    if role_essence:
+        ctx.info_row("Role essence", role_essence)
     if triggers:
-        ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 40, ctx.page_no, charcoal)
-        pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(left, ctx.y, "What the scene is designed to provoke")
-        ctx.y -= 14
-        ctx.chip_row(triggers, chip_color=gold)
-        ctx.y -= 4
-
+        ctx.info_row("What gets under the skin", ", ".join(map(str, triggers)))
     if tactics:
-        ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 40, ctx.page_no, charcoal)
-        pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(left, ctx.y, "Tactics available to this character")
-        ctx.y -= 14
-        ctx.chip_row(tactics, chip_color=muted)
-        ctx.y -= 4
-
+        ctx.info_row("Useful playable choices", ", ".join(map(str, tactics)))
     if chemistry_tips:
-        ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 40, ctx.page_no, charcoal)
-        pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(left, ctx.y, "Working with the reader")
-        ctx.y -= 14
         ctx.bullet_list(chemistry_tips, bullet_color=gold)
-    ctx.y -= 12
+    ctx.y -= 8
 
-    # BEAT BREAKDOWN
     ctx.new_page()
     ctx.section_header("Beat Breakdown", f"All {len(beats)} detected beat{'s' if len(beats) != 1 else ''} from the current sides.")
     for idx, beat in enumerate(beats, start=1):
-        beat_card(idx, beat)
-    ctx.y -= 12
+        title = _friendly_beat_title(beat.beat, idx)
+        d_lines = _split_lines(pdf, f"{beat.cue_line}: {beat.dialogue}", "Helvetica", 9, usable_width - 28)
+        n_lines = _split_lines(pdf, beat.playable_note, "Helvetica", 9, usable_width - 28)
+        card_h = max(46 + len(d_lines) * 11 + len(n_lines) * 11 + 14, 104)
+        ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, card_h + 10, ctx.page_no, charcoal)
+        pdf.setFillColor(panel)
+        pdf.roundRect(left, ctx.y - card_h + 10, usable_width, card_h, 12, stroke=0, fill=1)
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(left + 14, ctx.y - 8, f"Beat {idx} — {title}")
+        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
+        pdf.drawString(left + 14, ctx.y - 22, f"{beat.reference} | {beat.scene_heading}")
+        by = ctx.y - 40
+        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(left + 14, by, "Script line"); by -= 12
+        by = _draw_lines(pdf, d_lines, left + 14, by, 11, "Helvetica", 9, muted)
+        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(left + 14, by - 2, "How to play it"); by -= 14
+        _draw_lines(pdf, n_lines, left + 14, by, 11, "Helvetica", 9, muted)
+        ctx.y -= card_h + 10
 
-    # SELF-TAPE CHECKLIST
-    ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 100, ctx.page_no, charcoal)
-    ctx.section_header("Self-Tape Checklist", "Short, practical, deadline-friendly.")
+    ctx.section_header("Self-Tape Success Checklist", "Short, practical, and beginner-friendly.")
     ctx.bullet_list([
-        "Frame chest-up or mid-shot unless casting specifies otherwise.",
-        "Lock your eyeline marks for each off-camera character before you record.",
-        "Keep the background clean and the audio easy to understand.",
-        "Do not rush pauses. Let the thought finish before the next line arrives.",
-        "Dress to suggest the role — not to costume it.",
-        "Check file name, submission instructions, and deadline before sending.",
+        "Frame chest-up or mid-shot unless casting says otherwise.",
+        "Pick exact eyeline marks and tape them before recording.",
+        "Keep the background clean and the sound easy to understand.",
+        "Do not rush the pauses. Let the thought finish before the next line.",
+        "Dress in a way that hints at the role without turning it into costume.",
+        "Check file name, instructions, and upload deadline before sending.",
     ], bullet_color=gold)
-
+    ctx.methodology_box()
     _footer(pdf, width, ctx.page_no)
     pdf.save()
     return output_path
 
 
-# ── MODE 2: BOOKED ROLE ANALYZER ──────────────────────────────────────────────
+# ── MODE 2: BOOKED ROLE PREP ─────────────────────────────────────────────────
 
 _CONTINUITY_NOTES: Dict[str, str] = {
-    "Pressure for Information": "Track what you learn in this beat and carry it forward — the character's intelligence compounds across scenes.",
-    "Control the Room": "High-stakes control moment. Protect the physicality and pace — don't let it read the same as lower-pressure beats.",
-    "Set a Boundary": "The line drawn here defines the character's limit. The next scene already knows this line was drawn.",
-    "Reset and Move Forward": "Pivot beat — keep it light and efficient. Don't over-color it or it'll compete with heavier moments.",
-    "Apply Pressure": "The character is operating here, not reacting. Keep it deliberate across every take.",
-    "Hold Authority": "This is the character's baseline. Make sure it doesn't flatten — authority still has texture and specificity.",
+    "Pressure for Information": "Track what the character learns here and let that new information change the next beat.",
+    "Control the Room": "This is a control beat. Keep the body and pace consistent so the authority feels earned.",
+    "Set a Boundary": "This is where the line gets drawn. Play the clarity, not the anger.",
+    "Reset and Move Forward": "This beat shifts the energy. Let it feel like a clean redirect, not a full emotional reset.",
+    "Apply Pressure": "The role is leaning in here. The scene changes because the character chooses to press.",
+    "Hold Authority": "This is the baseline control state. Keep it textured so it does not flatten.",
 }
-_DEFAULT_CONTINUITY = "Stay behaviorally consistent. Let scene pressure alter pace and patience while core identity holds."
-
-
-def _unique_scenes(beats: List[BeatEntry]) -> List[str]:
-    return list(dict.fromkeys([b.scene_heading for b in beats if b.scene_heading]))
+_DEFAULT_CONTINUITY = "Protect continuity first. Let pressure change pace and patience while core identity stays recognizable."
 
 
 def build_actor_booked_pdf(script_text: str, character_name: str, output_path: str | Path, brain_data: Optional[Dict] = None) -> Path:
@@ -599,109 +674,89 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     brain_data = brain_data or {}
 
     pdf = canvas.Canvas(str(output_path), pagesize=LETTER)
-    pdf.setTitle(f"{character_name.title()} — Booked Role Packet")
+    pdf.setTitle(f"{character_name.title()} — Full Role Prep")
     width, height = LETTER
     left = 42
     right = width - 42
     usable_width = right - left
 
     charcoal = colors.HexColor("#111111")
-    panel    = colors.HexColor("#1a1a1a")
-    gold     = colors.HexColor("#f0c15d")
-    blue     = colors.HexColor("#52a8ff")
-    white    = colors.white
-    muted    = colors.HexColor("#cfcfcf")
-    soft     = colors.HexColor("#8f8f8f")
+    panel = colors.HexColor("#1a1a1a")
+    gold = colors.HexColor("#f0c15d")
+    blue = colors.HexColor("#52a8ff")
+    white = colors.white
+    muted = colors.HexColor("#cfcfcf")
+    soft = colors.HexColor("#8f8f8f")
 
-    tone            = _safe(brain_data.get("tone"))
-    logline         = _safe(brain_data.get("logline"))
-    protagonist_sum = _safe(brain_data.get("protagonist_summary"))
+    tone = _safe(brain_data.get("tone"))
+    logline = _safe(brain_data.get("logline"))
+    synopsis = _safe(brain_data.get("synopsis"))
     actor_objective = _safe(brain_data.get("actor_objective"))
-    tactics         = brain_data.get("playable_tactics") or []
-    triggers        = brain_data.get("emotional_triggers") or []
-    role_arc        = brain_data.get("role_arc_map") or []
+    tactics = brain_data.get("playable_tactics") or []
+    triggers = brain_data.get("emotional_triggers") or []
+    role_arc = brain_data.get("role_arc_map") or []
     pressure_ladder = brain_data.get("pressure_ladder") or []
-    em_continuity   = brain_data.get("emotional_continuity") or []
-    rel_map         = brain_data.get("relationship_leverage_map") or []
-    costume_clues   = brain_data.get("costume_behavior_clues") or []
-    memo_beats      = brain_data.get("memorization_beats") or []
-    set_checklist   = brain_data.get("set_ready_checklist") or []
-    scene_count     = len(_unique_scenes(beats))
+    em_continuity = brain_data.get("emotional_continuity") or []
+    rel_map = brain_data.get("relationship_leverage_map") or []
+    costume_clues = brain_data.get("costume_behavior_clues") or []
+    memo_beats = brain_data.get("memorization_beats") or []
+    set_checklist = brain_data.get("set_ready_checklist") or []
+    relationship_summary = _safe(brain_data.get("relationship_summary"))
+    ai_snapshot = _smart_summary("booked", "", character_name, logline, synopsis, beats, extra=relationship_summary)
+    scene_count = len(_unique_scenes(beats))
 
-    # ── COVER ────────────────────────────────────────────────────
     pdf.setFillColor(charcoal)
     pdf.rect(0, 0, width, height, stroke=0, fill=1)
     pdf.setFillColor(gold)
     pdf.rect(0, height - 6, width, 6, stroke=0, fill=1)
-
-    pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
+    pdf.setFillColor(soft)
+    pdf.setFont("Helvetica", 9)
     pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR PREPARATION")
-
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 40)
-    pdf.drawString(left, height - 80, "BOOKED ROLE")
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
-    pdf.drawString(left, height - 116, "PREP PACKET")
-
-    pdf.setStrokeColor(gold); pdf.setLineWidth(1)
+    pdf.setFillColor(gold)
+    pdf.setFont("Helvetica-Bold", 40)
+    pdf.drawString(left, height - 80, "FULL ROLE")
+    pdf.setFillColor(white)
+    pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(left, height - 116, "PREP")
+    pdf.setStrokeColor(gold)
     pdf.line(left, height - 132, right, height - 132)
-
-    pdf.setFillColor(soft); pdf.setFont("Helvetica", 10)
-    pdf.drawString(left, height - 154, "CHARACTER")
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
+    pdf.setFillColor(soft)
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(left, height - 154, "ROLE")
+    pdf.setFillColor(white)
+    pdf.setFont("Helvetica-Bold", 20)
     pdf.drawString(left, height - 174, character_name.title())
 
-    cy = height - 200
-    beat_label = (f"{len(beats)} speaking beat{'s' if len(beats) != 1 else ''} across "
-                  f"{scene_count} scene{'s' if scene_count != 1 else ''}") if beats else "No beats detected"
+    cy = height - 202
+    beat_label = (f"{len(beats)} speaking beat{'s' if len(beats) != 1 else ''} across {scene_count or 1} scene{'s' if (scene_count or 1) != 1 else ''}") if beats else "No beats detected"
     pdf.setFillColor(soft); pdf.setFont("Helvetica", 10)
-    pdf.drawString(left, cy, beat_label); cy -= 20
-
+    pdf.drawString(left, cy, beat_label); cy -= 18
     if tone:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(left, cy, "TONE"); cy -= 13
         pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
         for tl in simpleSplit(tone, "Helvetica", 10, usable_width):
-            pdf.drawString(left, cy, tl); cy -= 13
-        cy -= 6
+            pdf.drawString(left, cy, tl); cy -= 12
+        cy -= 4
 
-    if actor_objective:
-        obj_lines = simpleSplit(actor_objective, "Helvetica-Oblique", 11, usable_width - 32)
-        obj_h = len(obj_lines) * 15 + 30
-        pdf.setFillColor(panel)
-        pdf.roundRect(left, cy - obj_h + 10, usable_width, obj_h, 12, stroke=0, fill=1)
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(left + 16, cy - 6, "ACTOR OBJECTIVE")
-        oy = cy - 22
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Oblique", 11)
-        for ol in obj_lines:
-            pdf.drawString(left + 16, oy, ol); oy -= 15
-        cy -= obj_h + 10
+    snap_lines = simpleSplit(ai_snapshot, "Helvetica", 11, usable_width - 32)
+    snap_h = len(snap_lines) * 15 + 30
+    pdf.setFillColor(panel)
+    pdf.roundRect(left, cy - snap_h + 10, usable_width, snap_h, 12, stroke=0, fill=1)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+    pdf.drawString(left + 16, cy - 6, "FULL ROLE SNAPSHOT")
+    sy = cy - 22
+    pdf.setFillColor(white); pdf.setFont("Helvetica", 11)
+    for line in snap_lines:
+        pdf.drawString(left + 16, sy, line); sy -= 15
+    cy -= snap_h + 10
 
-    if logline:
-        ll_lines = simpleSplit(logline, "Helvetica-Oblique", 10, usable_width - 32)
-        ll_h = len(ll_lines) * 14 + 26
-        pdf.setFillColor(colors.HexColor("#161616"))
-        pdf.roundRect(left, cy - ll_h + 10, usable_width, ll_h, 12, stroke=0, fill=1)
-        pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(left + 16, cy - 6, "LOGLINE")
-        ly = cy - 20
-        pdf.setFillColor(muted); pdf.setFont("Helvetica-Oblique", 10)
-        for ll in ll_lines:
-            pdf.drawString(left + 16, ly, ll); ly -= 14
-        cy -= ll_h + 10
-
-    cy -= 8
     contents = [
-        "Role Overview",
-        "Actor Objective",
-        "Role Arc & Pressure Ladder",
-        "Playable Tactics & Emotional Triggers",
-        "Emotional Continuity",
-        "Relationship Map",
-        "Physical & Costume Notes",
-        "Beats to Lock In",
-        f"Full Scene Journey  ({len(beats)} beats)",
-        "Set-Ready Checklist",
+        "Role overview",
+        "Actor objective",
+        "Role arc & pressure ladder",
+        "Relationships & behavior",
+        "Physical / costume clues",
+        f"Full scene journey ({len(beats)} beats)",
+        "Set-ready checklist",
     ]
     pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(left, cy, "THIS PACKET INCLUDES"); cy -= 14
@@ -709,31 +764,77 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
         pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
         pdf.drawString(left, cy, "—")
         pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-        pdf.drawString(left + 16, cy, item); cy -= 13
+        pdf.drawString(left + 16, cy, item); cy -= 14
 
     pdf.setFillColor(gold)
     pdf.rect(0, 0, width, 4, stroke=0, fill=1)
     _footer(pdf, width, 1)
     pdf.showPage()
 
-    # ── CONTENT PAGES ────────────────────────────────────────────
     pdf.setFillColor(charcoal)
     pdf.rect(0, 0, width, height, stroke=0, fill=1)
-
     ctx = _PDFCtx(pdf, width, height, left, usable_width, charcoal, gold, blue, white, muted, soft, panel)
 
-    def beat_card(idx: int, beat: BeatEntry) -> None:
+    if not beats:
+        ctx.section_header("No matching dialogue found")
+        ctx.text_block("The extraction did not detect dialogue for this role. Try entering the character name exactly as it appears in the script.")
+        ctx.methodology_box()
+        _footer(pdf, width, ctx.page_no)
+        pdf.save()
+        return output_path
+
+    ctx.section_header("Actor Objective", "The clearest through-line to protect from scene to scene.")
+    if actor_objective:
+        ctx.info_row("Main objective", actor_objective)
+    else:
+        ctx.info_row("Main objective", "Protect the core behavior of the role while pressure changes the pace and tactics.")
+    if relationship_summary:
+        ctx.info_row("Relationship dynamic", relationship_summary)
+    ctx.y -= 8
+
+    if role_arc or pressure_ladder:
+        ctx.section_header("Role Arc & Pressure Ladder", "How the role evolves and where the pressure rises.")
+        if role_arc:
+            ctx.info_row("Arc progression", ", ".join(map(str, role_arc)))
+        if pressure_ladder:
+            ctx.info_row("Pressure line", ", ".join(map(str, pressure_ladder)))
+        ctx.y -= 8
+
+    ctx.section_header("Behavior, Relationships, and Continuity")
+    if tactics:
+        ctx.info_row("Useful tactics", ", ".join(map(str, tactics)))
+    if triggers:
+        ctx.info_row("Emotional triggers", ", ".join(map(str, triggers)))
+    if em_continuity:
+        ctx.bullet_list(em_continuity, bullet_color=gold)
+    if rel_map:
+        for rel in rel_map:
+            char = _safe(rel.get("character"))
+            dynamic = _safe(rel.get("dynamic"))
+            func = _safe(rel.get("function"))
+            if char:
+                ctx.info_row(char, "; ".join([p for p in [dynamic, func] if p]))
+    if costume_clues:
+        ctx.bullet_list(costume_clues, bullet_color=blue)
+    if memo_beats:
+        ctx.bullet_list(memo_beats, bullet_color=gold)
+    ctx.y -= 8
+
+    ctx.new_page()
+    ctx.section_header("Full Scene Journey", f"All {len(beats)} detected beat{'s' if len(beats) != 1 else ''} reorganized as role-prep cards.")
+    for idx, beat in enumerate(beats, start=1):
         continuity = _CONTINUITY_NOTES.get(beat.beat, _DEFAULT_CONTINUITY)
+        title = _friendly_beat_title(beat.beat, idx)
         d_lines = _split_lines(pdf, f"{beat.cue_line}: {beat.dialogue}", "Helvetica", 9, usable_width - 28)
         c_lines = _split_lines(pdf, continuity, "Helvetica", 9, usable_width - 28)
-        card_h = max(46 + len(d_lines) * 11 + len(c_lines) * 11 + 14, 100)
+        card_h = max(46 + len(d_lines) * 11 + len(c_lines) * 11 + 14, 104)
         ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, card_h + 10, ctx.page_no, charcoal)
         pdf.setFillColor(panel)
         pdf.roundRect(left, ctx.y - card_h + 10, usable_width, card_h, 12, stroke=0, fill=1)
         pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(left + 14, ctx.y - 8, f"Scene Beat {idx}  —  {beat.beat}")
+        pdf.drawString(left + 14, ctx.y - 8, f"Scene Beat {idx} — {title}")
         pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(left + 14, ctx.y - 22, f"{beat.reference}  |  {beat.scene_heading}")
+        pdf.drawString(left + 14, ctx.y - 22, f"{beat.reference} | {beat.scene_heading}")
         by = ctx.y - 40
         pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
         pdf.drawString(left + 14, by, "Script line"); by -= 12
@@ -743,133 +844,22 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
         _draw_lines(pdf, c_lines, left + 14, by, 11, "Helvetica", 9, muted)
         ctx.y -= card_h + 10
 
-    if not beats:
-        ctx.section_header("No matching dialogue found")
-        ctx.text_block("The extraction did not detect dialogue for this role. Try entering the character name exactly as it appears in the script.")
-        _footer(pdf, width, ctx.page_no)
-        pdf.save()
-        return output_path
-
-    # ROLE OVERVIEW
-    ctx.section_header("Role Overview", "Full booked-mode read using the complete script.")
-    if protagonist_sum:
-        ctx.text_block(protagonist_sum, color=white, font_size=12, leading=16)
-        ctx.y -= 4
-    beat_names = [b.beat for b in beats]
-    top_beat = beat_names[0] if beat_names else "Hold Authority"
-    ctx.text_block(f"Detected {len(beats)} speaking beat{'s' if len(beats) != 1 else ''} across {scene_count} scene{'s' if scene_count != 1 else ''}. The dominant energy reads closest to '{top_beat}'. Prep should focus on continuity, truth, and tracking how pressure shifts from scene to scene.", leading=14)
-    ctx.y -= 12
-
-    # ACTOR OBJECTIVE
-    if actor_objective:
-        ctx.section_header("Actor Objective", "What this role is fundamentally doing in every scene.")
-        ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 50, ctx.page_no, charcoal)
-        pdf.setFillColor(panel)
-        pdf.roundRect(left, ctx.y - 38, usable_width, 46, 10, stroke=0, fill=1)
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 12)
-        obj_lines = _split_lines(pdf, actor_objective, "Helvetica-Bold", 12, usable_width - 28)
-        oy = ctx.y - 14
-        for ol in obj_lines:
-            pdf.drawString(left + 14, oy, ol); oy -= 16
-        ctx.y -= 56
-        ctx.y -= 8
-
-    # ROLE ARC & PRESSURE LADDER
-    if role_arc or pressure_ladder:
-        ctx.section_header("Role Arc & Pressure Ladder", "Where the role travels and how the stakes build.")
-        if role_arc:
-            ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 30, ctx.page_no, charcoal)
-            pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-            pdf.drawString(left, ctx.y, "Arc progression"); ctx.y -= 14
-            ctx.chip_row(role_arc, chip_color=gold)
-        if pressure_ladder:
-            ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 30, ctx.page_no, charcoal)
-            pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-            pdf.drawString(left, ctx.y, "Pressure escalation"); ctx.y -= 14
-            ctx.chip_row(pressure_ladder, chip_color=muted)
-        ctx.y -= 10
-
-    # PLAYABLE TACTICS & EMOTIONAL TRIGGERS
-    if tactics or triggers:
-        ctx.section_header("Playable Tactics & Emotional Triggers")
-        if tactics:
-            ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 30, ctx.page_no, charcoal)
-            pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-            pdf.drawString(left, ctx.y, "Tactics available to this character"); ctx.y -= 14
-            ctx.chip_row(tactics, chip_color=gold)
-        if triggers:
-            ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 30, ctx.page_no, charcoal)
-            pdf.setFillColor(blue); pdf.setFont("Helvetica-Bold", 10)
-            pdf.drawString(left, ctx.y, "What the role is emotionally responding to"); ctx.y -= 14
-            ctx.chip_row(triggers, chip_color=muted)
-        ctx.y -= 10
-
-    # EMOTIONAL CONTINUITY
-    if em_continuity:
-        ctx.section_header("Emotional Continuity", "The through-line that needs to hold across every scene and take.")
-        ctx.bullet_list(em_continuity, bullet_color=gold)
-        ctx.y -= 8
-
-    # RELATIONSHIP MAP
-    if rel_map:
-        ctx.section_header("Relationship Map", "How key relationships function in this script.")
-        for rel in rel_map:
-            char = _safe(rel.get("character"))
-            dynamic = _safe(rel.get("dynamic"))
-            func = _safe(rel.get("function"))
-            if char:
-                ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 44, ctx.page_no, charcoal)
-                pdf.setFillColor(panel)
-                pdf.roundRect(left, ctx.y - 34, usable_width, 42, 8, stroke=0, fill=1)
-                pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
-                pdf.drawString(left + 12, ctx.y - 10, char)
-                pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-                pdf.drawString(left + 12, ctx.y - 22, dynamic)
-                f_lines = _split_lines(pdf, func, "Helvetica", 9, usable_width - 100)
-                pdf.setFillColor(muted)
-                fy = ctx.y - 22
-                for fl in f_lines[:1]:
-                    pdf.drawString(left + 200, fy, fl)
-                ctx.y -= 46
-        ctx.y -= 6
-
-    # PHYSICAL & COSTUME NOTES
-    if costume_clues:
-        ctx.section_header("Physical & Costume Notes", "How the body and wardrobe carry the role.")
-        ctx.bullet_list(costume_clues, bullet_color=blue)
-        ctx.y -= 8
-
-    # BEATS TO LOCK IN
-    if memo_beats:
-        ctx.section_header("Beats to Lock In", "The moments that define how casting and the director will remember this performance.")
-        ctx.bullet_list(memo_beats, bullet_color=gold)
-        ctx.y -= 8
-
-    # FULL SCENE JOURNEY
-    ctx.new_page()
-    ctx.section_header("Full Scene Journey", f"All {len(beats)} detected beat{'s' if len(beats) != 1 else ''} as prep cards.")
-    for idx, beat in enumerate(beats, start=1):
-        beat_card(idx, beat)
-    ctx.y -= 10
-
-    # SET-READY CHECKLIST
-    ctx.y, ctx.page_no = _ensure_space(pdf, width, height, ctx.y, 100, ctx.page_no, charcoal)
     ctx.section_header("Set-Ready Checklist")
     checklist = set_checklist if set_checklist else [
-        "Know where this scene sits in the role's pressure line before you play it.",
+        "Know where the scene sits in the role's pressure line before you play it.",
         "Track whether the character is entering hot, steady, or already compromised.",
         "Hold body language, voice rhythm, and listening behavior consistently across takes.",
-        "Mark any scene where the role's pressure level clearly rises or drops.",
+        "Mark any scene where the role's pressure clearly rises or drops.",
         "Protect continuity more than novelty.",
     ]
     ctx.bullet_list(checklist, bullet_color=gold)
-
+    ctx.methodology_box()
     _footer(pdf, width, ctx.page_no)
     pdf.save()
     return output_path
 
 
-# ── MODE 3: SCRIPT ANALYZER ───────────────────────────────────────────────────
+# ── MODE 3: SCRIPT ANALYSIS REPORT ───────────────────────────────────────────
 
 def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     W, H = LETTER
@@ -877,317 +867,212 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     UW = R - L
 
     charcoal = colors.HexColor("#111111")
-    panel    = colors.HexColor("#1a1a1a")
-    gold     = colors.HexColor("#f0c15d")
-    blue     = colors.HexColor("#4C88C7")
-    white    = colors.white
-    muted    = colors.HexColor("#cfcfcf")
-    soft     = colors.HexColor("#8f8f8f")
-    rule     = colors.HexColor("#2b2b2b")
+    panel = colors.HexColor("#1a1a1a")
+    gold = colors.HexColor("#f0c15d")
+    blue = colors.HexColor("#4C88C7")
+    white = colors.white
+    muted = colors.HexColor("#cfcfcf")
+    soft = colors.HexColor("#8f8f8f")
 
-    title           = _safe(report_output.get("title"), "UNTITLED PROJECT").upper()
-    genre           = _safe(report_output.get("genre") or report_output.get("world"))
-    tone            = _safe(report_output.get("tone"))
-    logline         = _safe(report_output.get("logline"))
-    synopsis        = _safe(report_output.get("synopsis"))
-    theme           = _safe(report_output.get("theme"))
-    world           = _safe(report_output.get("world"))
-    core            = _safe(report_output.get("core_conflict"))
-    engine          = _safe(report_output.get("story_engine"))
-    reversal        = _safe(report_output.get("reversal"))
-    setting         = _safe(report_output.get("setting"))
-    time_frame      = _safe(report_output.get("time_frame"))
-    lead            = _safe(report_output.get("lead_character") or report_output.get("protagonist"))
-    supports        = report_output.get("supporting_characters") or []
+    title = _safe(report_output.get("title"), "UNTITLED PROJECT")
+    genre = _safe(report_output.get("genre") or report_output.get("world"))
+    tone = _safe(report_output.get("tone"))
+    logline = _safe(report_output.get("logline"))
+    synopsis = _safe(report_output.get("synopsis"))
+    theme = _safe(report_output.get("theme"))
+    world = _safe(report_output.get("world"))
+    core = _safe(report_output.get("core_conflict"))
+    engine = _safe(report_output.get("story_engine"))
+    reversal = _safe(report_output.get("reversal"))
+    lead = _safe(report_output.get("lead_character") or report_output.get("protagonist"))
     protagonist_sum = _safe(report_output.get("protagonist_summary"))
-    char_leverage   = _safe(report_output.get("character_leverage"))
-    top_chars       = (report_output.get("character_analysis") or {}).get("top_characters", [])
-    comparables        = report_output.get("tone_comparables") or []
-    comparable_films   = report_output.get("comparable_films") or []
+    char_leverage = _safe(report_output.get("character_leverage"))
+    top_chars_raw = (report_output.get("character_analysis") or {}).get("top_characters", [])
+    top_chars = _clean_characters(top_chars_raw)
+    comparables = report_output.get("tone_comparables") or report_output.get("comparable_films") or []
+    comparables = _clean_characters(comparables)
     market_projections = report_output.get("market_projections") or {}
-    strength           = report_output.get("strength_index") or {}
-    commercial      = _safe(report_output.get("commercial_positioning"))
-    audience        = report_output.get("audience_profile") or []
-    packaging       = _safe(report_output.get("packaging_potential"))
-    exec_summary    = _safe(report_output.get("executive_summary"))
-    summary_note    = _safe(report_output.get("summary_note"))
-    story_insights  = report_output.get("story_insights") or []
+    strength = report_output.get("strength_index") or {}
+    commercial = _safe(report_output.get("commercial_positioning"))
+    audience = report_output.get("audience_profile") or []
+    audience = _clean_characters(audience)
+    packaging = _safe(report_output.get("packaging_potential"))
+    executive_summary = _safe(report_output.get("executive_summary"))
+    summary_note = _safe(report_output.get("summary_note"))
+    story_insights = report_output.get("story_insights") or []
+    rewrite_priorities = report_output.get("rewrite_priorities") or report_output.get("next_draft_priorities") or []
+    strengths_list = report_output.get("strengths") or []
+    risks_list = report_output.get("risks") or report_output.get("development_risks") or []
+    budget_lane = _safe(market_projections.get("budget_range") or report_output.get("budget_lane") or report_output.get("estimated_budget"))
+    streamer_fit = _safe(market_projections.get("streamer_fit") or report_output.get("streamer_fit"))
+    awards_lane = _safe(market_projections.get("awards_lane") or report_output.get("awards_lane"))
+    franchise = _safe(market_projections.get("franchise_potential") or report_output.get("franchise_potential"))
+
+    if not executive_summary:
+        executive_summary = _smart_summary("analysis", title, "", logline, synopsis, [], extra=genre)
+
+    if not strengths_list:
+        strengths_list = [s for s in [theme, engine, commercial, packaging] if s][:4]
+    if not rewrite_priorities:
+        rewrite_priorities = [
+            "Clarify the protagonist's pressure line even further.",
+            "Make the reversal land with maximum clarity.",
+            "Sharpen supporting roles so they do more than serve plot.",
+        ]
+    if not story_insights:
+        story_insights = [
+            f"Lead role currently reads strongest through {lead or 'the protagonist'}.",
+            "The reversal is doing real structural work and should stay visible in the pitch.",
+            "The project feels strongest when the audience is tracking pressure, not exposition.",
+        ]
 
     pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
-    pdf.setTitle(f"{title} Analysis Report")
+    pdf.setTitle(f"{title} — Script Analysis Report")
 
-    # ── COVER ────────────────────────────────────────────────────
     pdf.setFillColor(charcoal)
     pdf.rect(0, 0, W, H, stroke=0, fill=1)
     pdf.setFillColor(gold)
     pdf.rect(0, H - 6, W, 6, stroke=0, fill=1)
-
     pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
     pdf.drawString(L, H - 30, "EVOLUM  ·  DEVELOPUM AI ENGINE")
-
     pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 40)
     pdf.drawString(L, H - 80, "SCRIPT")
     pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
     pdf.drawString(L, H - 116, "ANALYSIS REPORT")
-
-    pdf.setStrokeColor(gold); pdf.setLineWidth(1)
-    pdf.line(L, H - 132, R, H - 132)
-
+    pdf.setStrokeColor(gold); pdf.line(L, H - 132, R, H - 132)
     pdf.setFillColor(soft); pdf.setFont("Helvetica", 10)
     pdf.drawString(L, H - 154, "PROJECT")
     pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
     ty = H - 174
-    for tl in simpleSplit(title, "Helvetica-Bold", 20, UW):
+    for tl in simpleSplit(title.upper(), "Helvetica-Bold", 20, UW):
         pdf.drawString(L, ty, tl); ty -= 26
-
     cy = ty - 10
-
-    if genre:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(L, cy, "GENRE"); cy -= 13
+    meta = "  ·  ".join([p for p in [genre, tone] if p])
+    if meta:
         pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-        for gl in simpleSplit(genre, "Helvetica", 11, UW):
-            pdf.drawString(L, cy, gl); cy -= 13
+        for ml in simpleSplit(meta, "Helvetica", 11, UW):
+            pdf.drawString(L, cy, ml); cy -= 13
         cy -= 4
 
-    if tone:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(L, cy, "TONE"); cy -= 13
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-        for tl in simpleSplit(tone, "Helvetica", 11, UW):
-            pdf.drawString(L, cy, tl); cy -= 13
-        cy -= 4
+    summary_lines = simpleSplit(executive_summary, "Helvetica", 11, UW - 32)
+    box_h = len(summary_lines) * 15 + 30
+    pdf.setFillColor(panel)
+    pdf.roundRect(L, cy - box_h + 10, UW, box_h, 12, stroke=0, fill=1)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+    pdf.drawString(L + 16, cy - 6, "EXECUTIVE SNAPSHOT")
+    sy = cy - 22
+    pdf.setFillColor(white); pdf.setFont("Helvetica", 11)
+    for line in summary_lines:
+        pdf.drawString(L + 16, sy, line); sy -= 15
+    cy -= box_h + 10
 
-    if comparables:
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(L, cy, "COMPARABLE TO"); cy -= 13
-        comp_text = "  ·  ".join(str(c) for c in comparables[:4] if str(c).strip())
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Oblique", 11)
-        for cl in simpleSplit(comp_text, "Helvetica-Oblique", 11, UW):
-            pdf.drawString(L, cy, cl); cy -= 13
-        cy -= 6
-
-    if logline:
-        ll_lines = simpleSplit(logline, "Helvetica-Oblique", 11, UW - 36)
-        ph = len(ll_lines) * 15 + 28
-        pdf.setFillColor(panel)
-        pdf.roundRect(L, cy - ph + 10, UW, ph, 12, stroke=0, fill=1)
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(L + 16, cy - 6, "LOGLINE")
-        ly = cy - 22
-        pdf.setFillColor(muted); pdf.setFont("Helvetica-Oblique", 11)
-        for ll in ll_lines:
-            pdf.drawString(L + 16, ly, ll); ly -= 15
-        cy -= ph + 14
-
-    if strength:
-        score_items = [("CONCEPT", strength.get("concept", 0)), ("CHARACTER", strength.get("character", 0)),
-                       ("MARKET", strength.get("marketability", 0)), ("ORIGINAL", strength.get("originality", 0))]
-        score_items = [(lbl, v) for lbl, v in score_items if v]
-        if score_items:
-            pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
-            pdf.drawString(L, cy, "STRENGTH INDEX"); cy -= 14
-            badge_w = (UW - 12) / 4
-            for bi, (lbl, val) in enumerate(score_items[:4]):
-                bx = L + bi * (badge_w + 4)
-                pdf.setFillColor(panel); pdf.roundRect(bx, cy - 20, badge_w, 26, 6, stroke=0, fill=1)
-                pdf.setFillColor(soft); pdf.setFont("Helvetica", 7.5)
-                pdf.drawString(bx + 6, cy - 4, lbl)
-                pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 13)
-                pdf.drawRightString(bx + badge_w - 6, cy - 17, f"{val}/10")
-            cy -= 36
-
-    cy -= 4
     contents = [
-        "The Story  (logline, synopsis)",
-        "Story Core  (world, theme, conflict, engine, reversal)",
-        "The Protagonist",
-        "Character Landscape",
-        "Market & Packaging",
-        "Comparable Films  (with context and budget tier)",
-        "Market Projections  (budget, distribution, awards, franchise)",
+        "Executive snapshot",
+        "Story engine",
+        "Character value",
+        "Market position",
+        "Rewrite priorities",
+        "Why this project matters",
     ]
     pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(L, cy, "THIS REPORT INCLUDES"); cy -= 14
     for item in contents:
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(L, cy, "—")
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-        pdf.drawString(L + 16, cy, item); cy -= 13
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10); pdf.drawString(L, cy, "—")
+        pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(L + 16, cy, item); cy -= 14
 
     pdf.setFillColor(gold)
     pdf.rect(0, 0, W, 4, stroke=0, fill=1)
-    pdf.setStrokeColor(rule); pdf.line(L, 28, R, 28)
-    pdf.setFillColor(soft); pdf.setFont("Helvetica", 8)
-    pdf.drawString(L, 16, "Powered by Developum AI Engine")
-    pdf.drawRightString(R, 16, "Page 1")
+    _footer(pdf, W, 1)
     pdf.showPage()
 
-    # ── CONTENT PAGES ────────────────────────────────────────────
     pdf.setFillColor(charcoal)
     pdf.rect(0, 0, W, H, stroke=0, fill=1)
-
-    def footer(p):
-        pdf.setStrokeColor(rule); pdf.line(L, 28, R, 28)
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 8)
-        pdf.drawString(L, 16, "Powered by Developum AI Engine")
-        pdf.drawRightString(R, 16, f"Page {p}")
-
     ctx = _PDFCtx(pdf, W, H, L, UW, charcoal, gold, blue, white, muted, soft, panel)
 
-    # SUMMARY CALLOUT
-    if summary_note:
-        ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 60, ctx.page_no, charcoal)
-        sn_lines = simpleSplit(summary_note, "Helvetica-Oblique", 11, UW - 32)
-        sn_h = len(sn_lines) * 15 + 28
-        pdf.setFillColor(panel)
-        pdf.roundRect(L, ctx.y - sn_h + 10, UW, sn_h, 12, stroke=0, fill=1)
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(L + 16, ctx.y - 6, "OVERVIEW")
-        sy = ctx.y - 22
-        pdf.setFillColor(muted); pdf.setFont("Helvetica-Oblique", 11)
-        for sl in sn_lines:
-            pdf.drawString(L + 16, sy, sl); sy -= 15
-        ctx.y -= sn_h + 14
-
-    # THE STORY
-    ctx.section_header("The Story")
+    ctx.section_header("Story Engine", "The plain-English version of what is driving the movie.")
     if logline:
-        ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 40, ctx.page_no, charcoal)
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 13)
-        for line in simpleSplit(logline, "Helvetica-Bold", 13, UW):
-            pdf.drawString(L, ctx.y, line); ctx.y -= 17
-        ctx.y -= 6
+        ctx.info_row("Logline", logline)
     if synopsis:
-        ctx.text_block(synopsis, color=muted, font_size=11, leading=15)
-    ctx.y -= 14
-
-    # STORY CORE
-    ctx.section_band("STORY CORE")
+        ctx.info_row("Synopsis", synopsis)
+    if lead:
+        ctx.info_row("Lead", lead)
     if world:
         ctx.info_row("World", world)
-    if setting:
-        ctx.info_row("Setting", setting)
-    if time_frame:
-        ctx.info_row("Time Frame", time_frame)
-    if theme:
-        ctx.info_row("Theme", theme)
     if core:
-        ctx.info_row("Core Conflict", core)
+        ctx.info_row("Core conflict", core)
     if engine:
-        ctx.info_row("Story Engine", engine)
+        ctx.info_row("Story engine", engine)
     if reversal:
         ctx.info_row("Reversal", reversal)
-    ctx.y -= 14
+    if theme:
+        ctx.info_row("Theme", theme)
+    ctx.y -= 8
 
-    # THE PROTAGONIST
-    if protagonist_sum or lead:
-        ctx.section_header("The Protagonist")
-        if lead:
-            ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 24, ctx.page_no, charcoal)
-            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 13)
-            pdf.drawString(L, ctx.y, lead); ctx.y -= 18
-        if protagonist_sum:
-            ctx.text_block(protagonist_sum, color=white, font_size=11, leading=15)
-        ctx.y -= 14
-
-    # CHARACTER LANDSCAPE
-    ctx.section_header("Character Landscape")
+    ctx.section_header("Character Value", "Why the roles matter and what the cast landscape looks like.")
+    if protagonist_sum:
+        ctx.info_row("Lead role read", protagonist_sum)
     if char_leverage:
-        ctx.text_block(char_leverage, color=muted, font_size=11, leading=15)
-        ctx.y -= 6
-    if supports:
-        sup_text = ",  ".join(str(s) for s in supports if str(s).strip())
-        ctx.text_block(f"Supporting cast: {sup_text}", color=soft, font_size=10, leading=13)
-        ctx.y -= 6
+        ctx.info_row("Character leverage", char_leverage)
     if top_chars:
-        ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 60, ctx.page_no, charcoal)
-        colx = [L, L + 140, L + 230, L + 330]
-        headers = ["Character", "Dialogue", "Action", "First Seen"]
-        pdf.setFillColor(blue)
-        pdf.roundRect(L, ctx.y - 16, UW, 22, 8, stroke=0, fill=1)
-        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
-        for hx, ht in zip(colx, headers):
-            pdf.drawString(hx + 8, ctx.y - 2, ht)
-        ctx.y -= 26
-        for i, entry in enumerate(top_chars[:8]):
-            ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 22, ctx.page_no, charcoal)
-            if i % 2 == 0:
-                pdf.setFillColor(panel)
-                pdf.roundRect(L, ctx.y - 16, UW, 20, 6, stroke=0, fill=1)
-            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9.5)
-            pdf.drawString(colx[0] + 8, ctx.y - 3, _safe(entry.get("name")))
-            pdf.setFont("Helvetica", 9.5)
-            pdf.drawString(colx[1] + 8, ctx.y - 3, str(entry.get("dialogue_count", 0)))
-            pdf.drawString(colx[2] + 8, ctx.y - 3, str(entry.get("action_count", 0)))
-            pdf.drawString(colx[3] + 8, ctx.y - 3, str(entry.get("first_seen", 0)))
-            ctx.y -= 22
-    ctx.y -= 14
+        ctx.info_row("Top characters", ", ".join(top_chars[:8]))
+    ctx.y -= 8
 
-    # MARKET & PACKAGING
-    ctx.section_band("MARKET & PACKAGING")
-    if exec_summary:
-        ctx.y -= 6
-        ctx.text_block(exec_summary, color=muted, font_size=11, leading=15)
-        ctx.y -= 6
-    if commercial:
-        ctx.info_row("Positioning", commercial)
-    if packaging:
-        ctx.info_row("Packaging", packaging)
+    ctx.section_header("Market Position", "The commercial lane this project appears to be in right now.")
+    if comparables:
+        ctx.info_row("Comparable titles", ", ".join(comparables[:6]))
     if audience:
-        aud_text = ",  ".join(str(a) for a in audience if str(a).strip())
-        ctx.info_row("Audience", aud_text)
-    if comparable_films:
-        ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 44, ctx.page_no, charcoal)
-        pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(L, ctx.y, "COMPARABLE FILMS"); ctx.y -= 16
-        for film in comparable_films[:3]:
-            if not isinstance(film, dict):
-                continue
-            ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 52, ctx.page_no, charcoal)
-            pdf.setFillColor(panel)
-            pdf.roundRect(L, ctx.y - 38, UW, 44, 8, stroke=0, fill=1)
-            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10.5)
-            pdf.drawString(L + 12, ctx.y - 6, _safe(film.get("title")))
-            budget = _safe(film.get("budget_tier"))
-            box_office = _safe(film.get("box_office"))
-            if budget or box_office:
-                badge = f"{budget}  ·  {box_office}" if budget and box_office else budget or box_office
-                pdf.setFillColor(soft); pdf.setFont("Helvetica", 8)
-                pdf.drawRightString(L + UW - 12, ctx.y - 6, badge)
-            why_lines = simpleSplit(_safe(film.get("why")), "Helvetica", 9.5, UW - 24)
-            wy = ctx.y - 20
-            pdf.setFillColor(muted); pdf.setFont("Helvetica", 9.5)
-            for wl in why_lines[:2]:
-                pdf.drawString(L + 12, wy, wl); wy -= 13
-            ctx.y -= 52
-        ctx.y -= 6
-    elif comparables:
-        ctx.y, ctx.page_no = _ensure_space(pdf, W, H, ctx.y, 44, ctx.page_no, charcoal)
-        pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
-        pdf.drawString(L, ctx.y, "COMPARABLES"); ctx.y -= 14
-        ctx.chip_row(comparables, chip_color=gold)
+        ctx.info_row("Audience profile", ", ".join(audience[:6]))
+    if budget_lane:
+        ctx.info_row("Budget lane", budget_lane)
+    if streamer_fit:
+        ctx.info_row("Streamer / buyer fit", streamer_fit)
+    if awards_lane:
+        ctx.info_row("Awards lane", awards_lane)
+    if commercial:
+        ctx.info_row("Commercial positioning", commercial)
+    if packaging:
+        ctx.info_row("Packaging potential", packaging)
+    if franchise:
+        ctx.info_row("Franchise potential", franchise)
+    ctx.y -= 8
 
-    if market_projections:
-        ctx.section_band("MARKET PROJECTIONS")
-        if market_projections.get("estimated_budget_tier"):
-            ctx.info_row("Budget Tier", market_projections["estimated_budget_tier"])
-        if market_projections.get("distribution_angle"):
-            ctx.info_row("Distribution", market_projections["distribution_angle"])
-        if market_projections.get("awards_potential"):
-            ctx.info_row("Awards", market_projections["awards_potential"])
-        if market_projections.get("audience_reach"):
-            ctx.info_row("Audience", market_projections["audience_reach"])
-        if market_projections.get("franchise_potential"):
-            ctx.info_row("Franchise", market_projections["franchise_potential"])
+    ctx.new_page()
+    ctx.section_header("What Is Working", "The report should not just criticize. It should identify value.")
+    ctx.bullet_list([str(x) for x in strengths_list[:8] if str(x).strip()] or [
+        "The central pressure line is easy to pitch.",
+        "The material has a clean story engine and a usable reversal.",
+        "The lead role appears to carry real performance opportunity.",
+    ], bullet_color=gold)
+    ctx.y -= 8
 
-    ctx.y -= 14
+    ctx.section_header("Rewrite Priorities", "Where the next draft can create the fastest value.")
+    ctx.bullet_list([str(x) for x in rewrite_priorities[:8] if str(x).strip()], bullet_color=blue)
+    ctx.y -= 8
 
-    # KEY OBSERVATIONS
-    if story_insights:
-        ctx.section_band("KEY OBSERVATIONS")
-        ctx.bullet_list(story_insights, bullet_color=gold)
+    if risks_list:
+        ctx.section_header("Things To Watch")
+        ctx.bullet_list([str(x) for x in risks_list[:8] if str(x).strip()], bullet_color=gold)
         ctx.y -= 8
 
-    footer(ctx.page_no)
+    ctx.section_header("Why This Project Matters", "The part a novice user, creative producer, or investor can understand quickly.")
+    ctx.bullet_list([str(x) for x in story_insights[:8] if str(x).strip()], bullet_color=gold)
+    if summary_note:
+        ctx.info_row("Final note", summary_note)
+
+    if strength:
+        score_parts = []
+        for key, label in [
+            ("concept", "Concept"),
+            ("character", "Character"),
+            ("marketability", "Market"),
+            ("originality", "Originality"),
+        ]:
+            val = strength.get(key)
+            if val:
+                score_parts.append(f"{label}: {val}/10")
+        if score_parts:
+            ctx.info_row("Strength index", "  ·  ".join(score_parts))
+
+    ctx.methodology_box()
+    _footer(pdf, W, ctx.page_no)
     pdf.save()
