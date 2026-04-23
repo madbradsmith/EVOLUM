@@ -486,7 +486,7 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     brain_data = brain_data or {}
 
     pdf = canvas.Canvas(str(output_path), pagesize=LETTER)
-    pdf.setTitle(f"{character_name.title()} — Audition Prep Packet")
+    pdf.setTitle(f"{character_name.title()} — EVOLUM Actor Prep Report")
     width, height = LETTER
     left = 42
     right = width - 42
@@ -518,13 +518,13 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     pdf.rect(0, height - 6, width, 6, stroke=0, fill=1)
     pdf.setFillColor(soft)
     pdf.setFont("Helvetica", 9)
-    pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR PREPARATION")
+    pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR INTELLIGENCE REPORT")
     pdf.setFillColor(gold)
     pdf.setFont("Helvetica-Bold", 40)
-    pdf.drawString(left, height - 80, "AUDITION")
+    pdf.drawString(left, height - 80, "ACTOR PREP")
     pdf.setFillColor(white)
     pdf.setFont("Helvetica-Bold", 28)
-    pdf.drawString(left, height - 116, "QUICKPACK")
+    pdf.drawString(left, height - 116, "TEST VERSION")
     pdf.setStrokeColor(gold)
     pdf.line(left, height - 132, right, height - 132)
     pdf.setFillColor(soft)
@@ -674,7 +674,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     brain_data = brain_data or {}
 
     pdf = canvas.Canvas(str(output_path), pagesize=LETTER)
-    pdf.setTitle(f"{character_name.title()} — Full Role Prep")
+    pdf.setTitle(f"{character_name.title()} — EVOLUM Booked Role Report")
     width, height = LETTER
     left = 42
     right = width - 42
@@ -714,7 +714,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR PREPARATION")
     pdf.setFillColor(gold)
     pdf.setFont("Helvetica-Bold", 40)
-    pdf.drawString(left, height - 80, "FULL ROLE")
+    pdf.drawString(left, height - 80, "BOOKED ROLE")
     pdf.setFillColor(white)
     pdf.setFont("Helvetica-Bold", 28)
     pdf.drawString(left, height - 116, "PREP")

@@ -31,6 +31,7 @@ from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf
 
+
 # ===== IMPORTS / SETUP END ===========================
 
 # ===== GLOBAL CONFIG / PATHS START ===================
@@ -1575,80 +1576,6 @@ def refine_deck():
 # ===== REFINE DECK ROUTES END =========================
 
 # ===== ACTOR PREP ROUTES START =======================
-def _read_uploaded_script_text(file) -> str:
-    if not file or not getattr(file, "filename", ""):
-        return ""
-
-    filename = file.filename.lower()
-
-    if filename.endswith(".txt"):
-        return file.read().decode("utf-8", errors="ignore").strip()
-
-    if filename.endswith(".pdf"):
-        try:
-            reader = PdfReader(file)
-            return "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-        except Exception:
-            return ""
-
-    return ""
-
-
-def _read_latest_saved_script_text() -> tuple[str, str]:
-    candidates = [
-        (BASE_DIR / "input.txt", "latest_pipeline_script"),
-        (BASE_DIR / "input" / "input.txt", "latest_pipeline_script"),
-    ]
-
-    for path in sorted(UPLOAD_DIR.glob("*.txt"), key=lambda p: p.stat().st_mtime, reverse=True):
-        candidates.append((path, "latest_upload_txt"))
-
-    for path in sorted(UPLOAD_DIR.glob("*.pdf"), key=lambda p: p.stat().st_mtime, reverse=True):
-        candidates.append((path, "latest_upload_pdf"))
-
-    for path, mode in candidates:
-        if not path.exists():
-            continue
-
-        try:
-            if path.suffix.lower() == ".txt":
-                text = path.read_text(encoding="utf-8", errors="ignore").strip()
-            elif path.suffix.lower() == ".pdf":
-                with path.open("rb") as f:
-                    reader = PdfReader(f)
-                    text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            else:
-                text = ""
-
-            if text:
-                return text, mode
-        except Exception:
-            continue
-
-    return "", ""
-
-
-def _resolve_actor_script_text(file, pasted_text: str) -> tuple[str, str]:
-    script_text = ""
-    source_mode = "none"
-
-    uploaded_text = _read_uploaded_script_text(file)
-    if uploaded_text:
-        script_text = uploaded_text
-        source_mode = "upload"
-
-    if pasted_text.strip():
-        script_text = pasted_text.strip()
-        source_mode = "paste"
-
-    if not script_text:
-        script_text, fallback_mode = _read_latest_saved_script_text()
-        if fallback_mode:
-            source_mode = fallback_mode
-
-    return script_text, source_mode
-
-
 @app.route("/actor-prep-pass", methods=["POST"])
 def actor_prep_pass():
     character_name = (request.form.get("character_name") or "").strip()
@@ -1658,13 +1585,35 @@ def actor_prep_pass():
     if not character_name:
         return jsonify({"error": "Please enter the role you are preparing."}), 400
 
-    script_text, source_mode = _resolve_actor_script_text(file, pasted_text)
+    script_text = ""
+    source_mode = "paste"
+
+    if file and file.filename:
+        source_mode = "upload"
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
+
+        if not script_text.strip() and not pasted_text:
+            return jsonify({
+                "error": "The formatted script could not be read cleanly.",
+                "needs_paste": True,
+                "message": "Please paste the script text to continue."
+            }), 422
+
+    if pasted_text:
+        script_text = pasted_text
+        source_mode = "paste"
 
     if not script_text.strip():
-        return jsonify({
-            "error": "No script text was provided and no recent script could be found.",
-            "message": "Upload a script, paste the text, or generate a deck first so the latest script is available."
-        }), 400
+        return jsonify({"error": "No script text was provided."}), 400
 
     log_usage("actor_prep_start", role=character_name, mode=source_mode)
 
@@ -1683,9 +1632,9 @@ def actor_prep_pass():
     return jsonify({
         "summary_note": f"Your actor preparation packet for {character_name} is ready.",
         "report_pdf": str(LATEST_ACTOR_PREP_PDF.name),
-        "view_url": "/output/latest_actor_prep_report.pdf",
-        "download_url": "/download/latest_actor_prep_report.pdf",
     })
+
+
 
 
 @app.route("/actor-booked-pass", methods=["POST"])
@@ -1697,13 +1646,35 @@ def actor_booked_pass():
     if not character_name:
         return jsonify({"error": "Please enter the role you are preparing."}), 400
 
-    script_text, source_mode = _resolve_actor_script_text(file, pasted_text)
+    script_text = ""
+    source_mode = "paste"
+
+    if file and file.filename:
+        source_mode = "upload"
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
+
+        if not script_text.strip() and not pasted_text:
+            return jsonify({
+                "error": "The formatted script could not be read cleanly.",
+                "needs_paste": True,
+                "message": "Please paste the script text to continue."
+            }), 422
+
+    if pasted_text:
+        script_text = pasted_text
+        source_mode = "paste"
 
     if not script_text.strip():
-        return jsonify({
-            "error": "No script text was provided and no recent script could be found.",
-            "message": "Upload a script, paste the text, or generate a deck first so the latest script is available."
-        }), 400
+        return jsonify({"error": "No script text was provided."}), 400
 
     log_usage("actor_booked_start", role=character_name, mode=source_mode)
 
@@ -1722,8 +1693,6 @@ def actor_booked_pass():
     return jsonify({
         "summary_note": f"Your booked role analysis for {character_name} is ready.",
         "report_pdf": str(LATEST_ACTOR_BOOKED_PDF.name),
-        "view_url": "/output/latest_actor_booked_report.pdf",
-        "download_url": "/download/latest_actor_booked_report.pdf",
     })
 
 
