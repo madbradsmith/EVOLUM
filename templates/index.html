@@ -11,17 +11,98 @@
 
 <body>
 {% if gate_locked %}
-<div style="display:flex;align-items:center;justify-content:center;height:100vh;">
-    <div style="background:#151515;padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);text-align:center;max-width:400px;width:90%;">
-        <h2 style="margin-bottom:10px;">Beta Access</h2>
-        <p style="color:#cfcfcf;">Enter your access code to continue</p>
-        {% if gate_error %}
-        <div style="color:#ff8a8a;margin-bottom:10px;">{{ gate_error }}</div>
-        {% endif %}
-        <form method="POST" action="/beta-access">
-            <input type="password" name="access_code" placeholder="Access Code" required autofocus style="width:100%;padding:10px;margin-bottom:10px;">
-            <button class="primary-button" type="submit">Enter</button>
-        </form>
+<div class="container">
+    <div class="logo">
+        <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
+    </div>
+
+    <div class="shell">
+        <div class="card">
+            <div class="home-card-grid">
+                <div class="workspace-title" style="text-align:center;">Developum AI</div>
+                <div class="workspace-copy" style="text-align:center; max-width:760px; margin:0 auto 18px;">
+                    Private Beta Access
+                </div>
+
+                <div class="info-copy" style="max-width:760px; margin:0 auto 20px; text-align:left;">
+                    <p><strong>Peace,</strong></p>
+
+                    <p>
+                        Thank you all for coming through and supporting me by checking out this project I created for filmmakers, writers, producers, and creatives around the world.
+                    </p>
+
+                    <p>
+                        I’m working every day, reviewing your feedback, and making live fixes, tweaks, and upgrades alongside my AI entity partners.
+                    </p>
+
+                    <p>
+                        If you run into bugs or anything that feels off, please use the <strong>Feedback</strong> button and tell me exactly what happened so we can keep improving it together.
+                    </p>
+
+                    <p>
+                        Thank you again for being early and being part of this journey.
+                    </p>
+
+                    <p><strong>Peace,<br>MadBrad</strong></p>
+                </div>
+
+                {% if gate_error %}
+                <div style="color:#ff8a8a; margin:0 auto 14px; text-align:center;">{{ gate_error }}</div>
+                {% endif %}
+
+                <div class="choices-row" style="grid-template-columns:repeat(2, minmax(0, 1fr)); max-width:900px; margin:0 auto;">
+                    <div class="choice home-module-card" style="cursor:default;">
+                        <div class="choice-title">Create Account</div>
+                        <div class="choice-copy" style="min-height:0;">
+                            Your private beta account will give you direct access to the platform as we continue shaping the live build.
+                        </div>
+
+                        <div class="field-group">
+                            <label class="label">Full Name</label>
+                            <input type="text" placeholder="Full Name" disabled>
+                        </div>
+
+                        <div class="field-group">
+                            <label class="label">Email Address</label>
+                            <input type="text" placeholder="Email Address" disabled>
+                        </div>
+
+                        <div class="field-group">
+                            <label class="label">Create Password</label>
+                            <input type="password" placeholder="Create Password" disabled>
+                        </div>
+
+                        <div class="upload-actions" style="grid-template-columns:1fr;">
+                            <button class="primary-button" type="button" disabled>Create Account</button>
+                        </div>
+                    </div>
+
+                    <div class="choice home-module-card" style="cursor:default;">
+                        <div class="choice-title">Beta Access</div>
+                        <div class="choice-copy" style="min-height:0;">
+                            Enter your private beta access code to step inside the current live build.
+                        </div>
+
+                        <form method="POST" action="/beta-access">
+                            <div class="field-group">
+                                <label class="label">Access Code</label>
+                                <input type="password" name="access_code" placeholder="Access Code" required autofocus>
+                            </div>
+
+                            <div class="upload-actions" style="grid-template-columns:1fr;">
+                                <button class="primary-button" type="submit">Enter</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="complete-copy" style="margin:16px auto 0; max-width:760px;">
+                    Invite-only private beta. Approved users receive access as spots open.
+                </div>
+            </div>
+
+            <div class="footer-powered home-footer">Powered by the Developum AI Engine</div>
+        </div>
     </div>
 </div>
 {% else %}
