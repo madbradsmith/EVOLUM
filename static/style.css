@@ -1595,6 +1595,29 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
 }
 .privacy-section strong{
     color: #ffffff;
+}.beta-access-card{
+    max-width:420px;
+    width:90%;
+    padding:22px 22px 18px;
+    border-radius:16px;
+}
+
+.beta-access-logo{
+    max-width:150px;
+    height:auto;
+    display:block;
+    margin:0 auto 10px;
+}
+
+.beta-access-message{
+    margin-bottom:14px;
+}
+
+.beta-access-button{
+    width:100%;
+    padding:12px;
+    font-size:15px;
+    margin-top:4px;
 }
 
 </style>
