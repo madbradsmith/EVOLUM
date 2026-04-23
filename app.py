@@ -17,6 +17,10 @@ import importlib.util
 import time
 from datetime import datetime
 from urllib.parse import unquote, quote
+import re
+import urllib.request
+import urllib.error
+from typing import Optional
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import LETTER
@@ -255,6 +259,207 @@ def resolve_quiet_image_for_slide(slide_title, stage, layout, slide_number):
                 return candidate
 
     return candidates[0]
+
+
+FAL_API_KEY = os.environ.get("FAL_API_KEY", "").strip()
+
+_SLIDE_VISUAL_CONCEPTS = {
+    "logline": "cinematic establishing shot, wide angle, dramatic lighting",
+    "synopsis": "cinematic scene, atmospheric, narrative moment",
+    "synopsis 2": "cinematic scene, mid-shot, dramatic tension",
+    "synopsis 3": "cinematic scene, close-up, emotional intensity",
+    "protagonist": "cinematic portrait, single character, dramatic lighting, film still",
+    "antagonist": "cinematic portrait, menacing figure, dramatic shadows, film still",
+    "supporting characters": "cinematic ensemble shot, multiple characters, film still",
+    "world": "cinematic landscape, establishing shot, rich environment",
+    "hook": "cinematic close-up, tension, dramatic moment",
+    "conflict": "cinematic confrontation, dramatic tension, high stakes",
+    "stakes": "cinematic wide shot, weight of consequence, dramatic",
+    "tone": "cinematic mood shot, atmospheric lighting, visual tone",
+    "story engine": "cinematic action, driving force, momentum",
+    "reversal": "cinematic turning point, dramatic shift, pivotal moment",
+    "themes": "cinematic symbolic imagery, thematic visual metaphor",
+    "why this movie": "cinematic wide shot, cultural moment, compelling imagery",
+    "comparables": "cinematic collage feel, prestige film aesthetic",
+    "market projections": "cinematic wide shot, commercial appeal, high production value",
+    "closing statement": "cinematic final frame, powerful, memorable",
+}
+
+_GENRE_STYLE = {
+    "horror": "dark, unsettling, atmospheric horror, shadows, practical effects aesthetic",
+    "thriller": "tense, noir-influenced, sharp contrast, suspenseful",
+    "comedy": "warm lighting, vibrant colors, playful composition",
+    "drama": "naturalistic lighting, intimate, emotionally grounded",
+    "action": "dynamic, kinetic energy, bold framing, high contrast",
+    "sci-fi": "futuristic, cool tones, technological, epic scale",
+    "fantasy": "magical, rich colors, otherworldly, painterly lighting",
+    "romance": "warm golden tones, soft focus, intimate, emotional",
+    "documentary": "gritty realism, candid, natural light, observational",
+    "animation": "stylized, vibrant, expressive, dynamic",
+}
+
+
+def normalize_key(value: str) -> str:
+    value = str(value or "").strip().lower()
+    value = re.sub(r"\s*\([^)]*\)", "", value)
+    value = re.sub(r"[^a-z0-9]+", " ", value)
+    return " ".join(value.split())
+
+
+def load_latest_brain_output(slide_plan_file=None) -> dict:
+    project_dir = find_latest_project_dir(slide_plan_file)
+    candidates = [
+        project_dir / "approved_brain_output.json",
+        BASE_DIR / "approved_brain_output.json",
+        OUTPUT_DIR / "approved_brain_output.json",
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            try:
+                return json.loads(candidate.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+    return {}
+
+
+def build_refine_fal_prompt(slide_title: str, slide_body: str = "", user_prompt: str = "", brain_output: dict | None = None, variant_hint: str = "") -> str:
+    brain_output = brain_output or {}
+    normalized = normalize_key(slide_title)
+    concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting, film still")
+    genre = str(brain_output.get("genre", "drama")).lower()
+    genre_style = next((style for g, style in _GENRE_STYLE.items() if g in genre), "cinematic, naturalistic lighting, film aesthetic")
+    tone = str(brain_output.get("tone", "")).replace("\n", " ").strip()
+    world = str(brain_output.get("world", "")).replace("\n", " ").strip()
+    body = str(slide_body or "").replace("\n", " ").strip()
+    pieces = [
+        concept,
+        genre_style,
+        f"set in {world[:120]}" if world else "",
+        f"tone: {tone[:100]}" if tone else "",
+        f"story context: {body[:220]}" if body else "",
+        variant_hint,
+        str(user_prompt or "").strip(),
+        "professional film still, 35mm, shallow depth of field, no text, no watermarks, ultra-detailed, photorealistic, 16:9 aspect ratio",
+    ]
+    return ", ".join([p for p in pieces if p])
+
+
+def _fal_request_image_url(prompt: str) -> str:
+    url = "https://fal.run/fal-ai/flux/schnell"
+    payload = json.dumps({
+        "prompt": prompt,
+        "image_size": "landscape_16_9",
+        "num_inference_steps": 4,
+        "num_images": 1,
+        "enable_safety_checker": True,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Authorization": f"Key {FAL_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=90) as resp:
+        result = json.loads(resp.read().decode("utf-8"))
+    images = result.get("images") or []
+    if not images:
+        raise RuntimeError("FAL returned no images")
+    return images[0]["url"]
+
+
+def generate_fal_image(prompt: str, cache_path: Path, force: bool = False) -> Optional[Path]:
+    if not FAL_API_KEY:
+        return None
+    if cache_path.exists() and not force:
+        return cache_path
+    try:
+        image_url = _fal_request_image_url(prompt)
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(image_url, cache_path)
+        print(f"✨ FAL generated image for prompt: {prompt[:80]}...", flush=True)
+        return cache_path
+    except Exception as e:
+        print(f"⚠️ FAL image generation failed: {e}", flush=True)
+        return None
+
+
+def make_generated_image_relative(path_obj: Path) -> str:
+    try:
+        return str(path_obj.resolve().relative_to(BASE_DIR.resolve())).replace("\\", "/")
+    except Exception:
+        return safe_relpath(path_obj)
+
+
+def generate_refine_fal_option_set(slide_title: str, slide_body: str, user_prompt: str, slide_number: int, slide_plan_file=None, count: int = 4):
+    if not FAL_API_KEY:
+        return []
+    brain_output = load_latest_brain_output(slide_plan_file)
+    variants = [
+        "wide establishing composition",
+        "closer character-focused composition",
+        "more tension and contrast",
+        "premium polished theatrical key art energy",
+        "grounded naturalistic cinematic realism",
+    ]
+    safe_title = re.sub(r"[^a-z0-9_]+", "_", normalize_key(slide_title) or f"slide_{slide_number}")
+    cache_dir = find_latest_project_dir(slide_plan_file) / "generated_images" / "refine"
+    options = []
+    for idx in range(max(1, count)):
+        variant = variants[idx % len(variants)]
+        prompt = build_refine_fal_prompt(
+            slide_title=slide_title,
+            slide_body=slide_body,
+            user_prompt=user_prompt,
+            brain_output=brain_output,
+            variant_hint=variant,
+        )
+        cache_path = cache_dir / f"{int(slide_number):02d}_{safe_title}_option_{idx + 1}.jpg"
+        generated = generate_fal_image(prompt, cache_path, force=True)
+        if not generated:
+            continue
+        rel_path = make_generated_image_relative(generated)
+        options.append({
+            "rank": idx + 1,
+            "option_id": f"fal_option_{idx + 1}",
+            "label": f"Option {idx + 1}",
+            "focus": variant,
+            "image_path": rel_path,
+            "image_name": generated.name,
+            "image_source": "fal_generated",
+            "image_url": project_file_url_for_path(rel_path),
+        })
+    return options
+
+
+def generate_single_refine_fal_image(slide_title: str, slide_body: str, user_prompt: str, slide_number: int, slide_plan_file=None) -> Optional[dict]:
+    if not FAL_API_KEY:
+        return None
+    brain_output = load_latest_brain_output(slide_plan_file)
+    safe_title = re.sub(r"[^a-z0-9_]+", "_", normalize_key(slide_title) or f"slide_{slide_number}")
+    cache_dir = find_latest_project_dir(slide_plan_file) / "generated_images" / "refine"
+    stamp = int(time.time())
+    cache_path = cache_dir / f"{int(slide_number):02d}_{safe_title}_regen_{stamp}.jpg"
+    prompt = build_refine_fal_prompt(
+        slide_title=slide_title,
+        slide_body=slide_body,
+        user_prompt=user_prompt,
+        brain_output=brain_output,
+        variant_hint="fresh alternate cinematic composition",
+    )
+    generated = generate_fal_image(prompt, cache_path, force=True)
+    if not generated:
+        return None
+    rel_path = make_generated_image_relative(generated)
+    return {
+        "image_url": project_file_url_for_path(rel_path),
+        "image_path": rel_path,
+        "image_name": generated.name,
+        "image_source": "fal_generated",
+    }
+
 
 def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
     project_title = safe_text(slide_plan_data.get("title"), "UNTITLED PROJECT")
@@ -1248,69 +1453,6 @@ def latest_slide_plan():
     return jsonify(payload)
 
 
-def _collect_refine_image_candidates(project_dir: Path, title: str = "", stage: str = "", layout: str = "", current_image_path: str = "", limit: int = 8):
-    project_dir = Path(project_dir)
-    visuals_dirs = [project_dir / "visuals"]
-    if project_dir != BASE_DIR:
-        visuals_dirs.append(BASE_DIR / "visuals")
-
-    exts = {".png", ".jpg", ".jpeg", ".webp"}
-    current_rel = normalize_project_relative_path(current_image_path or "")
-
-    words = []
-    for raw in (title, stage, layout):
-        for word in str(raw or "").lower().replace("(", " ").replace(")", " ").replace("_", " ").split():
-            word = word.strip("-—:,.!?\'\" ")
-            if len(word) >= 4 and word not in words:
-                words.append(word)
-
-    candidates = []
-    seen = set()
-
-    def add_candidate(path_obj: Path, score: int = 0):
-        try:
-            resolved = path_obj.resolve()
-        except Exception:
-            return
-        if not resolved.exists() or not resolved.is_file() or resolved.suffix.lower() not in exts:
-            return
-        if not ensure_relative_to_base(resolved):
-            return
-        rel = safe_relpath(resolved)
-        if rel in seen or rel == current_rel:
-            return
-        seen.add(rel)
-        candidates.append((score, resolved))
-
-    for visuals_dir in visuals_dirs:
-        if not visuals_dir.exists():
-            continue
-        for image_path in visuals_dir.rglob("*"):
-            if not image_path.is_file() or image_path.suffix.lower() not in exts:
-                continue
-            name = image_path.stem.lower()
-            score = sum(3 for word in words if word in name)
-            if stage and stage.lower() in name:
-                score += 2
-            if layout and layout.lower() in name:
-                score += 1
-            add_candidate(image_path, score=score)
-
-    candidates.sort(key=lambda item: (item[0], item[1].stat().st_mtime_ns), reverse=True)
-
-    options = []
-    for idx, (_, path_obj) in enumerate(candidates[:limit], start=1):
-        options.append({
-            "option_id": f"option_{idx}",
-            "label": f"Option {idx}",
-            "image_path": normalize_project_relative_path(str(path_obj)),
-            "image_name": path_obj.name,
-            "image_source": "project_visual",
-            "image_url": build_project_file_url(path_obj),
-        })
-    return options
-
-
 @app.route("/project-file")
 def project_file():
     raw_path = unquote((request.args.get("path") or "").strip())
@@ -1347,10 +1489,9 @@ def project_file():
 
     abort(404)
 
-@app.route("/generate-slide-options", methods=["POST"])
+@app.route("/generate-slide-options", methods=["GET", "POST"])
 def generate_slide_options():
     try:
-        data = request.get_json(silent=True) or {}
         slide_plan_file = find_latest_slide_plan_file()
         if not slide_plan_file or not slide_plan_file.exists():
             return jsonify({"error": "No slide plan found."}), 404
@@ -1360,50 +1501,7 @@ def generate_slide_options():
         payload["source_file"] = str(slide_plan_file.relative_to(BASE_DIR)) if slide_plan_file.is_relative_to(BASE_DIR) else str(slide_plan_file)
         _LATEST_SLIDE_PAYLOAD_CACHE["key"] = make_slide_payload_cache_key(slide_plan_file)
         _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
-
-        slides = payload.get("slides") or []
-        slide_number = data.get("slide_number")
-        try:
-            idx = max(0, int(slide_number) - 1)
-        except Exception:
-            idx = 0
-
-        if idx >= len(slides):
-            return jsonify({"error": "Invalid slide number."}), 400
-
-        slide = slides[idx]
-        project_dir = find_latest_project_dir(slide_plan_file)
-        existing_options = normalize_manifest_image_options(slide.get("image_options") or [])
-        generated_options = _collect_refine_image_candidates(
-            project_dir=project_dir,
-            title=data.get("slide_title") or slide.get("title") or "",
-            stage=slide.get("stage") or "",
-            layout=slide.get("layout") or "",
-            current_image_path=data.get("current_image_path") or slide.get("image_path") or "",
-            limit=8,
-        )
-
-        merged = []
-        seen = set()
-        for item in existing_options + generated_options:
-            if not isinstance(item, dict):
-                continue
-            rel = normalize_project_relative_path(item.get("image_path", "") or "")
-            url = str(item.get("image_url", "") or "").strip()
-            key = rel or url
-            if not key or key in seen:
-                continue
-            seen.add(key)
-            entry = dict(item)
-            entry["image_path"] = rel
-            if not entry.get("image_url") and rel:
-                entry["image_url"] = project_file_url_for_path(rel)
-            merged.append(entry)
-
-        return jsonify({
-            "slide_number": idx + 1,
-            "options": merged,
-        })
+        return jsonify(payload)
     except Exception as e:
         return jsonify({"error": f"Could not load new images: {e}"}), 500
 
@@ -1411,6 +1509,7 @@ def generate_slide_options():
 def regenerate_slide_image():
     try:
         data = request.get_json(silent=True) or {}
+        slide_index = data.get("slide_index")
         slide_plan_file = find_latest_slide_plan_file()
         if not slide_plan_file or not slide_plan_file.exists():
             return jsonify({"error": "No slide plan found."}), 404
@@ -1421,37 +1520,22 @@ def regenerate_slide_image():
         _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
 
         slides = payload.get("slides") or []
-        slide_number = data.get("slide_number")
+        if slide_index is None:
+            return jsonify(payload)
+
         try:
-            idx = max(0, int(slide_number) - 1)
+            idx = int(slide_index)
         except Exception:
-            idx = 0
+            idx = -1
 
-        if idx >= len(slides):
-            return jsonify({"error": "Invalid slide number."}), 400
-
-        slide = slides[idx]
-        project_dir = find_latest_project_dir(slide_plan_file)
-        current_image_path = normalize_project_relative_path(data.get("current_image_path") or slide.get("image_path") or "")
-        options = _collect_refine_image_candidates(
-            project_dir=project_dir,
-            title=data.get("slide_title") or slide.get("title") or "",
-            stage=slide.get("stage") or "",
-            layout=slide.get("layout") or "",
-            current_image_path=current_image_path,
-            limit=12,
-        )
-
-        selected = options[0] if options else None
-        if not selected:
-            return jsonify({"error": "No alternate image was found for this slide yet."}), 404
+        if idx < 0 or idx >= len(slides):
+            return jsonify({"error": "Invalid slide index."}), 400
 
         return jsonify({
-            "slide_number": idx + 1,
-            "image_url": selected.get("image_url", ""),
-            "image_path": selected.get("image_path", ""),
-            "image_name": selected.get("image_name", ""),
-            "image_source": selected.get("image_source", "project_visual"),
+            "slide_index": idx,
+            "slide": slides[idx],
+            "slides": slides,
+            "slide_count": len(slides),
         })
     except Exception as e:
         return jsonify({"error": f"Could not regenerate slide image: {e}"}), 500
