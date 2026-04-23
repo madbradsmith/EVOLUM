@@ -61,8 +61,8 @@ def db_init() -> None:
                 CREATE TABLE IF NOT EXISTS beta_users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT NOT NULL UNIQUE,
-                    name TEXT NOT NULL,
-                    password_hash TEXT NOT NULL,
+                    name TEXT,
+                    password_hash TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
@@ -76,13 +76,21 @@ def db_init() -> None:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            # lightweight sqlite migration safety
+            existing_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(beta_users)").fetchall()}
+            if "name" not in existing_cols:
+                conn.exec_driver_sql("ALTER TABLE beta_users ADD COLUMN name TEXT")
+            if "password_hash" not in existing_cols:
+                conn.exec_driver_sql("ALTER TABLE beta_users ADD COLUMN password_hash TEXT")
+            if "created_at" not in existing_cols:
+                conn.exec_driver_sql("ALTER TABLE beta_users ADD COLUMN created_at TIMESTAMP")
         else:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS beta_users (
                     id SERIAL PRIMARY KEY,
                     email TEXT NOT NULL UNIQUE,
-                    name TEXT NOT NULL,
-                    password_hash TEXT NOT NULL,
+                    name TEXT,
+                    password_hash TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
@@ -96,6 +104,10 @@ def db_init() -> None:
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """))
+            # lightweight postgres migration safety
+            conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS name TEXT"))
+            conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS password_hash TEXT"))
+            conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
 
 def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
     try:
