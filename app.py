@@ -29,7 +29,7 @@ from reportlab.pdfgen import canvas
 from pptx import Presentation
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
-from dia_tools import build_actor_prep_pdf, build_actor_booked_pdf
+from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf
 
 # ===== IMPORTS / SETUP END ===========================
 
