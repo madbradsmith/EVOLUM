@@ -1576,15 +1576,28 @@ def refine_deck():
 # ===== REFINE DECK ROUTES END =========================
 
 # ===== ACTOR PREP ROUTES START =======================
-@app.route("/actor-prep-pass", methods=["POST"])
-def actor_prep_pass():
-    character_name = (request.form.get("character_name") or "").strip()
+
+def _read_latest_brain_data() -> dict:
+    """Best-effort loader for the most recent brain output used by the actor reports."""
+    candidate_paths = [
+        BASE_DIR / "approved_brain_output.json",
+        OUTPUT_DIR / "approved_brain_output.json",
+        BASE_DIR / "output" / "approved_brain_output.json",
+        BASE_DIR / "static" / "approved_brain_output.json",
+    ]
+    for path in candidate_paths:
+        try:
+            if path.exists():
+                return json.loads(path.read_text(encoding="utf-8"))
+        except Exception as e:
+            print(f"⚠️ Could not read brain data from {path}: {e}", flush=True)
+    return {}
+
+
+def _extract_actor_script_text_from_request():
+    """Read pasted or uploaded script text for actor-report homepage buttons."""
     pasted_text = (request.form.get("script_text") or "").strip()
     file = request.files.get("script")
-
-    if not character_name:
-        return jsonify({"error": "Please enter the role you are preparing."}), 400
-
     script_text = ""
     source_mode = "paste"
 
@@ -1598,11 +1611,18 @@ def actor_prep_pass():
             try:
                 reader = PdfReader(file)
                 script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
+            except Exception as e:
+                print(f"⚠️ Actor PDF upload read failed: {e}", flush=True)
                 script_text = ""
 
+        if script_text.strip():
+            try:
+                (BASE_DIR / "input.txt").write_text(script_text, encoding="utf-8")
+            except Exception as e:
+                print(f"⚠️ Could not save actor upload to input.txt: {e}", flush=True)
+
         if not script_text.strip() and not pasted_text:
-            return jsonify({
+            return "", source_mode, jsonify({
                 "error": "The formatted script could not be read cleanly.",
                 "needs_paste": True,
                 "message": "Please paste the script text to continue."
@@ -1611,14 +1631,46 @@ def actor_prep_pass():
     if pasted_text:
         script_text = pasted_text
         source_mode = "paste"
+        try:
+            (BASE_DIR / "input.txt").write_text(script_text, encoding="utf-8")
+        except Exception as e:
+            print(f"⚠️ Could not save pasted actor script to input.txt: {e}", flush=True)
 
     if not script_text.strip():
-        return jsonify({"error": "No script text was provided."}), 400
+        return "", source_mode, jsonify({"error": "No script text was provided."}), 400
+
+    return script_text, source_mode, None, None
+
+
+@app.route("/actor-prep-pass", methods=["POST"])
+def actor_prep_pass():
+    character_name = (request.form.get("character_name") or "").strip()
+
+    if not character_name:
+        return jsonify({"error": "Please enter the role you are preparing."}), 400
+
+    script_text, source_mode, error_response, status_code = _extract_actor_script_text_from_request()
+    if error_response is not None:
+        return error_response, status_code
 
     log_usage("actor_prep_start", role=character_name, mode=source_mode)
 
     try:
-        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
+        LATEST_ACTOR_PREP_PDF.parent.mkdir(parents=True, exist_ok=True)
+        brain_data = _read_latest_brain_data()
+        build_actor_prep_pdf(
+            script_text=script_text,
+            character_name=character_name,
+            output_path=LATEST_ACTOR_PREP_PDF,
+            brain_data=brain_data,
+        )
+    except TypeError:
+        # Compatibility fallback for older dai_tools signatures.
+        try:
+            build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
+        except Exception as e:
+            log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
+            return jsonify({"error": f"Actor preparation failed: {e}"}), 500
     except Exception as e:
         log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
         return jsonify({"error": f"Actor preparation failed: {e}"}), 500
@@ -1632,54 +1684,40 @@ def actor_prep_pass():
     return jsonify({
         "summary_note": f"Your actor preparation packet for {character_name} is ready.",
         "report_pdf": str(LATEST_ACTOR_PREP_PDF.name),
+        "report_url": "/output/latest_actor_prep_report.pdf",
+        "download_url": "/download/latest_actor_prep_report.pdf",
     })
-
-
 
 
 @app.route("/actor-booked-pass", methods=["POST"])
 def actor_booked_pass():
     character_name = (request.form.get("character_name") or "").strip()
-    pasted_text = (request.form.get("script_text") or "").strip()
-    file = request.files.get("script")
 
     if not character_name:
         return jsonify({"error": "Please enter the role you are preparing."}), 400
 
-    script_text = ""
-    source_mode = "paste"
-
-    if file and file.filename:
-        source_mode = "upload"
-        filename = file.filename.lower()
-
-        if filename.endswith(".txt"):
-            script_text = file.read().decode("utf-8", errors="ignore")
-        elif filename.endswith(".pdf"):
-            try:
-                reader = PdfReader(file)
-                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
-                script_text = ""
-
-        if not script_text.strip() and not pasted_text:
-            return jsonify({
-                "error": "The formatted script could not be read cleanly.",
-                "needs_paste": True,
-                "message": "Please paste the script text to continue."
-            }), 422
-
-    if pasted_text:
-        script_text = pasted_text
-        source_mode = "paste"
-
-    if not script_text.strip():
-        return jsonify({"error": "No script text was provided."}), 400
+    script_text, source_mode, error_response, status_code = _extract_actor_script_text_from_request()
+    if error_response is not None:
+        return error_response, status_code
 
     log_usage("actor_booked_start", role=character_name, mode=source_mode)
 
     try:
-        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF)
+        LATEST_ACTOR_BOOKED_PDF.parent.mkdir(parents=True, exist_ok=True)
+        brain_data = _read_latest_brain_data()
+        build_actor_booked_pdf(
+            script_text=script_text,
+            character_name=character_name,
+            output_path=LATEST_ACTOR_BOOKED_PDF,
+            brain_data=brain_data,
+        )
+    except TypeError:
+        # Compatibility fallback for older dai_tools signatures.
+        try:
+            build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF)
+        except Exception as e:
+            log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
+            return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
     except Exception as e:
         log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
         return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
@@ -1693,6 +1731,8 @@ def actor_booked_pass():
     return jsonify({
         "summary_note": f"Your booked role analysis for {character_name} is ready.",
         "report_pdf": str(LATEST_ACTOR_BOOKED_PDF.name),
+        "report_url": "/output/latest_actor_booked_report.pdf",
+        "download_url": "/download/latest_actor_booked_report.pdf",
     })
 
 
