@@ -29,7 +29,9 @@ from reportlab.pdfgen import canvas
 from pptx import Presentation
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
-from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf
+from werkzeug.security import generate_password_hash, check_password_hash
+from actor_prep_generator_AUDITION_REDESIGN_V1 import build_actor_prep_pdf
+from actor_prep_generator_BOOKED_REDESIGN_V1 import build_actor_booked_pdf
 
 
 # ===== IMPORTS / SETUP END ===========================
@@ -74,6 +76,9 @@ def db_init() -> None:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS name TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS password_hash TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
 
 def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
     if not DB_ENGINE:
@@ -91,6 +96,26 @@ def log_activity_event(event_type: str, route: str = "", user_email: str = "", m
             })
     except Exception as e:
         print(f"⚠️ Activity log write failed: {e}", flush=True)
+
+
+def get_current_user_email() -> str:
+    return (session.get("user_email") or "").strip()
+
+def get_current_user_name() -> str:
+    return (session.get("user_name") or "").strip()
+
+def get_user_by_email(email: str):
+    email = (email or "").strip().lower()
+    if not email or not DB_ENGINE:
+        return None
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text("""
+            SELECT id, email, name, password_hash, created_at
+            FROM beta_users
+            WHERE lower(email) = :email
+            LIMIT 1
+        """), {"email": email}).mappings().first()
+    return dict(row) if row else None
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -129,7 +154,7 @@ def is_render_env() -> bool:
 
 
 def has_beta_access() -> bool:
-    return session.get("beta_access") is True
+    return session.get("beta_access") is True or bool(session.get("user_email"))
 
 
 def log_beta_access(access_code: str, status: str):
@@ -1007,9 +1032,84 @@ def beta_access():
     )
 
 
+@app.route("/create-account", methods=["POST"])
+def create_account():
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    password = (request.form.get("password") or "").strip()
+    access_code = (request.form.get("access_code") or "").strip()
+
+    if not name or not email or not password or not access_code:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="Please complete all Create Account fields, including your access code.")
+
+    if access_code not in ACCESS_CODES:
+        log_beta_access(access_code or "blank", "CREATE ACCOUNT ACCESS FAILED")
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="That access code is not approved yet.")
+
+    try:
+        db_init()
+        existing = get_user_by_email(email)
+        if existing:
+            return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="That email already has an account. Please sign in instead.")
+
+        password_hash = generate_password_hash(password)
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO beta_users (email, name, password_hash)
+                VALUES (:email, :name, :password_hash)
+            """), {"email": email, "name": name, "password_hash": password_hash})
+
+        session["user_email"] = email
+        session["user_name"] = name
+        session["beta_access"] = True
+        session["beta_code"] = access_code
+
+        log_beta_access(access_code, "ACCOUNT CREATED")
+        log_activity_event("account_created", route="/create-account", user_email=email, metadata={"name": name})
+        return redirect(url_for("index"))
+    except Exception as e:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error=f"Create account failed: {e}")
+
+
+@app.route("/sign-in", methods=["POST"])
+def sign_in():
+    email = (request.form.get("email") or "").strip().lower()
+    password = (request.form.get("password") or "").strip()
+
+    if not email or not password:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="Please enter your email and password to sign in.")
+
+    try:
+        db_init()
+        user = get_user_by_email(email)
+        if not user or not user.get("password_hash") or not check_password_hash(user["password_hash"], password):
+            log_activity_event("sign_in_failed", route="/sign-in", user_email=email)
+            return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="We couldn't sign you in with those credentials.")
+
+        session["user_email"] = user["email"]
+        session["user_name"] = user.get("name") or ""
+        session["beta_access"] = True
+
+        log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
+        return redirect(url_for("index"))
+    except Exception as e:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error=f"Sign in failed: {e}")
+
+
+@app.route("/logout")
+def logout():
+    email = get_current_user_email()
+    if email:
+        log_activity_event("sign_out", route="/logout", user_email=email)
+    session.clear()
+    return redirect(url_for("index"))
+
+
 # ===== CORE ROUTES START =============================
 @app.route("/")
 def index():
+    if get_current_user_email():
+        log_activity_event("page_view", route="/", user_email=get_current_user_email(), metadata={"name": get_current_user_name()})
     return render_template(
         "index.html",
         is_render=is_render_env(),
@@ -1576,28 +1676,15 @@ def refine_deck():
 # ===== REFINE DECK ROUTES END =========================
 
 # ===== ACTOR PREP ROUTES START =======================
-
-def _read_latest_brain_data() -> dict:
-    """Best-effort loader for the most recent brain output used by the actor reports."""
-    candidate_paths = [
-        BASE_DIR / "approved_brain_output.json",
-        OUTPUT_DIR / "approved_brain_output.json",
-        BASE_DIR / "output" / "approved_brain_output.json",
-        BASE_DIR / "static" / "approved_brain_output.json",
-    ]
-    for path in candidate_paths:
-        try:
-            if path.exists():
-                return json.loads(path.read_text(encoding="utf-8"))
-        except Exception as e:
-            print(f"⚠️ Could not read brain data from {path}: {e}", flush=True)
-    return {}
-
-
-def _extract_actor_script_text_from_request():
-    """Read pasted or uploaded script text for actor-report homepage buttons."""
+@app.route("/actor-prep-pass", methods=["POST"])
+def actor_prep_pass():
+    character_name = (request.form.get("character_name") or "").strip()
     pasted_text = (request.form.get("script_text") or "").strip()
     file = request.files.get("script")
+
+    if not character_name:
+        return jsonify({"error": "Please enter the role you are preparing."}), 400
+
     script_text = ""
     source_mode = "paste"
 
@@ -1611,18 +1698,11 @@ def _extract_actor_script_text_from_request():
             try:
                 reader = PdfReader(file)
                 script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception as e:
-                print(f"⚠️ Actor PDF upload read failed: {e}", flush=True)
+            except Exception:
                 script_text = ""
 
-        if script_text.strip():
-            try:
-                (BASE_DIR / "input.txt").write_text(script_text, encoding="utf-8")
-            except Exception as e:
-                print(f"⚠️ Could not save actor upload to input.txt: {e}", flush=True)
-
         if not script_text.strip() and not pasted_text:
-            return "", source_mode, jsonify({
+            return jsonify({
                 "error": "The formatted script could not be read cleanly.",
                 "needs_paste": True,
                 "message": "Please paste the script text to continue."
@@ -1631,46 +1711,14 @@ def _extract_actor_script_text_from_request():
     if pasted_text:
         script_text = pasted_text
         source_mode = "paste"
-        try:
-            (BASE_DIR / "input.txt").write_text(script_text, encoding="utf-8")
-        except Exception as e:
-            print(f"⚠️ Could not save pasted actor script to input.txt: {e}", flush=True)
 
     if not script_text.strip():
-        return "", source_mode, jsonify({"error": "No script text was provided."}), 400
-
-    return script_text, source_mode, None, None
-
-
-@app.route("/actor-prep-pass", methods=["POST"])
-def actor_prep_pass():
-    character_name = (request.form.get("character_name") or "").strip()
-
-    if not character_name:
-        return jsonify({"error": "Please enter the role you are preparing."}), 400
-
-    script_text, source_mode, error_response, status_code = _extract_actor_script_text_from_request()
-    if error_response is not None:
-        return error_response, status_code
+        return jsonify({"error": "No script text was provided."}), 400
 
     log_usage("actor_prep_start", role=character_name, mode=source_mode)
 
     try:
-        LATEST_ACTOR_PREP_PDF.parent.mkdir(parents=True, exist_ok=True)
-        brain_data = _read_latest_brain_data()
-        build_actor_prep_pdf(
-            script_text=script_text,
-            character_name=character_name,
-            output_path=LATEST_ACTOR_PREP_PDF,
-            brain_data=brain_data,
-        )
-    except TypeError:
-        # Compatibility fallback for older dai_tools signatures.
-        try:
-            build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
-        except Exception as e:
-            log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
-            return jsonify({"error": f"Actor preparation failed: {e}"}), 500
+        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
     except Exception as e:
         log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
         return jsonify({"error": f"Actor preparation failed: {e}"}), 500
@@ -1684,40 +1732,54 @@ def actor_prep_pass():
     return jsonify({
         "summary_note": f"Your actor preparation packet for {character_name} is ready.",
         "report_pdf": str(LATEST_ACTOR_PREP_PDF.name),
-        "report_url": "/output/latest_actor_prep_report.pdf",
-        "download_url": "/download/latest_actor_prep_report.pdf",
     })
+
+
 
 
 @app.route("/actor-booked-pass", methods=["POST"])
 def actor_booked_pass():
     character_name = (request.form.get("character_name") or "").strip()
+    pasted_text = (request.form.get("script_text") or "").strip()
+    file = request.files.get("script")
 
     if not character_name:
         return jsonify({"error": "Please enter the role you are preparing."}), 400
 
-    script_text, source_mode, error_response, status_code = _extract_actor_script_text_from_request()
-    if error_response is not None:
-        return error_response, status_code
+    script_text = ""
+    source_mode = "paste"
+
+    if file and file.filename:
+        source_mode = "upload"
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
+
+        if not script_text.strip() and not pasted_text:
+            return jsonify({
+                "error": "The formatted script could not be read cleanly.",
+                "needs_paste": True,
+                "message": "Please paste the script text to continue."
+            }), 422
+
+    if pasted_text:
+        script_text = pasted_text
+        source_mode = "paste"
+
+    if not script_text.strip():
+        return jsonify({"error": "No script text was provided."}), 400
 
     log_usage("actor_booked_start", role=character_name, mode=source_mode)
 
     try:
-        LATEST_ACTOR_BOOKED_PDF.parent.mkdir(parents=True, exist_ok=True)
-        brain_data = _read_latest_brain_data()
-        build_actor_booked_pdf(
-            script_text=script_text,
-            character_name=character_name,
-            output_path=LATEST_ACTOR_BOOKED_PDF,
-            brain_data=brain_data,
-        )
-    except TypeError:
-        # Compatibility fallback for older dai_tools signatures.
-        try:
-            build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF)
-        except Exception as e:
-            log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
-            return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
+        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF)
     except Exception as e:
         log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
         return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
@@ -1731,8 +1793,6 @@ def actor_booked_pass():
     return jsonify({
         "summary_note": f"Your booked role analysis for {character_name} is ready.",
         "report_pdf": str(LATEST_ACTOR_BOOKED_PDF.name),
-        "report_url": "/output/latest_actor_booked_report.pdf",
-        "download_url": "/download/latest_actor_booked_report.pdf",
     })
 
 
