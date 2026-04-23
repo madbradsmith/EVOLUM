@@ -1248,9 +1248,68 @@ def latest_slide_plan():
     return jsonify(payload)
 
 
-@app.route("/generate-slide-options", methods=["POST"])
+def _collect_refine_image_candidates(project_dir: Path, title: str = "", stage: str = "", layout: str = "", current_image_path: str = "", limit: int = 8):
+    project_dir = Path(project_dir)
+    visuals_dirs = [project_dir / "visuals"]
+    if project_dir != BASE_DIR:
+        visuals_dirs.append(BASE_DIR / "visuals")
 
-@app.route("/regenerate-slide-image", methods=["POST"])
+    exts = {".png", ".jpg", ".jpeg", ".webp"}
+    current_rel = normalize_project_relative_path(current_image_path or "")
+
+    words = []
+    for raw in (title, stage, layout):
+        for word in str(raw or "").lower().replace("(", " ").replace(")", " ").replace("_", " ").split():
+            word = word.strip("-—:,.!?\'\" ")
+            if len(word) >= 4 and word not in words:
+                words.append(word)
+
+    candidates = []
+    seen = set()
+
+    def add_candidate(path_obj: Path, score: int = 0):
+        try:
+            resolved = path_obj.resolve()
+        except Exception:
+            return
+        if not resolved.exists() or not resolved.is_file() or resolved.suffix.lower() not in exts:
+            return
+        if not ensure_relative_to_base(resolved):
+            return
+        rel = safe_relpath(resolved)
+        if rel in seen or rel == current_rel:
+            return
+        seen.add(rel)
+        candidates.append((score, resolved))
+
+    for visuals_dir in visuals_dirs:
+        if not visuals_dir.exists():
+            continue
+        for image_path in visuals_dir.rglob("*"):
+            if not image_path.is_file() or image_path.suffix.lower() not in exts:
+                continue
+            name = image_path.stem.lower()
+            score = sum(3 for word in words if word in name)
+            if stage and stage.lower() in name:
+                score += 2
+            if layout and layout.lower() in name:
+                score += 1
+            add_candidate(image_path, score=score)
+
+    candidates.sort(key=lambda item: (item[0], item[1].stat().st_mtime_ns), reverse=True)
+
+    options = []
+    for idx, (_, path_obj) in enumerate(candidates[:limit], start=1):
+        options.append({
+            "option_id": f"option_{idx}",
+            "label": f"Option {idx}",
+            "image_path": normalize_project_relative_path(str(path_obj)),
+            "image_name": path_obj.name,
+            "image_source": "project_visual",
+            "image_url": build_project_file_url(path_obj),
+        })
+    return options
+
 
 @app.route("/project-file")
 def project_file():
@@ -1288,9 +1347,10 @@ def project_file():
 
     abort(404)
 
-@app.route("/generate-slide-options", methods=["GET", "POST"])
+@app.route("/generate-slide-options", methods=["POST"])
 def generate_slide_options():
     try:
+        data = request.get_json(silent=True) or {}
         slide_plan_file = find_latest_slide_plan_file()
         if not slide_plan_file or not slide_plan_file.exists():
             return jsonify({"error": "No slide plan found."}), 404
@@ -1300,7 +1360,50 @@ def generate_slide_options():
         payload["source_file"] = str(slide_plan_file.relative_to(BASE_DIR)) if slide_plan_file.is_relative_to(BASE_DIR) else str(slide_plan_file)
         _LATEST_SLIDE_PAYLOAD_CACHE["key"] = make_slide_payload_cache_key(slide_plan_file)
         _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
-        return jsonify(payload)
+
+        slides = payload.get("slides") or []
+        slide_number = data.get("slide_number")
+        try:
+            idx = max(0, int(slide_number) - 1)
+        except Exception:
+            idx = 0
+
+        if idx >= len(slides):
+            return jsonify({"error": "Invalid slide number."}), 400
+
+        slide = slides[idx]
+        project_dir = find_latest_project_dir(slide_plan_file)
+        existing_options = normalize_manifest_image_options(slide.get("image_options") or [])
+        generated_options = _collect_refine_image_candidates(
+            project_dir=project_dir,
+            title=data.get("slide_title") or slide.get("title") or "",
+            stage=slide.get("stage") or "",
+            layout=slide.get("layout") or "",
+            current_image_path=data.get("current_image_path") or slide.get("image_path") or "",
+            limit=8,
+        )
+
+        merged = []
+        seen = set()
+        for item in existing_options + generated_options:
+            if not isinstance(item, dict):
+                continue
+            rel = normalize_project_relative_path(item.get("image_path", "") or "")
+            url = str(item.get("image_url", "") or "").strip()
+            key = rel or url
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            entry = dict(item)
+            entry["image_path"] = rel
+            if not entry.get("image_url") and rel:
+                entry["image_url"] = project_file_url_for_path(rel)
+            merged.append(entry)
+
+        return jsonify({
+            "slide_number": idx + 1,
+            "options": merged,
+        })
     except Exception as e:
         return jsonify({"error": f"Could not load new images: {e}"}), 500
 
@@ -1308,7 +1411,6 @@ def generate_slide_options():
 def regenerate_slide_image():
     try:
         data = request.get_json(silent=True) or {}
-        slide_index = data.get("slide_index")
         slide_plan_file = find_latest_slide_plan_file()
         if not slide_plan_file or not slide_plan_file.exists():
             return jsonify({"error": "No slide plan found."}), 404
@@ -1319,22 +1421,37 @@ def regenerate_slide_image():
         _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
 
         slides = payload.get("slides") or []
-        if slide_index is None:
-            return jsonify(payload)
-
+        slide_number = data.get("slide_number")
         try:
-            idx = int(slide_index)
+            idx = max(0, int(slide_number) - 1)
         except Exception:
-            idx = -1
+            idx = 0
 
-        if idx < 0 or idx >= len(slides):
-            return jsonify({"error": "Invalid slide index."}), 400
+        if idx >= len(slides):
+            return jsonify({"error": "Invalid slide number."}), 400
+
+        slide = slides[idx]
+        project_dir = find_latest_project_dir(slide_plan_file)
+        current_image_path = normalize_project_relative_path(data.get("current_image_path") or slide.get("image_path") or "")
+        options = _collect_refine_image_candidates(
+            project_dir=project_dir,
+            title=data.get("slide_title") or slide.get("title") or "",
+            stage=slide.get("stage") or "",
+            layout=slide.get("layout") or "",
+            current_image_path=current_image_path,
+            limit=12,
+        )
+
+        selected = options[0] if options else None
+        if not selected:
+            return jsonify({"error": "No alternate image was found for this slide yet."}), 404
 
         return jsonify({
-            "slide_index": idx,
-            "slide": slides[idx],
-            "slides": slides,
-            "slide_count": len(slides),
+            "slide_number": idx + 1,
+            "image_url": selected.get("image_url", ""),
+            "image_path": selected.get("image_path", ""),
+            "image_name": selected.get("image_name", ""),
+            "image_source": selected.get("image_source", "project_visual"),
         })
     except Exception as e:
         return jsonify({"error": f"Could not regenerate slide image: {e}"}), 500
