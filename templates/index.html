@@ -11,17 +11,61 @@
 
 <body>
 {% if gate_locked %}
-<div style="display:flex;align-items:center;justify-content:center;height:100vh;">
-    <div style="background:#151515;padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);text-align:center;max-width:400px;width:90%;">
-        <h2 style="margin-bottom:10px;">Beta Access</h2>
-        <p style="color:#cfcfcf;">Enter your access code to continue</p>
-        {% if gate_error %}
-        <div style="color:#ff8a8a;margin-bottom:10px;">{{ gate_error }}</div>
-        {% endif %}
-        <form method="POST" action="/beta-access">
-            <input type="password" name="access_code" placeholder="Access Code" required autofocus style="width:100%;padding:10px;margin-bottom:10px;">
-            <button class="primary-button" type="submit">Enter</button>
-        </form>
+<div style="display:flex;align-items:center;justify-content:center;height:100vh;padding:18px;box-sizing:border-box;overflow:hidden;">
+    <div style="background:#151515;border-radius:18px;border:1px solid rgba(255,255,255,0.12);width:min(920px, 96vw);min-height:min(680px, 92vh);max-height:92vh;padding:22px 22px 18px 22px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.45);">
+        <div id="betaWelcomeState" style="display:flex;flex-direction:column;gap:16px;height:100%;justify-content:center;">
+            <div style="text-align:center;">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="EVOLUM Logo" style="max-width:220px;width:52vw;height:auto;display:block;margin:0 auto 12px auto;">
+                <div style="font-size:clamp(28px,3.1vw,40px);font-weight:700;line-height:1.05;margin-bottom:6px;">Developum AI</div>
+                <div style="font-size:clamp(16px,1.5vw,20px);color:#d7d7d7;">Private Beta Access</div>
+            </div>
+
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:clamp(18px,2vw,28px);line-height:1.55;font-size:clamp(15px,1.22vw,20px);color:#f3f3f3;">
+                <p style="margin:0 0 16px 0;"><strong>Peace,</strong></p>
+                <p style="margin:0 0 16px 0;">Thank you all for coming through and supporting me by checking out this project I created for filmmakers, writers, producers, and creatives around the world.</p>
+                <p style="margin:0 0 16px 0;">I’m working every day, reviewing your feedback, and making live fixes, tweaks, and upgrades alongside my AI entity partners.</p>
+                <p style="margin:0 0 16px 0;">If you run into bugs or anything that feels off, please use the Feedback button and tell me exactly what happened so we can keep improving it together.</p>
+                <p style="margin:0 0 16px 0;">Thank you again for being early and being part of this journey.</p>
+                <p style="margin:0;"><strong>Peace,<br>MadBrad</strong></p>
+            </div>
+
+            <div style="display:flex;justify-content:center;margin-top:2px;">
+                <button type="button" class="primary-button" onclick="document.getElementById('betaWelcomeState').style.display='none';document.getElementById('betaAccessState').style.display='flex';">Continue to Login</button>
+            </div>
+        </div>
+
+        <div id="betaAccessState" style="display:none;flex-direction:column;gap:18px;height:100%;justify-content:center;">
+            <div style="text-align:center;">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="EVOLUM Logo" style="max-width:220px;width:52vw;height:auto;display:block;margin:0 auto 12px auto;">
+                <div style="font-size:clamp(28px,3.1vw,40px);font-weight:700;line-height:1.05;margin-bottom:6px;">Developum AI</div>
+                <div style="font-size:clamp(16px,1.5vw,20px);color:#d7d7d7;">Private Beta Access</div>
+            </div>
+
+            {% if gate_error %}
+            <div style="color:#ff9a9a;margin:0 auto;max-width:520px;width:100%;text-align:center;background:rgba(255,70,70,0.08);border:1px solid rgba(255,120,120,0.18);padding:10px 14px;border-radius:12px;">{{ gate_error }}</div>
+            {% endif %}
+
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch;">
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:22px;text-align:center;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:clamp(24px,2.2vw,34px);font-weight:700;margin-bottom:10px;">Create Account</div>
+                    <div style="color:#d0d0d0;line-height:1.5;margin-bottom:18px;font-size:clamp(14px,1.08vw,18px);">Your private beta account will give you direct access to the platform as we continue shaping the live build.</div>
+                    <button type="button" class="primary-button" onclick="window.location.href='/signup'">Create Account</button>
+                </div>
+
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:22px;text-align:center;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:clamp(24px,2.2vw,34px);font-weight:700;margin-bottom:10px;">Beta Access</div>
+                    <div style="color:#d0d0d0;line-height:1.5;margin-bottom:18px;font-size:clamp(14px,1.08vw,18px);">Enter your private beta access code to step inside the current live build.</div>
+                    <form method="POST" action="/beta-access" style="max-width:380px;width:100%;margin:0 auto;">
+                        <input type="password" name="access_code" placeholder="Access Code" required autofocus style="width:100%;padding:12px 14px;margin-bottom:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.14);background:#101010;color:#fff;box-sizing:border-box;">
+                        <button class="primary-button" type="submit" style="width:100%;">Enter</button>
+                    </form>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:center;">
+                <button type="button" class="secondary-button" onclick="document.getElementById('betaAccessState').style.display='none';document.getElementById('betaWelcomeState').style.display='flex';">Back to Message</button>
+            </div>
+        </div>
     </div>
 </div>
 {% else %}
