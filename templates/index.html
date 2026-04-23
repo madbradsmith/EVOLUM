@@ -12,32 +12,17 @@
 <body>
 {% if gate_locked %}
 <div style="display:flex;align-items:center;justify-content:center;height:100vh;">
-    <div class="beta-access-card" id="welcomeState">
-    <img src="/static/logo.png" class="beta-access-logo">
-
-    <h2>Private Beta Access</h2>
-
-    <p class="beta-access-message">
-        Thank you for being here. We’re excited to have you inside the private beta.
-    </p>
-
-    <button type="button"
-        class="primary-button beta-access-button"
-        onclick="showLoginState()">
-        Continue to Login
-    </button>
+    <div style="background:#151515;padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.12);text-align:center;max-width:400px;width:90%;">
+        <h2 style="margin-bottom:10px;">Beta Access</h2>
+        <p style="color:#cfcfcf;">Enter your access code to continue</p>
+        {% if gate_error %}
+        <div style="color:#ff8a8a;margin-bottom:10px;">{{ gate_error }}</div>
+        {% endif %}
+        <form method="POST" action="/beta-access">
+            <input type="password" name="access_code" placeholder="Access Code" required autofocus style="width:100%;padding:10px;margin-bottom:10px;">
+            <button class="primary-button" type="submit">Enter</button>
+        </form>
     </div>
-<div class="beta-access-card" id="loginState" style="display:none;">
-    <h2>Login</h2>
-
-    <form method="POST" action="/beta-access">
-        <input type="password" name="access_code" placeholder="Access Code" required>
-        <button class="primary-button beta-access-button" type="submit">
-            Enter
-        </button>
-    </form>
-</div>
-
 </div>
 {% else %}
 
