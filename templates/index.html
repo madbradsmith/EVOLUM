@@ -58,39 +58,10 @@
                 </div>
             </div>
 
-            <div id="betaGatePage2" style="display:none;">
-                <div class="workspace-title" style="text-align:center;">Private Beta Access</div>
-                <div class="workspace-copy" style="text-align:center;max-width:620px;margin:0 auto 16px;">
-                    Create your account with your beta access code, or sign in if you already have one.
-                </div>
-
-                {% if gate_error %}
-                <div style="color:#ff8a8a;margin-bottom:10px;text-align:center;">{{ gate_error }}</div>
-                {% endif %}
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto 12px;">
-                    <div class="card" style="padding:16px;background:#111111;">
-                        <div class="choice-title" style="margin-bottom:10px;">Create Account</div>
-                        <form method="POST" action="/create-account">
-                            <input type="text" name="name" placeholder="Full Name" required>
-                            <input type="email" name="email" placeholder="Email Address" required>
-                            <input type="password" name="password" placeholder="Create Password" required>
-                            <input type="password" name="access_code" placeholder="Beta Access Code" required>
-                            <button class="primary-button" type="submit" style="width:100%;">Create Account</button>
-                        </form>
-                    </div>
-
                     <div class="card" style="padding:16px;background:#111111;">
                         <div class="choice-title" style="margin-bottom:10px;">Sign In</div>
                         <form method="POST" action="/sign-in">
-                            <input type="email" name="email" placeholder="Email Address" required>
-                            <input type="password" name="password" placeholder="Password" required>
-                            <button class="primary-button" type="submit" style="width:100%;">Sign In</button>
-                        </form>
-
-                        <div class="upload-note" style="margin-top:12px;text-align:center;">
-                            Need a one-time beta entry instead?
-                        </div>
+                           
                         <form method="POST" action="/beta-access" style="margin-top:8px;">
                             <input type="password" name="access_code" placeholder="Access Code">
                             <button class="secondary-button" type="submit" style="width:100%;">Enter With Code</button>
