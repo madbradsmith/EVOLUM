@@ -209,6 +209,10 @@ function closeModal(id){
     const el = document.getElementById(id);
     if (el) el.classList.remove("show");
 }
+function showLoginState(){
+    document.getElementById("welcomeState").style.display = "none";
+    document.getElementById("loginState").style.display = "block";
+}
 
 
 let selectedFeedbackType = "";
