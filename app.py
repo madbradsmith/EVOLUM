@@ -891,7 +891,7 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         y -= 28
     pdf.setFillColor(palette["gold"])
     pdf.setFont("Helvetica-Bold", 13)
-    pdf.drawString(left, y, "SCRIPT ANALYSIS REPORT")
+    pdf.drawString(left, y, "EVOLUM Full Script Analysis Report")
     y -= 22
     paragraph(report_output.get("summary_note"), font_size=11, leading=15, color=palette["muted"])
     y -= 4
