@@ -15,6 +15,10 @@ import subprocess
 import os
 import importlib.util
 import time
+import re
+import urllib.request
+import urllib.error
+import hashlib
 from datetime import datetime
 from urllib.parse import unquote, quote
 
@@ -27,7 +31,6 @@ from actor_prep_generator_AUDITION_REDESIGN_V1 import build_actor_prep_pdf
 from actor_prep_generator_BOOKED_REDESIGN_V1 import build_actor_booked_pdf
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
-from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # ===== IMPORTS / SETUP END ===========================
@@ -39,65 +42,43 @@ _REFINE_BUILDER_MODULE = None
 _LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
 app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
 
-USERS_DB_PATH = Path(os.environ.get("USERS_DB_PATH", str((Path(__file__).resolve().parent / "users.db"))))
-DATABASE_URL = os.environ.get("DATABASE_URL", "").strip() or f"sqlite:///{USERS_DB_PATH}"
-DB_ENGINE = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    future=True,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite:///") else {},
-)
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+DB_ENGINE = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
 
 def db_check() -> bool:
+    if not DB_ENGINE:
+        return False
     with DB_ENGINE.connect() as conn:
         conn.execute(text("SELECT 1"))
     return True
 
 def db_init() -> None:
-    dialect = DB_ENGINE.dialect.name
+    if not DB_ENGINE:
+        raise RuntimeError("DATABASE_URL is not configured")
     with DB_ENGINE.begin() as conn:
-        if dialect == "sqlite":
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS beta_users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT NOT NULL UNIQUE,
-                    name TEXT NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS activity_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_email TEXT,
-                    event_type TEXT NOT NULL,
-                    route TEXT,
-                    metadata_json TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-        else:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS beta_users (
-                    id SERIAL PRIMARY KEY,
-                    email TEXT NOT NULL UNIQUE,
-                    name TEXT NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS activity_events (
-                    id SERIAL PRIMARY KEY,
-                    user_email TEXT,
-                    event_type TEXT NOT NULL,
-                    route TEXT,
-                    metadata_json TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS beta_users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE,
+                name TEXT,
+                password_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS activity_events (
+                id SERIAL PRIMARY KEY,
+                user_email TEXT,
+                event_type TEXT NOT NULL,
+                route TEXT,
+                metadata_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
 
 def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
+    if not DB_ENGINE:
+        return
     try:
         with DB_ENGINE.begin() as conn:
             conn.execute(text("""
@@ -111,25 +92,6 @@ def log_activity_event(event_type: str, route: str = "", user_email: str = "", m
             })
     except Exception as e:
         print(f"⚠️ Activity log write failed: {e}", flush=True)
-
-def get_current_user_email() -> str:
-    return (session.get("user_email") or "").strip()
-
-def get_current_user_name() -> str:
-    return (session.get("user_name") or "").strip()
-
-def get_user_by_email(email: str):
-    email = (email or "").strip().lower()
-    if not email:
-        return None
-    with DB_ENGINE.connect() as conn:
-        row = conn.execute(text("""
-            SELECT id, email, name, password_hash, created_at
-            FROM beta_users
-            WHERE lower(email) = :email
-            LIMIT 1
-        """), {"email": email}).mappings().first()
-    return dict(row) if row else None
 
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -148,6 +110,7 @@ LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
 LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
+LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
@@ -167,7 +130,7 @@ def is_render_env() -> bool:
 
 
 def has_beta_access() -> bool:
-    return session.get("beta_access") is True or bool(session.get("user_email"))
+    return session.get("beta_access") is True
 
 
 def log_beta_access(access_code: str, status: str):
@@ -525,6 +488,193 @@ def build_project_file_url(image_path: Path) -> str:
     return "/project-file?path=" + quote(str(rel).replace('\\', '/'))
 
 
+def normalize_project_relative_path(raw_path: str) -> str:
+    cleaned = str(raw_path or "").strip().replace("\\", "/")
+    if not cleaned:
+        return ""
+    prefixes = [
+        str(BASE_DIR).replace("\\", "/").rstrip("/") + "/",
+        "/opt/render/project/src/",
+        "opt/render/project/src/",
+    ]
+    for prefix in prefixes:
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix):]
+    return cleaned.lstrip("/")
+
+def normalize_project_path_string(raw_path: str) -> str:
+    return normalize_project_relative_path(raw_path)
+
+def project_file_url_for_path(raw_path: str) -> str:
+    rel = normalize_project_relative_path(raw_path)
+    if not rel:
+        return ""
+    return "/project-file?path=" + quote(rel)
+
+FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
+
+_SLIDE_VISUAL_CONCEPTS = {
+    "logline": "cinematic establishing shot, wide angle, dramatic lighting",
+    "synopsis": "cinematic scene, atmospheric, narrative moment",
+    "synopsis 2": "cinematic scene, mid-shot, dramatic tension",
+    "synopsis 3": "cinematic scene, close-up, emotional intensity",
+    "protagonist": "cinematic portrait, single character, dramatic lighting, film still",
+    "antagonist": "cinematic portrait, menacing figure, dramatic shadows, film still",
+    "supporting characters": "cinematic ensemble shot, multiple characters, film still",
+    "world": "cinematic landscape, establishing shot, rich environment",
+    "hook": "cinematic close-up, tension, dramatic moment",
+    "conflict": "cinematic confrontation, dramatic tension, high stakes",
+    "stakes": "cinematic wide shot, weight of consequence, dramatic",
+    "tone": "cinematic mood shot, atmospheric lighting, visual tone",
+    "story engine": "cinematic action, driving force, momentum",
+    "reversal": "cinematic turning point, dramatic shift, pivotal moment",
+    "themes": "cinematic symbolic imagery, thematic visual metaphor",
+    "why this movie": "cinematic wide shot, cultural moment, compelling imagery",
+    "comparables": "cinematic collage feel, prestige film aesthetic",
+    "market projections": "cinematic wide shot, commercial appeal, high production value",
+    "closing statement": "cinematic final frame, powerful, memorable",
+}
+
+_GENRE_STYLE = {
+    "horror": "dark, unsettling, atmospheric horror, shadows, practical effects aesthetic",
+    "thriller": "tense, noir-influenced, sharp contrast, suspenseful",
+    "comedy": "warm lighting, vibrant colors, playful composition",
+    "drama": "naturalistic lighting, intimate, emotionally grounded",
+    "action": "dynamic, kinetic energy, bold framing, high contrast",
+    "sci-fi": "futuristic, cool tones, technological, epic scale",
+    "fantasy": "magical, rich colors, otherworldly, painterly lighting",
+    "romance": "warm golden tones, soft focus, intimate, emotional",
+    "documentary": "gritty realism, candid, natural light, observational",
+    "animation": "stylized, vibrant, expressive, dynamic",
+}
+
+def normalize_key(value: str) -> str:
+    cleaned = re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+    return re.sub(r"\s+", " ", cleaned)
+
+def load_latest_brain_output(slide_plan_file=None) -> dict:
+    project_dir = find_latest_project_dir(slide_plan_file)
+    candidates = [project_dir / "approved_brain_output.json", BASE_DIR / "approved_brain_output.json"]
+    for candidate in candidates:
+        if candidate.exists():
+            try:
+                return json.loads(candidate.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+    return {}
+
+def build_fal_image_prompt(slide_title: str, slide_body: str = "", user_prompt: str = "", brain_output: dict | None = None, variation: str = "") -> str:
+    brain_output = brain_output or {}
+    normalized = normalize_key(slide_title)
+    concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting, film still")
+    genre = str(brain_output.get("genre", "drama")).lower()
+    genre_style = next((style for g, style in _GENRE_STYLE.items() if g in genre), "cinematic, naturalistic lighting, film aesthetic")
+    tone = str(brain_output.get("tone", "")).replace("\n", " ").strip()
+    world = str(brain_output.get("world", "")).replace("\n", " ").strip()
+    body_hint = str(slide_body or "").replace("\n", " ").strip()
+    parts = [concept, genre_style]
+    if world:
+        parts.append(f"set in {world[:120]}")
+    if tone:
+        parts.append(tone[:100])
+    if body_hint:
+        parts.append(body_hint[:180])
+    if user_prompt:
+        parts.append(user_prompt[:220])
+    if variation:
+        parts.append(variation)
+    parts.extend(["professional film still", "35mm", "shallow depth of field", "no text", "no watermarks", "ultra-detailed", "photorealistic", "16:9 aspect ratio"])
+    return ", ".join([p for p in parts if p])
+
+def generate_fal_image(prompt: str, cache_path: Path) -> Path | None:
+    if not FAL_API_KEY:
+        return None
+    if cache_path.exists():
+        return cache_path
+    url = "https://fal.run/fal-ai/flux/schnell"
+    payload = json.dumps({
+        "prompt": prompt,
+        "image_size": "landscape_16_9",
+        "num_inference_steps": 4,
+        "num_images": 1,
+        "enable_safety_checker": True,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Authorization": f"Key {FAL_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        image_url = ((result.get("images") or [{}])[0]).get("url", "")
+        if not image_url:
+            return None
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(image_url, cache_path)
+        print(f"✨ FAL generated image for prompt: {prompt[:80]}...", flush=True)
+        return cache_path
+    except Exception as e:
+        print(f"⚠️ FAL image generation failed: {e}", flush=True)
+        return None
+
+def fal_generated_image_payload(cache_path: Path) -> dict:
+    rel = normalize_project_relative_path(str(cache_path))
+    return {
+        "image_path": rel,
+        "image_name": cache_path.name,
+        "image_source": "fal_generated",
+        "image_url": project_file_url_for_path(rel),
+    }
+
+def generate_slide_option_images(slide_plan_file, slide_title: str, slide_body: str = "", user_prompt: str = "", slide_number: int = 1) -> list[dict]:
+    brain_output = load_latest_brain_output(slide_plan_file)
+    project_dir = find_latest_project_dir(slide_plan_file)
+    generated_dir = project_dir / "generated_images"
+    safe_title = re.sub(r"[^a-z0-9_]+", "_", normalize_key(slide_title) or f"slide_{slide_number}").strip("_") or f"slide_{slide_number}"
+    prompt_variations = [
+        ("wide", "wide cinematic composition, strong establishing frame"),
+        ("portrait", "character-focused frame, expressive subject emphasis"),
+        ("dramatic", "dramatic tension, premium cinematic lighting, heightened emotion"),
+        ("alt", "alternate composition, fresh visual interpretation, production design detail"),
+    ]
+    options = []
+    for idx, (label_key, variation) in enumerate(prompt_variations, start=1):
+        prompt = build_fal_image_prompt(slide_title, slide_body=slide_body, user_prompt=user_prompt, brain_output=brain_output, variation=variation)
+        prompt_hash = hashlib.md5(prompt.encode("utf-8")).hexdigest()[:10]
+        cache_path = generated_dir / f"{int(slide_number):02d}_{safe_title}_{label_key}_{prompt_hash}.jpg"
+        generated = generate_fal_image(prompt, cache_path)
+        if not generated:
+            continue
+        payload = fal_generated_image_payload(generated)
+        payload.update({
+            "rank": idx,
+            "option_id": f"fal_{label_key}_{prompt_hash}",
+            "label": f"Option {idx}",
+            "focus": variation,
+        })
+        options.append(payload)
+    return options
+
+def normalize_manifest_image_options(options):
+    normalized = []
+    if not isinstance(options, list):
+        return normalized
+    for item in options:
+        if not isinstance(item, dict):
+            continue
+        entry = dict(item)
+        entry["image_path"] = normalize_project_relative_path(entry.get("image_path", "") or "")
+        if not entry.get("image_url"):
+            entry["image_url"] = project_file_url_for_path(entry.get("image_path", "") or "")
+        normalized.append(entry)
+    return normalized
+
+
 def make_slide_payload_cache_key(slide_plan_file=None):
     if not slide_plan_file or not slide_plan_file.exists():
         return "missing"
@@ -858,130 +1008,14 @@ def beta_access():
     )
 
 
-@app.route("/create-account", methods=["POST"])
-def create_account():
-    name = (request.form.get("name") or "").strip()
-    email = (request.form.get("email") or "").strip().lower()
-    password = (request.form.get("password") or "").strip()
-    access_code = (request.form.get("access_code") or "").strip()
-
-    if not name or not email or not password or not access_code:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error="Please complete all Create Account fields, including your access code.",
-        )
-
-    if access_code not in ACCESS_CODES:
-        log_beta_access(access_code or "blank", "CREATE ACCOUNT ACCESS FAILED")
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error="That access code is not approved yet.",
-        )
-
-    try:
-        db_init()
-        existing = get_user_by_email(email)
-        if existing:
-            return render_template(
-                "index.html",
-                is_render=is_render_env(),
-                gate_locked=True,
-                gate_error="That email already has an account. Please sign in instead.",
-            )
-
-        password_hash = generate_password_hash(password)
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO beta_users (email, name, password_hash)
-                VALUES (:email, :name, :password_hash)
-            """), {
-                "email": email,
-                "name": name,
-                "password_hash": password_hash,
-            })
-
-        session["user_email"] = email
-        session["user_name"] = name
-        session["beta_access"] = True
-        session["beta_code"] = access_code
-
-        log_beta_access(access_code, "ACCOUNT CREATED")
-        log_activity_event("account_created", route="/create-account", user_email=email, metadata={"name": name})
-        return redirect(url_for("index"))
-    except Exception as e:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error=f"Create account failed: {e}",
-        )
-
-
-@app.route("/sign-in", methods=["POST"])
-def sign_in():
-    email = (request.form.get("email") or "").strip().lower()
-    password = (request.form.get("password") or "").strip()
-
-    if not email or not password:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error="Please enter your email and password to sign in.",
-        )
-
-    try:
-        db_init()
-        user = get_user_by_email(email)
-        if not user or not check_password_hash(user["password_hash"], password):
-            log_activity_event("sign_in_failed", route="/sign-in", user_email=email)
-            return render_template(
-                "index.html",
-                is_render=is_render_env(),
-                gate_locked=True,
-                gate_error="We couldn't sign you in with those credentials.",
-            )
-
-        session["user_email"] = user["email"]
-        session["user_name"] = user["name"]
-        session["beta_access"] = True
-
-        log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
-        return redirect(url_for("index"))
-    except Exception as e:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error=f"Sign in failed: {e}",
-        )
-
-
-@app.route("/logout")
-def logout():
-    email = get_current_user_email()
-    if email:
-        log_activity_event("sign_out", route="/logout", user_email=email)
-    session.clear()
-    return redirect(url_for("index"))
-
-
 # ===== CORE ROUTES START =============================
 @app.route("/")
 def index():
-    if get_current_user_email():
-        log_activity_event("page_view", route="/", user_email=get_current_user_email(), metadata={"name": get_current_user_name()})
     return render_template(
         "index.html",
         is_render=is_render_env(),
         gate_locked=not has_beta_access(),
         gate_error=None,
-        current_user_name=get_current_user_name(),
-        current_user_email=get_current_user_email(),
     )
 
 
@@ -1372,10 +1406,98 @@ def project_file():
     raw_path = unquote((request.args.get("path") or "").strip())
     if not raw_path:
         abort(404)
-    candidate = (BASE_DIR / raw_path).resolve()
-    if not ensure_relative_to_base(candidate) or not candidate.exists() or not candidate.is_file():
-        abort(404)
-    return send_file(candidate, as_attachment=False, conditional=True)
+
+    cleaned = str(raw_path).replace("\\", "/").strip()
+    candidates = []
+
+    rel = normalize_project_relative_path(cleaned)
+    if rel:
+        candidates.append((BASE_DIR / rel).resolve())
+
+    try:
+        p = Path(cleaned)
+        if p.is_absolute():
+            candidates.append(p.resolve())
+    except Exception:
+        pass
+
+    if cleaned.startswith("opt/render/project/src/"):
+        candidates.append(Path("/" + cleaned).resolve())
+    elif cleaned.startswith("/opt/render/project/src/"):
+        candidates.append(Path(cleaned).resolve())
+
+    seen = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        if ensure_relative_to_base(candidate) and candidate.exists() and candidate.is_file():
+            return send_file(candidate, as_attachment=False, conditional=True)
+
+    abort(404)
+
+@app.route("/generate-slide-options", methods=["POST"])
+def generate_slide_options():
+    try:
+        if not FAL_API_KEY:
+            return jsonify({"error": "FAL_API_KEY is not configured."}), 500
+        data = request.get_json(silent=True) or {}
+        slide_title = safe_text(data.get("slide_title"), "Slide")
+        slide_body = safe_text(data.get("slide_body"), "")
+        user_prompt = safe_text(data.get("user_prompt"), "")
+        slide_number = int(data.get("slide_number") or 1)
+
+        slide_plan_file = find_latest_slide_plan_file()
+        if not slide_plan_file or not slide_plan_file.exists():
+            return jsonify({"error": "No slide plan found."}), 404
+
+        options = generate_slide_option_images(
+            slide_plan_file=slide_plan_file,
+            slide_title=slide_title,
+            slide_body=slide_body,
+            user_prompt=user_prompt,
+            slide_number=slide_number,
+        )
+        if not options:
+            return jsonify({"error": "Could not generate options. Try again."}), 500
+        return jsonify({"options": options})
+    except Exception as e:
+        return jsonify({"error": f"Could not load new images: {e}"}), 500
+
+@app.route("/regenerate-slide-image", methods=["POST"])
+def regenerate_slide_image():
+    try:
+        if not FAL_API_KEY:
+            return jsonify({"error": "FAL_API_KEY is not configured."}), 500
+        data = request.get_json(silent=True) or {}
+        slide_title = safe_text(data.get("slide_title"), "Slide")
+        slide_body = safe_text(data.get("slide_body"), "")
+        user_prompt = safe_text(data.get("user_prompt"), "")
+        slide_number = int(data.get("slide_number") or 1)
+
+        slide_plan_file = find_latest_slide_plan_file()
+        if not slide_plan_file or not slide_plan_file.exists():
+            return jsonify({"error": "No slide plan found."}), 404
+
+        options = generate_slide_option_images(
+            slide_plan_file=slide_plan_file,
+            slide_title=slide_title,
+            slide_body=slide_body,
+            user_prompt=user_prompt,
+            slide_number=slide_number,
+        )
+        if not options:
+            return jsonify({"error": "Generation failed. Try again."}), 500
+        best = options[0]
+        return jsonify({
+            "image_url": best.get("image_url", ""),
+            "image_path": best.get("image_path", ""),
+            "image_name": best.get("image_name", ""),
+            "image_source": best.get("image_source", "fal_generated"),
+        })
+    except Exception as e:
+        return jsonify({"error": f"Could not regenerate slide image: {e}"}), 500
 
 @app.route("/refine-deck", methods=["POST"])
 def refine_deck():
@@ -1395,11 +1517,11 @@ def refine_deck():
                     "layout": str(slide_data.get("layout", "") or "text").strip(),
                     "stage": str(slide_data.get("stage", "") or "refine").strip(),
                     "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
+                    "image_path": normalize_project_relative_path(slide_data.get("image_path", "") or ""),
                     "image_name": str(slide_data.get("image_name", "") or "").strip(),
                     "image_url": str(slide_data.get("image_url", "") or "").strip(),
                     "image_source": str(slide_data.get("image_source", "") or "").strip(),
-                    "image_options": slide_data.get("image_options", []) if isinstance(slide_data.get("image_options", []), list) else [],
+                    "image_options": normalize_manifest_image_options(slide_data.get("image_options", [])),
                     "selected_option_id": str(slide_data.get("selected_option_id", "") or "").strip(),
                 }
                 for slide_data in slides
@@ -1420,12 +1542,12 @@ def refine_deck():
                 "body": str(slide_data.get("body", "") or "").strip(),
                 "layout": str(slide_data.get("layout", "") or "").strip(),
                 "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
+                "image_path": normalize_project_relative_path(slide_data.get("image_path", "") or ""),
 
                 "image_name": str(slide_data.get("image_name", "") or "").strip(),
                 "image_url": str(slide_data.get("image_url", "") or "").strip(),
                 "image_source": str(slide_data.get("image_source", "") or "").strip(),
-                "image_options": slide_data.get("image_options", []) if isinstance(slide_data.get("image_options", []), list) else [],
+                "image_options": normalize_manifest_image_options(slide_data.get("image_options", [])),
                 "selected_option_id": str(slide_data.get("selected_option_id", "") or "").strip(),
             })
 
@@ -1608,9 +1730,9 @@ def actor_prep_latest_download_pdf():
 def db_check_route():
     try:
         ok = db_check()
-        return jsonify({"ok": ok, "database_configured": bool(DATABASE_URL), "database_url": DATABASE_URL, "users_db_path": str(USERS_DB_PATH)})
+        return jsonify({"ok": ok, "database_configured": bool(DATABASE_URL)})
     except Exception as e:
-        return jsonify({"ok": False, "database_configured": bool(DATABASE_URL), "database_url": DATABASE_URL, "users_db_path": str(USERS_DB_PATH), "error": str(e)}), 500
+        return jsonify({"ok": False, "database_configured": bool(DATABASE_URL), "error": str(e)}), 500
 
 
 @app.route("/db-init")
