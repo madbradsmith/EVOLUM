@@ -27,8 +27,6 @@ from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 from pptx import Presentation
-from actor_prep_generator_AUDITION_REDESIGN_V1 import build_actor_prep_pdf
-from actor_prep_generator_BOOKED_REDESIGN_V1 import build_actor_booked_pdf
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 
