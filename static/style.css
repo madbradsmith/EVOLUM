@@ -1595,11 +1595,15 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
 }
 .privacy-section strong{
     color: #ffffff;
-}.beta-access-card{
-    max-width:420px;
-    width:90%;
-    padding:22px 22px 18px;
-    border-radius:16px;
+}
+.beta-access-card{
+    width: 92%;
+    max-width: 420px;
+    padding: 18px 18px 16px;
+    border-radius: 18px;
+    max-height: 78vh;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .beta-access-logo{
