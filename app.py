@@ -24,28 +24,6 @@
                     Private Beta Access
                 </div>
 
-                <div class="info-copy" style="max-width:620px;margin:0 auto 18px;text-align:left;">
-                    <p><strong>Peace,</strong></p>
-
-                    <p>
-                        Thank you all for coming through and supporting me by checking out this project I created for filmmakers, writers, producers, and creatives around the world.
-                    </p>
-
-                    <p>
-                        I’m working every day, reviewing your feedback, and making live fixes, tweaks, and upgrades alongside my AI entity partners.
-                    </p>
-
-                    <p>
-                        If you run into bugs or anything that feels off, please use the <strong>Feedback</strong> button and tell me exactly what happened so we can keep improving it together.
-                    </p>
-
-                    <p>
-                        Thank you again for being early and being part of this journey.
-                    </p>
-
-                    <p><strong>Peace,<br>MadBrad</strong></p>
-                </div>
-
                 <div class="upload-actions" style="grid-template-columns:1fr;max-width:320px;margin:0 auto 10px;">
                     <button class="primary-button" type="button"
                         onclick="document.getElementById('betaGatePage1').style.display='none';document.getElementById('betaGatePage2').style.display='block';">
