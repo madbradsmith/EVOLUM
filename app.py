@@ -1248,6 +1248,10 @@ def latest_slide_plan():
     return jsonify(payload)
 
 
+@app.route("/generate-slide-options", methods=["POST"])
+
+@app.route("/regenerate-slide-image", methods=["POST"])
+
 @app.route("/project-file")
 def project_file():
     raw_path = unquote((request.args.get("path") or "").strip())
