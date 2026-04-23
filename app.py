@@ -1,1816 +1,687 @@
-# =====================================================
-# ===== EVOLUM MASTER APP STRUCTURE (V1 BETA) =========
-# =====================================================
+<!DOCTYPE html>
+<!-- FULL v1_0 BUILD 1.1  -- STABLE --->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EVOLUM Beta Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-# ===== IMPORTS / SETUP START =========================
-# BETA v2_0 BUILD 1.1 — STABLE
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 
-from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for
-from pathlib import Path
-import json
-import io
-import contextlib
-import shutil
-import subprocess
-import os
-import importlib.util
-import time
-import random
-from datetime import datetime
-from urllib.parse import unquote, quote
+<body>
+{% if gate_locked %}
+<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:18px;">
+    <div class="shell" style="max-width:760px;width:100%;">
+        <div class="card" style="padding:22px 22px 18px;min-height:auto;">
+            <div class="logo" style="padding-top:0;">
+                <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
+            </div>
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import LETTER
-from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.pdfgen import canvas
-from pptx import Presentation
-from actor_prep_generator_AUDITION_REDESIGN_V1 import build_actor_prep_pdf
-from actor_prep_generator_BOOKED_REDESIGN_V1 import build_actor_booked_pdf
-from pypdf import PdfReader
-from sqlalchemy import create_engine, text
-from werkzeug.security import generate_password_hash, check_password_hash
+            <div id="betaGatePage1">
+                <div class="workspace-title" style="text-align:center;">Developum AI</div>
+                <div class="workspace-copy" style="text-align:center;max-width:640px;margin:0 auto 14px;">
+                    Private Beta Access
+                </div>
 
+                <div class="info-copy" style="max-width:620px;margin:0 auto 18px;text-align:left;">
+                    <p><strong>Peace,</strong></p>
 
-# ===== IMPORTS / SETUP END ===========================
+                    <p>
+                        Thank you all for coming through and supporting me by checking out this project I created for filmmakers, writers, producers, and creatives around the world.
+                    </p>
 
-# ===== GLOBAL CONFIG / PATHS START ===================
-app = Flask(__name__)
+                    <p>
+                        I’m working every day, reviewing your feedback, and making live fixes, tweaks, and upgrades alongside my AI entity partners.
+                    </p>
 
-_REFINE_BUILDER_MODULE = None
-_LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
-app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
+                    <p>
+                        If you run into bugs or anything that feels off, please use the <strong>Feedback</strong> button and tell me exactly what happened so we can keep improving it together.
+                    </p>
 
-USERS_DB_PATH = Path(os.environ.get("USERS_DB_PATH", str((Path(__file__).resolve().parent / "users.db"))))
-DATABASE_URL = os.environ.get("DATABASE_URL", "").strip() or f"sqlite:///{USERS_DB_PATH}"
-DB_ENGINE = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    future=True,
-    connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite:///") else {},
-)
+                    <p>
+                        Thank you again for being early and being part of this journey.
+                    </p>
 
-def db_check() -> bool:
-    with DB_ENGINE.connect() as conn:
-        conn.execute(text("SELECT 1"))
-    return True
+                    <p><strong>Peace,<br>MadBrad</strong></p>
+                </div>
 
-def db_init() -> None:
-    dialect = DB_ENGINE.dialect.name
-    with DB_ENGINE.begin() as conn:
-        if dialect == "sqlite":
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS beta_users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT NOT NULL UNIQUE,
-                    name TEXT,
-                    password_hash TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS activity_events (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    user_email TEXT,
-                    event_type TEXT NOT NULL,
-                    route TEXT,
-                    metadata_json TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            # lightweight sqlite migration safety
-            existing_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(beta_users)").fetchall()}
-            if "name" not in existing_cols:
-                conn.exec_driver_sql("ALTER TABLE beta_users ADD COLUMN name TEXT")
-            if "password_hash" not in existing_cols:
-                conn.exec_driver_sql("ALTER TABLE beta_users ADD COLUMN password_hash TEXT")
-            if "created_at" not in existing_cols:
-                conn.exec_driver_sql("ALTER TABLE beta_users ADD COLUMN created_at TIMESTAMP")
-        else:
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS beta_users (
-                    id SERIAL PRIMARY KEY,
-                    email TEXT NOT NULL UNIQUE,
-                    name TEXT,
-                    password_hash TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS activity_events (
-                    id SERIAL PRIMARY KEY,
-                    user_email TEXT,
-                    event_type TEXT NOT NULL,
-                    route TEXT,
-                    metadata_json TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """))
-            # lightweight postgres migration safety
-            conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS name TEXT"))
-            conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS password_hash TEXT"))
-            conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+                <div class="upload-actions" style="grid-template-columns:1fr;max-width:320px;margin:0 auto 10px;">
+                    <button class="primary-button" type="button"
+                        onclick="document.getElementById('betaGatePage1').style.display='none';document.getElementById('betaGatePage2').style.display='block';">
+                        Continue
+                    </button>
+                </div>
 
-def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
-    try:
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO activity_events (user_email, event_type, route, metadata_json)
-                VALUES (:user_email, :event_type, :route, :metadata_json)
-            """), {
-                "user_email": user_email or "",
-                "event_type": event_type,
-                "route": route or "",
-                "metadata_json": json.dumps(metadata or {}),
-            })
-    except Exception as e:
-        print(f"⚠️ Activity log write failed: {e}", flush=True)
+                <div class="footer-powered" style="margin-top:14px;text-align:center;">
+                    Powered by the Developum AI Engine
+                </div>
+            </div>
 
-def get_current_user_email() -> str:
-    return (session.get("user_email") or "").strip()
+            <div id="betaGatePage2" style="display:none;">
+                <div class="workspace-title" style="text-align:center;">Private Beta Access</div>
+                <div class="workspace-copy" style="text-align:center;max-width:620px;margin:0 auto 16px;">
+                    Create your account with your beta access code, or sign in if you already have one.
+                </div>
 
-def get_current_user_name() -> str:
-    return (session.get("user_name") or "").strip()
+                {% if gate_error %}
+                <div style="color:#ff8a8a;margin-bottom:10px;text-align:center;">{{ gate_error }}</div>
+                {% endif %}
 
-def get_user_by_email(email: str):
-    email = (email or "").strip().lower()
-    if not email:
-        return None
-    with DB_ENGINE.connect() as conn:
-        row = conn.execute(text("""
-            SELECT id, email, name, password_hash, created_at
-            FROM beta_users
-            WHERE lower(email) = :email
-            LIMIT 1
-        """), {"email": email}).mappings().first()
-    return dict(row) if row else None
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto 12px;">
+                    <div class="card" style="padding:16px;background:#111111;">
+                        <div class="choice-title" style="margin-bottom:10px;">Create Account</div>
+                        <form method="POST" action="/create-account">
+                            <input type="text" name="name" placeholder="Full Name" required>
+                            <input type="email" name="email" placeholder="Email Address" required>
+                            <input type="password" name="password" placeholder="Create Password" required>
+                            <input type="password" name="access_code" placeholder="Beta Access Code" required>
+                            <button class="primary-button" type="submit" style="width:100%;">Create Account</button>
+                        </form>
+                    </div>
 
-BASE_DIR = Path(__file__).resolve().parent
-UPLOAD_DIR = BASE_DIR / "uploads"
-OUTPUT_DIR = BASE_DIR / "output"
-STATUS_FILE = BASE_DIR / "status.txt"
+                    <div class="card" style="padding:16px;background:#111111;">
+                        <div class="choice-title" style="margin-bottom:10px;">Sign In</div>
+                        <form method="POST" action="/sign-in">
+                            <input type="email" name="email" placeholder="Email Address" required>
+                            <input type="password" name="password" placeholder="Password" required>
+                            <button class="primary-button" type="submit" style="width:100%;">Sign In</button>
+                        </form>
 
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+                        <div class="upload-note" style="margin-top:12px;text-align:center;">
+                            Need a one-time beta entry instead?
+                        </div>
+                        <form method="POST" action="/beta-access" style="margin-top:8px;">
+                            <input type="password" name="access_code" placeholder="Access Code">
+                            <button class="secondary-button" type="submit" style="width:100%;">Enter With Code</button>
+                        </form>
+                    </div>
+                </div>
 
-DEMO_DECK = BASE_DIR / "static" / "NOT_TODAY_Pitch_Deck_FINAL.pdf"
+                <div class="upload-actions" style="grid-template-columns:1fr;max-width:200px;margin:10px auto 0;">
+                    <button class="secondary-button" type="button"
+                        onclick="document.getElementById('betaGatePage2').style.display='none';document.getElementById('betaGatePage1').style.display='block';">
+                        Back
+                    </button>
+                </div>
 
-LATEST_PPTX = OUTPUT_DIR / "latest.pptx"
-LATEST_PDF = OUTPUT_DIR / "latest.pdf"
-LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
+                <div class="complete-copy" style="text-align:center;max-width:620px;margin:12px auto 0;">
+                    Invite-only private beta. Approved users receive access as spots open.
+                </div>
 
-LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
-LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
-LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
-LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
-
-ALLOWED_EXTENSIONS = {".txt", ".pdf"}
-
-ACCESS_CODES = [
-    "beta1",
-    "beta2",
-    "vip",
-    "madbrad",
-]
-
-BETA_ACCESS_LOGS_DIR = BASE_DIR / "beta_access_logs"
-BETA_ACCESS_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+                <div class="footer-powered" style="margin-top:14px;text-align:center;">
+                    Powered by the Developum AI Engine
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
 
 
-def is_render_env() -> bool:
-    return os.environ.get("RENDER", "").lower() == "true"
+<div class="top-nav-shell">
+    <button class="hamburger-button" type="button" onclick="toggleTopNavMenu()" aria-label="Open menu">
+        <div class="hamburger-lines">
+            <span></span><span></span><span></span>
+        </div>
+    </button>
+    <div class="top-nav-menu" id="topNavMenu">
+        <button class="top-nav-item" type="button" onclick="window.location.href='/'">Home</button>
+        <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
+        <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
+        <button class="top-nav-item" type="button" onclick="openPrivacyModal()">Privacy</button>
+    </div>
+</div>
+
+<div class="feedback-fab" onclick="openFeedbackModal()" role="button" tabindex="0">
+    <div class="feedback-fab-icon">💬</div>
+    <div class="feedback-fab-text">
+        <div class="feedback-fab-label">Feedback</div>
+        <div class="feedback-fab-sub">Tell us what’s working</div>
+    </div>
+</div>
+
+<div class="container">
+<div class="logo">
+    <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
+</div>
+
+<form action="/demo" method="POST" target="_blank" id="demoDeckCardForm" style="display:none;"></form>
 
 
-def has_beta_access() -> bool:
-    return session.get("beta_access") is True or bool(session.get("user_email"))
 
+    <div class="shell">
+    <div class="card">
+    <div class="home-card-grid">
+    <div class="choices-row">
 
-def log_beta_access(access_code: str, status: str):
-    safe_code = "".join(ch for ch in access_code if ch.isalnum() or ch in ("-", "_")).strip() or "unknown"
-    code_dir = BETA_ACCESS_LOGS_DIR / safe_code
-    code_dir.mkdir(parents=True, exist_ok=True)
-
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    ip_addr = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
-    user_agent = request.headers.get("User-Agent", "unknown")
-    log_line = f"{timestamp} | {status} | code={access_code} | ip={ip_addr} | ua={user_agent}\n"
-
-    log_file = code_dir / "access_log.txt"
-    with open(log_file, "a", encoding="utf-8") as f:
-        f.write(log_line)
-
-    print(log_line.strip())
-
-
-def log_usage(event, **kwargs):
-    parts = [f"{k}={v}" for k, v in kwargs.items()]
+    <!-- Script Analyzer -->
+   <div class="choice home-module-card" role="button" tabindex="0" onclick="startAnalyzeFlow()" onkeydown="if(event.key==='Enter'||event.key===' '){ event.preventDefault(); startAnalyzeFlow(); }">
+    <div class="choice-title">Script Analyzer</div>
+    <img src="/static/analyzer_thumb.jpg" class="home-thumb-img">
+    <div class="choice-copy">
+         Deep script insights in secconds!
+    </div>
     
-    if parts:
-        line = f"USAGE | {event} | " + " | ".join(parts)
-    else:
-        line = f"USAGE | {event}"
+    <div class="choice-link" onclick="event.stopPropagation(); window.open('/static/analysis_dark_v3.pdf','_blank')">
+        <button class="secondary-button" type="button">
+        View Sample</button>
+    </div>
+</div>
+
+<!-- Generate Pitch Deck -->
+<div class="choice home-module-card" onclick="startUploadFlow()">
+    <div class="choice-title">Deck Generator</div>
+    <img src="/static/deck_thumb.jpg" class="home-thumb-img">
+    <div class="choice-copy">
+        Create your pitch deck in minutes!
+    </div>
+    <div class="choice-link" onclick="event.stopPropagation(); document.getElementById('demoDeckCardForm').submit();">
+        <button class="secondary-button" type="button">
+        View Sample</button>
+    </div>
+</div>
+
+<!-- Actor Preparation -->
+<div class="choice home-module-card" onclick="startActorPrepFlow()">
+    <div class="choice-title">Audition Analyzer</div>
+    <img src="/static/audition_thumb.jpg" class="home-thumb-img">
+    <div class="choice-copy">
+        Let's get you booked using our complete sides analysis!
+    </div>
+    <div class="choice-link" onclick="event.stopPropagation(); window.open('/output/latest_actor_prep_report.pdf','_blank')">
+    <button class="secondary-button" type="button">
+        View Sample</button>
+    </div>
+</div>
+
+
+<!-- Booked -->
+<div class="choice home-module-card" onclick="startActorBookedFlow()">
+    <div class="choice-title">Booked Role Analyzer</div>
+    <img src="/static/booked_thumb.jpg" class="home-thumb-img">
+    <div class="choice-copy">
+         Get your full character analysis in seconds!
+    </div>
+    <div class="choice-link" onclick="event.stopPropagation(); window.open('/output/latest_actor_booked_report.pdf','_blank')">
+    <button class="secondary-button" type="button">
+        View Sample</button>
+    </div>
+</div>
+
+</div>
+</div>
+
+            <div class="workspace-panel" id="analyzerPanel">
+                <div class="workspace-title">Building Your Pitch Deck</div>
+                <div class="workspace-copy" id="buildCopy">Your deck is being generated. This takes 1–2 minutes.</div>
+
+                <div class="build-two-col">
+                    <div>
+                        <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
+                        <div class="progress-bar" id="buildProgressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="build-meta bottom-build-meta" id="buildMeta">
+                            <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
+                            <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
+                        </div>
+                    </div>
+
+                    <div class="build-quote-card" id="buildQuoteCard">
+                        <div class="quote-label" id="quoteLabel">SCREENPLAY</div>
+                        <div class="quote-text" id="quoteText">"Here's looking at you, kid."</div>
+                        <div class="quote-attribution" id="quoteAttribution">— Casablanca</div>
+                    </div>
+                </div>
+
+                
+<div class="complete-panel" id="completePanel">
+    <div id="previewStage">
+        <div class="complete-title">Your deck is complete.</div>
+        <div class="complete-copy">
+            Preview your generated deck below. You can download it now or refine it before final export.
+        </div>
+
+        <div class="deck-preview-strip" id="deckPreviewStrip"></div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="downloadCurrentDeck()">Download PowerPoint</button>
+            <button class="primary-button" type="button" onclick="openRefinementStage()">Refine Deck</button>
+            <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
+        </div>
+    </div>
+
+    <div id="refinementStage" style="display:none; max-width:1100px; margin:0 auto;">
+        <div class="workspace-title" style="text-align:center; margin-bottom:6px;">Refine Deck</div>
+        <div class="workspace-copy" style="text-align:center; margin-bottom:6px;"></div>
+
+        <div class="refine-meta">
+            <div class="meta-chip" id="slideCounter">Slide 1 of 5</div>
+            <div class="meta-chip" id="slideType">Title Slide</div>
+        </div>
+
+        <div class="refine-layout">
+            <div class="preview-panel">
+                <div class="panel-title">Slide Preview</div>
+                <div class="slide-preview-wrap">
+                    <img id="refineSlideImage" class="slide-preview-img" src="" alt="Slide preview">
+                    <div class="slide-caption" id="refineSlideCaption">Preview of the currently selected placeholder slide.</div>
+                    <div class="image-option-strip" id="imageOptionStrip"></div>
+                    <div class="image-option-empty" id="imageOptionEmpty" style="display:none;">No alternate images are available for this slide yet.</div>
+                </div>
+                <div class="slide-list" id="slideList"></div>
+            </div>
+
+            <div class="edit-panel">
+                <div class="panel-title">Edit Slide Content</div>
+
+                <div class="field-group">
+                    <label class="label" for="refineTitleInput">Headline</label>
+                    <input type="text" id="refineTitleInput" placeholder="Slide headline">
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="refineSubtitleInput">Subheading</label>
+                    <input type="text" id="refineSubtitleInput" placeholder="Slide subheading">
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="refineBodyInput">Body Copy</label>
+                    <textarea id="refineBodyInput" placeholder="Edit slide text here"></textarea>
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="refineImagePrompt">Image Direction <span class="label-optional">(optional)</span></label>
+                    <input type="text" id="refineImagePrompt" placeholder="e.g. animated style, night scene, wide epic shot…">
+                    <div class="field-help">Describe the look you want for this slide's image. Leave blank to use the script's tone automatically.</div>
+                </div>
+
+                <div class="upload-actions refine-actions-single">
+    <button class="primary-button" type="button" onclick="regenerateDeckPlaceholder()">Update &amp; Rebuild</button>
+    <button class="secondary-button" type="button" id="regenImageBtn" onclick="regenerateSlideImage()">Regenerate Image</button>
+</div>
+<div class="upload-actions refine-actions-single" style="margin-top:8px">
+    <button class="secondary-button full-width-btn" type="button" id="loadOptionsBtn" onclick="loadSlideImageOptions()">Load Image Options</button>
+</div>
+
+<div class="upload-actions refine-actions-pair">
+    <button class="secondary-button" id="refineBackBtn" type="button" onclick="goPrevRefineSlide()">Previous Slide</button>
+    <button class="secondary-button" id="refineNextBtn" type="button" onclick="goNextRefineSlide()">Next Slide</button>
+</div>
+
+<div class="upload-actions refine-actions-pair">
+    <button class="primary-button" type="button" onclick="returnToPreviewStage()">Back to Preview</button>
+    <button class="primary-button" type="button" onclick="regenerateDeckPlaceholder()">Regenerate Deck</button>
+</div>
+
+
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+        <div>
+            <div class="workspace-panel" id="uploadState">
+                <div class="workspace-title" style="text-align: center;">Almost There!</div>
+                <div class="workspace-copy" style="text-align: center;">Your deck is ready to build. If you have a poster or images you'd like to include, add them now — up to 10 images, 1 MB max each. Otherwise just hit Generate.</div>
+
+                <form action="/upload" method="POST" enctype="multipart/form-data" onsubmit="return validateUploadAndStart();">
+                     <input type="file" name="script" id="scriptInput" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc" style="display:none;">
+
+                    <div class="field-group">
+                        <label class="label" for="posterInput" style="display: inline-block; margin-right: 10px;">Upload Poster</label>
+                        <input type="file" name="poster" id="posterInput" accept="image/png,image/jpeg,image/webp" style="display: inline-block;">
+                    </div>
+
+                    <div class="field-group">
+                        <label class="label" for="imagesInput">Upload Images - Optional: up to 10 images, 1 MB max each.</label>
+                        <input type="file" name="images" id="imagesInput" accept="image/png,image/jpeg,image/webp" multiple>
+                    </div>
+
+                    <div class="upload-actions">
+                        <button class="primary-button" type="submit">Generate Pitch Deck</button>
+                        <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="workspace-panel" id="ideaPanel">
+                <div class="workspace-title">Start From Idea</div>
+                <div class="workspace-copy">This feature is currently in development and will be available in a future update.</div>
+                <div class="upload-actions">
+                    <button class="primary-button" type="button" onclick="resetCreateProject()">Back</button>
+                </div>
+            </div>
+
+            <div class="footer-powered home-footer">Powered by Developum AI Engine -- Beta Version V2.0 - Build 1.1</div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="infoModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('infoModal')">×</div>
+        <h3 id="infoTitle">Notice</h3>
+        <div class="info-copy" id="infoCopy">This feature is currently unavailable.</div>
+        <button class="primary-button" type="button" id="infoModalActionButton" onclick="handleInfoModalAction()">Continue</button>
+    </div>
+</div>
+
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('uploadModal')">×</div>
+        <h3>Upload Script</h3>
+        <div class="info-copy">Select your script file so we can check it for proper formatting and input integrity.</div>
+        <input type="file" id="uploadAnalyzeFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="analyzeSelectedScript()">Analyze Script</button>
+            <button class="primary-button" type="button" onclick="closeModal('uploadModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="uploadPassModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('uploadPassModal')">×</div>
+        <h3>Success! <b>Script Upload Check Complete!</b></h3>
+
+        <div class="complete-copy" id="uploadSummaryCopy">
+            Your script passed the upload check and is ready to move forward.
+        </div>
+
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="continueToApprovedUpload()">Continue to Upload</button>
+            <button class="primary-button" type="button" onclick="closeModal('uploadPassModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="analyzePassModal">
+    <div class="modal-content" style="max-width:620px;">
+        <div class="modal-close" onclick="closeModal('analyzePassModal')">×</div>
+        <h3>Success! <b>Script Analysis Complete!</b></h3>
+
+        <div class="complete-copy" id="analysisSummaryCopy">
+            DIME puts Zena at the center of a high-pressure world where identity, ambition, and competition collide. There is strong emotional weight here, along with the kind of grounded sports drama energy that can connect with an audience.
+        </div>
+
+        <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
+            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+                onclick="window.open('/analysis-report/latest.pdf','_blank')">
+                View Report
+            </button>
+
+            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+                onclick="window.location.href='/download/latest_analysis_report.pdf'">
+                Download PDF
+            </button>
+
+            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;" onclick="startAnalyzeFlow()">
+                Run Another
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODALS: ACTOR PREP FLOW START ================= -->
+
+<div class="modal" id="actorPrepModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorPrepModal')">×</div>
+        <h3>Actor Preparation</h3>
+        <div class="info-copy">Enter the role you are preparing and choose the script you want analyzed.</div>
+        <input type="text" id="actorRoleInput" placeholder="Enter Role">
+        <input type="file" id="actorPrepFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorPrep()">Analyze</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorPrepModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="actorPrepPasteModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorPrepPasteModal')">×</div>
+        <h3>Paste Script Text</h3>
+        <div class="info-copy">The uploaded file could not be read cleanly. Paste the script text below and continue.</div>
+        <textarea id="actorPrepPasteText" placeholder="Paste script text here"></textarea>
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorPrepPaste()">Continue</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorPrepPasteModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal" id="actorPrepCompleteModal">
+   <div class="modal-content" style="max-width:620px;">
+    <div class="modal-close" onclick="closeModal('actorPrepCompleteModal')">×</div>
+    <h3>Success! <b>Audition Analysis Complete!</b></h3>
+
+    <div class="complete-copy" id="actorPrepSummaryCopy">
+        Your audition preparation packet is ready.
+    </div>
+
+    <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.open('/output/latest_actor_prep_report.pdf','_blank')">
+            View Report
+        </button>
+
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.location.href='/download/latest_actor_prep_report.pdf'">
+            Download PDF
+        </button>
+
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="closeModal('actorPrepCompleteModal'); startActorPrepFlow();">
+            Run Another
+        </button>
+
+    </div>
+   </div>
+</div>
+
+<div class="modal" id="actorBookedModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorBookedModal')">×</div>
+        <h3>Booked Role Analyzer</h3>
+        <div class="info-copy">Enter the role you booked and choose the full script you want analyzed.</div>
+        <input type="text" id="actorBookedRoleInput" placeholder="Enter Role">
+        <input type="file" id="actorBookedFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorBooked()">Analyze</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorBookedModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="actorBookedPasteModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('actorBookedPasteModal')">×</div>
+        <h3>Paste Script Text</h3>
+        <div class="info-copy">The uploaded file could not be read cleanly. Paste the script text below and continue.</div>
+        <textarea id="actorBookedPasteText" placeholder="Paste script text here"></textarea>
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitActorBookedPaste()">Continue</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorBookedPasteModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="actorBookedCompleteModal">
+   <div class="modal-content" style="max-width:620px;">
+    <div class="modal-close" onclick="closeModal('actorBookedCompleteModal')">×</div>
+    <h3>Success! <b>Booked Role Analysis Complete!</b></h3>
+
+    <div class="complete-copy" id="actorBookedSummaryCopy">
+        Your booked role preparation packet is ready.
+    </div>
+
+    <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.open('/output/latest_actor_booked_report.pdf','_blank')">
+            View Report
+        </button>
+
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            onclick="window.location.href='/download/latest_actor_booked_report.pdf'">
+            Download PDF
+        </button>
+
+        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;" onclick="startActorBookedFlow()">
+            Run Another
+        </button>
+    </div>
+   </div>
+</div>
+
+<div class="modal" id="feedbackModal">
+
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('feedbackModal')">×</div>
+        <h3>Share Feedback</h3>
+        <div class="feedback-help-copy">This beta is still being refined. Tell us what worked, what felt off, or what you want next.</div>
+
+        <div class="feedback-quick-row">
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Bug Report', this)">Bug Report</button>
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Confusing UX', this)">Confusing UX</button>
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Great Result', this)">Great Result</button>
+            <button class="feedback-chip" type="button" onclick="setFeedbackType('Feature Request', this)">Feature Request</button>
+        </div>
+
+        <input type="text" id="feedbackName" placeholder="Name (optional)">
+        <input type="text" id="feedbackEmail" placeholder="Email (optional)">
+        <textarea id="feedbackMessage" maxlength="1000" placeholder="Tell us what happened, what you expected, or what you’d love to see next."></textarea>
+
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitFeedback()">Send Feedback</button>
+            <button class="primary-button" type="button" onclick="closeModal('feedbackModal')">Back</button>
+        </div>
+    </div>
+</div>
     
-    print(line, flush=True)
-
-
-def set_status(text: str):
-    STATUS_FILE.write_text(text, encoding="utf-8")
-
-
-def get_status() -> str:
-    if not STATUS_FILE.exists():
-        return "IDLE"
-    return STATUS_FILE.read_text(encoding="utf-8").strip() or "IDLE"
-
-
-def allowed_file(filename: str) -> bool:
-    return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
-
-
-def clear_latest_targets():
-    for path in (LATEST_PPTX, LATEST_PDF):
-        try:
-            if path.exists():
-                path.unlink()
-        except OSError:
-            pass
-
-
-def newest_generated_file(ext: str):
-    excluded = {LATEST_PPTX.name, LATEST_PDF.name}
-    files = [p for p in OUTPUT_DIR.glob(f"pitch_deck_v*{ext}") if p.name not in excluded]
-
-    if not files:
-        return None
-
-    return max(files, key=lambda p: p.stat().st_mtime)
-
-def find_latest_slide_plan_file():
-    candidates = []
-
-    direct_candidates = [
-        BASE_DIR / "slide_plan.json",
-        OUTPUT_DIR / "slide_plan.json",
-        BASE_DIR / "pipeline" / "slide_plan.json",
-        BASE_DIR / "pipeline" / "compile" / "slide_plan.json",
-    ]
-    for path in direct_candidates:
-        if path.exists():
-            candidates.append(path)
-
-    search_roots = [
-        BASE_DIR,
-        OUTPUT_DIR,
-        BASE_DIR / "projects",
-        BASE_DIR / "pipeline",
-    ]
-    seen = set()
-    for root in search_roots:
-        if not root.exists():
-            continue
-        for path in root.rglob("slide_plan.json"):
-            if path in seen:
-                continue
-            seen.add(path)
-            candidates.append(path)
-
-    if not candidates:
-        return None
-
-    return max(candidates, key=lambda p: p.stat().st_mtime)
-
-def safe_relpath(path_obj):
-    try:
-        return str(path_obj.relative_to(BASE_DIR))
-    except Exception:
-        return str(path_obj)
-
-def normalize_project_path(value: str) -> str:
-    value = str(value or "").strip()
-    if not value:
-        return ""
-    value = value.replace("\\", "/")
-    for prefix in ("/opt/render/project/src/", "opt/render/project/src/"):
-        if value.startswith(prefix):
-            value = value[len(prefix):]
-    return value.lstrip("/")
-
-
-def project_file_url_for_path(value: str) -> str:
-    rel = normalize_project_path(value)
-    if not rel:
-        return ""
-    return "/project-file?path=" + quote(rel)
-
-
-def normalize_manifest_image_options(options):
-    normalized = []
-    for idx, option in enumerate(options or [], start=1):
-        if not isinstance(option, dict):
-            continue
-        image_path = normalize_project_path(option.get("image_path", ""))
-        normalized.append({
-            "rank": option.get("rank", idx),
-            "option_id": str(option.get("option_id") or f"option_{idx}"),
-            "label": str(option.get("label") or f"Option {idx}"),
-            "focus": str(option.get("focus") or ""),
-            "image_path": image_path,
-            "image_name": str(option.get("image_name") or (Path(image_path).name if image_path else "")),
-            "image_source": str(option.get("image_source") or "existing"),
-            "image_url": str(option.get("image_url") or project_file_url_for_path(image_path)),
-        })
-    return normalized
-
-
-def collect_candidate_images(limit=24):
-    roots = [BASE_DIR / "generated_images", BASE_DIR / "visuals", BASE_DIR / "uploads"]
-    candidates = []
-    seen = set()
-    for root in roots:
-        if not root.exists():
-            continue
-        for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
-            for path in root.rglob(ext):
-                try:
-                    resolved = path.resolve()
-                except Exception:
-                    continue
-                if resolved in seen or not ensure_relative_to_base(resolved):
-                    continue
-                seen.add(resolved)
-                candidates.append(resolved)
-    candidates.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
-    return candidates[:limit]
-
-
-def score_candidate_for_slide(path: Path, query_text: str) -> int:
-    name = path.stem.lower().replace("_", " ")
-    words = [w for w in query_text.lower().replace("_", " ").split() if len(w) >= 3]
-    score = 0
-    for word in words:
-        if word in name:
-            score += 5
-    return score
-
-
-def make_image_options_for_slide(slide_title: str, slide_body: str = "", user_prompt: str = "", current_image_path: str = "", limit: int = 6):
-    current_rel = normalize_project_path(current_image_path)
-    query_text = " ".join([str(slide_title or ""), str(slide_body or ""), str(user_prompt or "")]).strip()
-    candidates = collect_candidate_images(limit=40)
-    ranked = sorted(candidates, key=lambda p: (score_candidate_for_slide(p, query_text), p.stat().st_mtime if p.exists() else 0), reverse=True)
-    options = []
-    seen = set()
-    if current_rel:
-        current_abs = (BASE_DIR / current_rel).resolve()
-        if current_abs.exists() and ensure_relative_to_base(current_abs):
-            seen.add(current_abs)
-            options.append({
-                "rank": 1,
-                "option_id": "selected",
-                "label": "Current Pick",
-                "focus": slide_title or "Current image",
-                "image_path": current_rel,
-                "image_name": current_abs.name,
-                "image_source": "current",
-                "image_url": project_file_url_for_path(current_rel),
-            })
-    for candidate in ranked:
-        if candidate in seen:
-            continue
-        seen.add(candidate)
-        rel = safe_relpath(candidate)
-        options.append({
-            "rank": len(options) + 1,
-            "option_id": f"option_{len(options) + 1}",
-            "label": f"Option {len(options) + 1}",
-            "focus": slide_title or "Generated option",
-            "image_path": rel,
-            "image_name": candidate.name,
-            "image_source": "library",
-            "image_url": project_file_url_for_path(rel),
-        })
-        if len(options) >= limit:
-            break
-    return options
-
-
-
-def resolve_quiet_image_for_slide(slide_title, stage, layout, slide_number):
-    visuals_root = BASE_DIR / "visuals"
-
-    if not visuals_root.exists():
-        return None
-
-    exts = ("*.jpg", "*.jpeg", "*.png", "*.webp")
-    candidates = []
-
-    for ext in exts:
-        candidates.extend(visuals_root.rglob(ext))
-
-    if not candidates:
-        return None
-
-    title_words = str(slide_title).lower().replace("(", " ").replace(")", " ").split()
-
-    for candidate in candidates:
-        name = candidate.stem.lower()
-
-        for word in title_words:
-            if len(word) >= 4 and word in name:
-                return candidate
-
-    return candidates[0]
-
-def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
-    project_title = safe_text(slide_plan_data.get("title"), "UNTITLED PROJECT")
-    raw_slides = slide_plan_data.get("slides") or []
-    slide_plan_file = Path(slide_plan_file) if slide_plan_file else None
-    project_dir = find_latest_project_dir(slide_plan_file)
-
-    mapped_slides = []
-    last_used_image_name = ""
-
-    for index, slide in enumerate(raw_slides):
-        if not isinstance(slide, dict):
-            continue
-
-        stage = safe_text(slide.get("stage"), "").lower()
-        layout = safe_text(slide.get("layout"), "").lower()
-        title = safe_text(slide.get("title"), f"Slide {index + 1}")
-
-        body = safe_text(
-            slide.get("body")
-            or slide.get("content")
-            or slide.get("text")
-            or slide.get("copy"),
-            "",
-        )
-
-        slide_type = title
-
-        if stage == "title" or layout == "title":
-            slide_type = "Title Slide"
-        elif "logline" in title.lower():
-            slide_type = "Logline"
-        elif "synopsis" in title.lower():
-            slide_type = "Synopsis"
-        elif stage == "character":
-            slide_type = "Characters"
-        elif stage == "why_now":
-            slide_type = "Why This Project"
-
-        subtitle = ""
-
-        if stage == "title" or layout == "title":
-            subtitle = project_title if title.strip().lower() != project_title.strip().lower() else ""
-        elif title.lower() in {
-            "logline",
-            "synopsis",
-            "synopsis (2)",
-            "hook",
-            "conflict",
-            "stakes",
-            "world",
-            "tone",
-            "story engine",
-            "reversal",
-            "why this movie",
-            "protagonist",
-        }:
-            subtitle = title
-        elif stage:
-            subtitle = stage.replace("_", " ").title()
-        elif layout:
-            subtitle = layout.replace("_", " ").title()
-
-        caption_bits = []
-
-        if stage:
-            caption_bits.append(f"Stage: {stage.replace('_', ' ').title()}")
-
-        if layout:
-            caption_bits.append(f"Layout: {layout.replace('_', ' ').title()}")
-
-        configured_image_path = safe_text(slide.get("image_path"), "")
-        configured_image_name = safe_text(slide.get("image_name"), "")
-        configured_image_url = safe_text(slide.get("image_url"), "")
-        image_options = normalize_manifest_image_options(slide.get("image_options") or [])
-        selected_option_id = safe_text(slide.get("selected_option_id"), "")
-
-        resolved_image = None
-        if configured_image_path:
-            try:
-                configured_candidate = Path(configured_image_path)
-                if not configured_candidate.is_absolute():
-                    configured_candidate = (BASE_DIR / configured_candidate).resolve()
-                else:
-                    configured_candidate = configured_candidate.resolve()
-                if configured_candidate.exists() and configured_candidate.is_file():
-                    resolved_image = configured_candidate
-            except Exception:
-                resolved_image = None
-
-        if resolved_image is None:
-            resolved_image = resolve_quiet_image_for_slide(
-                slide_title=title,
-                stage=stage,
-                layout=layout,
-                slide_number=index + 1,
-            )
-
-        image_name = configured_image_name or (resolved_image.name if resolved_image else "")
-        image_url = configured_image_url or project_file_url_for_path(configured_image_path)
-        if not image_url and resolved_image:
-            image_url = f"/project-file?path={safe_relpath(resolved_image)}"
-
-        if image_name:
-            caption_bits.append(f"Image: {image_name}")
-
-        caption = " • ".join(caption_bits) if caption_bits else f"Generated slide {index + 1}"
-
-        mapped_slides.append({
-            "type": slide_type,
-            "title": title,
-            "subtitle": subtitle,
-            "body": body,
-            "caption": caption,
-            "accent": "#ffb347",
-            "layout": layout,
-            "stage": stage,
-            "source_index": index,
-            "image_name": image_name,
-            "image_url": image_url,
-            "image_options": image_options,
-            "selected_option_id": selected_option_id,
-        })
-
-    return {
-        "title": project_title,
-        "slide_count": len(mapped_slides),
-        "slides": mapped_slides,
-    }
-
-
-def load_deck_builder_module():
-    global _REFINE_BUILDER_MODULE
-    if _REFINE_BUILDER_MODULE is not None:
-        return _REFINE_BUILDER_MODULE
-
-    builder_path = BASE_DIR / "deck_builder_MADBRAD_BRAIN_V_1.py"
-    if not builder_path.exists():
-        _REFINE_BUILDER_MODULE = False
-        return None
-
-    try:
-        spec = importlib.util.spec_from_file_location("deck_builder_madbrad_brain_v1", builder_path)
-        if not spec or not spec.loader:
-            _REFINE_BUILDER_MODULE = False
-            return None
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        _REFINE_BUILDER_MODULE = module
-        return module
-    except Exception as e:
-        print(f"⚠️ Could not load deck builder for refine image mapping: {e}", flush=True)
-        _REFINE_BUILDER_MODULE = False
-        return None
-
-
-def find_latest_project_dir(slide_plan_file=None):
-    if slide_plan_file and slide_plan_file.exists():
-        return slide_plan_file.parent
-    return BASE_DIR
-
-
-def ensure_relative_to_base(path: Path) -> bool:
-    try:
-        path.resolve().relative_to(BASE_DIR.resolve())
-        return True
-    except Exception:
-        return False
-
-
-def resolve_refine_image_for_slide(project_dir, deck_title, slide, slide_number, last_used_name=""):
-    explicit_candidates = []
-    for key in ("image_path", "image", "image_file", "preview_image"):
-        value = slide.get(key)
-        if value:
-            explicit_candidates.append(Path(str(value)))
-
-    for candidate in explicit_candidates:
-        resolved = candidate if candidate.is_absolute() else (project_dir / candidate)
-        if resolved.exists() and ensure_relative_to_base(resolved):
-            return resolved.resolve()
-
-    builder = load_deck_builder_module()
-    if not builder:
-        return None
-
-    visuals_dir = project_dir / "visuals"
-    approved_brain_output_path = project_dir / "approved_brain_output.json"
-    brain_output = {}
-    if approved_brain_output_path.exists():
-        try:
-            brain_output = json.loads(approved_brain_output_path.read_text(encoding="utf-8"))
-        except Exception:
-            brain_output = {}
-    elif (BASE_DIR / "approved_brain_output.json").exists():
-        try:
-            brain_output = json.loads((BASE_DIR / "approved_brain_output.json").read_text(encoding="utf-8"))
-        except Exception:
-            brain_output = {}
-
-    try:
-        with contextlib.redirect_stdout(io.StringIO()):
-            image_path = builder.find_image_for_slide(
-                visuals_dir=visuals_dir,
-                deck_title=deck_title,
-                slide_title=safe_text(slide.get("title"), f"Slide {slide_number}"),
-                slide_number=slide_number,
-                brain_output=brain_output,
-                last_used_name=last_used_name,
-            )
-    except Exception as e:
-        print(f"⚠️ Refine image resolution failed for slide {slide_number}: {e}", flush=True)
-        return None
-
-    if not image_path or not Path(image_path).exists():
-        return None
-
-    image_path = Path(image_path).resolve()
-    if not ensure_relative_to_base(image_path):
-        return None
-
-    return image_path
-
-
-def build_project_file_url(image_path: Path) -> str:
-    rel = image_path.resolve().relative_to(BASE_DIR.resolve())
-    return "/project-file?path=" + quote(str(rel).replace('\\', '/'))
-
-
-def make_slide_payload_cache_key(slide_plan_file=None):
-    if not slide_plan_file or not slide_plan_file.exists():
-        return "missing"
-    parts = [f"slide:{slide_plan_file}:{slide_plan_file.stat().st_mtime_ns}"]
-    project_dir = find_latest_project_dir(slide_plan_file)
-    abo = project_dir / "approved_brain_output.json"
-    if not abo.exists():
-        abo = BASE_DIR / "approved_brain_output.json"
-    if abo.exists():
-        parts.append(f"abo:{abo}:{abo.stat().st_mtime_ns}")
-    builder_path = BASE_DIR / "deck_builder_MADBRAD_BRAIN_V_1.py"
-    if builder_path.exists():
-        parts.append(f"builder:{builder_path.stat().st_mtime_ns}")
-    return "|".join(parts)
-
-
-def publish_latest_outputs(pptx_source, pdf_source):
-    if pptx_source and pptx_source.exists():
-        shutil.copy2(pptx_source, LATEST_PPTX)
-
-    if pdf_source and pdf_source.exists():
-        shutil.copy2(pdf_source, LATEST_PDF)
-
-
-def safe_text(value, fallback="-"):
-    if value is None:
-        return fallback
-    if isinstance(value, list):
-        value = ", ".join(str(v) for v in value if str(v).strip())
-    value = str(value).strip()
-    return value or fallback
-
-
-def wrap_text(text, font_name="Helvetica", font_size=11, max_width=500):
-    words = safe_text(text, "").split()
-    if not words:
-        return []
-
-    lines = []
-    current = words[0]
-
-    for word in words[1:]:
-        trial = f"{current} {word}"
-        if stringWidth(trial, font_name, font_size) <= max_width:
-            current = trial
-        else:
-            lines.append(current)
-            current = word
-
-    lines.append(current)
-    return lines
-
-
-def draw_wrapped_text(pdf, text, x, y, max_width=500, font_name="Helvetica", font_size=11, leading=15):
-    lines = wrap_text(text, font_name=font_name, font_size=font_size, max_width=max_width)
-    pdf.setFont(font_name, font_size)
-    for line in lines:
-        pdf.drawString(x, y, line)
-        y -= leading
-    return y
-
-
-def build_simple_analysis_pdf(report_output: dict, out_path: Path):
-    pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
-    width, height = LETTER
-
-    left = 54
-    right = width - 54
-    content_w = right - left
-    top = height - 54
-    bottom = 48
-    y = top
-
-    palette = {
-        "bg": colors.HexColor("#111111"),
-        "panel": colors.HexColor("#171717"),
-        "panel_2": colors.HexColor("#1f1f1f"),
-        "gold": colors.HexColor("#D9A441"),
-        "blue": colors.HexColor("#4C88C7"),
-        "text": colors.white,
-        "muted": colors.HexColor("#C9C9C9"),
-        "rule": colors.HexColor("#2C2C2C"),
-        "chip": colors.HexColor("#202020"),
-    }
-
-    def page_bg():
-        pdf.setFillColor(palette["bg"])
-        pdf.rect(0, 0, width, height, fill=1, stroke=0)
-
-    def footer(page_no: int):
-        pdf.setStrokeColor(palette["rule"])
-        pdf.line(left, 28, right, 28)
-        pdf.setFont("Helvetica", 8)
-        pdf.setFillColor(palette["muted"])
-        pdf.drawString(left, 16, "Powered by Developum AI Engine")
-        pdf.drawRightString(right, 16, f"Page {page_no}")
-
-    page_no = 1
-    page_bg()
-
-    def new_page():
-        nonlocal y, page_no
-        footer(page_no)
-        pdf.showPage()
-        page_no += 1
-        page_bg()
-        y = top
-
-    def ensure_space(points_needed=72):
-        nonlocal y
-        if y - points_needed < bottom:
-            new_page()
-
-    def section_label(text, band=False):
-        nonlocal y
-        ensure_space(40)
-        if band:
-            pdf.setFillColor(palette["panel_2"])
-            pdf.roundRect(left, y-20, content_w, 26, 8, fill=1, stroke=0)
-            pdf.setFillColor(palette["gold"])
-            pdf.setFont("Helvetica-Bold", 12)
-            pdf.drawString(left + 12, y-4, text.upper())
-            y -= 34
-        else:
-            pdf.setFillColor(palette["gold"])
-            pdf.setFont("Helvetica-Bold", 12)
-            pdf.drawString(left, y, text.upper())
-            pdf.setStrokeColor(palette["gold"])
-            pdf.line(left, y-6, left+92, y-6)
-            y -= 18
-
-    def paragraph(text, font_name="Helvetica", font_size=10.5, leading=14, color=None, indent=0):
-        nonlocal y
-        text = safe_text(text, "")
-        if not text:
-            return
-        lines = wrap_text(text, font_name=font_name, font_size=font_size, max_width=content_w-indent)
-        ensure_space((len(lines)+1)*leading)
-        pdf.setFillColor(color or palette["muted"])
-        pdf.setFont(font_name, font_size)
-        for line in lines:
-            pdf.drawString(left + indent, y, line)
-            y -= leading
-        y -= 2
-
-    def bullet_list(title, items):
-        nonlocal y
-        items = [safe_text(i, "") for i in (items or []) if safe_text(i, "")]
-        if not items:
-            return
-        section_label(title)
-        for item in items:
-            lines = wrap_text(item, font_name="Helvetica", font_size=10.5, max_width=content_w-16)
-            ensure_space((len(lines)+1)*14)
-            pdf.setFillColor(palette["text"])
-            pdf.circle(left+4, y+3, 1.8, fill=1, stroke=0)
-            pdf.setFont("Helvetica", 10.5)
-            yy = y
-            for line in lines:
-                pdf.drawString(left+14, yy, line)
-                yy -= 14
-            y = yy - 4
-
-    def info_row(label, value, value_width=content_w-130):
-        nonlocal y
-        value = safe_text(value)
-        lines = wrap_text(value, font_name="Helvetica", font_size=10.5, max_width=value_width)
-        ensure_space((len(lines)+1)*14)
-        pdf.setFillColor(palette["text"])
-        pdf.setFont("Helvetica-Bold", 10.5)
-        pdf.drawString(left, y, label)
-        pdf.setFillColor(palette["muted"])
-        pdf.setFont("Helvetica", 10.5)
-        yy = y
-        for line in lines:
-            pdf.drawString(left+110, yy, line)
-            yy -= 14
-        y = yy - 3
-
-    def chip_row(items):
-        nonlocal y
-        items = [(a,b) for a,b in items if safe_text(b,"") and safe_text(b,"") != '-']
-        if not items:
-            return
-        chip_h = 40
-        gap = 10
-        chip_w = (content_w - gap*(len(items)-1))/max(1,len(items))
-        ensure_space(chip_h + 16)
-        x = left
-        for label, value in items:
-            pdf.setFillColor(palette["chip"])
-            pdf.roundRect(x, y-chip_h+8, chip_w, chip_h, 10, fill=1, stroke=0)
-            pdf.setFillColor(palette["gold"])
-            pdf.setFont("Helvetica-Bold", 8)
-            pdf.drawString(x+10, y-2, label.upper())
-            pdf.setFillColor(palette["text"])
-            pdf.setFont("Helvetica-Bold", 10)
-            val = safe_text(value)
-            if pdf.stringWidth(val, "Helvetica-Bold", 10) > chip_w - 20:
-                val = val[:max(8,int((chip_w-40)/5))] + '...'
-            pdf.drawString(x+10, y-16, val)
-            x += chip_w + gap
-        y -= chip_h + 10
-
-    title = safe_text(report_output.get("title"), "UNTITLED PROJECT")
-    pdf.setTitle(f"{title} Analysis Report")
-
-    # cover / opening page
-    pdf.setFillColor(palette["gold"])
-    pdf.rect(left, y-6, 120, 4, fill=1, stroke=0)
-    y -= 24
-    pdf.setFillColor(palette["text"])
-    pdf.setFont("Helvetica-Bold", 24)
-    for line in wrap_text(title, font_name="Helvetica-Bold", font_size=24, max_width=content_w):
-        pdf.drawString(left, y, line)
-        y -= 28
-    pdf.setFillColor(palette["gold"])
-    pdf.setFont("Helvetica-Bold", 13)
-    pdf.drawString(left, y, "SCRIPT ANALYSIS REPORT")
-    y -= 22
-    paragraph(report_output.get("summary_note"), font_size=11, leading=15, color=palette["muted"])
-    y -= 4
-
-    chip_row([
-        ("Lead", report_output.get("lead_character") or report_output.get("protagonist")),
-        ("Genre", report_output.get("genre") or report_output.get("world")),
-        ("Tone", report_output.get("tone")),
-    ])
-
-    section_label("Story Snapshot", band=True)
-    info_row("Tagline", report_output.get("tagline") or report_output.get("logline"))
-    info_row("World", report_output.get("world"))
-    info_row("Theme", report_output.get("theme"))
-    info_row("Core Conflict", report_output.get("core_conflict"))
-    info_row("Story Engine", report_output.get("story_engine"))
-    info_row("Reversal", report_output.get("reversal"))
-
-    bullet_list("Story Insights", report_output.get("story_insights", []))
-
-    new_page()
-    section_label("Logline")
-    paragraph(report_output.get("logline"), font_name="Helvetica-Bold", font_size=12, leading=16, color=palette["text"])
-    y -= 6
-    section_label("Synopsis")
-    paragraph(report_output.get("synopsis"), font_size=10.5, leading=15)
-
-    supports = report_output.get("supporting_characters") or []
-    if supports:
-        section_label("Character Lineup")
-        paragraph(safe_text(report_output.get("lead_character") or report_output.get("protagonist")), font_name="Helvetica-Bold", font_size=11, color=palette["text"])
-        paragraph(", ".join(str(s) for s in supports if str(s).strip()), font_size=10.5, color=palette["muted"])
-
-    top_characters = (report_output.get("character_analysis") or {}).get("top_characters", [])
-    if top_characters:
-        section_label("Top Characters", band=True)
-        header_y = y
-        colx = [left, left+120, left+210, left+305]
-        headers = ["Character", "Dialogue", "Action", "First Seen"]
-        pdf.setFillColor(palette["blue"])
-        pdf.roundRect(left, header_y-16, content_w, 22, 8, fill=1, stroke=0)
-        pdf.setFillColor(colors.white)
-        pdf.setFont("Helvetica-Bold", 9)
-        for hx, htxt in zip(colx, headers):
-            pdf.drawString(hx+8, header_y-2, htxt)
-        y -= 26
-        row_h = 22
-        for i, entry in enumerate(top_characters[:10]):
-            ensure_space(row_h+8)
-            if i % 2 == 0:
-                pdf.setFillColor(palette["panel"])
-                pdf.roundRect(left, y-16, content_w, 20, 6, fill=1, stroke=0)
-            pdf.setFillColor(palette["text"])
-            pdf.setFont("Helvetica-Bold", 9.5)
-            pdf.drawString(colx[0]+8, y-3, safe_text(entry.get('name')))
-            pdf.setFont("Helvetica", 9.5)
-            pdf.drawString(colx[1]+8, y-3, str(entry.get('dialogue_count', 0)))
-            pdf.drawString(colx[2]+8, y-3, str(entry.get('action_count', 0)))
-            pdf.drawString(colx[3]+8, y-3, str(entry.get('first_seen', 0)))
-            y -= row_h
-        y -= 4
-
-    bullet_list("What's Working", report_output.get("whats_working", []))
-    bullet_list("What Needs Work", report_output.get("what_needs_work", []))
-
-    footer(page_no)
-    pdf.save()
-
-
-@app.before_request
-def require_beta_gate():
-    public_endpoints = {"index", "beta_access", "static"}
-
-    if request.endpoint in public_endpoints:
-        return None
-
-    if has_beta_access():
-        return None
-
-    if request.method == "GET":
-        try:
-            for _project_dir_name in ["project_dir", "working_dir", "output_dir", "project_path"]:
-                if _project_dir_name in locals() and locals()[_project_dir_name]: apply_upload_text_overrides(locals()[_project_dir_name], submitted_logline, submitted_synopsis)
-                break
-        except Exception:
-            pass
-            
-            return redirect(url_for("index"))
-            
-            return ("Unauthorized", 403)
-
-
-# ===== BETA ACCESS ROUTES START ======================
-@app.route("/beta-access", methods=["POST"])
-def beta_access():
-    access_code = (request.form.get("access_code") or "").strip()
-
-    if access_code in ACCESS_CODES:
-        session["beta_access"] = True
-        session["beta_code"] = access_code
-        log_beta_access(access_code, "ACCESS GRANTED")
-        log_usage("beta_access", code=access_code, success=True)
-        return redirect(url_for("index"))
-
-    log_beta_access(access_code or "blank", "ACCESS FAILED")
-    log_usage("beta_access", code=access_code or "blank", success=False)
-    return render_template(
-        "index.html",
-        is_render=is_render_env(),
-        gate_locked=True,
-        gate_error="Incorrect access code. Please try again.",
-    )
-
-
-@app.route("/create-account", methods=["POST"])
-def create_account():
-    name = (request.form.get("name") or "").strip()
-    email = (request.form.get("email") or "").strip().lower()
-    password = (request.form.get("password") or "").strip()
-    access_code = (request.form.get("access_code") or "").strip()
-
-    if not name or not email or not password or not access_code:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error="Please complete all Create Account fields, including your access code.",
-        )
-
-    if access_code not in ACCESS_CODES:
-        log_beta_access(access_code or "blank", "CREATE ACCOUNT ACCESS FAILED")
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error="That access code is not approved yet.",
-        )
-
-    try:
-        db_init()
-        existing = get_user_by_email(email)
-        if existing:
-            return render_template(
-                "index.html",
-                is_render=is_render_env(),
-                gate_locked=True,
-                gate_error="That email already has an account. Please sign in instead.",
-            )
-
-        password_hash = generate_password_hash(password)
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO beta_users (email, name, password_hash)
-                VALUES (:email, :name, :password_hash)
-            """), {
-                "email": email,
-                "name": name,
-                "password_hash": password_hash,
-            })
-
-        session["user_email"] = email
-        session["user_name"] = name
-        session["beta_access"] = True
-        session["beta_code"] = access_code
-
-        log_beta_access(access_code, "ACCOUNT CREATED")
-        log_activity_event("account_created", route="/create-account", user_email=email, metadata={"name": name})
-        return redirect(url_for("index"))
-    except Exception as e:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error=f"Create account failed: {e}",
-        )
-
-
-@app.route("/sign-in", methods=["POST"])
-def sign_in():
-    email = (request.form.get("email") or "").strip().lower()
-    password = (request.form.get("password") or "").strip()
-
-    if not email or not password:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error="Please enter your email and password to sign in.",
-        )
-
-    try:
-        db_init()
-        user = get_user_by_email(email)
-        if not user or not check_password_hash(user["password_hash"], password):
-            log_activity_event("sign_in_failed", route="/sign-in", user_email=email)
-            return render_template(
-                "index.html",
-                is_render=is_render_env(),
-                gate_locked=True,
-                gate_error="We couldn't sign you in with those credentials.",
-            )
-
-        session["user_email"] = user["email"]
-        session["user_name"] = user["name"]
-        session["beta_access"] = True
-
-        log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
-        return redirect(url_for("index"))
-    except Exception as e:
-        return render_template(
-            "index.html",
-            is_render=is_render_env(),
-            gate_locked=True,
-            gate_error=f"Sign in failed: {e}",
-        )
-
-
-@app.route("/logout")
-def logout():
-    email = get_current_user_email()
-    if email:
-        log_activity_event("sign_out", route="/logout", user_email=email)
-    session.clear()
-    return redirect(url_for("index"))
-
-
-# ===== CORE ROUTES START =============================
-@app.route("/")
-def index():
-    if get_current_user_email():
-        log_activity_event("page_view", route="/", user_email=get_current_user_email(), metadata={"name": get_current_user_name()})
-    return render_template(
-        "index.html",
-        is_render=is_render_env(),
-        gate_locked=not has_beta_access(),
-        gate_error=None,
-        current_user_name=get_current_user_name(),
-        current_user_email=get_current_user_email(),
-    )
-
-
-@app.route("/status")
-def status():
-    return jsonify({"status": get_status()})
-    
-# ===== PITCH DECK ROUTES START =======================
-
-# ===== UPLOAD OVERRIDE HELPERS START ====================
-def apply_upload_text_overrides(project_dir, logline_override="", synopsis_override=""):
-    logline_override = (logline_override or "").strip()
-    synopsis_override = (synopsis_override or "").strip()
-
-    if not logline_override and not synopsis_override:
-        return
-
-    deck_content_candidates = [
-        Path(project_dir) / "deck_content.json",
-        Path(project_dir) / "pipeline" / "compile" / "deck_content.json",
-        Path(project_dir) / "pipeline" / "compile" / "final_compiled_payload.json",
-    ]
-
-    for candidate in deck_content_candidates:
-        if not candidate.exists():
-            continue
-
-        try:
-            data = json.loads(candidate.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-
-        changed = False
-
-        # Common payload-level keys
-        if logline_override:
-            for key in ["logline", "project_logline", "one_line_pitch"]:
-                if key in data:
-                    data[key] = logline_override
-                    changed = True
-
-        if synopsis_override:
-            for key in ["synopsis", "project_synopsis", "story_overview"]:
-                if key in data:
-                    data[key] = synopsis_override
-                    changed = True
-
-        # Common slide structures
-        slide_collections = []
-        for key in ["slides", "deck_slides", "slide_plan"]:
-            value = data.get(key)
-            if isinstance(value, list):
-                slide_collections.append(value)
-
-        for slides in slide_collections:
-            for slide in slides:
-                if not isinstance(slide, dict):
-                    continue
-
-                slide_title = str(slide.get("title", "") or "").lower()
-                slide_type = str(slide.get("type", "") or "").lower()
-
-                if logline_override and ("logline" in slide_title or "logline" in slide_type):
-                    for field in ["title", "subtitle", "body", "content", "text", "copy", "description"]:
-                        if field in slide:
-                            # preserve title if it's literally "Logline"
-                            if field == "title" and str(slide.get(field, "")).strip().lower() == "logline":
-                                continue
-                            slide[field] = logline_override
-                            changed = True
-                            break
-
-                if synopsis_override and ("synopsis" in slide_title or "synopsis" in slide_type):
-                    for field in ["title", "subtitle", "body", "content", "text", "copy", "description"]:
-                        if field in slide:
-                            if field == "title" and str(slide.get(field, "")).strip().lower() == "synopsis":
-                                continue
-                            slide[field] = synopsis_override
-                            changed = True
-                            break
-
-        if changed:
-            candidate.write_text(json.dumps(data, indent=2), encoding="utf-8")
-# ===== UPLOAD OVERRIDE HELPERS END ======================
-
-@app.route("/upload", methods=["POST"])
-def upload():
-    submitted_logline = (request.form.get("logline") or "").strip()
-    submitted_synopsis = (request.form.get("synopsis") or "").strip()
-    file = request.files.get("script")
-
-    if not file or file.filename == "":
-        return "No file uploaded", 400
-
-    if not allowed_file(file.filename):
-        return "Only .txt and .pdf supported", 400
-
-    clear_latest_targets()
-    set_status("UPLOADED")
-
-    save_path = UPLOAD_DIR / Path(file.filename).name
-    file.save(save_path)
-
-    started_at = time.time()
-    log_usage("generate_start", filename=file.filename)
-
-    logline = (request.form.get("logline") or "").strip()
-    synopsis = (request.form.get("synopsis") or "").strip()
-    poster = request.files.get("poster")
-    images = request.files.getlist("images")
-
-    visuals_root = BASE_DIR / "visuals" / "user_uploaded"
-    poster_dir = visuals_root / "poster"
-    current_dir = visuals_root / "current"
-
-    poster_dir.mkdir(parents=True, exist_ok=True)
-    current_dir.mkdir(parents=True, exist_ok=True)
-
-    for old_file in poster_dir.iterdir():
-        if old_file.is_file():
-            old_file.unlink()
-
-    for old_file in current_dir.iterdir():
-        if old_file.is_file():
-            old_file.unlink()
-
-    if poster and poster.filename:
-        poster_path = poster_dir / Path(poster.filename).name
-        poster.save(poster_path)
-
-    saved_images = []
-    for image in images:
-        if image and image.filename:
-            image_path = current_dir / Path(image.filename).name
-            image.save(image_path)
-            saved_images.append(image_path.name)
-
-    upload_context = {
-        "script_filename": Path(file.filename).name,
-        "logline": logline,
-        "synopsis": synopsis,
-        "poster_filename": poster.filename if poster and poster.filename else "",
-        "image_filenames": saved_images,
-    }
-
-    (BASE_DIR / "user_upload_context.json").write_text(
-        json.dumps(upload_context, indent=2),
-        encoding="utf-8",
-    )
-
-    # === ENSURE OVERRIDE FILE EXISTS IN ALL PIPELINE PATHS ===
-    try:
-        override_data = json.dumps(upload_context, indent=2)
-        (BASE_DIR / "user_upload_context.json").write_text(override_data, encoding="utf-8")
-        (BASE_DIR / "input").mkdir(exist_ok=True)
-        (BASE_DIR / "input" / "user_upload_context.json").write_text(override_data, encoding="utf-8")
-        (BASE_DIR / "pipeline").mkdir(exist_ok=True)
-        (BASE_DIR / "pipeline" / "user_upload_context.json").write_text(override_data, encoding="utf-8")
-        print("✅ Upload overrides written to all known paths")
-    except Exception as e:
-        print("⚠️ Failed to write override files:", e)
-
-
-    try:
-        set_status("ANALYZING")
-        log_path = BASE_DIR / "pipeline.log"
-
-        with open(log_path, "w", encoding="utf-8") as log_file:
-            subprocess.run(
-                ["python3", str(BASE_DIR / "run_pipeline.py"), str(save_path)],
-                cwd=str(BASE_DIR),
-                stdout=log_file,
-                stderr=log_file,
-                text=True,
-                check=True,
-            )
-
-        set_status("BUILDING")
-    except subprocess.CalledProcessError:
-        set_status("ERROR")
-        return "Engine failed", 500
-
-    fresh_pptx = newest_generated_file(".pptx")
-    fresh_pdf = newest_generated_file(".pdf")
-
-    if not fresh_pptx or not fresh_pptx.exists():
-        set_status("ERROR")
-        return "No deck generated", 500
-
-    publish_latest_outputs(fresh_pptx, fresh_pdf)
-
-    if not LATEST_PPTX.exists():
-        set_status("ERROR")
-        return "Latest deck publish failed", 500
-
-    set_status("COMPLETE")
-    elapsed = int(time.time() - started_at)
-    log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
-    return ("OK", 200)
-
-
-# ===== DEMO ROUTES START =============================
-@app.route("/demo", methods=["POST"])
-def demo():
-    if not DEMO_DECK.exists():
-        return "Demo deck not found", 500
-    return send_file(DEMO_DECK, as_attachment=False)
-
-
-@app.route("/download/latest.pptx")
-def download_latest_pptx():
-    if not LATEST_PPTX.exists():
-        abort(404)
-    return send_file(LATEST_PPTX, as_attachment=True)
-
-
-@app.route("/download/latest.pdf")
-def download_latest_pdf():
-    if not LATEST_PDF.exists():
-        abort(404)
-    return send_file(LATEST_PDF, as_attachment=True)
-
-
-# ===== ANALYZE ROUTES START ==========================
-@app.route("/analyze-script-pass", methods=["POST"])
-def analyze_script_pass():
-    set_status("ANALYZING")
-    file = request.files.get("script")
-
-    if not file or file.filename == "":
-        return jsonify({"error": "No file"}), 400
-
-
-    if not allowed_file(file.filename):
-        return jsonify({"error": "Only .txt and .pdf supported"}), 400
-
-    temp_path = UPLOAD_DIR / Path(file.filename).name
-    file.save(temp_path)
-
-    started_at = time.time()
-    log_usage("analyze_start", filename=file.filename)
-
-    try:
-        subprocess.run(
-            ["python3", str(BASE_DIR / "single_brain_orchestrator_v3.py"), str(temp_path)],
-            cwd=str(BASE_DIR),
-            check=True,
-        )
-    except subprocess.CalledProcessError:
-        log_usage("analyze_complete", success=False, filename=file.filename, error="analysis_failed")
-        return jsonify({"error": "analysis failed"}), 500
-
-    brain_file = BASE_DIR / "approved_brain_output.json"
-
-    if not brain_file.exists():
-        return jsonify({"error": "No brain output"}), 500
-
-    with open(brain_file, "r", encoding="utf-8") as f:
-        brain = json.load(f)
-
-    characters = brain.get("characters") or []
-    lead_character = brain.get("protagonist") or (characters[0] if characters else "-")
-    supporting_characters = characters[1:5] if len(characters) > 1 else []
-
-    report_output = {
-        "title": safe_text(brain.get("title"), "UNTITLED PROJECT"),
-        "tagline": safe_text(brain.get("tagline") or brain.get("logline")),
-        "logline": safe_text(brain.get("logline")),
-        "synopsis": safe_text(brain.get("synopsis")),
-        "lead_character": safe_text(lead_character),
-        "supporting_characters": supporting_characters,
-        "genre": safe_text(brain.get("world"), "Drama"),
-        "tone": safe_text(brain.get("tone")),
-        "theme": safe_text(brain.get("theme")),
-        "world": safe_text(brain.get("world")),
-        "core_conflict": safe_text(brain.get("core_conflict")),
-        "story_engine": safe_text(brain.get("story_engine")),
-        "reversal": safe_text(brain.get("reversal")),
-        "story_insights": [
-            f"Top characters identified: {', '.join(characters[:5])}" if characters else "Top characters identified.",
-            f"Protagonist detected: {lead_character}",
-            f"World detected: {safe_text(brain.get('world'), 'Unknown')}",
-        ],
-        "character_analysis": {
-            "top_characters": [
-                {
-                    "name": name,
-                    "dialogue_count": (brain.get("character_stats") or {}).get(name, {}).get("dialogue_count", 0),
-                    "action_count": (brain.get("character_stats") or {}).get(name, {}).get("action_count", 0),
-                    "first_seen": (brain.get("character_stats") or {}).get(name, {}).get("first_seen", 0),
-                }
-                for name in characters[:5]
-            ]
-        },
-    }
-
-    summary_note = safe_text(report_output.get("summary_note"), "")
-    if summary_note in {"", "-"}:
-        title = safe_text(report_output.get("title"), "This script")
-        lead = safe_text(report_output.get("lead_character"), "the lead character")
-        genre = safe_text(report_output.get("genre"), "a cinematic story")
-        tone = safe_text(report_output.get("tone"), "grounded and emotional")
-
-        summary_note = (
-            f"{title} puts {lead} at the center of {genre.lower()}, "
-            f"with a tone that feels {tone.lower()}."
-        )
-
-    report_output["summary_note"] = summary_note
-
-    LATEST_ANALYSIS_JSON.write_text(
-        json.dumps(report_output, indent=2),
-        encoding="utf-8",
-    )
-    build_simple_analysis_pdf(report_output, LATEST_ANALYSIS_PDF)
-
-    return jsonify(
-        {
-            "summary_note": summary_note,
-            "title": report_output.get("title", "UNTITLED PROJECT"),
-            "report_json": str(LATEST_ANALYSIS_JSON.name),
-            "report_pdf": str(LATEST_ANALYSIS_PDF.name),
-        }
-    )
-
-
-@app.route("/analysis-report/latest.json")
-def analysis_report_latest_json():
-    if not LATEST_ANALYSIS_JSON.exists():
-        return jsonify({"error": "No analysis report yet"}), 404
-
-    with open(LATEST_ANALYSIS_JSON, "r", encoding="utf-8") as f:
-        return jsonify(json.load(f))
-
-
-@app.route("/analysis-report/latest.pdf")
-def analysis_report_latest_pdf():
-    if not LATEST_ANALYSIS_PDF.exists():
-        abort(404)
-    return send_file(LATEST_ANALYSIS_PDF, as_attachment=False)
-
-
-@app.route("/analyzer")
-def analyzer():
-    analyzer_file = BASE_DIR / "builder" / "deck_builder_output.json"
-
-    if not analyzer_file.exists():
-        return jsonify({"error": "No analyzer output yet"}), 404
-
-    with open(analyzer_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    return jsonify(data)
-
-
-
-# ===== REFINE DECK ROUTES START =======================
-@app.route("/latest-slide-plan")
-def latest_slide_plan():
-    slide_plan_file = find_latest_slide_plan_file()
-
-    if not slide_plan_file or not slide_plan_file.exists():
-        return jsonify({
-            "error": "No generated slide plan found yet.",
-            "slides": [],
-            "slide_count": 0,
-        }), 404
-
-    try:
-        with open(slide_plan_file, "r", encoding="utf-8") as f:
-            slide_plan_data = json.load(f)
-    except Exception as e:
-        return jsonify({"error": f"Could not read latest slide plan: {e}"}), 500
-
-    cache_key = make_slide_payload_cache_key(slide_plan_file)
-    if _LATEST_SLIDE_PAYLOAD_CACHE.get("key") == cache_key and _LATEST_SLIDE_PAYLOAD_CACHE.get("payload") is not None:
-        payload = dict(_LATEST_SLIDE_PAYLOAD_CACHE["payload"])
-    else:
-        payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=slide_plan_file)
-        payload["source_file"] = str(slide_plan_file.relative_to(BASE_DIR)) if slide_plan_file.is_relative_to(BASE_DIR) else str(slide_plan_file)
-        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = cache_key
-        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
-    return jsonify(payload)
-
-
-@app.route("/project-file")
-def project_file():
-    raw_path = unquote((request.args.get("path") or "").strip())
-    if not raw_path:
-        abort(404)
-    candidate = (BASE_DIR / raw_path).resolve()
-    if not ensure_relative_to_base(candidate) or not candidate.exists() or not candidate.is_file():
-        abort(404)
-    return send_file(candidate, as_attachment=False, conditional=True)
-
-@app.route("/refine-deck", methods=["POST"])
-def refine_deck():
-    data = request.get_json(silent=True) or {}
-    slides = data.get("slides", [])
-
-    if not slides or not isinstance(slides, list):
-        return jsonify({"error": "No slide data provided."}), 400
-
-    try:
-        slide_plan_payload = {
-            "title": slides[0].get("title", "Refined Deck") if slides else "Refined Deck",
-            "slides": [
-                {
-                    "title": str(slide_data.get("title", "") or "").strip(),
-                    "body": str(slide_data.get("body", "") or "").strip(),
-                    "layout": str(slide_data.get("layout", "") or "text").strip(),
-                    "stage": str(slide_data.get("stage", "") or "refine").strip(),
-                    "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
-                    "image_name": str(slide_data.get("image_name", "") or "").strip(),
-                    "image_url": str(slide_data.get("image_url", "") or "").strip(),
-                    "image_source": str(slide_data.get("image_source", "") or "").strip(),
-                    "image_options": slide_data.get("image_options", []) if isinstance(slide_data.get("image_options", []), list) else [],
-                    "selected_option_id": str(slide_data.get("selected_option_id", "") or "").strip(),
-                }
-                for slide_data in slides
-            ],
-            "slide_count": len(slides),
-        }
-
-        slide_plan_path = BASE_DIR / "slide_plan.json"
-        temp_slide_plan_path = BASE_DIR / "slide_plan.tmp.json"
-        temp_slide_plan_path.write_text(json.dumps(slide_plan_payload, indent=2), encoding="utf-8")
-        temp_slide_plan_path.replace(slide_plan_path)
-
-        manifest_payload = []
-        for i, slide_data in enumerate(slides, start=1):
-            manifest_payload.append({
-                "slide_number": i,
-                "title": str(slide_data.get("title", "") or "").strip(),
-                "body": str(slide_data.get("body", "") or "").strip(),
-                "layout": str(slide_data.get("layout", "") or "").strip(),
-                "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": str(slide_data.get("image_path", "") or "").strip().replace("/opt/render/project/src/", "").replace("opt/render/project/src/", "").lstrip("/"),
-
-                "image_name": str(slide_data.get("image_name", "") or "").strip(),
-                "image_url": str(slide_data.get("image_url", "") or "").strip(),
-                "image_source": str(slide_data.get("image_source", "") or "").strip(),
-                "image_options": slide_data.get("image_options", []) if isinstance(slide_data.get("image_options", []), list) else [],
-                "selected_option_id": str(slide_data.get("selected_option_id", "") or "").strip(),
-            })
-
-        LATEST_DECK_MANIFEST_JSON.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
-
-        subprocess.run(
-            ["python3", str(BASE_DIR / "deck_builder.py"), str(slide_plan_path)],
-            cwd=str(BASE_DIR),
-            check=True,
-        )
-
-        fresh_pptx = newest_generated_file(".pptx")
-        fresh_pdf = newest_generated_file(".pdf")
-        publish_latest_outputs(fresh_pptx, fresh_pdf)
-
-        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
-        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
-
-        return jsonify({
-            "message": "Your refined deck has been rebuilt successfully.",
-            "deck": fresh_pptx.name if fresh_pptx else LATEST_PPTX.name,
-        })
-
-    except Exception as e:
-        return jsonify({"error": f"Refine rebuild failed: {e}"}), 500
-
-# ===== REFINE DECK ROUTES END =========================
-
-@app.route("/generate-slide-options", methods=["POST"])
-def generate_slide_options():
-    data = request.get_json(silent=True) or {}
-    slide_title = safe_text(data.get("slide_title"), "")
-    slide_body = safe_text(data.get("slide_body"), "")
-    user_prompt = safe_text(data.get("user_prompt"), "")
-    current_image_path = safe_text(data.get("current_image_path"), "")
-
-    try:
-        options = make_image_options_for_slide(
-            slide_title=slide_title,
-            slide_body=slide_body,
-            user_prompt=user_prompt,
-            current_image_path=current_image_path,
-            limit=6,
-        )
-        if not options:
-            return jsonify({"error": "No image options available yet."}), 404
-        return jsonify({"options": options})
-    except Exception as e:
-        return jsonify({"error": f"Image options failed: {e}"}), 500
-
-
-@app.route("/regenerate-slide-image", methods=["POST"])
-def regenerate_slide_image():
-    data = request.get_json(silent=True) or {}
-    slide_title = safe_text(data.get("slide_title"), "")
-    slide_body = safe_text(data.get("slide_body"), "")
-    user_prompt = safe_text(data.get("user_prompt"), "")
-    slide_number = safe_text(data.get("slide_number"), "")
-
-    try:
-        options = make_image_options_for_slide(
-            slide_title=slide_title,
-            slide_body=slide_body,
-            user_prompt=user_prompt,
-            current_image_path="",
-            limit=12,
-        )
-        if not options:
-            return jsonify({"error": "Image generation is not available right now."}), 404
-        pick_pool = [opt for opt in options if opt.get("option_id") != "selected"] or options
-        seed = f"{slide_title}|{slide_body}|{user_prompt}|{slide_number}|{time.time_ns()}"
-        index = abs(hash(seed)) % len(pick_pool)
-        picked = pick_pool[index]
-        return jsonify({
-            "image_url": picked.get("image_url", ""),
-            "image_path": picked.get("image_path", ""),
-            "image_name": picked.get("image_name", ""),
-            "image_source": picked.get("image_source", "library"),
-        })
-    except Exception as e:
-        return jsonify({"error": f"Image generation failed: {e}"}), 500
-
-
-# ===== ACTOR PREP ROUTES START =======================
-@app.route("/actor-prep-pass", methods=["POST"])
-def actor_prep_pass():
-    character_name = (request.form.get("character_name") or "").strip()
-    pasted_text = (request.form.get("script_text") or "").strip()
-    file = request.files.get("script")
-
-    if not character_name:
-        return jsonify({"error": "Please enter the role you are preparing."}), 400
-
-    script_text = ""
-    source_mode = "paste"
-
-    if file and file.filename:
-        source_mode = "upload"
-        filename = file.filename.lower()
-
-        if filename.endswith(".txt"):
-            script_text = file.read().decode("utf-8", errors="ignore")
-        elif filename.endswith(".pdf"):
-            try:
-                reader = PdfReader(file)
-                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
-                script_text = ""
-
-        if not script_text.strip() and not pasted_text:
-            return jsonify({
-                "error": "The formatted script could not be read cleanly.",
-                "needs_paste": True,
-                "message": "Please paste the script text to continue."
-            }), 422
-
-    if pasted_text:
-        script_text = pasted_text
-        source_mode = "paste"
-
-    if not script_text.strip():
-        return jsonify({"error": "No script text was provided."}), 400
-
-    log_usage("actor_prep_start", role=character_name, mode=source_mode)
-
-    try:
-        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
-    except Exception as e:
-        log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
-        return jsonify({"error": f"Actor preparation failed: {e}"}), 500
-
-    if not LATEST_ACTOR_PREP_PDF.exists():
-        log_usage("actor_prep_complete", success=False, role=character_name, error="actor_pdf_missing")
-        return jsonify({"error": "Actor prep PDF was not created."}), 500
-
-    log_usage("actor_prep_complete", success=True, role=character_name)
-
-    return jsonify({
-        "summary_note": f"Your actor preparation packet for {character_name} is ready.",
-        "report_pdf": str(LATEST_ACTOR_PREP_PDF.name),
-    })
-
-
-
-
-@app.route("/actor-booked-pass", methods=["POST"])
-def actor_booked_pass():
-    character_name = (request.form.get("character_name") or "").strip()
-    pasted_text = (request.form.get("script_text") or "").strip()
-    file = request.files.get("script")
-
-    if not character_name:
-        return jsonify({"error": "Please enter the role you are preparing."}), 400
-
-    script_text = ""
-    source_mode = "paste"
-
-    if file and file.filename:
-        source_mode = "upload"
-        filename = file.filename.lower()
-
-        if filename.endswith(".txt"):
-            script_text = file.read().decode("utf-8", errors="ignore")
-        elif filename.endswith(".pdf"):
-            try:
-                reader = PdfReader(file)
-                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
-                script_text = ""
-
-        if not script_text.strip() and not pasted_text:
-            return jsonify({
-                "error": "The formatted script could not be read cleanly.",
-                "needs_paste": True,
-                "message": "Please paste the script text to continue."
-            }), 422
-
-    if pasted_text:
-        script_text = pasted_text
-        source_mode = "paste"
-
-    if not script_text.strip():
-        return jsonify({"error": "No script text was provided."}), 400
-
-    log_usage("actor_booked_start", role=character_name, mode=source_mode)
-
-    try:
-        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF)
-    except Exception as e:
-        log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
-        return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
-
-    if not LATEST_ACTOR_BOOKED_PDF.exists():
-        log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_pdf_missing")
-        return jsonify({"error": "Booked role PDF was not created."}), 500
-
-    log_usage("actor_booked_complete", success=True, role=character_name)
-
-    return jsonify({
-        "summary_note": f"Your booked role analysis for {character_name} is ready.",
-        "report_pdf": str(LATEST_ACTOR_BOOKED_PDF.name),
-    })
-
-
-@app.route("/output/latest_actor_booked_report.pdf")
-def actor_booked_latest_pdf():
-    if not LATEST_ACTOR_BOOKED_PDF.exists():
-        abort(404)
-    return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=False)
-
-
-@app.route("/download/latest_actor_booked_report.pdf")
-def actor_booked_latest_download_pdf():
-    if not LATEST_ACTOR_BOOKED_PDF.exists():
-        abort(404)
-    return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=True)
-
-
-@app.route("/output/latest_actor_prep_report.pdf")
-def actor_prep_latest_pdf():
-    if not LATEST_ACTOR_PREP_PDF.exists():
-        abort(404)
-    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False)
-
-
-@app.route("/download/latest_actor_prep_report.pdf")
-def actor_prep_latest_download_pdf():
-    if not LATEST_ACTOR_PREP_PDF.exists():
-        abort(404)
-    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=True)
-
-# ===== ACTOR PREP ROUTES END =========================
-
-@app.route("/db-check")
-def db_check_route():
-    try:
-        ok = db_check()
-        return jsonify({"ok": ok, "database_configured": bool(DATABASE_URL), "database_url": DATABASE_URL, "users_db_path": str(USERS_DB_PATH)})
-    except Exception as e:
-        return jsonify({"ok": False, "database_configured": bool(DATABASE_URL), "database_url": DATABASE_URL, "users_db_path": str(USERS_DB_PATH), "error": str(e)}), 500
-
-
-@app.route("/db-init")
-def db_init_route():
-    try:
-        db_init()
-        return jsonify({"ok": True, "message": "database initialized"})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-# ===== APP RUN START =================================
-if __name__ == "__main__":
-    try:
-        if DB_ENGINE:
-            db_init()
-            print("✅ Database ready", flush=True)
-        else:
-            print("⚠️ DATABASE_URL not configured; database features disabled", flush=True)
-    except Exception as e:
-        print(f"⚠️ Database init skipped: {e}", flush=True)
-    port = int(os.environ.get("PORT", 7000))
-    app.run(host="0.0.0.0", port=port)
-
-
-# ===== APP RUN END ===================================
+<div class="modal" id="contactModal">
+    <div class="modal-content">
+        <div class="modal-close" onclick="closeModal('contactModal')">×</div>
+        <h3>Contact Us</h3>
+        <div class="feedback-help-copy">Have a question, a problem, or just want to say something? We read everything.</div>
+        <input type="text" id="contactName" placeholder="Your name">
+        <input type="text" id="contactEmail" placeholder="Your email">
+        <textarea id="contactMessage" maxlength="1000" placeholder="What's on your mind?"></textarea>
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="submitContact()">Send Message</button>
+            <button class="primary-button" type="button" onclick="closeModal('contactModal')">Back</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="privacyModal">
+    <div class="modal-content privacy-modal-content">
+        <div class="modal-close" onclick="closeModal('privacyModal')">×</div>
+        <h3>Privacy &amp; Your Script</h3>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">Your Script Is Yours</div>
+            <p>When you upload a script to EVOLUM, it belongs to you. We do not claim any rights to your work, your story, your characters, or your ideas. Full stop.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">What Happens to Your Script</div>
+            <p>Your script is uploaded, processed by the Developum AI Engine, and then <strong>deleted immediately</strong> from our servers. We do not store your script after analysis is complete. We do not read it. We do not archive it.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">AI Processing</div>
+            <p>Analysis is powered by the Anthropic Claude API. Your script content is sent to Anthropic's API for processing under their data usage policies. Anthropic does not use API-submitted content to train their models. You can review Anthropic's privacy policy at anthropic.com.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">What We Do Store</div>
+            <p>We store your generated pitch deck, analysis report, and any images you upload (poster, character art). These are kept on our servers so you can download them. We do not share these with anyone.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">No Selling. No Sharing.</div>
+            <p>We do not sell, license, share, or otherwise distribute your creative work or personal information to any third party. Ever.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">Beta Period</div>
+            <p>EVOLUM is currently in private beta. During this period, feedback and usage data may be reviewed by our team to improve the platform. No creative content is included in this review.</p>
+        </div>
+
+        <div class="privacy-section">
+            <div class="privacy-heading">Questions</div>
+            <p>If you have any privacy concerns, use the Contact form and we will respond directly.</p>
+        </div>
+
+        <div class="upload-actions">
+            <button class="primary-button" type="button" onclick="closeModal('privacyModal')">Got It</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="imageOptionModal">
+    <div class="modal-content image-modal-content">
+        <div class="modal-close" onclick="closeModal('imageOptionModal')">×</div>
+        <h3 id="imageOptionModalTitle">Preview Image Option</h3>
+        <div class="image-modal-preview-wrap">
+            <img id="imageOptionModalPreview" class="image-modal-preview" src="" alt="Image option preview">
+            <div class="image-modal-meta" id="imageOptionModalMeta"></div>
+        </div>
+        <div class="image-modal-nav">
+            <button class="secondary-button" type="button" onclick="shiftImageOptionModal(-1)">Previous</button>
+            <button class="secondary-button" type="button" onclick="shiftImageOptionModal(1)">Next</button>
+        </div>
+        <div class="image-modal-actions">
+            <button class="primary-button" type="button" onclick="selectCurrentImageOption()">Select Image</button>
+            <button class="primary-button" type="button" onclick="closeModal('imageOptionModal')">Continue</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="buildProgressModal">
+    <div class="modal-content regen-modal-content">
+        <h3 id="buildProgressTitle">Building Your Deck</h3>
+        <div class="complete-copy" id="buildProgressCopy">This takes about 30–60 seconds while we generate your images.</div>
+        <div class="regen-status-wrap" id="buildProgressWorking">
+            <div class="regen-pulse-text" id="buildProgressStage">Analyzing script&hellip;</div>
+            <div class="regen-progress-bar">
+                <div class="regen-progress-fill" id="buildProgressFill" style="width:10%"></div>
+            </div>
+        </div>
+        <div class="complete-actions" id="buildProgressActions" style="display:none;">
+            <button class="primary-button" type="button" onclick="closeBuildProgressModal()">View Deck</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="regenDeckModal">
+    <div class="modal-content regen-modal-content">
+        <h3 id="regenDeckModalTitle">Regenerating Deck</h3>
+        <div class="complete-copy" id="regenDeckModalCopy">
+            Please wait while your updated deck is rebuilt.
+        </div>
+
+        <div class="regen-status-wrap" id="regenDeckWorkingState">
+            <div class="regen-pulse-text">Generating your deck&hellip;</div>
+            <div class="regen-progress-bar">
+                <div class="regen-progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="complete-actions" id="regenDeckModalActions" style="display:none;">
+            <button class="primary-button" type="button" onclick="finishRegenerateDeckFlow()">Continue</button>
+        </div>
+    </div>
+</div>
+
+  <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}";</script>
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+{% endif %}
+</body>
+</html>
