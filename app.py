@@ -15,6 +15,7 @@ import subprocess
 import os
 import importlib.util
 import time
+import random
 from datetime import datetime
 from urllib.parse import unquote, quote
 
@@ -155,6 +156,7 @@ DEMO_DECK = BASE_DIR / "static" / "NOT_TODAY_Pitch_Deck_FINAL.pdf"
 
 LATEST_PPTX = OUTPUT_DIR / "latest.pptx"
 LATEST_PDF = OUTPUT_DIR / "latest.pdf"
+LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
 LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
@@ -281,6 +283,115 @@ def safe_relpath(path_obj):
         return str(path_obj.relative_to(BASE_DIR))
     except Exception:
         return str(path_obj)
+
+def normalize_project_path(value: str) -> str:
+    value = str(value or "").strip()
+    if not value:
+        return ""
+    value = value.replace("\\", "/")
+    for prefix in ("/opt/render/project/src/", "opt/render/project/src/"):
+        if value.startswith(prefix):
+            value = value[len(prefix):]
+    return value.lstrip("/")
+
+
+def project_file_url_for_path(value: str) -> str:
+    rel = normalize_project_path(value)
+    if not rel:
+        return ""
+    return "/project-file?path=" + quote(rel)
+
+
+def normalize_manifest_image_options(options):
+    normalized = []
+    for idx, option in enumerate(options or [], start=1):
+        if not isinstance(option, dict):
+            continue
+        image_path = normalize_project_path(option.get("image_path", ""))
+        normalized.append({
+            "rank": option.get("rank", idx),
+            "option_id": str(option.get("option_id") or f"option_{idx}"),
+            "label": str(option.get("label") or f"Option {idx}"),
+            "focus": str(option.get("focus") or ""),
+            "image_path": image_path,
+            "image_name": str(option.get("image_name") or (Path(image_path).name if image_path else "")),
+            "image_source": str(option.get("image_source") or "existing"),
+            "image_url": str(option.get("image_url") or project_file_url_for_path(image_path)),
+        })
+    return normalized
+
+
+def collect_candidate_images(limit=24):
+    roots = [BASE_DIR / "generated_images", BASE_DIR / "visuals", BASE_DIR / "uploads"]
+    candidates = []
+    seen = set()
+    for root in roots:
+        if not root.exists():
+            continue
+        for ext in ("*.jpg", "*.jpeg", "*.png", "*.webp"):
+            for path in root.rglob(ext):
+                try:
+                    resolved = path.resolve()
+                except Exception:
+                    continue
+                if resolved in seen or not ensure_relative_to_base(resolved):
+                    continue
+                seen.add(resolved)
+                candidates.append(resolved)
+    candidates.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)
+    return candidates[:limit]
+
+
+def score_candidate_for_slide(path: Path, query_text: str) -> int:
+    name = path.stem.lower().replace("_", " ")
+    words = [w for w in query_text.lower().replace("_", " ").split() if len(w) >= 3]
+    score = 0
+    for word in words:
+        if word in name:
+            score += 5
+    return score
+
+
+def make_image_options_for_slide(slide_title: str, slide_body: str = "", user_prompt: str = "", current_image_path: str = "", limit: int = 6):
+    current_rel = normalize_project_path(current_image_path)
+    query_text = " ".join([str(slide_title or ""), str(slide_body or ""), str(user_prompt or "")]).strip()
+    candidates = collect_candidate_images(limit=40)
+    ranked = sorted(candidates, key=lambda p: (score_candidate_for_slide(p, query_text), p.stat().st_mtime if p.exists() else 0), reverse=True)
+    options = []
+    seen = set()
+    if current_rel:
+        current_abs = (BASE_DIR / current_rel).resolve()
+        if current_abs.exists() and ensure_relative_to_base(current_abs):
+            seen.add(current_abs)
+            options.append({
+                "rank": 1,
+                "option_id": "selected",
+                "label": "Current Pick",
+                "focus": slide_title or "Current image",
+                "image_path": current_rel,
+                "image_name": current_abs.name,
+                "image_source": "current",
+                "image_url": project_file_url_for_path(current_rel),
+            })
+    for candidate in ranked:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        rel = safe_relpath(candidate)
+        options.append({
+            "rank": len(options) + 1,
+            "option_id": f"option_{len(options) + 1}",
+            "label": f"Option {len(options) + 1}",
+            "focus": slide_title or "Generated option",
+            "image_path": rel,
+            "image_name": candidate.name,
+            "image_source": "library",
+            "image_url": project_file_url_for_path(rel),
+        })
+        if len(options) >= limit:
+            break
+    return options
+
 
 
 def resolve_quiet_image_for_slide(slide_title, stage, layout, slide_number):
@@ -1465,6 +1576,61 @@ def refine_deck():
         return jsonify({"error": f"Refine rebuild failed: {e}"}), 500
 
 # ===== REFINE DECK ROUTES END =========================
+
+@app.route("/generate-slide-options", methods=["POST"])
+def generate_slide_options():
+    data = request.get_json(silent=True) or {}
+    slide_title = safe_text(data.get("slide_title"), "")
+    slide_body = safe_text(data.get("slide_body"), "")
+    user_prompt = safe_text(data.get("user_prompt"), "")
+    current_image_path = safe_text(data.get("current_image_path"), "")
+
+    try:
+        options = make_image_options_for_slide(
+            slide_title=slide_title,
+            slide_body=slide_body,
+            user_prompt=user_prompt,
+            current_image_path=current_image_path,
+            limit=6,
+        )
+        if not options:
+            return jsonify({"error": "No image options available yet."}), 404
+        return jsonify({"options": options})
+    except Exception as e:
+        return jsonify({"error": f"Image options failed: {e}"}), 500
+
+
+@app.route("/regenerate-slide-image", methods=["POST"])
+def regenerate_slide_image():
+    data = request.get_json(silent=True) or {}
+    slide_title = safe_text(data.get("slide_title"), "")
+    slide_body = safe_text(data.get("slide_body"), "")
+    user_prompt = safe_text(data.get("user_prompt"), "")
+    slide_number = safe_text(data.get("slide_number"), "")
+
+    try:
+        options = make_image_options_for_slide(
+            slide_title=slide_title,
+            slide_body=slide_body,
+            user_prompt=user_prompt,
+            current_image_path="",
+            limit=12,
+        )
+        if not options:
+            return jsonify({"error": "Image generation is not available right now."}), 404
+        pick_pool = [opt for opt in options if opt.get("option_id") != "selected"] or options
+        seed = f"{slide_title}|{slide_body}|{user_prompt}|{slide_number}|{time.time_ns()}"
+        index = abs(hash(seed)) % len(pick_pool)
+        picked = pick_pool[index]
+        return jsonify({
+            "image_url": picked.get("image_url", ""),
+            "image_path": picked.get("image_path", ""),
+            "image_name": picked.get("image_name", ""),
+            "image_source": picked.get("image_source", "library"),
+        })
+    except Exception as e:
+        return jsonify({"error": f"Image generation failed: {e}"}), 500
+
 
 # ===== ACTOR PREP ROUTES START =======================
 @app.route("/actor-prep-pass", methods=["POST"])
