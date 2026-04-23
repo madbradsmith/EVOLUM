@@ -486,7 +486,7 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     brain_data = brain_data or {}
 
     pdf = canvas.Canvas(str(output_path), pagesize=LETTER)
-    pdf.setTitle(f"{character_name.title()} — EVOLUM Actor Prep Report")
+    pdf.setTitle(f"{character_name.title()} — Audition Prep Packet")
     width, height = LETTER
     left = 42
     right = width - 42
@@ -518,13 +518,13 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     pdf.rect(0, height - 6, width, 6, stroke=0, fill=1)
     pdf.setFillColor(soft)
     pdf.setFont("Helvetica", 9)
-    pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR INTELLIGENCE REPORT")
+    pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR PREPARATION")
     pdf.setFillColor(gold)
     pdf.setFont("Helvetica-Bold", 40)
-    pdf.drawString(left, height - 80, "ACTOR PREP")
+    pdf.drawString(left, height - 80, "AUDITION")
     pdf.setFillColor(white)
     pdf.setFont("Helvetica-Bold", 28)
-    pdf.drawString(left, height - 116, "TEST VERSION")
+    pdf.drawString(left, height - 116, "QUICKPACK")
     pdf.setStrokeColor(gold)
     pdf.line(left, height - 132, right, height - 132)
     pdf.setFillColor(soft)
@@ -674,7 +674,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     brain_data = brain_data or {}
 
     pdf = canvas.Canvas(str(output_path), pagesize=LETTER)
-    pdf.setTitle(f"{character_name.title()} — EVOLUM Booked Role Report")
+    pdf.setTitle(f"{character_name.title()} — Full Role Prep")
     width, height = LETTER
     left = 42
     right = width - 42
@@ -714,7 +714,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     pdf.drawString(left, height - 30, "EVOLUM  ·  ACTOR PREPARATION")
     pdf.setFillColor(gold)
     pdf.setFont("Helvetica-Bold", 40)
-    pdf.drawString(left, height - 80, "BOOKED ROLE")
+    pdf.drawString(left, height - 80, "FULL ROLE")
     pdf.setFillColor(white)
     pdf.setFont("Helvetica-Bold", 28)
     pdf.drawString(left, height - 116, "PREP")
@@ -881,8 +881,6 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     synopsis = _safe(report_output.get("synopsis"))
     theme = _safe(report_output.get("theme"))
     world = _safe(report_output.get("world"))
-    setting = _safe(report_output.get("setting"))
-    time_frame = _safe(report_output.get("time_frame"))
     core = _safe(report_output.get("core_conflict"))
     engine = _safe(report_output.get("story_engine"))
     reversal = _safe(report_output.get("reversal"))
@@ -890,19 +888,14 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     protagonist_sum = _safe(report_output.get("protagonist_summary"))
     char_leverage = _safe(report_output.get("character_leverage"))
     top_chars_raw = (report_output.get("character_analysis") or {}).get("top_characters", [])
-    if not top_chars_raw:
-        top_chars_raw = report_output.get("characters") or []
     top_chars = _clean_characters(top_chars_raw)
-
-    comparables_raw = report_output.get("tone_comparables") or []
-    if not comparables_raw:
-        comparables_raw = [c.get("title") for c in (report_output.get("comparable_films") or []) if isinstance(c, dict)]
-    comparables = _clean_characters(comparables_raw)
-
+    comparables = report_output.get("tone_comparables") or report_output.get("comparable_films") or []
+    comparables = _clean_characters(comparables)
     market_projections = report_output.get("market_projections") or {}
     strength = report_output.get("strength_index") or {}
     commercial = _safe(report_output.get("commercial_positioning"))
-    audience = _clean_characters(report_output.get("audience_profile") or [])
+    audience = report_output.get("audience_profile") or []
+    audience = _clean_characters(audience)
     packaging = _safe(report_output.get("packaging_potential"))
     executive_summary = _safe(report_output.get("executive_summary"))
     summary_note = _safe(report_output.get("summary_note"))
@@ -910,36 +903,16 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     rewrite_priorities = report_output.get("rewrite_priorities") or report_output.get("next_draft_priorities") or []
     strengths_list = report_output.get("strengths") or []
     risks_list = report_output.get("risks") or report_output.get("development_risks") or []
-    budget_lane = _safe(market_projections.get("budget_range") or market_projections.get("estimated_budget_tier") or report_output.get("budget_lane") or report_output.get("estimated_budget"))
-    streamer_fit = _safe(market_projections.get("streamer_fit") or market_projections.get("distribution_angle") or report_output.get("streamer_fit"))
-    awards_lane = _safe(market_projections.get("awards_lane") or market_projections.get("awards_potential") or report_output.get("awards_lane"))
+    budget_lane = _safe(market_projections.get("budget_range") or report_output.get("budget_lane") or report_output.get("estimated_budget"))
+    streamer_fit = _safe(market_projections.get("streamer_fit") or report_output.get("streamer_fit"))
+    awards_lane = _safe(market_projections.get("awards_lane") or report_output.get("awards_lane"))
     franchise = _safe(market_projections.get("franchise_potential") or report_output.get("franchise_potential"))
-    sales_hook = _safe(market_projections.get("sales_hook"))
-
-    actor_objective = _safe(report_output.get("actor_objective"))
-    playable_tactics = _clean_characters(report_output.get("playable_tactics") or [])
-    emotional_triggers = _clean_characters(report_output.get("emotional_triggers") or [])
-    audition_danger_zones = _clean_characters(report_output.get("audition_danger_zones") or [])
-    reader_chemistry_tips = [str(x).strip() for x in (report_output.get("reader_chemistry_tips") or []) if str(x).strip()]
-    memorization_beats = _clean_characters(report_output.get("memorization_beats") or [])
-    role_arc_map = _clean_characters(report_output.get("role_arc_map") or [])
-    pressure_ladder = _clean_characters(report_output.get("pressure_ladder") or [])
-    emotional_continuity = [str(x).strip() for x in (report_output.get("emotional_continuity") or []) if str(x).strip()]
-    costume_behavior_clues = [str(x).strip() for x in (report_output.get("costume_behavior_clues") or []) if str(x).strip()]
-    set_ready_checklist = [str(x).strip() for x in (report_output.get("set_ready_checklist") or []) if str(x).strip()]
-    relationship_map = report_output.get("relationship_leverage_map") or []
-    image_plan = report_output.get("image_plan") or []
-
-    layout_strategy = report_output.get("layout_strategy") or {}
-    slide_blueprint = report_output.get("slide_blueprint") or {}
-    document_layouts = report_output.get("document_layouts") or {}
-    analysis_layout = document_layouts.get("analysis_report") or {}
 
     if not executive_summary:
         executive_summary = _smart_summary("analysis", title, "", logline, synopsis, [], extra=genre)
 
     if not strengths_list:
-        strengths_list = [s for s in [theme, engine, commercial, packaging, actor_objective] if s][:5]
+        strengths_list = [s for s in [theme, engine, commercial, packaging] if s][:4]
     if not rewrite_priorities:
         rewrite_priorities = [
             "Clarify the protagonist's pressure line even further.",
@@ -952,46 +925,6 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
             "The reversal is doing real structural work and should stay visible in the pitch.",
             "The project feels strongest when the audience is tracking pressure, not exposition.",
         ]
-
-    score_parts = []
-    for key, label in [("concept", "Concept"), ("character", "Character"), ("marketability", "Market"), ("originality", "Originality")]:
-        val = strength.get(key)
-        if val:
-            score_parts.append(f"{label}: {val}/10")
-    strength_line = "  ·  ".join(score_parts)
-
-    comparable_details = []
-    for comp in (report_output.get("comparable_films") or []):
-        if isinstance(comp, dict):
-            title_part = str(comp.get("title") or "").strip()
-            why_part = str(comp.get("why") or "").strip()
-            box_part = str(comp.get("box_office") or "").strip()
-            pieces = [p for p in [title_part, why_part, box_part] if p]
-            if pieces:
-                comparable_details.append(" — ".join(pieces[:2]) if len(pieces) < 3 else f"{title_part} — {why_part} ({box_part})")
-
-    relationship_lines = []
-    for row in relationship_map:
-        if isinstance(row, dict):
-            character = str(row.get("character") or "").strip()
-            dynamic = str(row.get("dynamic") or "").strip()
-            function = str(row.get("function") or "").strip()
-            parts = [p for p in [character, dynamic, function] if p]
-            if parts:
-                relationship_lines.append(" — ".join(parts[:2]) if len(parts) < 3 else f"{character} — {dynamic} — {function}")
-
-    image_summary = []
-    for item in image_plan[:5]:
-        if isinstance(item, dict):
-            slide_title = str(item.get("slide_title") or item.get("slide_number") or "").strip()
-            visual_family = str(item.get("visual_family") or "").strip()
-            query = str(item.get("image_query") or "").strip()
-            parts = [slide_title]
-            if visual_family:
-                parts.append(visual_family)
-            if query:
-                parts.append(query[:90] + ("…" if len(query) > 90 else ""))
-            image_summary.append(" — ".join([p for p in parts if p]))
 
     pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
     pdf.setTitle(f"{title} — Script Analysis Report")
@@ -1014,7 +947,7 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     for tl in simpleSplit(title.upper(), "Helvetica-Bold", 20, UW):
         pdf.drawString(L, ty, tl); ty -= 26
     cy = ty - 10
-    meta = "  ·  ".join([p for p in [genre, tone, time_frame] if p])
+    meta = "  ·  ".join([p for p in [genre, tone] if p])
     if meta:
         pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
         for ml in simpleSplit(meta, "Helvetica", 11, UW):
@@ -1036,10 +969,10 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     contents = [
         "Executive snapshot",
         "Story engine",
+        "Character value",
         "Market position",
-        "Actor-ready intelligence",
-        "Relationship leverage",
-        "Visual strategy",
+        "Rewrite priorities",
+        "Why this project matters",
     ]
     pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(L, cy, "THIS REPORT INCLUDES"); cy -= 14
@@ -1065,8 +998,6 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         ctx.info_row("Lead", lead)
     if world:
         ctx.info_row("World", world)
-    if setting:
-        ctx.info_row("Setting", setting)
     if core:
         ctx.info_row("Core conflict", core)
     if engine:
@@ -1083,9 +1014,7 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     if char_leverage:
         ctx.info_row("Character leverage", char_leverage)
     if top_chars:
-        ctx.info_row("Top characters", ", ".join(top_chars[:10]))
-    if role_arc_map:
-        ctx.info_row("Role arc map", "  →  ".join(role_arc_map[:6]))
+        ctx.info_row("Top characters", ", ".join(top_chars[:8]))
     ctx.y -= 8
 
     ctx.section_header("Market Position", "The commercial lane this project appears to be in right now.")
@@ -1096,7 +1025,7 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     if budget_lane:
         ctx.info_row("Budget lane", budget_lane)
     if streamer_fit:
-        ctx.info_row("Distribution / buyer fit", streamer_fit)
+        ctx.info_row("Streamer / buyer fit", streamer_fit)
     if awards_lane:
         ctx.info_row("Awards lane", awards_lane)
     if commercial:
@@ -1105,62 +1034,7 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         ctx.info_row("Packaging potential", packaging)
     if franchise:
         ctx.info_row("Franchise potential", franchise)
-    if strength_line:
-        ctx.info_row("Strength index", strength_line)
-
-    ctx.new_page()
-    ctx.section_header("Executive & Producer Gold", "The material already carries stronger development-facing value than a basic summary report shows.")
-    if executive_summary:
-        ctx.info_row("Executive summary", executive_summary)
-    if sales_hook:
-        ctx.info_row("Sales hook", sales_hook)
-    if comparable_details:
-        ctx.bullet_list(comparable_details[:5], bullet_color=gold)
-    if market_projections:
-        projection_lines = []
-        for label, key in [
-            ("Budget", "estimated_budget_tier"),
-            ("Distribution", "distribution_angle"),
-            ("Awards", "awards_potential"),
-            ("Audience reach", "audience_reach"),
-            ("Franchise", "franchise_potential"),
-        ]:
-            val = _safe(market_projections.get(key))
-            if val:
-                projection_lines.append(f"{label}: {val}")
-        if projection_lines:
-            ctx.bullet_list(projection_lines[:6], bullet_color=blue)
-
-    ctx.section_header("Actor Intelligence", "This is where the report starts behaving like an actual prep tool.")
-    if actor_objective:
-        ctx.info_row("Actor objective", actor_objective)
-    if playable_tactics:
-        ctx.info_row("Playable tactics", ", ".join(playable_tactics[:8]))
-    if emotional_triggers:
-        ctx.info_row("Emotional triggers", ", ".join(emotional_triggers[:8]))
-    if memorization_beats:
-        ctx.info_row("Memorization beats", "  ·  ".join(memorization_beats[:8]))
-    if pressure_ladder:
-        ctx.info_row("Pressure ladder", "  →  ".join(pressure_ladder[:8]))
-    if audition_danger_zones:
-        ctx.bullet_list(audition_danger_zones[:6], bullet_color=gold)
-
-    ctx.new_page()
-    ctx.section_header("Reader & Set Readiness", "The brain is already creating practical prep value for performers and directors.")
-    if reader_chemistry_tips:
-        ctx.bullet_list(reader_chemistry_tips[:6], bullet_color=blue)
-    if emotional_continuity:
-        ctx.section_header("Emotional continuity")
-        ctx.bullet_list(emotional_continuity[:6], bullet_color=gold)
-    if costume_behavior_clues:
-        ctx.section_header("Costume & behavior clues")
-        ctx.bullet_list(costume_behavior_clues[:5], bullet_color=blue)
-    if set_ready_checklist:
-        ctx.section_header("Set-ready checklist")
-        ctx.bullet_list(set_ready_checklist[:6], bullet_color=gold)
-    if relationship_lines:
-        ctx.section_header("Relationship leverage map")
-        ctx.bullet_list(relationship_lines[:6], bullet_color=blue)
+    ctx.y -= 8
 
     ctx.new_page()
     ctx.section_header("What Is Working", "The report should not just criticize. It should identify value.")
@@ -1180,39 +1054,24 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         ctx.bullet_list([str(x) for x in risks_list[:8] if str(x).strip()], bullet_color=gold)
         ctx.y -= 8
 
-    ctx.section_header("Visual & Presentation Strategy", "This is the part of the brain that can feed decks, reports, and creative direction.")
-    if layout_strategy:
-        strat = []
-        for k in ["layout_style", "text_density", "image_priority", "pacing", "visual_energy", "headline_style"]:
-            v = _safe(layout_strategy.get(k))
-            if v:
-                strat.append(f"{k.replace('_', ' ').title()}: {v}")
-        if strat:
-            ctx.bullet_list(strat[:8], bullet_color=gold)
-    if slide_blueprint:
-        blueprint = []
-        for k in ["recommended_slide_count", "opening_style", "mid_deck_focus", "closing_style"]:
-            v = _safe(slide_blueprint.get(k))
-            if v:
-                blueprint.append(f"{k.replace('_', ' ').title()}: {v}")
-        if blueprint:
-            ctx.bullet_list(blueprint[:6], bullet_color=blue)
-    if analysis_layout:
-        layout_lines = []
-        for k in ["layout_family", "cover_style", "chart_style", "section_density"]:
-            v = _safe(analysis_layout.get(k))
-            if v:
-                layout_lines.append(f"{k.replace('_', ' ').title()}: {v}")
-        if layout_lines:
-            ctx.bullet_list(layout_lines[:6], bullet_color=gold)
-    if image_summary:
-        ctx.section_header("Image-plan highlights")
-        ctx.bullet_list(image_summary[:5], bullet_color=blue)
-
     ctx.section_header("Why This Project Matters", "The part a novice user, creative producer, or investor can understand quickly.")
     ctx.bullet_list([str(x) for x in story_insights[:8] if str(x).strip()], bullet_color=gold)
     if summary_note:
         ctx.info_row("Final note", summary_note)
+
+    if strength:
+        score_parts = []
+        for key, label in [
+            ("concept", "Concept"),
+            ("character", "Character"),
+            ("marketability", "Market"),
+            ("originality", "Originality"),
+        ]:
+            val = strength.get(key)
+            if val:
+                score_parts.append(f"{label}: {val}/10")
+        if score_parts:
+            ctx.info_row("Strength index", "  ·  ".join(score_parts))
 
     ctx.methodology_box()
     _footer(pdf, W, ctx.page_no)
