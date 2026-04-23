@@ -14,7 +14,6 @@
 <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:18px;">
     <div class="shell" style="max-width:760px;width:100%;">
         <div class="card" style="padding:22px 22px 18px;min-height:auto;">
-
             <div class="logo" style="padding-top:0;">
                 <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
             </div>
@@ -25,7 +24,7 @@
                     Private Beta Access
                 </div>
 
-                <div class="info-copy" style="max-width:640px;margin:0 auto 18px;text-align:left;">
+                <div class="info-copy" style="max-width:620px;margin:0 auto 18px;text-align:left;">
                     <p><strong>Peace,</strong></p>
 
                     <p>
@@ -61,8 +60,8 @@
 
             <div id="betaGatePage2" style="display:none;">
                 <div class="workspace-title" style="text-align:center;">Private Beta Access</div>
-                <div class="workspace-copy" style="text-align:center;max-width:520px;margin:0 auto 18px;">
-                    Create your account soon, or enter your beta access code to step inside the live build.
+                <div class="workspace-copy" style="text-align:center;max-width:620px;margin:0 auto 16px;">
+                    Create your account with your beta access code, or sign in if you already have one.
                 </div>
 
                 {% if gate_error %}
@@ -72,28 +71,37 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto 12px;">
                     <div class="card" style="padding:16px;background:#111111;">
                         <div class="choice-title" style="margin-bottom:10px;">Create Account</div>
-                        <input type="text" placeholder="Full Name" disabled>
-                        <input type="text" placeholder="Email Address" disabled>
-                        <input type="password" placeholder="Create Password" disabled>
-                        <button class="secondary-button" type="button" disabled style="width:100%;">Coming Soon</button>
+                        <form method="POST" action="/create-account">
+                            <input type="text" name="name" placeholder="Full Name" required>
+                            <input type="email" name="email" placeholder="Email Address" required>
+                            <input type="password" name="password" placeholder="Create Password" required>
+                            <input type="password" name="access_code" placeholder="Beta Access Code" required>
+                            <button class="primary-button" type="submit" style="width:100%;">Create Account</button>
+                        </form>
                     </div>
 
                     <div class="card" style="padding:16px;background:#111111;">
-                        <div class="choice-title" style="margin-bottom:10px;">Beta Access</div>
-                        <form method="POST" action="/beta-access">
-                            <input type="password" name="access_code" placeholder="Access Code" required autofocus>
-                            <button class="primary-button" type="submit" style="width:100%;">Enter</button>
+                        <div class="choice-title" style="margin-bottom:10px;">Sign In</div>
+                        <form method="POST" action="/sign-in">
+                            <input type="email" name="email" placeholder="Email Address" required>
+                            <input type="password" name="password" placeholder="Password" required>
+                            <button class="primary-button" type="submit" style="width:100%;">Sign In</button>
+                        </form>
+
+                        <div class="upload-note" style="margin-top:12px;text-align:center;">
+                            Need a one-time beta entry instead?
+                        </div>
+                        <form method="POST" action="/beta-access" style="margin-top:8px;">
+                            <input type="password" name="access_code" placeholder="Access Code">
+                            <button class="secondary-button" type="submit" style="width:100%;">Enter With Code</button>
                         </form>
                     </div>
                 </div>
 
-                <div class="upload-actions" style="grid-template-columns:1fr 1fr;max-width:420px;margin:10px auto 0;">
+                <div class="upload-actions" style="grid-template-columns:1fr;max-width:200px;margin:10px auto 0;">
                     <button class="secondary-button" type="button"
                         onclick="document.getElementById('betaGatePage2').style.display='none';document.getElementById('betaGatePage1').style.display='block';">
                         Back
-                    </button>
-                    <button class="primary-button" type="button" disabled>
-                        Sign In Soon
                     </button>
                 </div>
 
@@ -105,11 +113,11 @@
                     Powered by the Developum AI Engine
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 {% else %}
+
 
 <div class="top-nav-shell">
     <button class="hamburger-button" type="button" onclick="toggleTopNavMenu()" aria-label="Open menu">
