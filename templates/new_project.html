@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Project</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+    <div class="logo">
+        <img src="/static/logo.png" class="logo-img">
+    </div>
+
+    <div class="shell">
+        <div class="card" style="padding:18px; max-width:720px; margin:0 auto;">
+
+            <div class="workspace-title" style="text-align:center;">
+                NEW PROJECT
+            </div>
+
+            <div class="workspace-copy" style="text-align:center; margin-bottom:18px;">
+                Start a project folder inside EVOLUM Studio.
+            </div>
+
+            <form method="POST" action="/new-project">
+
+                <div class="field-group">
+                    <label class="label" for="project_title">Project Title</label>
+                    <input type="text" id="project_title" name="project_title" placeholder="Example: Not Today" required>
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="project_type">Project Type</label>
+                    <input type="text" id="project_type" name="project_type" placeholder="Feature, Series, Short, Actor Prep, Pitch Package">
+                </div>
+
+                <div class="upload-actions" style="margin-top:16px;">
+                    <button class="primary-button" type="submit">Create Project</button>
+                    <a href="/studio" class="secondary-button" style="text-decoration:none; padding:12px 18px; display:inline-block;">Back</a>
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

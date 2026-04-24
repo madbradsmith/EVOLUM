@@ -1,27 +1,83 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1.0'>
-<title>Project Workspace</title><link rel='stylesheet' href="{{ url_for('static', filename='style.css') }}">
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ project.title }} Workspace</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
-<div class='container'><div class='logo'><img src='/static/logo.png' class='logo-img'></div>
-<div class='shell'><div class='card' style='padding:14px;'>
-<div class='workspace-title' style='text-align:center;'>PROJECT WORKSPACE</div>
-<div class='workspace-copy' style='text-align:center;margin-bottom:12px;'>Inside your project. Build, refine, organize, collaborate.</div>
-<div class='choice home-module-card' style='padding:14px;margin-bottom:12px;'>
-<div class='choice-title'>Not Today</div>
-<div style='height:140px;background:#111;border-radius:12px;margin:10px 0;display:flex;align-items:center;justify-content:center;color:#777;'>Project Poster</div>
-<div class='choices-row' style='grid-template-columns:repeat(3,1fr);gap:10px;'>
-<div class='choice'>Edit Deck</div>
-<div class='choice'>Generate Images</div><div class='choice'>Generate Copy</div>
-<div class='choice'>Assets</div><div class='choice'>Collaborators</div>
-<div class='choice'>Preview</div></div></div><div class='choices-row' style='grid-template-columns:1fr 1fr;gap:12px;'><div class='choice home-module-card' style='padding:14px;'><div class='choice-title'>Assets Folder</div>
-<div class='choices-row' style='grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;'><div class='choice'>IMG</div><div class='choice'>IMG</div>
-<div class='choice'>IMG</div><div class='choice'>IMG</div><div class='choice'>IMG</div><div class='choice'>＋</div></div></div>
-<div class='choice home-module-card' style='padding:14px;'><div class='choice-title'>Studio Helper</div><div class='choice' style='margin-top:10px;'>Improve Deck</div><div class='choice' style='margin-top:8px;'>Create Posters</div>
-<div class='choice' style='margin-top:8px;'>Investor Summary</div></div></div><div style='margin-top:12px;text-align:center;'><a href='/studio' class='secondary-button' style='text-decoration:none;padding:10px 16px;display:inline-block;'>Back to Studio</a></div>
+
+<div class="container">
+    <div class="logo">
+        <img src="/static/logo.png" class="logo-img">
+    </div>
+
+    <div class="shell">
+        <div class="card" style="padding:14px;">
+
+            <div class="workspace-title" style="text-align:center;">
+                PROJECT WORKSPACE
+            </div>
+
+            <div class="workspace-copy" style="text-align:center; margin-bottom:12px;">
+                {{ project.title }}{% if project.type %} • {{ project.type }}{% endif %}
+            </div>
+
+            <div class="choice home-module-card" style="padding:14px; margin-bottom:12px;">
+                <div class="choice-title">{{ project.title }}</div>
+
+                <div style="height:140px; background:#111; border-radius:12px; margin:10px 0; display:flex; align-items:center; justify-content:center; color:#777;">
+                    Project Poster
+                </div>
+
+                <div class="workspace-copy" style="text-align:center; margin-bottom:10px;">
+                    Storage: 0MB / 100MB • Status: Active
+                </div>
+
+                <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px;">
+                    <div class="choice">Edit Deck</div>
+                    <div class="choice">Generate Images</div>
+                    <div class="choice">Generate Copy</div>
+                    <div class="choice">Assets</div>
+                    <div class="choice">Collaborators</div>
+                    <div class="choice">Preview</div>
+                </div>
+            </div>
+
+            <div class="choices-row" style="grid-template-columns:1fr 1fr; gap:12px;">
+
+                <div class="choice home-module-card" style="padding:14px;">
+                    <div class="choice-title">Assets Folder</div>
+
+                    <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;">
+                        <div class="choice">IMG</div>
+                        <div class="choice">IMG</div>
+                        <div class="choice">IMG</div>
+                        <div class="choice">IMG</div>
+                        <div class="choice">IMG</div>
+                        <div class="choice">＋</div>
+                    </div>
+                </div>
+
+                <div class="choice home-module-card" style="padding:14px;">
+                    <div class="choice-title">Studio Helper</div>
+
+                    <div class="choice" style="margin-top:10px;">Improve Deck</div>
+                    <div class="choice" style="margin-top:8px;">Create Posters</div>
+                    <div class="choice" style="margin-top:8px;">Investor Summary</div>
+                </div>
+
+            </div>
+
+            <div style="margin-top:12px; text-align:center;">
+                <a href="/studio" class="secondary-button" style="text-decoration:none; padding:10px 16px; display:inline-block;">Back to Studio</a>
+            </div>
+
+        </div>
+    </div>
 </div>
-</div>
-</div>
+
 </body>
 </html>
