@@ -1,33 +1,36 @@
 #!/usr/bin/env python3
 """
-layout_engine.py — cinematic story-map aware slide planner
+layout_engine.py — Developum AI / Evolum categorized intelligence layout planner
 
 Purpose:
-    Converts approved_brain_output.json into slide_plan.json using the unified
-    story-map fields, while staging long-form synopsis as a mini-trailer arc:
-        1) Setup
-        2) Escalation
-        3) Turn / Consequence
+    Converts approved_brain_output.json into slide_plan.json.
 
-    V2 API LAYOUT SYSTEM:
-        - keeps text OUT of generated images
-        - uses full-bleed image-first layout strategy
-        - adds smart overlay-box metadata for deck builder
-        - maps slide stage -> better composition presets
-        - preserves existing slide planning behavior
-        - remains provider-agnostic for text/image APIs
+    V3 CATEGORIZED INTELLIGENCE SYSTEM
+    - Preserves the existing deck slide-plan contract: {title, slides, slide_count}
+    - Keeps image/text separation and image-plan metadata
+    - Fixes the old overlay preset syntax issue
+    - Adds categorized intelligence blocks so the downstream products can surface
+      everything the brain already knows instead of flattening it
+    - Adds safe optional API enrichment for script-specific story moments
+      without requiring the API to run
 
 Usage:
     python3 layout_engine.py /path/to/approved_brain_output.json
+
+Optional API enrichment:
+    Set DAI_ENABLE_API_ENRICHMENT=1 and OPENAI_API_KEY in the environment.
+    If unavailable or failed, the engine falls back silently to local logic.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
+import urllib.request
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List, Optional
 
 DEFAULT_INPUT = Path("approved_brain_output.json")
 DEFAULT_OUTPUT = Path("slide_plan.json")
@@ -36,48 +39,97 @@ MIN_WORDS = 24
 TARGET_WORDS = 44
 MAX_WORDS = 68
 
+# Fields that are intentionally large/internal and should not be dumped blindly
+# into human-facing report sections.
+INTERNAL_OR_LARGE_FIELDS = {
+    "image_plan",
+    "character_stats",
+    "presentation_modes",
+    "presentation_controls",
+    "layout_strategy",
+    "slide_blueprint",
+    "document_layouts",
+}
+
+
+# =============================================================================
+# SHARED CLEANUP HELPERS
+# =============================================================================
 
 def clean(text: Any) -> str:
-    return " ".join(str(text or "").split()).strip()
+    return " ".join(str(text or "").replace("\u25a0", " ").split()).strip()
 
 
 def read_json(path: Path) -> Dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-# ===== USER UPLOAD OVERRIDES START ====================
-def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[str, Any]:
-    override_candidates = [
-        input_path.parent / "user_upload_context.json",
-        input_path.parent / "input" / "user_upload_context.json",
-        input_path.parent / "pipeline" / "user_upload_context.json",
-        Path.cwd() / "user_upload_context.json",
-        Path.cwd() / "input" / "user_upload_context.json",
-        Path.cwd() / "pipeline" / "user_upload_context.json",
-    ]
+def as_list(value: Any) -> List[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    if isinstance(value, dict):
+        return [value]
+    if clean(value):
+        return [clean(value)]
+    return []
 
-    for candidate in override_candidates:
-        if not candidate.exists():
-            continue
-        try:
-            override_payload = json.loads(candidate.read_text(encoding="utf-8"))
-        except Exception:
-            continue
 
-        submitted_logline = clean(override_payload.get("logline", ""))
-        submitted_synopsis = clean(override_payload.get("synopsis", ""))
+def list_text(items: Any, max_items: int = 8, sep: str = "\n") -> str:
+    out: List[str] = []
+    for item in as_list(items)[:max_items]:
+        if isinstance(item, dict):
+            if item.get("character"):
+                character = clean(item.get("character"))
+                dynamic = clean(item.get("dynamic"))
+                function = clean(item.get("function"))
+                text = f"{character}: {dynamic} — {function}" if dynamic or function else character
+            elif item.get("title"):
+                title = clean(item.get("title"))
+                why = clean(item.get("why"))
+                text = f"{title}: {why}" if why else title
+            else:
+                parts = [f"{clean(k)}: {clean(v)}" for k, v in item.items() if clean(v)]
+                text = " · ".join(parts)
+        else:
+            text = clean(item)
+        if text:
+            out.append(text)
+    return sep.join(out)
 
-        if submitted_logline:
-            data["logline"] = submitted_logline
-            print(f"✅ Using uploaded logline override: {candidate}")
-        if submitted_synopsis:
-            data["synopsis"] = submitted_synopsis
-            print(f"✅ Using uploaded synopsis override: {candidate}")
 
-        return data
+def key_value_text(mapping: Any, max_items: int = 8, sep: str = "\n") -> str:
+    if not isinstance(mapping, dict):
+        return clean(mapping)
+    lines: List[str] = []
+    for key, value in list(mapping.items())[:max_items]:
+        if isinstance(value, (list, tuple)):
+            val = ", ".join(clean(v) for v in value if clean(v))
+        elif isinstance(value, dict):
+            val = "; ".join(f"{clean(k)}: {clean(v)}" for k, v in value.items() if clean(v))
+        else:
+            val = clean(value)
+        if val:
+            lines.append(f"{humanize_key(key)}: {val}")
+    return sep.join(lines)
 
-    return data
-# ===== USER UPLOAD OVERRIDES END ======================
+
+def humanize_key(key: Any) -> str:
+    key = clean(key).replace("_", " ").replace("-", " ")
+    if not key:
+        return ""
+    return " ".join(part.capitalize() for part in key.split())
+
+
+def first_value(data: Dict[str, Any], *keys: str, default: str = "") -> str:
+    for key in keys:
+        value = data.get(key)
+        if clean(value):
+            return clean(value)
+    return default
 
 
 def word_count(text: str) -> int:
@@ -141,6 +193,63 @@ def group_sentences(sentences: List[str]) -> List[str]:
     return merged
 
 
+def clip_text(text: str, max_chars: int) -> str:
+    text = clean(text)
+    if len(text) <= max_chars:
+        return text
+    return text[: max_chars - 1].rstrip() + "…"
+
+
+def sanitize_slide_title(title: str) -> str:
+    title = clean(title).replace("#", "")
+    return title or "Untitled"
+
+
+# =============================================================================
+# USER UPLOAD OVERRIDES
+# =============================================================================
+
+def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[str, Any]:
+    override_candidates = [
+        input_path.parent / "user_upload_context.json",
+        input_path.parent / "input" / "user_upload_context.json",
+        input_path.parent / "pipeline" / "user_upload_context.json",
+        Path.cwd() / "user_upload_context.json",
+        Path.cwd() / "input" / "user_upload_context.json",
+        Path.cwd() / "pipeline" / "user_upload_context.json",
+    ]
+
+    for candidate in override_candidates:
+        if not candidate.exists():
+            continue
+        try:
+            override_payload = json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        submitted_logline = clean(override_payload.get("logline", ""))
+        submitted_synopsis = clean(override_payload.get("synopsis", ""))
+        submitted_title = clean(override_payload.get("title", ""))
+
+        if submitted_title:
+            data["title"] = submitted_title
+            print(f"✅ Using uploaded title override: {candidate}")
+        if submitted_logline:
+            data["logline"] = submitted_logline
+            print(f"✅ Using uploaded logline override: {candidate}")
+        if submitted_synopsis:
+            data["synopsis"] = submitted_synopsis
+            print(f"✅ Using uploaded synopsis override: {candidate}")
+
+        return data
+
+    return data
+
+
+# =============================================================================
+# IMAGE PLAN HELPERS
+# =============================================================================
+
 def normalize_image_options(options: Any) -> List[Dict[str, Any]]:
     normalized: List[Dict[str, Any]] = []
     if not isinstance(options, list):
@@ -179,7 +288,7 @@ def build_image_plan_lookup(data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
         if not title_key:
             continue
 
-        lookup[title_key] = {
+        payload = {
             "image_query": clean(item.get("image_query", "")),
             "image_tags": item.get("image_tags", []) if isinstance(item.get("image_tags"), list) else [],
             "image_score": item.get("image_score"),
@@ -188,7 +297,10 @@ def build_image_plan_lookup(data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
             "image_name": clean(item.get("image_name", "")),
             "image_source": clean(item.get("image_source", "")),
             "selected_option_id": clean(item.get("selected_option_id", "")),
+            "visual_family": clean(item.get("visual_family", "")),
+            "file_strategy": item.get("file_strategy", {}) if isinstance(item.get("file_strategy"), dict) else {},
         }
+        lookup[title_key] = payload
 
     return lookup
 
@@ -198,7 +310,12 @@ def lookup_image_meta(slide_title: str, image_lookup: Dict[str, Dict[str, Any]])
     if key in image_lookup:
         return dict(image_lookup[key])
 
-    if key and key not in image_lookup and "title" in image_lookup:
+    # loose matching makes "Story Engine" find "Conflict Engine" / "Visual Style" less brittle
+    for known_key, meta in image_lookup.items():
+        if key and (key in known_key or known_key in key):
+            return dict(meta)
+
+    if "title" in image_lookup:
         return dict(image_lookup["title"])
 
     return {
@@ -210,20 +327,118 @@ def lookup_image_meta(slide_title: str, image_lookup: Dict[str, Dict[str, Any]])
         "image_name": "",
         "image_source": "none",
         "selected_option_id": "",
+        "visual_family": "",
+        "file_strategy": {},
     }
 
 
-def clip_text(text: str, max_chars: int) -> str:
-    text = clean(text)
-    if len(text) <= max_chars:
-        return text
-    return text[: max_chars - 1].rstrip() + "…"
+# =============================================================================
+# OPTIONAL API ENRICHMENT
+# =============================================================================
+
+def api_enabled() -> bool:
+    return clean(os.environ.get("DAI_ENABLE_API_ENRICHMENT", "")).lower() in {"1", "true", "yes", "on"}
 
 
-def sanitize_slide_title(title: str) -> str:
-    title = clean(title).replace("#", "")
-    return title or "Untitled"
+def openai_key() -> str:
+    return clean(os.environ.get("OPENAI_API_KEY", ""))
 
+
+def enrich_story_moments_with_api(data: Dict[str, Any], max_items: int = 6) -> List[str]:
+    """
+    Optional, safe API enrichment for script-specific story moments.
+    If API is disabled, unavailable, or fails, this returns [].
+    """
+    if not api_enabled() or not openai_key():
+        return []
+
+    title = first_value(data, "title", default="the project")
+    protagonist = first_value(data, "protagonist", default="the protagonist")
+    payload = {
+        "title": title,
+        "protagonist": protagonist,
+        "logline": clean(data.get("logline", "")),
+        "synopsis": clean(data.get("synopsis", ""))[:2000],
+        "core_conflict": clean(data.get("core_conflict", "")),
+        "reversal": clean(data.get("reversal", "")),
+        "theme": clean(data.get("theme", "")),
+    }
+
+    prompt = (
+        "Generate script-specific key story moments for a premium screenplay analysis report. "
+        "Return ONLY valid JSON: {\"moments\":[\"...\"]}. "
+        "Each moment must be concrete, tied to this script, 6-14 words, and not generic. "
+        f"Return {max_items} moments.\n\n"
+        f"DATA:\n{json.dumps(payload, ensure_ascii=False)}"
+    )
+
+    request_body = json.dumps({
+        "model": os.environ.get("DAI_OPENAI_MODEL", "gpt-4o-mini"),
+        "messages": [
+            {"role": "system", "content": "You write concise, script-specific screenplay analysis bullets."},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.35,
+        "max_tokens": 350,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.openai.com/v1/chat/completions",
+        data=request_body,
+        method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {openai_key()}",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=18) as response:
+            result = json.loads(response.read().decode("utf-8"))
+        content = result["choices"][0]["message"]["content"]
+        parsed = json.loads(content)
+        return [clean(x) for x in parsed.get("moments", []) if clean(x)][:max_items]
+    except Exception as exc:
+        print(f"⚠️ API enrichment skipped: {exc}")
+        return []
+
+
+def fallback_story_moments(data: Dict[str, Any], max_items: int = 6) -> List[str]:
+    explicit = data.get("key_moments") or data.get("story_moments") or data.get("memorization_beats")
+    moments = [clean(x) for x in as_list(explicit) if clean(x)]
+    if moments:
+        return moments[:max_items]
+
+    synopsis = clean(data.get("synopsis", ""))
+    sentences = sentence_split(synopsis)
+    if sentences:
+        picked: List[str] = []
+        for idx in [0, max(0, len(sentences) // 3), max(0, (len(sentences) * 2) // 3), len(sentences) - 1]:
+            if 0 <= idx < len(sentences):
+                moment = clip_text(sentences[idx], 90)
+                if moment and moment not in picked:
+                    picked.append(moment)
+        return picked[:max_items]
+
+    protagonist = first_value(data, "protagonist", default="The protagonist")
+    conflict = clean(data.get("core_conflict", ""))
+    reversal = clean(data.get("reversal", ""))
+    theme = clean(data.get("theme", ""))
+    return [m for m in [
+        f"{protagonist} enters the central pressure of the story",
+        clip_text(conflict, 90),
+        clip_text(reversal, 90),
+        clip_text(theme, 90),
+    ] if clean(m)][:max_items]
+
+
+def story_moments(data: Dict[str, Any], max_items: int = 6) -> List[str]:
+    return enrich_story_moments_with_api(data, max_items=max_items) or fallback_story_moments(data, max_items=max_items)
+
+
+# =============================================================================
+# LAYOUT META HELPERS
+# =============================================================================
 
 def stage_to_layout(stage: str, current_layout: str) -> str:
     stage = clean(stage).lower()
@@ -244,6 +459,12 @@ def stage_to_layout(stage: str, current_layout: str) -> str:
         "engine": "bottom_story_card",
         "why_now": "bottom_story_card",
         "market": "clean_grid",
+        "producer_read": "clean_grid",
+        "story_core": "bottom_story_card",
+        "character_intel": "character_focus",
+        "performance": "split_right_text",
+        "scene_intel": "clean_grid",
+        "visual_intel": "quote_overlay",
     }
     return mapping.get(stage, clean(current_layout) or "split_left_text")
 
@@ -252,31 +473,31 @@ def box_for_layout(layout: str) -> Dict[str, Any]:
     presets: Dict[str, Dict[str, Any]] = {
         "hero_full_bleed": {
             "x": 0.055, "y": 0.68, "w": 0.89, "h": 0.22,
-            "align": "left", "theme": "dark_glass"
+            "align": "left", "theme": "dark_glass",
         },
         "split_left_text": {
             "x": 0.055, "y": 0.14, "w": 0.39, "h": 0.68,
-            "align": "left", "theme": "dark_glass"
+            "align": "left", "theme": "dark_glass",
         },
         "split_right_text": {
             "x": 0.555, "y": 0.14, "w": 0.39, "h": 0.68,
-            "align": "left", "theme": "dark_glass"
+            "align": "left", "theme": "dark_glass",
         },
         "bottom_story_card": {
             "x": 0.055, "y": 0.61, "w": 0.89, "h": 0.25,
-            "align": "left", "theme": "dark_glass"
+            "align": "left", "theme": "dark_glass",
         },
         "character_focus": {
-            "x": 0.055, "y": 0.69, "w": 0.54, "h": 0.19,
-            "align": "left", "theme": "dark_glass"
+            "x": 0.055, "y": 0.64, "w": 0.58, "h": 0.24,
+            "align": "left", "theme": "dark_glass",
         },
         "quote_overlay": {
             "x": 0.14, "y": 0.36, "w": 0.72, "h": 0.22,
-            "align": "center", "theme": "light_glass"
+            "align": "center", "theme": "light_glass",
         },
         "clean_grid": {
-            "x": 0.08, "y": 0.17, "w": 0.84, "h": 0.60,
-            "align": "left", "theme": "clean"
+            "x": 0.08, "y": 0.14, "w": 0.84, "h": 0.66,
+            "align": "left", "theme": "clean",
         },
     }
     return presets.get(layout, presets["split_left_text"])
@@ -296,7 +517,7 @@ def body_size(layout: str) -> int:
     if layout == "hero_full_bleed":
         return 13
     if layout == "clean_grid":
-        return 15
+        return 14
     if layout == "quote_overlay":
         return 17
     return 15
@@ -320,7 +541,7 @@ def build_layout_meta(slide_title: str, body: str, layout: str, stage: str, imag
             "body_size": body_size(layout),
             "title_weight": "bold",
             "body_weight": "regular",
-            "line_spacing": 1.1,
+            "line_spacing": 1.08,
             "tracking": 0,
             "case": "auto",
         },
@@ -332,7 +553,7 @@ def build_layout_meta(slide_title: str, body: str, layout: str, stage: str, imag
             "avoid_text_on_faces": True,
             "prefer_empty_space_for_text": True,
         },
-        "layout_version": "v2_api_layout_system",
+        "layout_version": "v3_categorized_intelligence",
         "deck_layout_family": layout,
         "display_title": sanitize_slide_title(slide_title),
         "display_body": body,
@@ -341,8 +562,13 @@ def build_layout_meta(slide_title: str, body: str, layout: str, stage: str, imag
         "image_name": image_name,
         "image_source": image_source,
         "selected_option_id": selected_option_id,
+        "visual_family": clean(image_meta.get("visual_family", "")),
     }
 
+
+# =============================================================================
+# SLIDE / CATEGORY BUILDERS
+# =============================================================================
 
 def add_slide(
     plan: List[Dict[str, Any]],
@@ -351,6 +577,8 @@ def add_slide(
     body: str,
     layout: str = "text",
     stage: str = "",
+    category: str = "",
+    max_chars_override: Optional[int] = None,
 ) -> None:
     body = clean(body)
     if layout != "title" and not body:
@@ -361,17 +589,20 @@ def add_slide(
     smart_layout = stage_to_layout(stage_clean, layout)
     image_meta = lookup_image_meta(slide_title, image_lookup)
 
-    if smart_layout == "hero_full_bleed":
-        clipped_body = clip_text(body, 140)
+    if max_chars_override is not None:
+        max_chars = max_chars_override
+    elif smart_layout == "hero_full_bleed":
+        max_chars = 150
     elif smart_layout in {"split_left_text", "split_right_text", "bottom_story_card"}:
-        clipped_body = clip_text(body, 260)
+        max_chars = 310
     elif smart_layout == "character_focus":
-        clipped_body = clip_text(body, 220)
+        max_chars = 280
     elif smart_layout == "quote_overlay":
-        clipped_body = clip_text(body, 180)
+        max_chars = 220
     else:
-        clipped_body = clip_text(body, 320)
+        max_chars = 430
 
+    clipped_body = clip_text(body, max_chars)
     layout_meta = build_layout_meta(slide_title, clipped_body, smart_layout, stage_clean, image_meta)
 
     plan.append({
@@ -379,6 +610,7 @@ def add_slide(
         "body": clipped_body,
         "layout": smart_layout,
         "stage": stage_clean,
+        "category": clean(category),
         "image_query": clean(image_meta.get("image_query", "")),
         "image_tags": image_meta.get("image_tags", []) if isinstance(image_meta.get("image_tags"), list) else [],
         "image_score": image_meta.get("image_score"),
@@ -387,6 +619,7 @@ def add_slide(
         "image_name": layout_meta["image_name"],
         "image_source": layout_meta["image_source"],
         "selected_option_id": layout_meta["selected_option_id"],
+        "visual_family": layout_meta["visual_family"],
         "full_bleed": layout_meta["full_bleed"],
         "use_background_image": layout_meta["use_background_image"],
         "background_image": layout_meta["background_image"],
@@ -401,12 +634,37 @@ def add_slide(
     })
 
 
+def add_category_slides(
+    plan: List[Dict[str, Any]],
+    image_lookup: Dict[str, Dict[str, Any]],
+    category_name: str,
+    entries: List[Dict[str, str]],
+    stage: str,
+    max_items_per_slide: int = 3,
+) -> None:
+    usable = [e for e in entries if clean(e.get("label")) and clean(e.get("value"))]
+    if not usable:
+        return
+
+    for idx in range(0, len(usable), max_items_per_slide):
+        group = usable[idx: idx + max_items_per_slide]
+        title = category_name if idx == 0 else f"{category_name} ({idx // max_items_per_slide + 1})"
+        body_lines: List[str] = []
+        for entry in group:
+            body_lines.append(f"{entry['label'].upper()}\n{entry['value']}")
+        add_slide(
+            plan,
+            image_lookup,
+            title,
+            "\n\n".join(body_lines),
+            "clean_grid",
+            stage,
+            category=category_name,
+            max_chars_override=620,
+        )
+
+
 def split_synopsis_cinematic(text: str) -> List[Dict[str, str]]:
-    """
-    Break synopsis into 2-4 cinematic story beats instead of bland text chunks.
-    Priority:
-        setup -> escalation -> consequence/turn
-    """
     sentences = group_sentences(sentence_split(text))
     if not sentences:
         return []
@@ -421,14 +679,112 @@ def split_synopsis_cinematic(text: str) -> List[Dict[str, str]]:
     slides: List[Dict[str, str]] = []
     for idx, chunk in enumerate(sentences):
         title, stage, layout = labels[min(idx, len(labels) - 1)]
-        slides.append({
-            "title": title,
-            "body": chunk,
-            "stage": stage,
-            "layout": layout,
-        })
+        slides.append({"title": title, "body": chunk, "stage": stage, "layout": layout})
     return slides
 
+
+# =============================================================================
+# INTELLIGENCE CATALOG
+# =============================================================================
+
+def build_intelligence_catalog(data: Dict[str, Any]) -> Dict[str, List[Dict[str, str]]]:
+    title = first_value(data, "title", default="Project")
+    protagonist = first_value(data, "protagonist", default="Lead")
+
+    catalog: Dict[str, List[Dict[str, str]]] = {
+        "Story Core": [
+            {"label": "Logline", "value": clean(data.get("logline", ""))},
+            {"label": "Story Engine", "value": clean(data.get("story_engine", ""))},
+            {"label": "Core Conflict", "value": clean(data.get("core_conflict", ""))},
+            {"label": "Reversal", "value": clean(data.get("reversal", ""))},
+            {"label": "Theme", "value": clean(data.get("theme", "")) or list_text(data.get("themes", []), 4)},
+            {"label": "World", "value": clean(data.get("setting", "")) or clean(data.get("world", ""))},
+            {"label": "Tone", "value": clean(data.get("tone", ""))},
+        ],
+        "Producer Intelligence": [
+            {"label": "Executive Summary", "value": clean(data.get("executive_summary", ""))},
+            {"label": "Commercial Positioning", "value": clean(data.get("commercial_positioning", ""))},
+            {"label": "Audience Profile", "value": list_text(data.get("audience_profile", []), 8)},
+            {"label": "Strength Index", "value": key_value_text(data.get("strength_index", {}), 8)},
+            {"label": "Packaging Potential", "value": clean(data.get("packaging_potential", ""))},
+            {"label": "Market Projections", "value": key_value_text(data.get("market_projections", {}), 8)},
+            {"label": "Comparables", "value": list_text(data.get("comparable_films", data.get("tone_comparables", [])), 5)},
+        ],
+        "Character Intelligence": [
+            {"label": "Protagonist", "value": protagonist},
+            {"label": "Protagonist Summary", "value": clean(data.get("protagonist_summary", ""))},
+            {"label": "Profile", "value": key_value_text(data.get("protagonist_profile", {}), 5)},
+            {"label": "Character Leverage", "value": clean(data.get("character_leverage", ""))},
+            {"label": "Relationship Map", "value": list_text(data.get("relationship_leverage_map", []), 8)},
+            {"label": "Top Characters", "value": ", ".join(clean(x) for x in as_list(data.get("characters", []))[:8])},
+        ],
+        "Performance Intelligence": [
+            {"label": "Actor Objective", "value": clean(data.get("actor_objective", ""))},
+            {"label": "Playable Tactics", "value": list_text(data.get("playable_tactics", []), 8)},
+            {"label": "Emotional Triggers", "value": list_text(data.get("emotional_triggers", []), 8)},
+            {"label": "Audition Danger Zones", "value": list_text(data.get("audition_danger_zones", []), 8)},
+            {"label": "Reader Chemistry Tips", "value": list_text(data.get("reader_chemistry_tips", []), 8)},
+            {"label": "Memorization Beats", "value": list_text(data.get("memorization_beats", []), 8)},
+            {"label": "Role Arc Map", "value": list_text(data.get("role_arc_map", []), 8)},
+            {"label": "Pressure Ladder", "value": list_text(data.get("pressure_ladder", []), 8)},
+            {"label": "Emotional Continuity", "value": list_text(data.get("emotional_continuity", []), 8)},
+            {"label": "Costume / Behavior", "value": list_text(data.get("costume_behavior_clues", []), 8)},
+            {"label": "Set Ready Checklist", "value": list_text(data.get("set_ready_checklist", []), 8)},
+        ],
+        "Scene & Moment Intelligence": [
+            {"label": "Key Story Moments", "value": list_text(story_moments(data, max_items=8), 8)},
+            {"label": "Stakes", "value": clean(data.get("stakes", ""))},
+            {"label": "Hook", "value": clean(data.get("hook", ""))},
+            {"label": "Why This Movie", "value": clean(data.get("why_this_movie", ""))},
+        ],
+        "Visual & Document Intelligence": [
+            {"label": "Layout Strategy", "value": key_value_text(data.get("layout_strategy", {}), 8)},
+            {"label": "Presentation Controls", "value": key_value_text(data.get("presentation_controls", {}), 8)},
+            {"label": "Slide Blueprint", "value": key_value_text(data.get("slide_blueprint", {}), 8)},
+            {"label": "Document Layouts", "value": key_value_text(data.get("document_layouts", {}), 6)},
+            {"label": "Image Plan", "value": summarize_image_plan(data.get("image_plan", []))},
+        ],
+    }
+
+    # Capture small extra brain fields that are not already categorized.
+    known = {"title", "protagonist", "logline", "synopsis", "tagline", "story_engine", "core_conflict", "reversal", "theme", "themes", "world", "setting", "tone", "executive_summary", "commercial_positioning", "audience_profile", "strength_index", "packaging_potential", "market_projections", "comparable_films", "tone_comparables", "protagonist_summary", "protagonist_profile", "character_leverage", "relationship_leverage_map", "characters", "actor_objective", "playable_tactics", "emotional_triggers", "audition_danger_zones", "reader_chemistry_tips", "memorization_beats", "role_arc_map", "pressure_ladder", "emotional_continuity", "costume_behavior_clues", "set_ready_checklist", "key_moments", "story_moments", "stakes", "hook", "why_this_movie"} | INTERNAL_OR_LARGE_FIELDS
+
+    extra_entries: List[Dict[str, str]] = []
+    for key, value in data.items():
+        if key in known:
+            continue
+        if isinstance(value, (str, int, float, bool)) and clean(value):
+            extra_entries.append({"label": humanize_key(key), "value": clean(value)})
+        elif isinstance(value, list) and value and len(value) <= 12:
+            extra_entries.append({"label": humanize_key(key), "value": list_text(value, 12)})
+        elif isinstance(value, dict) and value and len(value) <= 10:
+            extra_entries.append({"label": humanize_key(key), "value": key_value_text(value, 10)})
+    if extra_entries:
+        catalog["Additional Brain Signals"] = extra_entries
+
+    return {category: [entry for entry in entries if clean(entry.get("value"))] for category, entries in catalog.items()}
+
+
+def summarize_image_plan(image_plan: Any, max_items: int = 6) -> str:
+    if not isinstance(image_plan, list):
+        return ""
+    lines: List[str] = []
+    for item in image_plan[:max_items]:
+        if not isinstance(item, dict):
+            continue
+        title = clean(item.get("slide_title", "Visual"))
+        family = clean(item.get("visual_family", ""))
+        tags = item.get("image_tags", []) if isinstance(item.get("image_tags"), list) else []
+        tag_text = ", ".join(clean(t) for t in tags[:5] if clean(t))
+        detail = family or tag_text or clean(item.get("image_query", ""))[:90]
+        if detail:
+            lines.append(f"{title}: {detail}")
+    return "\n".join(lines)
+
+
+# =============================================================================
+# MAIN SLIDE PLAN
+# =============================================================================
 
 def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     title = clean(data.get("title", "Project"))
@@ -462,32 +818,33 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     plan: List[Dict[str, Any]] = []
     image_lookup = build_image_plan_lookup(data)
 
-    add_slide(plan, image_lookup, title, tagline, "title", "title")
-    add_slide(plan, image_lookup, "Logline", logline, "analysis", "hook")
+    # Core pitch deck spine — preserved for existing deck builder behavior.
+    add_slide(plan, image_lookup, title, tagline, "title", "title", category="Deck Spine")
+    add_slide(plan, image_lookup, "Logline", logline, "analysis", "hook", category="Deck Spine")
 
     for slide in split_synopsis_cinematic(synopsis):
-        add_slide(plan, image_lookup, slide["title"], slide["body"], slide["layout"], slide["stage"])
+        add_slide(plan, image_lookup, slide["title"], slide["body"], slide["layout"], slide["stage"], category="Deck Spine")
 
     protagonist_summary = clean(data.get("protagonist_summary", ""))
     protagonist_body = protagonist_summary or protagonist
-    add_slide(plan, image_lookup, protagonist or "Protagonist", protagonist_body, "text", "character")
-    add_slide(plan, image_lookup, "World", world_body, "text", "world")
+    add_slide(plan, image_lookup, protagonist or "Protagonist", protagonist_body, "text", "character", category="Deck Spine")
+    add_slide(plan, image_lookup, "World", world_body, "text", "world", category="Deck Spine")
     if hook and hook != logline:
-        add_slide(plan, image_lookup, "Hook", hook, "analysis", "hook")
+        add_slide(plan, image_lookup, "Hook", hook, "analysis", "hook", category="Deck Spine")
     if core_conflict:
-        add_slide(plan, image_lookup, "Conflict", core_conflict, "analysis", "conflict")
+        add_slide(plan, image_lookup, "Conflict", core_conflict, "analysis", "conflict", category="Deck Spine")
     if stakes and stakes != core_conflict:
-        add_slide(plan, image_lookup, "Stakes", stakes, "analysis", "stakes")
-    add_slide(plan, image_lookup, "Tone", tone, "text", "tone")
+        add_slide(plan, image_lookup, "Stakes", stakes, "analysis", "stakes", category="Deck Spine")
+    add_slide(plan, image_lookup, "Tone", tone, "text", "tone", category="Deck Spine")
 
     if story_engine:
-        add_slide(plan, image_lookup, "Story Engine", story_engine, "analysis", "engine")
+        add_slide(plan, image_lookup, "Story Engine", story_engine, "analysis", "engine", category="Deck Spine")
     if reversal:
-        add_slide(plan, image_lookup, "Reversal", reversal, "analysis", "turn")
+        add_slide(plan, image_lookup, "Reversal", reversal, "analysis", "turn", category="Deck Spine")
     if themes_text:
-        add_slide(plan, image_lookup, "Themes", themes_text, "text", "themes")
+        add_slide(plan, image_lookup, "Themes", themes_text, "text", "themes", category="Deck Spine")
     if why_this_movie and why_this_movie not in {story_engine, core_conflict, logline}:
-        add_slide(plan, image_lookup, "Why This Movie", why_this_movie, "analysis", "why_now")
+        add_slide(plan, image_lookup, "Why This Movie", why_this_movie, "analysis", "why_now", category="Deck Spine")
 
     comparable_films = data.get("comparable_films", [])
     if comparable_films:
@@ -495,7 +852,7 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
             f.get("title", str(f)) if isinstance(f, dict) else str(f)
             for f in comparable_films[:3]
         )
-        add_slide(plan, image_lookup, "Comparables", comp_titles, "analysis", "market")
+        add_slide(plan, image_lookup, "Comparables", comp_titles, "analysis", "market", category="Deck Spine")
 
     market_projections = data.get("market_projections", {})
     if market_projections:
@@ -509,28 +866,50 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         if market_projections.get("franchise_potential"):
             proj_parts.append(f"Franchise: {market_projections['franchise_potential']}")
         if proj_parts:
-            add_slide(plan, image_lookup, "Market Projections", "  ·  ".join(proj_parts), "analysis", "market")
+            add_slide(plan, image_lookup, "Market Projections", "  ·  ".join(proj_parts), "analysis", "market", category="Deck Spine")
 
-    tagline = clean(data.get("tagline") or data.get("story_engine") or "")
-    closing_body = tagline[:120] if tagline else title
-    add_slide(plan, image_lookup, "Closing", closing_body, "title", "closing")
+    # New categorized intelligence section — the part that stops brain value from dying upstream.
+    catalog = build_intelligence_catalog(data)
+    stage_map = {
+        "Story Core": "story_core",
+        "Producer Intelligence": "producer_read",
+        "Character Intelligence": "character_intel",
+        "Performance Intelligence": "performance",
+        "Scene & Moment Intelligence": "scene_intel",
+        "Visual & Document Intelligence": "visual_intel",
+        "Additional Brain Signals": "producer_read",
+    }
+    for category_name, entries in catalog.items():
+        add_category_slides(
+            plan,
+            image_lookup,
+            category_name,
+            entries,
+            stage=stage_map.get(category_name, "producer_read"),
+            max_items_per_slide=3,
+        )
 
-    seen_bodies: set[str] = set()
+    closing_body = clean(data.get("tagline") or data.get("story_engine") or title)
+    add_slide(plan, image_lookup, "Closing", closing_body[:140], "title", "closing", category="Deck Spine")
+
+    # Deduplicate exact duplicate title+body pairs but preserve category versions when content is unique.
+    seen: set[str] = set()
     deduped: List[Dict[str, Any]] = []
     for slide in plan:
-        body = slide.get("body", "")
-        layout = slide.get("layout", "")
-        if layout in {"hero_full_bleed", "title"} or body not in seen_bodies:
-            deduped.append(slide)
-            if body:
-                seen_bodies.add(body)
+        key = f"{slide.get('title', '')}::{slide.get('body', '')}::{slide.get('category', '')}"
+        if key in seen:
+            continue
+        deduped.append(slide)
+        seen.add(key)
     plan = deduped
 
     return {
         "title": title,
         "slides": plan,
         "slide_count": len(plan),
-        "layout_engine_version": "v2_api_layout_system",
+        "layout_engine_version": "v3_categorized_intelligence",
+        "intelligence_catalog": catalog,
+        "api_enrichment_enabled": api_enabled(),
     }
 
 
@@ -547,6 +926,7 @@ def main() -> None:
     print("✅ Full slide plan generated")
     print(f"✅ Slide count: {plan['slide_count']}")
     print(f"✅ Layout engine: {plan.get('layout_engine_version', 'unknown')}")
+    print(f"✅ Intelligence categories: {len(plan.get('intelligence_catalog', {}))}")
 
 
 if __name__ == "__main__":
