@@ -760,224 +760,454 @@ def draw_wrapped_text(pdf, text, x, y, max_width=500, font_name="Helvetica", fon
     return y
 
 
-def build_simple_analysis_pdf(report_output: dict, out_path):
-    from reportlab.lib.pagesizes import letter
-    from reportlab.pdfgen import canvas
-    from reportlab.lib.utils import ImageReader
-    from reportlab.lib import colors
-    import os
+def build_simple_analysis_pdf(report_output: dict, out_path: Path):
+    pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
+    width, height = LETTER
 
-    c = canvas.Canvas(str(out_path), pagesize=letter)
-    width, height = letter
+    left = 44
+    right = width - 44
+    content_w = right - left
+    top = height - 44
+    bottom = 36
+    y = top
 
-    def footer(page_num):
-        c.setFont("Helvetica", 8)
-        c.setFillColor(colors.HexColor("#D4AF37"))
-        c.drawCentredString(
-            width / 2,
-            18,
-            f"EVOLUM AI SCRIPT INTELLIGENCE THAT MOVES STORIES FORWARD  PAGE {page_num}",
-        )
+    palette = {
+        "bg": colors.HexColor("#090B0E"),
+        "panel": colors.HexColor("#10151C"),
+        "panel_2": colors.HexColor("#151B24"),
+        "panel_3": colors.HexColor("#1C2430"),
+        "gold": colors.HexColor("#D9A441"),
+        "blue": colors.HexColor("#4C88C7"),
+        "text": colors.white,
+        "muted": colors.HexColor("#C9CED6"),
+        "rule": colors.HexColor("#283341"),
+        "chip": colors.HexColor("#141A22"),
+    }
 
-    def title_page():
-        title = report_output.get("title", "Untitled")
-        lead = report_output.get("protagonist", "Unknown")
-        genre = report_output.get("world", "Feature")
-        tone = report_output.get("tone", "Unknown")
-        tagline = report_output.get("logline", "")
+    brain = load_latest_brain_output() or {}
+    merged = dict(brain)
+    merged.update(report_output or {})
+    report_output = merged
 
-        img_path = None
-        for p in [
-            "static/generated/cover.png",
-            "static/generated/poster.png",
-            "static/generated/image_1.png",
-        ]:
-            if os.path.exists(p):
-                img_path = p
-                break
+    title = safe_text(report_output.get("title"), "UNTITLED PROJECT")
+    lead_character = safe_text(report_output.get("lead_character") or report_output.get("protagonist"))
+    tone = safe_text(report_output.get("tone"))
+    genre = safe_text(report_output.get("genre") or report_output.get("world"), "Drama")
+    summary_note = safe_text(report_output.get("summary_note"), "")
+    if summary_note in {"", "-"}:
+        summary_note = f"{title} puts {lead_character} at the center of {genre.lower()}, with a tone that feels {tone.lower() if tone not in {'', '-'} else 'cinematic and compelling'}."
 
-        if img_path:
-            try:
-                c.drawImage(ImageReader(img_path), 0, 0, width=width, height=height)
-            except:
-                pass
+    def page_bg():
+        pdf.setFillColor(palette["bg"])
+        pdf.rect(0, 0, width, height, fill=1, stroke=0)
 
-        c.setFillColor(colors.black)
-        c.rect(0, 0, width, height, fill=1, stroke=0)
-        c.setFillColor(colors.white)
+    def footer(page_no: int):
+        pdf.setStrokeColor(palette["rule"])
+        pdf.line(left, 24, right, 24)
+        pdf.setFillColor(palette["gold"])
+        pdf.setFont("Helvetica-Bold", 8)
+        pdf.drawString(left, 11, "EVOLUM AI")
+        pdf.setFillColor(palette["muted"])
+        pdf.setFont("Helvetica", 8)
+        pdf.drawString(left + 58, 11, "SCRIPT INTELLIGENCE THAT MOVES STORIES FORWARD")
+        pdf.drawRightString(right, 11, f"PAGE {page_no}")
 
-        c.setFont("Helvetica-Bold", 28)
-        c.drawString(36, height - 60, title)
+    page_no = 1
+    page_bg()
 
-        c.setFont("Helvetica-Bold", 18)
-        c.setFillColor(colors.HexColor("#D4AF37"))
-        c.drawString(36, height - 95, "EVOLUM Full Script Analysis Report")
+    def new_page():
+        nonlocal y, page_no
+        footer(page_no)
+        pdf.showPage()
+        page_no += 1
+        page_bg()
+        y = top
 
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica", 11)
-        text = c.beginText(36, height - 135)
-        for line in [
-            f"{title} puts {lead} at the center of {genre}.",
-            f"Tone: {tone}",
-            "",
-            tagline[:220],
-        ]:
-            text.textLine(line)
-        c.drawText(text)
-        footer(1)
-        c.showPage()
+    def ensure_space(points_needed=72):
+        nonlocal y
+        if y - points_needed < bottom:
+            new_page()
 
-    def executive_page():
-        y = height - 50
-        c.setFillColor(colors.black)
-        c.rect(0, 0, width, height, fill=1, stroke=0)
+    def section_label(text, band=False):
+        nonlocal y
+        ensure_space(34)
+        if band:
+            pdf.setFillColor(palette["panel_2"])
+            pdf.roundRect(left, y-19, content_w, 24, 8, fill=1, stroke=0)
+            pdf.setFillColor(palette["gold"])
+            pdf.setFont("Helvetica-Bold", 12)
+            pdf.drawString(left + 12, y-3, text.upper())
+            y -= 31
+        else:
+            pdf.setFillColor(palette["gold"])
+            pdf.setFont("Helvetica-Bold", 12)
+            pdf.drawString(left, y, text.upper())
+            pdf.setStrokeColor(palette["gold"])
+            pdf.line(left, y-6, left+110, y-6)
+            y -= 17
 
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 22)
-        c.drawString(36, y, "EXECUTIVE SUMMARY")
-        y -= 34
+    def paragraph(text, font_name="Helvetica", font_size=10.5, leading=14, color=None, indent=0, max_width=None):
+        nonlocal y
+        text = safe_text(text, "")
+        if not text:
+            return
+        lines = wrap_text(text, font_name=font_name, font_size=font_size, max_width=max_width or (content_w-indent))
+        ensure_space((len(lines)+1)*leading)
+        pdf.setFillColor(color or palette["muted"])
+        pdf.setFont(font_name, font_size)
+        for line in lines:
+            pdf.drawString(left + indent, y, line)
+            y -= leading
+        y -= 2
 
-        c.setFont("Helvetica", 11)
-        text = c.beginText(36, y)
-        summary = report_output.get(
-            "executive_summary",
-            report_output.get("synopsis", "No summary available."),
-        )
-        for line in str(summary)[:1400].split(". "):
-            text.textLine(line.strip())
-            text.textLine("")
-        c.drawText(text)
+    def info_row(label, value, label_w=115, max_width=None):
+        nonlocal y
+        value = safe_text(value)
+        lines = wrap_text(value, font_name="Helvetica", font_size=10.5, max_width=max_width or (content_w-label_w-8))
+        ensure_space((len(lines)+1)*14)
+        pdf.setFillColor(palette["text"])
+        pdf.setFont("Helvetica-Bold", 10.5)
+        pdf.drawString(left, y, label)
+        pdf.setFillColor(palette["muted"])
+        pdf.setFont("Helvetica", 10.5)
+        yy = y
+        for line in lines:
+            pdf.drawString(left+label_w, yy, line)
+            yy -= 14
+        y = yy - 3
 
-        footer(2)
-        c.showPage()
+    def chip_row(items):
+        nonlocal y
+        items = [(a, b) for a, b in items if safe_text(b, "") and safe_text(b, "") != "-"]
+        if not items:
+            return
+        chip_h = 40
+        gap = 10
+        chip_w = (content_w - gap*(len(items)-1))/max(1, len(items))
+        ensure_space(chip_h + 16)
+        x = left
+        for label, value in items:
+            pdf.setFillColor(palette["chip"])
+            pdf.roundRect(x, y-chip_h+8, chip_w, chip_h, 10, fill=1, stroke=0)
+            pdf.setFillColor(palette["gold"])
+            pdf.setFont("Helvetica-Bold", 8)
+            pdf.drawString(x+10, y-2, safe_text(label).upper())
+            pdf.setFillColor(palette["text"])
+            pdf.setFont("Helvetica-Bold", 10)
+            val = safe_text(value)
+            if pdf.stringWidth(val, "Helvetica-Bold", 10) > chip_w - 20:
+                val = val[:max(8, int((chip_w-40)/5))] + '...'
+            pdf.drawString(x+10, y-16, val)
+            x += chip_w + gap
+        y -= chip_h + 10
 
-    def story_page():
-        y = height - 50
-        c.setFillColor(colors.black)
-        c.rect(0, 0, width, height, fill=1, stroke=0)
+    def bullet_list(title_text, items, bullet_color=None, compact=False):
+        nonlocal y
+        clean_items = []
+        for item in (items or []):
+            txt = safe_text(item, "")
+            if txt:
+                clean_items.append(txt)
+        if not clean_items:
+            return
+        section_label(title_text)
+        leading = 12 if compact else 14
+        for item in clean_items:
+            lines = wrap_text(item, font_name="Helvetica", font_size=10.2, max_width=content_w-16)
+            ensure_space((len(lines)+1)*leading)
+            pdf.setFillColor(bullet_color or palette["gold"])
+            pdf.circle(left+4, y+3, 1.8, fill=1, stroke=0)
+            pdf.setFillColor(palette["muted"])
+            pdf.setFont("Helvetica", 10.2)
+            yy = y
+            for line in lines:
+                pdf.drawString(left+14, yy, line)
+                yy -= leading
+            y = yy - 3
 
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 22)
-        c.drawString(36, y, "STORY SNAPSHOT")
-        y -= 36
+    def small_card(x, card_y, card_w, card_h, title_text, body_text):
+        pdf.setFillColor(palette["panel"])
+        pdf.roundRect(x, card_y-card_h, card_w, card_h, 10, fill=1, stroke=0)
+        pdf.setFillColor(palette["gold"])
+        pdf.setFont("Helvetica-Bold", 8.5)
+        pdf.drawString(x+10, card_y-16, safe_text(title_text).upper())
+        pdf.setFillColor(palette["text"])
+        pdf.setFont("Helvetica-Bold", 11)
+        body = safe_text(body_text)
+        short = body if len(body) <= 44 else body[:41] + "..."
+        pdf.drawString(x+10, card_y-31, short)
 
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(36, y, "LOGLINE")
-        y -= 18
-        c.setFont("Helvetica", 10)
+    def draw_image_block(image_path: Path, x, top_y, box_w, box_h, caption=""):
+        if not image_path or not Path(image_path).exists():
+            return False
+        try:
+            pdf.drawImage(str(image_path), x, top_y-box_h, width=box_w, height=box_h, preserveAspectRatio=True, anchor='c', mask='auto')
+            pdf.setStrokeColor(palette["rule"])
+            pdf.roundRect(x, top_y-box_h, box_w, box_h, 10, fill=0, stroke=1)
+            if caption:
+                pdf.setFillColor(palette["muted"])
+                pdf.setFont("Helvetica", 8)
+                pdf.drawString(x+4, top_y-box_h-10, caption)
+            return True
+        except Exception:
+            return False
 
-        logline = report_output.get("logline", "")
-        txt = c.beginText(36, y)
-        for line in logline[:600].split(". "):
-            txt.textLine(line)
-        c.drawText(txt)
+    def coerce_existing_image(path_value):
+        if not path_value:
+            return None
+        candidate = Path(str(path_value))
+        if candidate.exists():
+            return candidate
+        rel = str(path_value).lstrip('/')
+        candidate = BASE_DIR / rel
+        if candidate.exists():
+            return candidate
+        if rel.startswith('opt/render/project/src/'):
+            candidate = Path('/') / rel
+            if candidate.exists():
+                return candidate
+        return None
 
-        y -= 120
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(36, y, "SYNOPSIS")
-        y -= 18
-        c.setFont("Helvetica", 10)
+    def find_report_image(section_key: str, fallback_title: str, fallback_body: str = ""):
+        image_plan = report_output.get("image_plan") or []
+        wanted = normalize_key(section_key)
+        for item in image_plan:
+            title_key = normalize_key(item.get("slide_title", ""))
+            if wanted and wanted in title_key:
+                existing = coerce_existing_image(item.get("image_path"))
+                if existing:
+                    return existing
+                options = item.get("image_options") or []
+                for opt in options:
+                    existing = coerce_existing_image(opt.get("image_path"))
+                    if existing:
+                        return existing
+        for item in image_plan[:3]:
+            existing = coerce_existing_image(item.get("image_path"))
+            if existing:
+                return existing
+        prompt = build_fal_image_prompt(fallback_title, slide_body=fallback_body, brain_output=brain)
+        safe_title = re.sub(r"[^a-z0-9_]+", "_", normalize_key(fallback_title) or "report_image").strip("_") or "report_image"
+        cache_dir = BASE_DIR / "generated_images" / "reports"
+        cache_path = cache_dir / f"{safe_title}.jpg"
+        return generate_fal_image(prompt, cache_path)
 
-        txt = c.beginText(36, y)
-        for line in report_output.get("synopsis", "")[:1800].split(". "):
-            txt.textLine(line)
-        c.drawText(txt)
+    pdf.setTitle(f"{title} Analysis Report")
 
-        footer(3)
-        c.showPage()
+    cover_image = find_report_image("title", title, report_output.get("logline") or summary_note)
+    interior_image = find_report_image("world", "World", report_output.get("world") or report_output.get("synopsis") or report_output.get("logline"))
 
-    def character_page():
-        y = height - 50
-        c.setFillColor(colors.black)
-        c.rect(0, 0, width, height, fill=1, stroke=0)
+    # Cover page
+    if cover_image and Path(cover_image).exists():
+        draw_image_block(Path(cover_image), width*0.47, top, width*0.47, 350)
+    else:
+        pdf.setFillColor(palette["panel"])
+        pdf.roundRect(width*0.47, top-350, width*0.47, 350, 12, fill=1, stroke=0)
 
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 22)
-        c.drawString(36, y, "CHARACTER & ARC")
-        y -= 36
+    y = top - 4
+    pdf.setFillColor(palette["gold"])
+    pdf.rect(left, y-6, 120, 4, fill=1, stroke=0)
+    y -= 24
+    pdf.setFillColor(palette["text"])
+    pdf.setFont("Helvetica-Bold", 24)
+    title_lines = wrap_text(title, font_name="Helvetica-Bold", font_size=24, max_width=width*0.40)
+    for line in title_lines:
+        pdf.drawString(left, y, line)
+        y -= 28
+    pdf.setFillColor(palette["gold"])
+    pdf.setFont("Helvetica-Bold", 13)
+    pdf.drawString(left, y, "EVOLUM Full Script Analysis Report")
+    y -= 24
+    paragraph(summary_note, font_size=11, leading=15, color=palette["muted"], max_width=width*0.40)
+    y -= 6
+    chip_row([
+        ("Lead", lead_character),
+        ("Genre", genre),
+        ("Tone", tone),
+    ])
+    y -= 2
+    section_label("Story Snapshot", band=True)
+    info_row("Tagline", report_output.get("tagline") or report_output.get("logline"), max_width=width*0.40-118)
+    info_row("World", report_output.get("world"), max_width=width*0.40-118)
+    info_row("Theme", report_output.get("theme"), max_width=width*0.40-118)
+    info_row("Core Conflict", report_output.get("core_conflict"), max_width=width*0.40-118)
+    info_row("Story Engine", report_output.get("story_engine"), max_width=width*0.40-118)
+    info_row("Reversal", report_output.get("reversal"), max_width=width*0.40-118)
 
-        c.setFont("Helvetica", 11)
-        protagonist = report_output.get("protagonist", "Lead")
-        conflict = report_output.get("core_conflict", "")
-        arc = report_output.get("role_arc_map", "")
+    # Page 2
+    new_page()
+    section_label("Executive Summary", band=True)
+    paragraph(report_output.get("executive_summary") or summary_note, font_name="Helvetica-Bold", font_size=11.2, leading=15, color=palette["text"])
+    chip_row([
+        ("Commercial Potential", safe_text((report_output.get("strength_index") or {}).get("marketability"))),
+        ("Audience Appeal", ", ".join((report_output.get("audience_profile") or [])[:2]) or report_output.get("commercial_positioning")),
+        ("Budget Range", (report_output.get("market_projections") or {}).get("estimated_budget_tier")),
+        ("Franchise", (report_output.get("market_projections") or {}).get("franchise_potential")),
+    ])
+    if interior_image and Path(interior_image).exists():
+        draw_image_block(Path(interior_image), left, y, content_w, 180)
+        y -= 194
+    section_label("At A Glance")
+    bullet_list("", [
+        report_output.get("commercial_positioning"),
+        report_output.get("packaging_potential"),
+        (report_output.get("market_projections") or {}).get("distribution_angle"),
+        (report_output.get("market_projections") or {}).get("sales_hook"),
+    ], compact=True)
+    if safe_text(report_output.get("tone_comparables"), "") != "-":
+        section_label("Tone & Comparables")
+        paragraph(", ".join(report_output.get("tone_comparables") or []), font_name="Helvetica-Bold", font_size=11, color=palette["text"])
+    bullet_list("Audience Profile", report_output.get("audience_profile"), compact=True)
 
-        text = c.beginText(36, y)
-        for line in [
-            f"WHO HE IS: {protagonist}",
-            "",
-            f"WHAT STANDS IN THE WAY: {conflict}",
-            "",
-            f"ARC: {arc}",
-        ]:
-            text.textLine(line)
-            text.textLine("")
-        c.drawText(text)
+    # Page 3
+    new_page()
+    section_label("Story Snapshot", band=True)
+    left_col_w = content_w * 0.47
+    img_w = content_w - left_col_w - 16
+    local_y = y
+    if cover_image and Path(cover_image).exists():
+        draw_image_block(Path(cover_image), left, local_y, left_col_w, 210)
+    else:
+        pdf.setFillColor(palette["panel"])
+        pdf.roundRect(left, local_y-210, left_col_w, 210, 10, fill=1, stroke=0)
+    x_text = left + left_col_w + 16
+    yy = local_y - 4
+    rows = [
+        ("World", report_output.get("setting") or report_output.get("world")),
+        ("Setup", report_output.get("summary_note")),
+        ("Conflict", report_output.get("core_conflict")),
+        ("Turn", report_output.get("reversal")),
+        ("Resolution", report_output.get("theme")),
+    ]
+    for label_text, body_text in rows:
+        pdf.setFillColor(palette["gold"])
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(x_text, yy, label_text.upper())
+        body_lines = wrap_text(safe_text(body_text), font_name="Helvetica", font_size=9.4, max_width=img_w-10)
+        yy -= 12
+        pdf.setFillColor(palette["muted"])
+        pdf.setFont("Helvetica", 9.4)
+        for line in body_lines[:4]:
+            pdf.drawString(x_text, yy, line)
+            yy -= 11
+        yy -= 4
+    y = local_y - 228
+    section_label("Logline")
+    paragraph(report_output.get("logline"), font_name="Helvetica-Bold", font_size=12, leading=16, color=palette["text"])
+    section_label("Synopsis")
+    paragraph(report_output.get("synopsis"), font_size=10.4, leading=14)
 
-        footer(4)
-        c.showPage()
+    # Page 4
+    new_page()
+    section_label("Character & Arc", band=True)
+    char_card_w = content_w * 0.46
+    if interior_image and Path(interior_image).exists():
+        draw_image_block(Path(interior_image), left, y, char_card_w, 170)
+    else:
+        pdf.setFillColor(palette["panel"])
+        pdf.roundRect(left, y-170, char_card_w, 170, 10, fill=1, stroke=0)
+    x2 = left + char_card_w + 16
+    yy = y - 2
+    detail_rows = [
+        ("Who He Is" if lead_character not in {'', '-'} else "Lead", report_output.get("protagonist_summary") or summary_note),
+        ("What He Wants" if lead_character not in {'', '-'} else "Objective", report_output.get("actor_objective") or report_output.get("story_engine")),
+        ("What Stands In The Way", report_output.get("core_conflict")),
+        ("Arc", " -> ".join(report_output.get("role_arc_map") or [])),
+    ]
+    for label_text, body_text in detail_rows:
+        pdf.setFillColor(palette["gold"])
+        pdf.setFont("Helvetica-Bold", 9.5)
+        pdf.drawString(x2, yy, label_text.upper())
+        body_lines = wrap_text(safe_text(body_text), font_name="Helvetica", font_size=9.5, max_width=content_w-char_card_w-26)
+        yy -= 12
+        pdf.setFillColor(palette["muted"])
+        pdf.setFont("Helvetica", 9.5)
+        for line in body_lines[:4]:
+            pdf.drawString(x2, yy, line)
+            yy -= 11
+        yy -= 5
+    y -= 186
+    chip_row([
+        ("Core Theme", (report_output.get("theme") or "").split(",")[0]),
+        ("Character", safe_text((report_output.get("strength_index") or {}).get("character"))),
+        ("Concept", safe_text((report_output.get("strength_index") or {}).get("concept"))),
+        ("Originality", safe_text((report_output.get("strength_index") or {}).get("originality"))),
+    ])
+    bullet_list("Actor Prep Insights", [
+        f"Objective: {report_output.get('actor_objective')}",
+        f"Tactics: {', '.join(report_output.get('playable_tactics') or [])}",
+        f"Emotional Triggers: {', '.join(report_output.get('emotional_triggers') or [])}",
+        f"Danger Zones: {', '.join(report_output.get('audition_danger_zones') or [])}",
+    ], compact=True)
 
-    def dynamics_page():
-        y = height - 50
-        c.setFillColor(colors.black)
-        c.rect(0, 0, width, height, fill=1, stroke=0)
+    # Page 5
+    new_page()
+    section_label("Relationship Dynamics", band=True)
+    rel_map = report_output.get("relationship_leverage_map") or []
+    if rel_map:
+        table_top = y
+        col1 = left
+        col2 = left + 120
+        col3 = left + 250
+        pdf.setFillColor(palette["panel_3"])
+        pdf.roundRect(left, y-18, content_w, 22, 8, fill=1, stroke=0)
+        pdf.setFillColor(palette["gold"])
+        pdf.setFont("Helvetica-Bold", 9)
+        for x, label_text in [(col1, "Character"), (col2, "Dynamic"), (col3, "Function")]:
+            pdf.drawString(x+8, y-3, label_text.upper())
+        y -= 26
+        for idx, rel in enumerate(rel_map[:6]):
+            ensure_space(22)
+            if idx % 2 == 0:
+                pdf.setFillColor(palette["panel"])
+                pdf.roundRect(left, y-16, content_w, 20, 6, fill=1, stroke=0)
+            pdf.setFillColor(palette["text"])
+            pdf.setFont("Helvetica-Bold", 9.2)
+            pdf.drawString(col1+8, y-3, safe_text(rel.get("character")))
+            pdf.setFont("Helvetica", 9.2)
+            pdf.drawString(col2+8, y-3, safe_text(rel.get("dynamic")))
+            func = safe_text(rel.get("function"))
+            func = func if len(func) < 48 else func[:45] + "..."
+            pdf.drawString(col3+8, y-3, func)
+            y -= 22
+        y -= 4
+    bullet_list("Emotional Continuity", report_output.get("emotional_continuity"), compact=True)
+    bullet_list("Reader Chemistry Tips", report_output.get("reader_chemistry_tips"), compact=True)
+    bullet_list("Set Ready Checklist", report_output.get("set_ready_checklist"), compact=True)
 
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 22)
-        c.drawString(36, y, "RELATIONSHIP DYNAMICS")
-        y -= 36
+    # Page 6
+    new_page()
+    section_label("Key Scenes & Moments", band=True)
+    cards = []
+    for idx, beat in enumerate(report_output.get("memorization_beats") or []):
+        cards.append((f"Moment {idx+1}", beat))
+    if not cards:
+        cards = [("Story Engine", report_output.get("story_engine")), ("Reversal", report_output.get("reversal")), ("Theme", report_output.get("theme"))]
+    card_w = (content_w - 18) / 2
+    card_h = 56
+    start_y = y
+    x_positions = [left, left + card_w + 18]
+    for idx, card in enumerate(cards[:4]):
+        row = idx // 2
+        col = idx % 2
+        small_card(x_positions[col], start_y - row*(card_h+12), card_w, card_h, card[0], card[1])
+    y = start_y - ((min(len(cards),4)+1)//2)*(card_h+12) - 6
+    bullet_list("Commercial Positioning", [
+        report_output.get("commercial_positioning"),
+        report_output.get("packaging_potential"),
+        report_output.get("character_leverage"),
+        (report_output.get("market_projections") or {}).get("audience_reach"),
+    ], compact=True)
+    bullet_list("Visual Mood & Inspiration", [
+        f"Layout Family: {((report_output.get('document_layouts') or {}).get('analysis_report') or {}).get('layout_family')}",
+        f"Cover Style: {((report_output.get('document_layouts') or {}).get('analysis_report') or {}).get('cover_style')}",
+        f"Callout Style: {((report_output.get('document_layouts') or {}).get('actor_prep_report') or {}).get('callout_style')}",
+        f"Visual Family: {safe_text(((report_output.get('image_plan') or [{}])[0]).get('visual_family'))}",
+    ], compact=True)
 
-        c.setFont("Helvetica", 10)
-        text = c.beginText(36, y)
-        for line in str(
-            report_output.get(
-                "relationship_leverage_map",
-                "Pressure relationships shape the story.",
-            )
-        ).split(". "):
-            text.textLine(line)
-            text.textLine("")
-        c.drawText(text)
+    footer(page_no)
+    pdf.save()
 
-        footer(5)
-        c.showPage()
-
-    def moments_page():
-        y = height - 50
-        c.setFillColor(colors.black)
-        c.rect(0, 0, width, height, fill=1, stroke=0)
-
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica-Bold", 22)
-        c.drawString(36, y, "KEY SCENES & MOMENTS")
-        y -= 36
-
-        c.setFont("Helvetica", 11)
-        text = c.beginText(36, y)
-
-        for item in report_output.get(
-            "key_moments",
-            [
-                "Opening power move",
-                "First pressure turn",
-                "Status shift or reveal",
-                "Control reset",
-            ],
-        ):
-            text.textLine(f"• {item}")
-            text.textLine("")
-
-        c.drawText(text)
-        footer(6)
-        c.showPage()
-
-    title_page()
-    executive_page()
-    story_page()
-    character_page()
-    dynamics_page()
-    moments_page()
-
-    c.save()
 
 @app.before_request
 def require_beta_gate():
