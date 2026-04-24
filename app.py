@@ -1373,10 +1373,38 @@ def session_test():
 
     return redirect("/studio")
 
-@app.route("/project")
-def project_page():
-    user_name = session.get("user_name", "Creator")
-    return render_template("project.html", user_name=user_name)
+PROJECTS = {}
+
+@app.route("/new-project", methods=["GET", "POST"])
+@require_login
+def new_project():
+    if request.method == "POST":
+        project_title = request.form.get("project_title", "").strip()
+        project_type = request.form.get("project_type", "").strip()
+
+        project_id = str(len(PROJECTS) + 1)
+
+        PROJECTS[project_id] = {
+            "id": project_id,
+            "title": project_title,
+            "type": project_type,
+            "owner_user_id": session.get("user_id")
+        }
+
+        return redirect(f"/project/{project_id}")
+
+    return render_template("new_project.html")
+
+
+@app.route("/project/<project_id>")
+@require_login
+def project_workspace(project_id):
+    project = PROJECTS.get(project_id)
+
+    if not project:
+        return redirect("/studio")
+
+    return render_template("project.html", project=project)
     
 @app.route("/admin")
 def admin():
