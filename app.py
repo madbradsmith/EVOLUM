@@ -1346,6 +1346,9 @@ def studio():
         user_name=session.get("user_name"),
         user_email=session.get("user_email")
     )
+    @app.route("/admin")
+def admin():
+    return render_template("admin.html")
 
 @app.route("/status")
 def status():
