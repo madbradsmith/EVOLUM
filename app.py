@@ -1339,11 +1339,6 @@ def index():
         gate_error=None,
     )
 
-@app.route("/")
-def index():
-    return render_template("index.html")
-
-
 @app.route("/studio")
 def studio():
     return render_template(
