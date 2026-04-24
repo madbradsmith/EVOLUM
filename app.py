@@ -413,31 +413,6 @@ def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
     }
 
 
-def load_deck_builder_module():
-    global _REFINE_BUILDER_MODULE
-    if _REFINE_BUILDER_MODULE is not None:
-        return _REFINE_BUILDER_MODULE
-
-    builder_path = BASE_DIR / "deck_builder_MADBRAD_BRAIN_V_1.py"
-    if not builder_path.exists():
-        _REFINE_BUILDER_MODULE = False
-        return None
-
-    try:
-        spec = importlib.util.spec_from_file_location("deck_builder_madbrad_brain_v1", builder_path)
-        if not spec or not spec.loader:
-            _REFINE_BUILDER_MODULE = False
-            return None
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        _REFINE_BUILDER_MODULE = module
-        return module
-    except Exception as e:
-        print(f"⚠️ Could not load deck builder for refine image mapping: {e}", flush=True)
-        _REFINE_BUILDER_MODULE = False
-        return None
-
-
 def find_latest_project_dir(slide_plan_file=None):
     if slide_plan_file and slide_plan_file.exists():
         return slide_plan_file.parent
@@ -708,9 +683,9 @@ def make_slide_payload_cache_key(slide_plan_file=None):
         abo = BASE_DIR / "approved_brain_output.json"
     if abo.exists():
         parts.append(f"abo:{abo}:{abo.stat().st_mtime_ns}")
-    builder_path = BASE_DIR / "deck_builder_MADBRAD_BRAIN_V_1.py"
+    builder_path = BASE_DIR / "deck_builder.py"
     if builder_path.exists():
-        parts.append(f"builder:{builder_path.stat().st_mtime_ns}")
+    parts.append(f"builder:{builder_path}:{builder_path.stat().st_mtime_ns}")
     return "|".join(parts)
 
 
