@@ -1367,7 +1367,7 @@ def studio():
     )
 @app.route("/session-test")
 def session_test():
-    session["user_id"] = "test_user_001"
+    session["user_id"] = "1"
     session["user_name"] = "James Evans"
     session["user_email"] = "test@evolumstudio.com"
 
