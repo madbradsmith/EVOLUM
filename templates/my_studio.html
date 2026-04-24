@@ -10,83 +10,81 @@
 <body>
 
 <div class="container">
-    <div class="logo">
-        <img src="/static/logo.png" class="logo-img">
+<div class="logo">
+    <img src="/static/logo.png" class="logo-img">
+</div>
+
+<div class="shell">
+<div class="card">
+
+    <div class="workspace-title" style="text-align:center;">
+        EVOLUM STUDIO
     </div>
 
-    <div class="shell">
-        <div class="card">
+    <div class="workspace-copy" style="text-align:center; margin-bottom:12px;">
+        Peace, {{ user_name or "Creator" }}.
+    </div>
 
-            <div class="workspace-title" style="text-align:center;">
-                EVOLUM STUDIO
+    <!-- TOP ROW -->
+    <div class="choice home-module-card" style="min-height:240px; margin-bottom:16px;">
+
+        <div class="choice-title">My Projects</div>
+
+        <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px;">
+
+            <div class="choice" style="min-height:110px; cursor:pointer;">
+                📁<br><br>
+                NOT TODAY
             </div>
 
-            <div class="workspace-copy" style="text-align:center; margin-bottom:14px;">
-                Peace, {{ user_name or "Creator" }}. Manage your projects, assets, and creative tools in one place.
+            <div class="choice" style="min-height:110px; cursor:pointer;">
+                📁<br><br>
+                COURT JESTER
             </div>
 
-            <div class="choices-row" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap:14px;">
-
-                <div class="choice home-module-card" style="min-height:180px;">
-                    <div class="choice-title">My Projects</div>
-                    <div class="choice-copy">
-                        Start, open, and manage your active creative projects.
-                    </div>
-                    <div class="choice-link">Project Management</div>
-                </div>
-
-                <div class="choice home-module-card" style="min-height:180px;">
-                    <div class="choice-title">Assets</div>
-                    <div class="choice-copy">
-                        Store and organize images, references, reports, and deck materials.
-                    </div>
-                    <div class="choice-link">Asset Storage</div>
-                </div>
-
-                <div class="choice home-module-card" style="min-height:180px;">
-                    <div class="choice-title">Deck Generator</div>
-                    <div class="choice-copy">
-                        Build or continue pitch decks from inside your project workspace.
-                    </div>
-                    <div class="choice-link">Deck Generation</div>
-                </div>
-
-                <div class="choice home-module-card" style="min-height:180px;">
-                    <div class="choice-title">Image Generator</div>
-                    <div class="choice-copy">
-                        Create project images, posters, characters, and visual references.
-                    </div>
-                    <div class="choice-link">Image Generation</div>
-                </div>
-
-                <div class="choice home-module-card" style="min-height:180px;">
-                    <div class="choice-title">Text Generator</div>
-                    <div class="choice-copy">
-                        Generate loglines, synopses, pitch copy, bios, and project language.
-                    </div>
-                    <div class="choice-link">Text Generation</div>
-                </div>
-
-                <div class="choice home-module-card" style="min-height:180px;">
-                    <div class="choice-title">Exports</div>
-                    <div class="choice-copy">
-                        Download latest decks, PDFs, reports, and project packages.
-                    </div>
-                    <div class="choice-link">Download Center</div>
-                </div>
-
-            </div>
-
-            <div style="margin-top:14px; text-align:center;">
-                <a href="/" class="secondary-button" style="text-decoration:none;padding:12px 18px;display:inline-block;">Back to EVOLUM Tools</a>
-            </div>
-
-            <div class="footer-powered" style="margin-top:12px;text-align:center;">
-                Powered by the Developum AI Engine
+            <div class="choice" style="min-height:110px; cursor:pointer;">
+                ＋<br><br>
+                NEW PROJECT
             </div>
 
         </div>
+
     </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:14px;">
+
+        <div class="choice home-module-card" style="min-height:180px; cursor:pointer;">
+            <div class="choice-title">Deck Generator</div>
+            <div class="choice-copy" style="margin-top:20px;">
+                Open Generator Modal
+            </div>
+        </div>
+
+        <div class="choice home-module-card" style="min-height:180px; cursor:pointer;">
+            <div class="choice-title">Image Generator</div>
+            <div class="choice-copy" style="margin-top:20px;">
+                Open Generator Modal
+            </div>
+        </div>
+
+        <div class="choice home-module-card" style="min-height:180px; cursor:pointer;">
+            <div class="choice-title">Text Generator</div>
+            <div class="choice-copy" style="margin-top:20px;">
+                Open Generator Modal
+            </div>
+        </div>
+
+    </div>
+
+    <div style="margin-top:14px; text-align:center;">
+        <a href="/" class="secondary-button" style="text-decoration:none;padding:12px 18px;display:inline-block;">
+            Back to EVOLUM Tools
+        </a>
+    </div>
+
+</div>
+</div>
 </div>
 
 </body>
