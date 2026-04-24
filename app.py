@@ -685,7 +685,8 @@ def make_slide_payload_cache_key(slide_plan_file=None):
         parts.append(f"abo:{abo}:{abo.stat().st_mtime_ns}")
     builder_path = BASE_DIR / "deck_builder.py"
     if builder_path.exists():
-    parts.append(f"builder:{builder_path}:{builder_path.stat().st_mtime_ns}")
+        parts.append(f"builder:{builder_path}:{builder_path.stat().st_mtime_ns}")
+
     return "|".join(parts)
 
 
