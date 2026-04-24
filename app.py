@@ -1350,7 +1350,7 @@ def studio():
 @app.route("/admin")
 def admin():
     stats = {
-        "users": user_count,
+        "users": 0,
         "logins": 0,
         "deck_runs": 0,
         "script_analyses": 0,
