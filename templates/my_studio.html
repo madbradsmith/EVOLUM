@@ -1,1 +1,69 @@
-<html><body><h1>MY STUDIO</h1><p>Peace, {{ user_name or "Creator" }}.</p></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Studio</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+<div class="logo">
+    <img src="/static/logo.png" class="logo-img">
+</div>
+
+<div class="shell">
+<div class="card">
+
+    <div class="workspace-title" style="text-align:center;">
+        MY STUDIO
+    </div>
+
+    <div class="workspace-copy" style="text-align:center; margin-bottom:24px;">
+        Peace, {{ user_name or "Creator" }}.
+    </div>
+
+    <div class="choices-row">
+
+        <div class="choice home-module-card">
+            <div class="choice-title">Deck Generator</div>
+            <div class="choice-copy">Create investor-ready pitch decks.</div>
+        </div>
+
+        <div class="choice home-module-card">
+            <div class="choice-title">Script Analyzer</div>
+            <div class="choice-copy">Deep script insights in seconds.</div>
+        </div>
+
+        <div class="choice home-module-card">
+            <div class="choice-title">Audition Analyzer</div>
+            <div class="choice-copy">Prepare for your next role.</div>
+        </div>
+
+        <div class="choice home-module-card">
+            <div class="choice-title">Booked Role</div>
+            <div class="choice-copy">Break down the role you landed.</div>
+        </div>
+
+    </div>
+
+    <div style="margin-top:28px;">
+        <div class="choice-title">My Projects</div>
+
+        <div class="complete-copy" style="margin-top:10px;">
+            No saved projects yet. Start creating.
+        </div>
+    </div>
+
+    <div style="margin-top:24px; text-align:center;">
+        <a href="/" class="secondary-button" style="text-decoration:none;padding:12px 18px;display:inline-block;">Home</a>
+    </div>
+
+</div>
+</div>
+</div>
+
+</body>
+</html>
