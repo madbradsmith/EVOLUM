@@ -1378,33 +1378,39 @@ PROJECTS = {}
 @app.route("/new-project", methods=["GET", "POST"])
 @require_login
 def new_project():
+    ensure_projects_table()
+
     if request.method == "POST":
         project_title = request.form.get("project_title", "").strip()
         project_type = request.form.get("project_type", "").strip()
+        owner_user_id = session.get("user_id")
 
-        project_id = str(len(PROJECTS) + 1)
-
-        PROJECTS[project_id] = {
-            "id": project_id,
-            "title": project_title,
-            "type": project_type,
-            "owner_user_id": session.get("user_id")
-        }
-
-        return redirect(f"/project/{project_id}")
-
-    return render_template("new_project.html")
-
+        if not project_title:
+            return render_template("new_project.html")
 
 @app.route("/project/<project_id>")
 @require_login
 def project_workspace(project_id):
-    project = PROJECTS.get(project_id)
+    ensure_projects_table()
 
-    if not project:
+    with DB_ENGINE.begin() as conn:
+        row = conn.execute(text("""
+            SELECT id, owner_user_id, title, type, status, storage_used_mb
+            FROM projects
+            WHERE id = :project_id
+            AND owner_user_id = :owner_user_id
+        """), {
+            "project_id": project_id,
+            "owner_user_id": session.get("user_id")
+        }).mappings().first()
+
+    if not row:
         return redirect("/studio")
 
+    project = dict(row)
+
     return render_template("project.html", project=project)
+
     
 @app.route("/admin")
 def admin():
@@ -2125,6 +2131,23 @@ def actor_prep_latest_download_pdf():
     return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=True)
 
 # ===== ACTOR PREP ROUTES END =========================
+
+def ensure_projects_table():
+    if not DB_ENGINE:
+        return
+
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id SERIAL PRIMARY KEY,
+                owner_user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                type TEXT,
+                status TEXT DEFAULT 'Active',
+                storage_used_mb INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
 
 @app.route("/db-check")
 def db_check_route():
