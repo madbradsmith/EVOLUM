@@ -1367,10 +1367,10 @@ def studio():
     )
 @app.route("/session-test")
 def session_test():
+    session.clear()
     session["user_id"] = "1"
     session["user_name"] = "James Evans"
     session["user_email"] = "test@evolumstudio.com"
-
     return redirect("/studio")
 
 PROJECTS = {}
