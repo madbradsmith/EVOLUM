@@ -1349,14 +1349,6 @@ def studio():
     
 @app.route("/admin")
 def admin():
-    conn = sqlite3.connect("users.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT COUNT(*) FROM beta_users")
-    user_count = cur.fetchone()[0]
-
-    conn.close()
-
     stats = {
         "users": user_count,
         "logins": 0,
