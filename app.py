@@ -1388,6 +1388,23 @@ def new_project():
         if not project_title:
             return render_template("new_project.html")
 
+        with DB_ENGINE.begin() as conn:
+            result = conn.execute(text("""
+                INSERT INTO projects (owner_user_id, title, type)
+                VALUES (:owner_user_id, :title, :type)
+                RETURNING id
+            """), {
+                "owner_user_id": owner_user_id,
+                "title": project_title,
+                "type": project_type
+            })
+
+            project_id = result.scalar()
+
+        return redirect(f"/project/{project_id}")
+
+    return render_template("new_project.html")
+
 @app.route("/project/<project_id>")
 @require_login
 def project_workspace(project_id):
