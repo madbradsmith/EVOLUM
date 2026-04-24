@@ -6,97 +6,92 @@
 <title>EVOLUM Studio</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
-<div class="menu-toggle">
-☰
-</div>
-
-<div class="feedback-fab">
-    <div class="feedback-fab-icon">💬</div>
-    <div class="feedback-fab-text">
-        <div class="feedback-fab-label">Feedback</div>
-        <div class="feedback-fab-sub">Tell us what's working</div>
-    </div>
-</div>
-
 <div class="container">
-<div class="logo">
-    <img src="/static/logo.png" class="logo-img">
-</div>
-
-<div class="shell">
-<div class="card">
-
-    <div class="workspace-title" style="text-align:center;">
-        EVOLUM STUDIO
+    <div class="logo">
+        <img src="/static/logo.png" class="logo-img">
     </div>
-
-    <div class="workspace-copy" style="text-align:center; margin-bottom:12px;">
-        Peace, {{ user_name or "Creator" }}.
-    </div>
-
-    <!-- TOP ROW -->
-    <div class="choice home-module-card" style="min-height:240px; margin-bottom:16px;">
-
-        <div class="choice-title">My Projects</div>
-
-        <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px;">
-
-            <div class="choice" style="min-height:110px; cursor:pointer;">
-                📁<br><br>
-                NOT TODAY
+    <div class="shell">
+        <div class="card" style="padding:14px;">
+            <div class="workspace-title" style="text-align:center;">EVOLUM STUDIO</div>
+            <div class="workspace-copy" style="text-align:center; margin-bottom:10px;">
+                Peace, {{ user_name or "Creator" }}. Manage your projects, momentum, and collaborations.
             </div>
 
-            <div class="choice" style="min-height:110px; cursor:pointer;">
-                📁<br><br>
-                COURT JESTER
+            <div class="choice home-module-card" style="min-height:210px; padding:14px; margin-bottom:12px;">
+                <div class="choice-title">My Projects</div>
+                <div class="choice-copy" style="min-height:0; margin-bottom:10px;">
+                    Select a project, continue work, or start something new.
+                </div>
+
+                <div class="choices-row" style="grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:6px;">
+                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <div style="font-size:28px;">📁</div>
+                        <div class="choice-title" style="font-size:16px; margin-top:6px;">Not Today</div>
+                        <div class="choice-copy" style="font-size:11px; min-height:0;">Pitch package</div>
+                    </div>
+                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <div style="font-size:28px;">📁</div>
+                        <div class="choice-title" style="font-size:16px; margin-top:6px;">Court Jester</div>
+                        <div class="choice-copy" style="font-size:11px; min-height:0;">Animated feature</div>
+                    </div>
+                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+                        <div style="font-size:28px;">📁</div>
+                        <div class="choice-title" style="font-size:16px; margin-top:6px;">Roach Coach</div>
+                        <div class="choice-copy" style="font-size:11px; min-height:0;">Comedy feature</div>
+                    </div>
+                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center; border-color:rgba(255,122,0,0.75);">
+                        <div style="font-size:30px;">＋</div>
+                        <div class="choice-title" style="font-size:16px; margin-top:6px;">New Project</div>
+                        <div class="choice-copy" style="font-size:11px; min-height:0;">Start from deck flow</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="choice" style="min-height:110px; cursor:pointer;">
-                ＋<br><br>
-                NEW PROJECT
+            <div class="choices-row" style="grid-template-columns:1.2fr 0.8fr; gap:12px;">
+                <div class="choice home-module-card" style="min-height:230px; padding:16px; text-align:left;">
+                    <div class="choice-title" style="text-align:left;">Studio Helper</div>
+                    <div class="choice-copy" style="min-height:0; margin:8px 0 12px;">
+                        What do you want to do today?
+                    </div>
+                    <div style="background:#0c0c0c;border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:12px;margin-bottom:12px;color:#aaa;">
+                        Ask EVOLUM to help with a project, deck, pitch, image, or script task...
+                    </div>
+                    <div class="choices-row" style="grid-template-columns:repeat(2,1fr); gap:8px;">
+                        <div class="choice" style="padding:10px;">Build a pitch deck</div>
+                        <div class="choice" style="padding:10px;">Generate images</div>
+                        <div class="choice" style="padding:10px;">Write project copy</div>
+                        <div class="choice" style="padding:10px;">Continue last project</div>
+                    </div>
+                </div>
+
+                <div class="choice home-module-card" style="min-height:230px; padding:16px; text-align:left;">
+                    <div class="choice-title" style="text-align:left;">Collaborate</div>
+                    <div class="choice-copy" style="min-height:0; margin:8px 0 12px;">
+                        Invite collaborators and manage shared project access.
+                    </div>
+                    <div class="choice" style="padding:10px; margin-bottom:8px;">
+                        Not Today<br>
+                        <span style="font-size:11px;color:#aaa;">Invite collaborator</span>
+                    </div>
+                    <div class="choice" style="padding:10px; margin-bottom:8px;">
+                        Court Jester<br>
+                        <span style="font-size:11px;color:#aaa;">Shared workspace</span>
+                    </div>
+                    <div class="choice" style="padding:10px; border-color:rgba(255,122,0,0.75);">
+                        + New Invite
+                    </div>
+                </div>
             </div>
 
+            <div style="margin-top:12px; text-align:center;">
+                <a href="/" class="secondary-button" style="text-decoration:none;padding:10px 16px;display:inline-block;">Back to EVOLUM Tools</a>
+            </div>
+            <div class="footer-powered" style="margin-top:10px;text-align:center;">
+                Powered by the Developum AI Engine
+            </div>
         </div>
-
     </div>
-
-    <!-- BOTTOM ROW -->
-    <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:14px;">
-
-        <div class="choice home-module-card" style="min-height:180px; cursor:pointer;">
-            <div class="choice-title">Deck Generator</div>
-            <div class="choice-copy" style="margin-top:20px;">
-                Open Generator Modal
-            </div>
-        </div>
-
-        <div class="choice home-module-card" style="min-height:180px; cursor:pointer;">
-            <div class="choice-title">Image Generator</div>
-            <div class="choice-copy" style="margin-top:20px;">
-                Open Generator Modal
-            </div>
-        </div>
-
-        <div class="choice home-module-card" style="min-height:180px; cursor:pointer;">
-            <div class="choice-title">Text Generator</div>
-            <div class="choice-copy" style="margin-top:20px;">
-                Open Generator Modal
-            </div>
-        </div>
-
-    </div>
-
-    <div style="margin-top:14px; text-align:center;">
-        <a href="/" class="secondary-button" style="text-decoration:none;padding:12px 18px;display:inline-block;">
-            Back to EVOLUM Tools
-        </a>
-    </div>
-
 </div>
-</div>
-</div>
-
 </body>
 </html>
