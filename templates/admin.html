@@ -1,11 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="/static/style.css">
     <title>MadBrad Admin</title>
 </head>
 <body>
     <h1>MADBRAD ADMIN</h1>
     <p>Control room online.</p>
+
+    <h2>Live Stats</h2>
+
+    <div>
+        <p>Total Users: {{ stats.users }}</p>
+        <p>Total Logins: {{ stats.logins }}</p>
+        <p>Deck Runs: {{ stats.deck_runs }}</p>
+        <p>Script Analyses: {{ stats.script_analyses }}</p>
+        <p>Actor Runs: {{ stats.actor_runs }}</p>
+        <p>Feedback: {{ stats.feedback }}</p>
+    </div>
 </body>
 </html>
