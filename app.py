@@ -1349,14 +1349,23 @@ def studio():
     
 @app.route("/admin")
 def admin():
+    conn = sqlite3.connect("users.db")
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM beta_users")
+    user_count = cur.fetchone()[0]
+
+    conn.close()
+
     stats = {
-        "users": 0,
+        "users": user_count,
         "logins": 0,
         "deck_runs": 0,
         "script_analyses": 0,
         "actor_runs": 0,
         "feedback": 0,
     }
+
     return render_template("admin.html", stats=stats)
 
 @app.route("/status")
