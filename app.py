@@ -1346,9 +1346,18 @@ def studio():
         user_name=session.get("user_name"),
         user_email=session.get("user_email")
     )
+    
 @app.route("/admin")
 def admin():
-    return render_template("admin.html")
+    stats = {
+        "users": 0,
+        "logins": 0,
+        "deck_runs": 0,
+        "script_analyses": 0,
+        "actor_runs": 0,
+        "feedback": 0,
+    }
+    return render_template("admin.html", stats=stats)
 
 @app.route("/status")
 def status():
