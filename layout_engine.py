@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-layout_engine.py — Developum AI / Evolum categorized intelligence layout planner
+layout_engine.py — Developum AI / Evolum Script Analysis V3.1 categorized intelligence planner
 
 Purpose:
     Converts approved_brain_output.json into slide_plan.json.
 
-    V3 CATEGORIZED INTELLIGENCE SYSTEM
+    V3.1 SCRIPT ANALYSIS STANDARD
     - Preserves the existing deck slide-plan contract: {title, slides, slide_count}
     - Keeps image/text separation and image-plan metadata
     - Fixes the old overlay preset syntax issue
@@ -13,6 +13,9 @@ Purpose:
       everything the brain already knows instead of flattening it
     - Adds safe optional API enrichment for script-specific story moments
       without requiring the API to run
+    - Adds a report_header contract for the Script Analysis top page
+    - Adds safer title/protagonist/category cleanup for downstream reports
+    - Adds optional external comparable metadata hooks when OMDB_API_KEY is present
 
 Usage:
     python3 layout_engine.py /path/to/approved_brain_output.json
@@ -29,6 +32,7 @@ import os
 import re
 import sys
 import urllib.request
+import urllib.parse
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -130,6 +134,87 @@ def first_value(data: Dict[str, Any], *keys: str, default: str = "") -> str:
         if clean(value):
             return clean(value)
     return default
+
+
+def dedupe_doubled_name(value: Any) -> str:
+    """Fix artifacts like CLARICECLARICE or DR. LECTERDR. LECTER."""
+    text = clean(value)
+    if not text:
+        return ""
+    compact = re.sub(r"\s+", " ", text).strip()
+    half = len(compact) // 2
+    if len(compact) % 2 == 0 and compact[:half].strip().lower() == compact[half:].strip().lower():
+        return compact[:half].strip()
+    words = compact.split()
+    if len(words) % 2 == 0 and words[: len(words)//2] == words[len(words)//2:]:
+        return " ".join(words[: len(words)//2])
+    return compact
+
+
+def normalize_character_list(items: Any, max_items: int = 8) -> List[str]:
+    out: List[str] = []
+    seen = set()
+    for item in as_list(items):
+        if isinstance(item, dict):
+            raw = item.get("character") or item.get("name") or item.get("title") or ""
+        else:
+            raw = item
+        name = dedupe_doubled_name(raw)
+        if not name:
+            continue
+        key = re.sub(r"[^a-z0-9]", "", name.lower())
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        out.append(name)
+        if len(out) >= max_items:
+            break
+    return out
+
+
+def infer_project_title(data: Dict[str, Any]) -> str:
+    title = first_value(data, "title", "project_title", "name", default="")
+    if title and title.lower() not in {"untitled", "project", "none", "unknown"}:
+        return title
+    for key in ["script_title", "uploaded_title", "original_title"]:
+        val = clean(data.get(key, ""))
+        if val and val.lower() not in {"untitled", "unknown"}:
+            return val
+    return "Untitled"
+
+
+def infer_protagonist(data: Dict[str, Any]) -> str:
+    protagonist = dedupe_doubled_name(first_value(data, "protagonist", default=""))
+    if protagonist and protagonist.lower() not in {"unknown", "lead", "the protagonist"}:
+        return protagonist
+    profile = data.get("protagonist_profile")
+    if isinstance(profile, dict):
+        name = dedupe_doubled_name(profile.get("name", ""))
+        if name:
+            return name
+    characters = normalize_character_list(data.get("characters", []), max_items=1)
+    if characters:
+        return characters[0]
+    stats = data.get("character_stats", {})
+    if isinstance(stats, dict) and stats:
+        candidates = []
+        banned = {"and", "then", "more", "script", "what", "that", "but", "yes", "no"}
+        for name, stat in stats.items():
+            cleaned = dedupe_doubled_name(name)
+            if not cleaned or cleaned.lower() in banned:
+                continue
+            score = 0
+            if isinstance(stat, dict):
+                score = int(stat.get("dialogue_count", 0) or 0) * 3 + int(stat.get("action_count", 0) or 0)
+            candidates.append((score, cleaned))
+        if candidates:
+            candidates.sort(reverse=True)
+            return candidates[0][1]
+    return "Lead"
+
+
+def report_safe_excerpt(text: Any, max_chars: int = 220) -> str:
+    return clip_text(clean(text), max_chars)
 
 
 def word_count(text: str) -> int:
@@ -367,7 +452,9 @@ def enrich_story_moments_with_api(data: Dict[str, Any], max_items: int = 6) -> L
     prompt = (
         "Generate script-specific key story moments for a premium screenplay analysis report. "
         "Return ONLY valid JSON: {\"moments\":[\"...\"]}. "
-        "Each moment must be concrete, tied to this script, 6-14 words, and not generic. "
+        "Each moment must be concrete, tied to this exact script, 6-12 words, and not generic. "
+        "Do not summarize the logline. Do not begin with 'the protagonist faces'. "
+        "Use clean human-readable beat names, like 'Clarice earns Lecter’s first real attention'. "
         f"Return {max_items} moments.\n\n"
         f"DATA:\n{json.dumps(payload, ensure_ascii=False)}"
     )
@@ -404,33 +491,57 @@ def enrich_story_moments_with_api(data: Dict[str, Any], max_items: int = 6) -> L
 
 
 def fallback_story_moments(data: Dict[str, Any], max_items: int = 6) -> List[str]:
-    explicit = data.get("key_moments") or data.get("story_moments") or data.get("memorization_beats")
+    explicit = data.get("key_moments") or data.get("story_moments")
     moments = [clean(x) for x in as_list(explicit) if clean(x)]
     if moments:
         return moments[:max_items]
 
-    synopsis = clean(data.get("synopsis", ""))
-    sentences = sentence_split(synopsis)
-    if sentences:
-        picked: List[str] = []
-        for idx in [0, max(0, len(sentences) // 3), max(0, (len(sentences) * 2) // 3), len(sentences) - 1]:
-            if 0 <= idx < len(sentences):
-                moment = clip_text(sentences[idx], 90)
-                if moment and moment not in picked:
-                    picked.append(moment)
-        return picked[:max_items]
-
-    protagonist = first_value(data, "protagonist", default="The protagonist")
+    title = infer_project_title(data)
+    protagonist = infer_protagonist(data)
     conflict = clean(data.get("core_conflict", ""))
     reversal = clean(data.get("reversal", ""))
-    theme = clean(data.get("theme", ""))
-    return [m for m in [
-        f"{protagonist} enters the central pressure of the story",
-        clip_text(conflict, 90),
-        clip_text(reversal, 90),
-        clip_text(theme, 90),
-    ] if clean(m)][:max_items]
+    engine = clean(data.get("story_engine", ""))
+    synopsis = clean(data.get("synopsis", ""))
 
+    sentences = sentence_split(synopsis)
+    picked: List[str] = []
+
+    if engine:
+        picked.append(report_safe_excerpt(engine, 78))
+    if conflict and conflict not in picked:
+        picked.append(report_safe_excerpt(conflict, 78))
+
+    if sentences:
+        indexes = [0, max(0, len(sentences)//3), max(0, (len(sentences)*2)//3), len(sentences)-1]
+        for idx in indexes:
+            if 0 <= idx < len(sentences):
+                moment = report_safe_excerpt(sentences[idx], 78)
+                if moment and moment not in picked:
+                    picked.append(moment)
+
+    if reversal and reversal not in picked:
+        picked.append(report_safe_excerpt(reversal, 78))
+
+    if not picked:
+        memorization = [clean(x) for x in as_list(data.get("memorization_beats")) if clean(x)]
+        picked.extend(memorization)
+
+    if not picked:
+        picked = [
+            f"{protagonist} enters the pressure of {title}",
+            report_safe_excerpt(conflict, 78),
+            report_safe_excerpt(reversal, 78),
+        ]
+
+    cleaned: List[str] = []
+    banned = {"Opening power move", "First pressure turn", "Status shift or reveal", "Control reset"}
+    for item in picked:
+        item = clean(item).strip("•- ")
+        if not item or item in banned:
+            continue
+        if item not in cleaned:
+            cleaned.append(item)
+    return cleaned[:max_items]
 
 def story_moments(data: Dict[str, Any], max_items: int = 6) -> List[str]:
     return enrich_story_moments_with_api(data, max_items=max_items) or fallback_story_moments(data, max_items=max_items)
@@ -553,7 +664,7 @@ def build_layout_meta(slide_title: str, body: str, layout: str, stage: str, imag
             "avoid_text_on_faces": True,
             "prefer_empty_space_for_text": True,
         },
-        "layout_version": "v3_categorized_intelligence",
+        "layout_version": "v3_1_script_analysis_standard",
         "deck_layout_family": layout,
         "display_title": sanitize_slide_title(slide_title),
         "display_body": body,
@@ -709,6 +820,7 @@ def build_intelligence_catalog(data: Dict[str, Any]) -> Dict[str, List[Dict[str,
             {"label": "Packaging Potential", "value": clean(data.get("packaging_potential", ""))},
             {"label": "Market Projections", "value": key_value_text(data.get("market_projections", {}), 8)},
             {"label": "Comparables", "value": list_text(data.get("comparable_films", data.get("tone_comparables", [])), 5)},
+            {"label": "External Comparable Metadata", "value": list_text(optional_external_comparable_metadata(data), 5)},
         ],
         "Character Intelligence": [
             {"label": "Protagonist", "value": protagonist},
@@ -716,7 +828,7 @@ def build_intelligence_catalog(data: Dict[str, Any]) -> Dict[str, List[Dict[str,
             {"label": "Profile", "value": key_value_text(data.get("protagonist_profile", {}), 5)},
             {"label": "Character Leverage", "value": clean(data.get("character_leverage", ""))},
             {"label": "Relationship Map", "value": list_text(data.get("relationship_leverage_map", []), 8)},
-            {"label": "Top Characters", "value": ", ".join(clean(x) for x in as_list(data.get("characters", []))[:8])},
+            {"label": "Top Characters", "value": ", ".join(normalize_character_list(data.get("characters", []), 8))},
         ],
         "Performance Intelligence": [
             {"label": "Actor Objective", "value": clean(data.get("actor_objective", ""))},
@@ -782,13 +894,110 @@ def summarize_image_plan(image_plan: Any, max_items: int = 6) -> str:
     return "\n".join(lines)
 
 
+
+# =============================================================================
+# SCRIPT ANALYSIS V3.1 REPORT CONTRACT HELPERS
+# =============================================================================
+
+def build_script_analysis_header(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Downstream reports can use this to fix the top-page problem without guessing.
+    It avoids stuffing long prose into score boxes and keeps hero data clean.
+    """
+    title = infer_project_title(data)
+    protagonist = infer_protagonist(data)
+    world = first_value(data, "world", "genre", default="")
+    setting = clean(data.get("setting", ""))
+    tone = clean(data.get("tone", ""))
+    tagline = clean(data.get("tagline", "")) or clean(data.get("logline", ""))
+
+    return {
+        "layout_version": "script_analysis_v3_1",
+        "title": title,
+        "subtitle": "EVOLUM Full Script Analysis Report",
+        "hero_statement": f"{title} puts {protagonist} at the center of {world}, with a tone that feels {tone}." if world and tone else f"{title} centers {protagonist}.",
+        "identity_rows": [
+            {"label": "Lead", "value": protagonist, "type": "text"},
+            {"label": "Genre / World", "value": world, "type": "text"},
+            {"label": "Tone", "value": tone, "type": "text"},
+            {"label": "Tagline", "value": tagline, "type": "text_long"},
+        ],
+        "story_snapshot": [
+            {"label": "Theme", "value": clean(data.get("theme", "")) or list_text(data.get("themes", []), 3)},
+            {"label": "Core Conflict", "value": clean(data.get("core_conflict", ""))},
+            {"label": "Story Engine", "value": clean(data.get("story_engine", ""))},
+            {"label": "Reversal", "value": clean(data.get("reversal", ""))},
+        ],
+        "world_detail": setting or world,
+    }
+
+
+def build_commercial_score_cards(data: Dict[str, Any]) -> List[Dict[str, str]]:
+    strength = data.get("strength_index", {}) if isinstance(data.get("strength_index"), dict) else {}
+    projections = data.get("market_projections", {}) if isinstance(data.get("market_projections"), dict) else {}
+    cards: List[Dict[str, str]] = []
+    if strength.get("marketability") or strength.get("concept"):
+        cards.append({"label": "Commercial Potential", "value": clean(str(strength.get("marketability") or strength.get("concept"))), "type": "score"})
+    if projections.get("audience_reach"):
+        cards.append({"label": "Audience Appeal", "value": clean(projections.get("audience_reach")), "type": "text"})
+    if projections.get("estimated_budget_tier"):
+        cards.append({"label": "Budget Range", "value": clean(projections.get("estimated_budget_tier")), "type": "text"})
+    if projections.get("franchise_potential"):
+        cards.append({"label": "Franchise", "value": clean(projections.get("franchise_potential")), "type": "text"})
+    return cards
+
+
+def optional_external_comparable_metadata(data: Dict[str, Any], max_items: int = 3) -> List[Dict[str, str]]:
+    """
+    Optional OMDb-compatible enrichment hook. OMDb uses IMDb IDs/data and returns
+    public comparable metadata where available. If no key is configured, return
+    existing comps without external calls.
+    """
+    comps = as_list(data.get("comparable_films") or data.get("tone_comparables"))
+    titles: List[str] = []
+    for comp in comps:
+        if isinstance(comp, dict):
+            title = clean(comp.get("title", ""))
+        else:
+            title = clean(comp)
+        if title and title not in titles:
+            titles.append(title)
+        if len(titles) >= max_items:
+            break
+
+    api_key = clean(os.environ.get("OMDB_API_KEY", ""))
+    if not api_key:
+        return [{"title": t, "source": "brain_comparable"} for t in titles]
+
+    enriched: List[Dict[str, str]] = []
+    for title in titles:
+        try:
+            url = "https://www.omdbapi.com/?" + urllib.parse.urlencode({"apikey": api_key, "t": title})
+            with urllib.request.urlopen(url, timeout=8) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            if payload.get("Response") == "True":
+                enriched.append({
+                    "title": clean(payload.get("Title", title)),
+                    "year": clean(payload.get("Year", "")),
+                    "genre": clean(payload.get("Genre", "")),
+                    "box_office": clean(payload.get("BoxOffice", "")),
+                    "imdb_rating": clean(payload.get("imdbRating", "")),
+                    "source": "omdb_imdb_metadata",
+                })
+            else:
+                enriched.append({"title": title, "source": "brain_comparable"})
+        except Exception:
+            enriched.append({"title": title, "source": "brain_comparable"})
+    return enriched
+
+
 # =============================================================================
 # MAIN SLIDE PLAN
 # =============================================================================
 
 def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
-    title = clean(data.get("title", "Project"))
-    protagonist = clean(data.get("protagonist", ""))
+    title = infer_project_title(data)
+    protagonist = infer_protagonist(data)
     world = clean(data.get("world", ""))
     setting = clean(data.get("setting", ""))
     world_body = setting if setting else world
@@ -907,7 +1116,10 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         "title": title,
         "slides": plan,
         "slide_count": len(plan),
-        "layout_engine_version": "v3_categorized_intelligence",
+        "layout_engine_version": "v3_1_script_analysis_standard",
+        "script_analysis_header": build_script_analysis_header(data),
+        "commercial_score_cards": build_commercial_score_cards(data),
+        "external_comparable_metadata": optional_external_comparable_metadata(data),
         "intelligence_catalog": catalog,
         "api_enrichment_enabled": api_enabled(),
     }
