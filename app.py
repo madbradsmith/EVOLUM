@@ -1338,8 +1338,33 @@ def index():
         gate_locked=not has_beta_access(),
         gate_error=None,
     )
+from functools import wraps
+
+def require_login(view_func):
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if not session.get("user_id"):
+            return redirect("/")
+        return view_func(*args, **kwargs)
+    return wrapper
+
+
+@app.route("/login-test")
+def login_test():
+    session.permanent = False
+    session["user_id"] = "test_user_001"
+    session["user_name"] = "James Evans"
+    session["user_email"] = "test@evolumstudio.com"
+    return redirect("/studio")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 @app.route("/studio")
+@require_login
 def studio():
     return render_template(
         "my_studio.html",
