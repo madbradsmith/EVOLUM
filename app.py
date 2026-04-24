@@ -1346,6 +1346,10 @@ def studio():
         user_name=session.get("user_name"),
         user_email=session.get("user_email")
     )
+@app.route("/project")
+def project_page():
+    user_name = session.get("user_name", "Creator")
+    return render_template("project.html", user_name=user_name)
     
 @app.route("/admin")
 def admin():
