@@ -1346,6 +1346,14 @@ def studio():
         user_name=session.get("user_name"),
         user_email=session.get("user_email")
     )
+@app.route("/session-test")
+def session_test():
+    session["user_id"] = "test_user_001"
+    session["user_name"] = "James Evans"
+    session["user_email"] = "test@evolumstudio.com"
+
+    return redirect("/studio")
+
 @app.route("/project")
 def project_page():
     user_name = session.get("user_name", "Creator")
