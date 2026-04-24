@@ -1357,12 +1357,6 @@ def login_test():
     session["user_email"] = "test@evolumstudio.com"
     return redirect("/studio")
 
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/")
-
 @app.route("/studio")
 @require_login
 def studio():
