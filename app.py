@@ -857,6 +857,11 @@ def logout():
     return redirect("/?signed_out=1")
 
 
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+
 # ===== STRIPE PAYMENT ROUTES START ===================
 @app.route("/stripe-env-check")
 def stripe_env_check():

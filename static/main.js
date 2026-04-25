@@ -227,6 +227,19 @@ function navTo(url){
     if (menu) menu.classList.remove("show");
     setTimeout(() => { window.location.href = url; }, 80);
 }
+function checkTerms(e) {
+    const cb = document.getElementById("agreeTerms");
+    const err = document.getElementById("termsError");
+    if (cb && !cb.checked) {
+        e.preventDefault();
+        if (err) err.style.display = "block";
+        cb.focus();
+        return false;
+    }
+    if (err) err.style.display = "none";
+    return true;
+}
+
 function showAuthModal(){
     closeAllModals();
     const m = document.getElementById("authModal");
