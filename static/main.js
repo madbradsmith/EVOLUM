@@ -1216,6 +1216,48 @@ function goNextRefineSlide(){
 function changePlaceholderImage(){
     showInfoModal("Change Image", "Image selection is the next pass. For now, refine text first.");
 }
+const _BUILD_QUOTES = [
+    { text: "Every great film begins with a great story — written for the screen, felt in the gut.", attr: "— Screenwriting tradition" },
+    { text: "The pitch is where the dream meets the room.", attr: "— Film development saying" },
+    { text: "Cinema is a mirror by which we often see ourselves.", attr: "— Martin Scorsese" },
+    { text: "A story is not what happened. It’s why it happened, and to whom.", attr: "— Robert McKee" },
+    { text: "The most honest form of filmmaking is to make a film for yourself.", attr: "— Peter Jackson" },
+    { text: "You can’t wait for inspiration. You have to go after it with a club.", attr: "— Jack London" },
+    { text: "Drama is life with the dull bits cut out.", attr: "— Alfred Hitchcock" },
+    { text: "The secret to a great pitch is making them feel the movie.", attr: "— Hollywood maxim" },
+    { text: "Every story worth telling is a story about change.", attr: "— Writing principle" },
+    { text: "Character is revealed through choice under pressure.", attr: "— Aristotle (via McKee)" },
+    { text: "Films can illuminate the darkness or they can be part of it.", attr: "— Roger Ebert" },
+    { text: "Make the audience want to know what happens next. That’s the whole job.", attr: "— Billy Wilder" },
+];
+let _quoteInterval = null;
+let _quoteIdx = 0;
+
+function _startBuildQuotes() {
+    const textEl = document.getElementById("buildQuoteText");
+    const attrEl = document.getElementById("buildQuoteAttr");
+    if (!textEl) return;
+    _quoteIdx = Math.floor(Math.random() * _BUILD_QUOTES.length);
+    const show = () => {
+        const q = _BUILD_QUOTES[_quoteIdx % _BUILD_QUOTES.length];
+        textEl.style.opacity = "0";
+        attrEl.style.opacity = "0";
+        setTimeout(() => {
+            textEl.textContent = "\u201c" + q.text + "\u201d";
+            attrEl.textContent = q.attr;
+            textEl.style.opacity = "1";
+            attrEl.style.opacity = "1";
+        }, 600);
+        _quoteIdx++;
+    };
+    show();
+    _quoteInterval = setInterval(show, 5000);
+}
+
+function _stopBuildQuotes() {
+    if (_quoteInterval) { clearInterval(_quoteInterval); _quoteInterval = null; }
+}
+
 function openBuildProgressModal(){
     const modal = document.getElementById("buildProgressModal");
     document.getElementById("buildProgressTitle").textContent = "Building Your Deck";
@@ -1225,6 +1267,7 @@ function openBuildProgressModal(){
     document.getElementById("buildProgressWorking").style.display = "block";
     document.getElementById("buildProgressActions").style.display = "none";
     modal.classList.add("show");
+    _startBuildQuotes();
 }
 
 function updateBuildProgressModal(status){
@@ -1239,12 +1282,14 @@ function updateBuildProgressModal(status){
         stage.textContent = "Generating images and building deck\u2026";
         fill.style.width = "75%";
     } else if (status === "COMPLETE"){
+        _stopBuildQuotes();
         fill.style.width = "100%";
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Deck Ready";
         document.getElementById("buildProgressCopy").textContent = "Your pitch deck has been generated.";
         document.getElementById("buildProgressActions").style.display = "flex";
     } else if (status === "ERROR"){
+        _stopBuildQuotes();
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Build Failed";
         document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please try again.";
@@ -1254,7 +1299,49 @@ function updateBuildProgressModal(status){
 }
 
 function closeBuildProgressModal(){
+    _stopBuildQuotes();
     document.getElementById("buildProgressModal").classList.remove("show");
+}
+
+async function submitRegenDeck() {
+    const input = document.getElementById("regenPromptInput");
+    const prompt = (input?.value || "").trim();
+    if (!prompt) { input?.focus(); return; }
+
+    const btn = document.querySelector(".regen-prompt-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Regenerating…"; }
+
+    openBuildProgressModal();
+    document.getElementById("buildProgressTitle").textContent = "Regenerating Your Deck";
+    document.getElementById("buildProgressCopy").textContent = "Rewriting slide content with your new direction…";
+    startProgressCreep(90, 0.8, 800);
+
+    try {
+        const res = await fetch("/regen-deck", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({prompt})
+        });
+        const data = await res.json();
+        stopProgressCreep();
+        if (data.ok) {
+            setProgress(100);
+            updateBuildProgressModal("COMPLETE");
+            document.getElementById("buildProgressTitle").textContent = "Deck Regenerated";
+            document.getElementById("buildProgressCopy").textContent = "Your deck has been rewritten with the new direction.";
+            await loadLatestRefineSlides(activeDeckType);
+            if (input) input.value = "";
+        } else {
+            updateBuildProgressModal("ERROR");
+            document.getElementById("buildProgressCopy").textContent = data.error || "Regeneration failed. Please try again.";
+        }
+    } catch(e) {
+        stopProgressCreep();
+        updateBuildProgressModal("ERROR");
+        document.getElementById("buildProgressCopy").textContent = "Connection error. Please try again.";
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = "Regenerate"; }
+    }
 }
 
     function openRegenerateDeckModal(){

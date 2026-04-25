@@ -207,6 +207,16 @@
             <button class="primary-button" type="button" id="refineDeckBtn" onclick="openRefinementStage()">Refine Deck</button>
             <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
         </div>
+
+        <div class="regen-prompt-area" id="regenPromptArea">
+            <div class="regen-prompt-label">Regenerate with a new direction</div>
+            <div class="regen-prompt-row">
+                <input type="text" id="regenPromptInput" class="regen-prompt-input"
+                    placeholder="e.g. make it darker, lean into the horror tone…"
+                    onkeydown="if(event.key==='Enter') submitRegenDeck()">
+                <button class="primary-button regen-prompt-btn" type="button" onclick="submitRegenDeck()">Regenerate</button>
+            </div>
+        </div>
     </div>
 
     <div id="refinementStage" style="display:none; max-width:1100px; margin:0 auto;">
@@ -814,6 +824,10 @@
             <div class="regen-progress-bar">
                 <div class="regen-progress-fill" id="buildProgressFill" style="width:10%"></div>
             </div>
+        </div>
+        <div class="build-quote-area" id="buildQuoteArea">
+            <div class="build-quote-text" id="buildQuoteText"></div>
+            <div class="build-quote-attr" id="buildQuoteAttr"></div>
         </div>
         <div class="complete-actions" id="buildProgressActions" style="display:none;">
             <button class="primary-button" type="button" onclick="closeBuildProgressModal()">View Deck</button>

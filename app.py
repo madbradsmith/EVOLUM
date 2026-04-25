@@ -2031,7 +2031,80 @@ def refine_deck():
         "deck": result["deck"],
     })
 
-# ===== REFINE DECK ROUTES END =========================
+# ===== REGEN DECK ROUTE START =========================
+@app.route("/regen-deck", methods=["POST"])
+def regen_deck():
+    data = request.get_json(silent=True) or {}
+    direction = (data.get("prompt") or "").strip()
+    if not direction:
+        return jsonify({"error": "No direction provided."}), 400
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"error": "AI not configured."}), 500
+
+    slide_plan_file = find_latest_slide_plan_file()
+    if not slide_plan_file:
+        return jsonify({"error": "No slide plan found. Generate a deck first."}), 404
+
+    try:
+        slide_plan = json.loads(Path(slide_plan_file).read_text(encoding="utf-8"))
+    except Exception as e:
+        return jsonify({"error": f"Could not read slide plan: {e}"}), 500
+
+    try:
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=api_key)
+        prompt_text = (
+            "You are updating a pitch deck's slide content based on a new creative direction.\n\n"
+            f"Current slide plan (JSON):\n{json.dumps(slide_plan, indent=2)}\n\n"
+            f"New creative direction: \"{direction}\"\n\n"
+            "Rewrite the \"title\" and \"body\" fields for every slide to reflect this direction. "
+            "Keep the same number of slides and preserve all other fields exactly "
+            "(stage, layout, image_path, image_name, image_url, image_source, image_options, "
+            "selected_option_id, slide_count). Return ONLY valid JSON — no extra text, no markdown fences."
+        )
+        resp = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=8000,
+            messages=[{"role": "user", "content": prompt_text}]
+        )
+        raw = resp.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+        new_plan = json.loads(raw)
+    except Exception as e:
+        return jsonify({"error": f"AI rewrite failed: {e}"}), 500
+
+    full_slides = new_plan.get("slides", [])
+    result = rebuild_refined_deck(full_slides, label="")
+    if "error" in result:
+        return jsonify(result), 500
+
+    # Update producer deck by matching stages from the rewritten full plan
+    producer_plan_file = OUTPUT_DIR / "slide_plan_producer.json"
+    if producer_plan_file.exists():
+        try:
+            producer_plan = json.loads(producer_plan_file.read_text(encoding="utf-8"))
+            stage_map = {}
+            for s in full_slides:
+                stage = s.get("stage", "")
+                if stage not in stage_map:
+                    stage_map[stage] = s
+            for ps in producer_plan.get("slides", []):
+                matched = stage_map.get(ps.get("stage", ""))
+                if matched:
+                    ps["title"] = matched.get("title", ps["title"])
+                    ps["body"] = matched.get("body", ps["body"])
+            rebuild_refined_deck(producer_plan["slides"], label="producer")
+        except Exception:
+            pass
+
+    _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+    _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
+    return jsonify({"ok": True})
+
+# ===== REGEN DECK ROUTE END ===========================
 
 # ===== ACTOR PREP ROUTES START =======================
 @app.route("/actor-prep-pass", methods=["POST"])
