@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join Project — EVOLUM Studio</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+    <div class="logo">
+        <img src="/static/logo.png" class="logo-img">
+    </div>
+    <div class="shell">
+        <div class="card" style="padding:32px; max-width:480px; margin:0 auto; text-align:center;">
+
+            {% if error and not project %}
+            <div class="workspace-title" style="margin-bottom:12px;">Invalid Invite</div>
+            <div class="workspace-copy" style="margin-bottom:20px; color:#888;">{{ error }}</div>
+            <a href="/" class="secondary-button" style="text-decoration:none; padding:10px 20px; display:inline-block;">Back to EVOLUM</a>
+
+            {% else %}
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.14em; color:#ff7a00; text-transform:uppercase; margin-bottom:10px;">
+                You've been invited
+            </div>
+            <div class="workspace-title" style="margin-bottom:6px;">{{ project.title }}</div>
+            {% if project.type %}
+            <div class="workspace-copy" style="margin-bottom:20px; color:#666;">{{ project.type }}</div>
+            {% endif %}
+            <div class="workspace-copy" style="margin-bottom:24px;">
+                Enter your name to join this project as a collaborator.
+            </div>
+
+            {% if error %}
+            <div style="color:#e05555; font-size:13px; margin-bottom:12px;">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST" action="/join/{{ token }}">
+                <div class="field-group" style="text-align:left;">
+                    <label class="label" for="name">Your Name</label>
+                    <input type="text" id="name" name="name" placeholder="e.g. Jordan Taylor" required autofocus>
+                </div>
+                <div class="upload-actions" style="margin-top:16px;">
+                    <button class="primary-button" type="submit">Join Project</button>
+                </div>
+            </form>
+            {% endif %}
+
+            <div class="footer-powered" style="margin-top:24px;">
+                Powered by the Developum AI Engine
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

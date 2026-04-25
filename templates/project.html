@@ -6,6 +6,14 @@
 <title>{{ project.title }} — EVOLUM Studio</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <style>
+.chat-chip {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #888; font-size: 11px; padding: 5px 12px;
+    border-radius: 20px; cursor: pointer; font-family: inherit;
+    transition: border-color 0.15s, color 0.15s;
+}
+.chat-chip:hover { border-color: rgba(255,122,0,0.5); color: #ff9944; }
 .storage-track {
     height: 6px; background: rgba(255,255,255,0.08);
     border-radius: 3px; overflow: hidden; margin: 6px 0 4px;
@@ -151,15 +159,40 @@
                     </div>
                 </div>
 
-                <!-- STUDIO HELPER -->
+                <!-- COLLABORATORS -->
                 <div class="choice home-module-card" style="padding:14px;">
-                    <div class="choice-title">Studio Helper</div>
-                    <div class="choice-copy" style="min-height:0; margin:8px 0 12px; font-size:12px;">
-                        AI assistance for this project. Coming soon.
+                    <div class="choice-title">Collaborators</div>
+
+                    {% if collaborators %}
+                    <div style="margin:8px 0;">
+                        {% for c in collaborators %}
+                        <div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <div style="width:28px; height:28px; border-radius:50%; background:rgba(255,122,0,0.15); border:1px solid rgba(255,122,0,0.3); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#ff9944; flex-shrink:0;">
+                                {{ (c.user_name or '?')[0].upper() }}
+                            </div>
+                            <div style="font-size:12px; color:#cfcfcf;">{{ c.user_name or 'Collaborator' }}</div>
+                        </div>
+                        {% endfor %}
                     </div>
-                    <div class="choice" style="padding:10px; color:#555; margin-bottom:8px;">Improve Deck Copy</div>
-                    <div class="choice" style="padding:10px; color:#555; margin-bottom:8px;">Generate Poster Ideas</div>
-                    <div class="choice" style="padding:10px; color:#555;">Investor Summary</div>
+                    {% else %}
+                    <div class="choice-copy" style="color:#555; font-size:12px; margin:8px 0 10px;">
+                        No collaborators yet.
+                    </div>
+                    {% endif %}
+
+                    {% if is_owner %}
+                    <div id="invitePanel" style="margin-top:10px;">
+                        <button class="chat-chip" style="font-size:12px;" onclick="generateProjectInvite()">
+                            Generate Invite Link
+                        </button>
+                        <div id="projectInviteResult" style="display:none; margin-top:10px; background:#0c0c0c; border:1px solid rgba(255,122,0,0.2); border-radius:10px; padding:10px; font-size:11px;">
+                            <div style="color:#ff7a00; font-weight:700; margin-bottom:5px;">Share this link:</div>
+                            <div id="projectInviteLink" style="color:#cfcfcf; word-break:break-all; margin-bottom:6px;"></div>
+                            <div style="color:#aaa;">Code: <span id="projectInviteCode" style="color:#ff9944; font-weight:700; letter-spacing:0.1em;"></span></div>
+                            <button class="chat-chip" style="font-size:11px; margin-top:8px;" onclick="copyProjectLink()">Copy Link</button>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
 
             </div>
@@ -174,7 +207,94 @@
     </div>
 </div>
 
+<!-- FLOATING VIDEO CHAT WIDGET -->
+<div id="vidWidget" style="position:fixed; bottom:24px; right:24px; z-index:900; width:230px; background:#111; border:1px solid rgba(255,122,0,0.35); border-radius:14px; box-shadow:0 6px 28px rgba(0,0,0,0.6); user-select:none;">
+    <div id="vidWidgetHeader" style="padding:10px 12px; cursor:grab; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.07);">
+        <span style="font-size:12px; font-weight:700; color:#ff7a00;">📹 Team Call</span>
+        <span id="vidToggle" onclick="toggleVid()" style="cursor:pointer; color:#555; font-size:18px; line-height:1; padding:0 2px;">−</span>
+    </div>
+    <div id="vidBody" style="padding:12px;">
+        <input id="vidLink" type="url" placeholder="Paste Zoom or Meet link..."
+            style="width:100%; background:#0c0c0c; border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#d8d8d8; font-size:11px; padding:7px 9px; margin-bottom:8px; font-family:inherit; box-sizing:border-box;">
+        <div style="display:flex; gap:6px;">
+            <button onclick="joinCall()" style="flex:1; background:#ff7a00; color:#fff; border:none; border-radius:8px; padding:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit;">Join</button>
+            <button onclick="copyCallLink()" id="copyCallBtn" style="flex:1; background:rgba(255,255,255,0.06); color:#aaa; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px; font-size:11px; cursor:pointer; font-family:inherit;">Copy</button>
+        </div>
+    </div>
+</div>
+
 <script>
+// Video widget drag
+(function() {
+    const widget = document.getElementById("vidWidget");
+    const header = document.getElementById("vidWidgetHeader");
+    let dragging = false, ox, oy, wx, wy;
+    header.addEventListener("mousedown", e => {
+        dragging = true;
+        const r = widget.getBoundingClientRect();
+        ox = e.clientX; oy = e.clientY; wx = r.left; wy = r.top;
+        header.style.cursor = "grabbing"; e.preventDefault();
+    });
+    document.addEventListener("mousemove", e => {
+        if (!dragging) return;
+        widget.style.left = (wx + e.clientX - ox) + "px";
+        widget.style.top = (wy + e.clientY - oy) + "px";
+        widget.style.right = "auto"; widget.style.bottom = "auto";
+    });
+    document.addEventListener("mouseup", () => { dragging = false; header.style.cursor = "grab"; });
+})();
+
+// Persist meeting link per project
+const VID_KEY = "evolum_call_{{ project.id }}";
+const savedVid = localStorage.getItem(VID_KEY);
+if (savedVid) document.getElementById("vidLink").value = savedVid;
+document.getElementById("vidLink").addEventListener("input", function() {
+    localStorage.setItem(VID_KEY, this.value);
+});
+
+let vidCollapsed = false;
+function toggleVid() {
+    vidCollapsed = !vidCollapsed;
+    document.getElementById("vidBody").style.display = vidCollapsed ? "none" : "block";
+    document.getElementById("vidToggle").textContent = vidCollapsed ? "+" : "−";
+}
+function joinCall() {
+    const link = document.getElementById("vidLink").value.trim();
+    if (link) { localStorage.setItem(VID_KEY, link); window.open(link, "_blank"); }
+    else document.getElementById("vidLink").focus();
+}
+function copyCallLink() {
+    const link = document.getElementById("vidLink").value.trim();
+    if (!link) return;
+    navigator.clipboard.writeText(link).then(() => {
+        const btn = document.getElementById("copyCallBtn");
+        btn.textContent = "Copied!";
+        setTimeout(() => btn.textContent = "Copy", 1400);
+    });
+}
+
+// Project invite
+async function generateProjectInvite() {
+    try {
+        const res = await fetch("/project/{{ project.id }}/create-invite", { method: "POST" });
+        const data = await res.json();
+        if (data.link) {
+            document.getElementById("projectInviteLink").textContent = data.link;
+            document.getElementById("projectInviteCode").textContent = data.code;
+            document.getElementById("projectInviteResult").style.display = "block";
+            window._projInviteLink = data.link;
+        }
+    } catch(e) {}
+}
+function copyProjectLink() {
+    if (window._projInviteLink) {
+        navigator.clipboard.writeText(window._projInviteLink).then(() => {
+            event.target.textContent = "Copied!";
+            setTimeout(() => event.target.textContent = "Copy Link", 1400);
+        });
+    }
+}
+
 async function deleteAsset(projectId, filename, btn) {
     const isDeck = filename === "deck.pptx" || filename === "deck.pdf";
     const msg = isDeck

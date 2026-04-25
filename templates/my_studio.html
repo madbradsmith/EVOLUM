@@ -213,27 +213,41 @@
                 </div>
 
                 <!-- COLLABORATE -->
-                <div class="choice home-module-card" style="min-height:230px; padding:16px; text-align:left;">
-                    <div class="choice-title" style="text-align:left;">Collaborate</div>
-                    <div class="choice-copy" style="min-height:0; margin:8px 0 12px;">
-                        Invite collaborators and manage shared project access.
-                    </div>
+                <div class="choice home-module-card" style="padding:16px; text-align:left;">
+                    <div class="choice-title" style="text-align:left; margin-bottom:8px;">Collaborate</div>
 
                     {% if projects %}
                         {% for project in projects[:3] %}
-                        <div class="choice" style="padding:10px; margin-bottom:8px; cursor:default;">
-                            {{ project.title }}<br>
-                            <span style="font-size:11px;color:#aaa;">{{ project.type or 'Project' }}</span>
+                        <div style="margin-bottom:10px;">
+                            <div style="font-size:13px; font-weight:600; color:#cfcfcf; margin-bottom:4px;">{{ project.title }}</div>
+                            <button class="chat-chip" style="font-size:11px;" onclick="generateInvite('{{ project.id }}', this)">
+                                Generate Invite Link
+                            </button>
                         </div>
                         {% endfor %}
                     {% else %}
-                    <div class="choice-copy" style="color:#555; font-size:12px; padding:10px 0;">
+                    <div class="choice-copy" style="color:#555; font-size:12px; margin-bottom:12px;">
                         Create a project to invite collaborators.
                     </div>
                     {% endif %}
 
-                    <div class="choice" style="padding:10px; border-color:rgba(255,122,0,0.5); color:#aaa; margin-top:4px;">
-                        + New Invite <span style="font-size:11px;">(coming soon)</span>
+                    <div id="inviteResult" style="display:none; background:#0c0c0c; border:1px solid rgba(255,122,0,0.2); border-radius:10px; padding:10px; margin:8px 0; font-size:11px;">
+                        <div style="color:#ff7a00; font-weight:700; margin-bottom:6px;">Invite Ready</div>
+                        <div style="color:#aaa; margin-bottom:4px;">Link: <span id="inviteLink" style="color:#cfcfcf; word-break:break-all;"></span></div>
+                        <div style="color:#aaa; margin-bottom:8px;">Code: <span id="inviteCode" style="color:#ff9944; font-weight:700; letter-spacing:0.1em;"></span></div>
+                        <button class="chat-chip" onclick="copyInviteLink()" style="font-size:11px;">Copy Link</button>
+                    </div>
+
+                    <div style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.07); padding-top:10px;">
+                        <div style="font-size:11px; color:#555; margin-bottom:6px;">Have an invite code?</div>
+                        <form method="POST" action="/use-invite-code" style="display:flex; gap:6px;">
+                            <input type="text" name="code" placeholder="e.g. EV7K2M" maxlength="6"
+                                style="flex:1; background:#0c0c0c; border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#d8d8d8; font-size:12px; padding:6px 8px; font-family:inherit; text-transform:uppercase; letter-spacing:0.1em;">
+                            <button type="submit" class="chat-chip" style="font-size:11px; white-space:nowrap;">Join</button>
+                        </form>
+                        {% if request.args.get('code_error') %}
+                        <div style="color:#e05555; font-size:11px; margin-top:4px;">Code not found — check and try again.</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -248,6 +262,33 @@
     </div>
 </div>
 <script>
+// Invite generation
+async function generateInvite(projectId, btn) {
+    btn.textContent = "Generating...";
+    btn.disabled = true;
+    try {
+        const res = await fetch(`/project/${projectId}/create-invite`, { method: "POST" });
+        const data = await res.json();
+        if (data.link) {
+            document.getElementById("inviteLink").textContent = data.link;
+            document.getElementById("inviteCode").textContent = data.code;
+            document.getElementById("inviteResult").style.display = "block";
+            window._currentInviteLink = data.link;
+        }
+    } catch(e) {}
+    btn.textContent = "Generate Invite Link";
+    btn.disabled = false;
+}
+function copyInviteLink() {
+    if (window._currentInviteLink) {
+        navigator.clipboard.writeText(window._currentInviteLink).then(() => {
+            const btn = event.target;
+            btn.textContent = "Copied!";
+            setTimeout(() => btn.textContent = "Copy Link", 1500);
+        });
+    }
+}
+
 const chatHistory = [];
 
 function scrollChat() {

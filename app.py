@@ -19,6 +19,8 @@ import re
 import urllib.request
 import urllib.error
 import hashlib
+import secrets
+import string
 from datetime import datetime
 from urllib.parse import unquote, quote
 
@@ -1016,15 +1018,22 @@ def new_project():
 def project_workspace(project_id):
     ensure_projects_table()
 
+    ensure_collab_tables()
     with DB_ENGINE.begin() as conn:
         row = conn.execute(text("""
-            SELECT id, owner_user_id, title, type, status, storage_used_mb, output_dir
-            FROM projects
-            WHERE id = :project_id
-            AND owner_user_id = :owner_user_id
+            SELECT p.id, p.owner_user_id, p.title, p.type, p.status, p.storage_used_mb, p.output_dir
+            FROM projects p
+            WHERE p.id = :project_id
+            AND (
+                p.owner_user_id = :uid
+                OR EXISTS (
+                    SELECT 1 FROM project_collaborators pc
+                    WHERE pc.project_id = p.id AND pc.user_id = :uid
+                )
+            )
         """), {
             "project_id": project_id,
-            "owner_user_id": session.get("user_id")
+            "uid": session.get("user_id")
         }).mappings().first()
 
     if not row:
@@ -1062,10 +1071,20 @@ def project_workspace(project_id):
 
     storage_pct = min(int(storage_mb / 100 * 100), 100)
     storage_color = "#e05555" if storage_pct >= 90 else "#ff9944" if storage_pct >= 70 else "#ff7a00"
+    is_owner = project.get("owner_user_id") == session.get("user_id")
+
+    collaborators = []
+    with DB_ENGINE.connect() as conn:
+        collab_rows = conn.execute(text("""
+            SELECT user_name, joined_at FROM project_collaborators
+            WHERE project_id = :pid ORDER BY joined_at ASC
+        """), {"pid": project_id}).mappings().all()
+        collaborators = [dict(r) for r in collab_rows]
 
     return render_template("project.html", project=project, has_deck=has_deck,
                            assets=assets, storage_mb=storage_mb,
-                           storage_pct=storage_pct, storage_color=storage_color)
+                           storage_pct=storage_pct, storage_color=storage_color,
+                           is_owner=is_owner, collaborators=collaborators)
 
 
 @app.route("/project/<project_id>/delete-asset", methods=["POST"])
@@ -2009,6 +2028,118 @@ def ensure_projects_table():
             ))
         except Exception:
             pass
+
+def ensure_collab_tables():
+    if not DB_ENGINE:
+        return
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS project_invites (
+                id SERIAL PRIMARY KEY,
+                project_id INTEGER NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                invite_code TEXT UNIQUE NOT NULL,
+                created_by TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS project_collaborators (
+                id SERIAL PRIMARY KEY,
+                project_id INTEGER NOT NULL,
+                user_id TEXT NOT NULL,
+                user_name TEXT,
+                joined_via TEXT,
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(project_id, user_id)
+            )
+        """))
+
+
+def _generate_invite_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(chars) for _ in range(6))
+
+
+@app.route("/project/<project_id>/create-invite", methods=["POST"])
+@require_login
+def create_project_invite(project_id):
+    ensure_projects_table()
+    ensure_collab_tables()
+    with DB_ENGINE.connect() as conn:
+        proj = conn.execute(text(
+            "SELECT id FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+    if not proj:
+        return jsonify({"error": "Project not found"}), 404
+
+    # Return existing invite if one already exists for this project
+    with DB_ENGINE.connect() as conn:
+        existing = conn.execute(text(
+            "SELECT token, invite_code FROM project_invites WHERE project_id = :pid AND created_by = :uid"
+        ), {"pid": project_id, "uid": session.get("user_id")}).mappings().first()
+
+    if existing:
+        token, code = existing["token"], existing["invite_code"]
+    else:
+        token = secrets.token_urlsafe(16)
+        code = _generate_invite_code()
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO project_invites (project_id, token, invite_code, created_by)
+                VALUES (:pid, :token, :code, :uid)
+            """), {"pid": project_id, "token": token, "code": code, "uid": session.get("user_id")})
+
+    base = request.host_url.rstrip("/")
+    return jsonify({"token": token, "code": code, "link": f"{base}/join/{token}"})
+
+
+@app.route("/join/<token>", methods=["GET", "POST"])
+def join_project(token):
+    ensure_collab_tables()
+    with DB_ENGINE.connect() as conn:
+        invite = conn.execute(text("""
+            SELECT pi.project_id, p.title, p.type
+            FROM project_invites pi
+            JOIN projects p ON p.id = pi.project_id
+            WHERE pi.token = :token
+        """), {"token": token}).mappings().first()
+    if not invite:
+        return render_template("join.html", error="This invite link is invalid or has expired.", project=None)
+
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        if not name:
+            return render_template("join.html", project=invite, token=token, error="Please enter your name.")
+        user_id = session.get("user_id") or f"collab_{secrets.token_hex(8)}"
+        session["user_id"] = user_id
+        session["user_name"] = name
+        # Add as collaborator (ignore if already exists)
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO project_collaborators (project_id, user_id, user_name, joined_via)
+                VALUES (:pid, :uid, :name, :token)
+                ON CONFLICT (project_id, user_id) DO NOTHING
+            """), {"pid": invite["project_id"], "uid": user_id, "name": name, "token": token})
+        return redirect(f"/project/{invite['project_id']}")
+
+    return render_template("join.html", project=invite, token=token, error=None)
+
+
+@app.route("/use-invite-code", methods=["POST"])
+def use_invite_code():
+    code = (request.form.get("code") or "").strip().upper()
+    if not code:
+        return redirect("/studio")
+    ensure_collab_tables()
+    with DB_ENGINE.connect() as conn:
+        invite = conn.execute(text(
+            "SELECT token FROM project_invites WHERE invite_code = :code"
+        ), {"code": code}).mappings().first()
+    if not invite:
+        return redirect("/studio?code_error=1")
+    return redirect(f"/join/{invite['token']}")
+
 
 @app.route("/project/<project_id>/deck.<ext>")
 @require_login
