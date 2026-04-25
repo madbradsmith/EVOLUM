@@ -315,6 +315,7 @@ def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[
         submitted_logline = clean(override_payload.get("logline", ""))
         submitted_synopsis = clean(override_payload.get("synopsis", ""))
         submitted_title = clean(override_payload.get("title", ""))
+        submitted_deck_mode = (override_payload.get("deck_mode") or "").strip().lower()
 
         if submitted_title:
             data["title"] = submitted_title
@@ -325,6 +326,9 @@ def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[
         if submitted_synopsis:
             data["synopsis"] = submitted_synopsis
             print(f"✅ Using uploaded synopsis override: {candidate}")
+        if submitted_deck_mode in {"producer", "full"}:
+            data["deck_mode"] = submitted_deck_mode
+            print(f"✅ Deck mode: {submitted_deck_mode}")
 
         return data
 
@@ -995,9 +999,58 @@ def optional_external_comparable_metadata(data: Dict[str, Any], max_items: int =
 # MAIN SLIDE PLAN
 # =============================================================================
 
+def _build_producer_deck(data: Dict[str, Any], title: str) -> List[Dict[str, Any]]:
+    """Producer's Deck — 5-6 tight slides for quick reads and pre-meeting sends."""
+    protagonist = infer_protagonist(data)
+    logline = clean(data.get("logline", ""))
+    tagline = clean(data.get("tagline", "")) or logline
+    synopsis = clean(data.get("synopsis", ""))
+    protagonist_summary = clean(data.get("protagonist_summary", ""))
+    comparable_films = data.get("comparable_films", [])
+    market_projections = data.get("market_projections", {})
+
+    plan: List[Dict[str, Any]] = []
+    image_lookup = build_image_plan_lookup(data)
+
+    # 1. Title — poster + title only, no tagline text on slide
+    add_slide(plan, image_lookup, title, "", "title", "title", category="Deck Spine")
+
+    # 2. Logline
+    if logline:
+        add_slide(plan, image_lookup, "Logline", logline, "analysis", "hook", category="Deck Spine")
+
+    # 3. Story — condensed synopsis (first 320 chars)
+    story_body = synopsis[:320] if synopsis else clean(data.get("story_engine", ""))
+    if story_body:
+        add_slide(plan, image_lookup, "The Story", story_body, "analysis", "story_core", category="Deck Spine")
+
+    # 4. Lead Character
+    protagonist_body = protagonist_summary or protagonist
+    if protagonist_body:
+        add_slide(plan, image_lookup, protagonist or "Lead", protagonist_body, "text", "character", category="Deck Spine")
+
+    # 5. Comparables + Market (combined or separate)
+    if comparable_films:
+        comp_titles = "  ·  ".join(
+            f.get("title", str(f)) if isinstance(f, dict) else str(f)
+            for f in comparable_films[:3]
+        )
+        market_note = ""
+        if isinstance(market_projections, dict) and market_projections.get("distribution_angle"):
+            market_note = f"\n{market_projections['distribution_angle']}"
+        add_slide(plan, image_lookup, "Comparables", comp_titles + market_note, "analysis", "market", category="Deck Spine")
+
+    # 6. Closing
+    closing_body = clean(data.get("tagline") or data.get("story_engine") or title)
+    add_slide(plan, image_lookup, "Closing", closing_body[:140], "title", "closing", category="Deck Spine")
+
+    return plan
+
+
 def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     title = infer_project_title(data)
     protagonist = infer_protagonist(data)
+    deck_mode = (data.get("deck_mode") or "full").strip().lower()
     world = clean(data.get("world", ""))
     setting = clean(data.get("setting", ""))
     world_body = setting if setting else world
@@ -1027,8 +1080,27 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
     plan: List[Dict[str, Any]] = []
     image_lookup = build_image_plan_lookup(data)
 
-    # Core pitch deck spine — preserved for existing deck builder behavior.
-    add_slide(plan, image_lookup, title, tagline, "title", "title", category="Deck Spine")
+    # Producer's Deck — short form, exit early
+    if deck_mode == "producer":
+        producer_slides = _build_producer_deck(data, title)
+        seen: set[str] = set()
+        deduped: List[Dict[str, Any]] = []
+        for slide in producer_slides:
+            key = f"{slide.get('title', '')}::{slide.get('body', '')}"
+            if key not in seen:
+                deduped.append(slide)
+                seen.add(key)
+        return {
+            "title": title,
+            "slides": deduped,
+            "slide_count": len(deduped),
+            "deck_mode": "producer",
+            "layout_engine_version": "v3_1_script_analysis_standard",
+        }
+
+    # Full Deck spine — preserved for existing deck builder behavior.
+    # Title slide body is intentionally blank — let the poster carry the page.
+    add_slide(plan, image_lookup, title, "", "title", "title", category="Deck Spine")
     add_slide(plan, image_lookup, "Logline", logline, "analysis", "hook", category="Deck Spine")
 
     for slide in split_synopsis_cinematic(synopsis):
@@ -1077,31 +1149,10 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         if proj_parts:
             add_slide(plan, image_lookup, "Market Projections", "  ·  ".join(proj_parts), "analysis", "market", category="Deck Spine")
 
-    # New categorized intelligence section — the part that stops brain value from dying upstream.
-    catalog = build_intelligence_catalog(data)
-    stage_map = {
-        "Story Core": "story_core",
-        "Producer Intelligence": "producer_read",
-        "Character Intelligence": "character_intel",
-        "Performance Intelligence": "performance",
-        "Scene & Moment Intelligence": "scene_intel",
-        "Visual & Document Intelligence": "visual_intel",
-        "Additional Brain Signals": "producer_read",
-    }
-    for category_name, entries in catalog.items():
-        add_category_slides(
-            plan,
-            image_lookup,
-            category_name,
-            entries,
-            stage=stage_map.get(category_name, "producer_read"),
-            max_items_per_slide=3,
-        )
-
     closing_body = clean(data.get("tagline") or data.get("story_engine") or title)
     add_slide(plan, image_lookup, "Closing", closing_body[:140], "title", "closing", category="Deck Spine")
 
-    # Deduplicate exact duplicate title+body pairs but preserve category versions when content is unique.
+    # Deduplicate exact duplicate title+body pairs.
     seen: set[str] = set()
     deduped: List[Dict[str, Any]] = []
     for slide in plan:
@@ -1116,6 +1167,7 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         "title": title,
         "slides": plan,
         "slide_count": len(plan),
+        "deck_mode": "full",
         "layout_engine_version": "v3_1_script_analysis_standard",
         "script_analysis_header": build_script_analysis_header(data),
         "commercial_score_cards": build_commercial_score_cards(data),
@@ -1133,12 +1185,18 @@ def main() -> None:
 
     data = read_json(input_path)
     data = apply_user_upload_overrides(data, input_path)
-    plan = build_slide_plan(data)
-    DEFAULT_OUTPUT.write_text(json.dumps(plan, indent=2), encoding="utf-8")
-    print("✅ Full slide plan generated")
-    print(f"✅ Slide count: {plan['slide_count']}")
-    print(f"✅ Layout engine: {plan.get('layout_engine_version', 'unknown')}")
-    print(f"✅ Intelligence categories: {len(plan.get('intelligence_catalog', {}))}")
+
+    # Always build both plans — full and producer's deck
+    full_plan = build_slide_plan({**data, "deck_mode": "full"})
+    producer_plan = build_slide_plan({**data, "deck_mode": "producer"})
+
+    DEFAULT_OUTPUT.write_text(json.dumps(full_plan, indent=2), encoding="utf-8")
+    producer_output = DEFAULT_OUTPUT.parent / "slide_plan_producer.json"
+    producer_output.write_text(json.dumps(producer_plan, indent=2), encoding="utf-8")
+
+    print("✅ Full deck plan generated")
+    print(f"✅ Full deck slides: {full_plan['slide_count']}")
+    print(f"✅ Producer deck slides: {producer_plan['slide_count']}")
 
 
 if __name__ == "__main__":

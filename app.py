@@ -787,7 +787,7 @@ def create_account():
 
         log_beta_access(access_code, "ACCOUNT CREATED")
         log_activity_event("account_created", route="/create-account", user_email=email, metadata={"name": name})
-        return redirect(url_for("index"))
+        return redirect("/?welcome=new")
     except Exception as e:
         return redirect("/?auth_error=" + quote(f"Account creation failed: {e}"))
 
@@ -815,7 +815,7 @@ def sign_in():
             session["subscription_active"] = True
 
         log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
-        return redirect(url_for("index"))
+        return redirect("/?welcome=return")
     except Exception as e:
         return redirect("/?auth_error=" + quote(f"Sign in failed: {e}"))
 
@@ -1502,6 +1502,9 @@ def upload():
 
     logline = (request.form.get("logline") or "").strip()
     synopsis = (request.form.get("synopsis") or "").strip()
+    deck_mode = (request.form.get("deck_mode") or "full").strip().lower()
+    if deck_mode not in {"producer", "full"}:
+        deck_mode = "full"
     poster = request.files.get("poster")
     images = request.files.getlist("images")
 
@@ -1535,6 +1538,7 @@ def upload():
         "script_filename": Path(file.filename).name,
         "logline": logline,
         "synopsis": synopsis,
+        "deck_mode": deck_mode,
         "poster_filename": poster.filename if poster and poster.filename else "",
         "image_filenames": saved_images,
     }
@@ -1585,6 +1589,14 @@ def upload():
 
     publish_latest_outputs(fresh_pptx, fresh_pdf)
 
+    # Also publish producer's deck if it was built
+    producer_labeled = OUTPUT_DIR / "latest_producer.pptx"
+    if not producer_labeled.exists():
+        # Fallback: look for freshest pitch_deck_producer_v*.pptx
+        producer_files = sorted(OUTPUT_DIR.glob("pitch_deck_producer_v*.pptx"), key=lambda p: p.stat().st_mtime)
+        if producer_files:
+            shutil.copy2(str(producer_files[-1]), str(producer_labeled))
+
     if not LATEST_PPTX.exists():
         set_status("ERROR")
         return "Latest deck publish failed", 500
@@ -1630,6 +1642,14 @@ def download_latest_pptx():
     if not LATEST_PPTX.exists():
         abort(404)
     return send_file(LATEST_PPTX, as_attachment=True)
+
+
+@app.route("/download/latest_producer.pptx")
+def download_latest_producer_pptx():
+    path = OUTPUT_DIR / "latest_producer.pptx"
+    if not path.exists():
+        abort(404)
+    return send_file(path, as_attachment=True)
 
 
 @app.route("/download/latest.pdf")
@@ -1983,8 +2003,16 @@ def regenerate_slide_image():
 def refine_deck():
     data = request.get_json(silent=True) or {}
     slides = data.get("slides", [])
+    deck_type = (data.get("deck_type") or "full").strip().lower()
 
-    result = rebuild_refined_deck(slides, latest_manifest_path=LATEST_DECK_MANIFEST_JSON)
+    if deck_type == "producer":
+        manifest_path = OUTPUT_DIR / "latest_deck_manifest_producer.json"
+        label = "producer"
+    else:
+        manifest_path = LATEST_DECK_MANIFEST_JSON
+        label = ""
+
+    result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label=label)
 
     if "error" in result:
         return jsonify(result), 400 if result["error"] == "No slide data provided." else 500
@@ -2003,6 +2031,7 @@ def refine_deck():
 @app.route("/actor-prep-pass", methods=["POST"])
 def actor_prep_pass():
     character_name = (request.form.get("character_name") or "").strip()
+    movie_title = (request.form.get("movie_title") or "").strip()
     pasted_text = (request.form.get("script_text") or "").strip()
     file = request.files.get("script")
 
@@ -2041,8 +2070,9 @@ def actor_prep_pass():
 
     log_usage("actor_prep_start", role=character_name, mode=source_mode)
 
+    brain_data = {"title": movie_title} if movie_title else {}
     try:
-        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF)
+        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF, brain_data=brain_data)
     except Exception as e:
         log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
         return jsonify({"error": f"Actor preparation failed: {e}"}), 500
@@ -2064,6 +2094,7 @@ def actor_prep_pass():
 @app.route("/actor-booked-pass", methods=["POST"])
 def actor_booked_pass():
     character_name = (request.form.get("character_name") or "").strip()
+    movie_title = (request.form.get("movie_title") or "").strip()
     pasted_text = (request.form.get("script_text") or "").strip()
     file = request.files.get("script")
 
@@ -2102,8 +2133,9 @@ def actor_booked_pass():
 
     log_usage("actor_booked_start", role=character_name, mode=source_mode)
 
+    brain_data = {"title": movie_title} if movie_title else {}
     try:
-        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF)
+        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF, brain_data=brain_data)
     except Exception as e:
         log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
         return jsonify({"error": f"Booked role preparation failed: {e}"}), 500

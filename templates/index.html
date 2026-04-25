@@ -175,11 +175,36 @@
             Preview your generated deck below. You can download it now or refine it before final export.
         </div>
 
+        <div style="display:flex; gap:8px; margin-bottom:10px; justify-content:center;">
+            <button id="deckTabFull"
+                onclick="switchDeckType('full')"
+                style="padding:6px 18px; border-radius:20px; border:1px solid rgba(255,122,0,0.6); background:rgba(255,122,0,0.15); color:#ff9944; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.15s;">
+                Full Deck
+            </button>
+            <button id="deckTabProducer"
+                onclick="switchDeckType('producer')"
+                style="padding:6px 18px; border-radius:20px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#666; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit; transition:all 0.15s;">
+                Producer's Deck
+            </button>
+        </div>
+
         <div class="deck-preview-strip" id="deckPreviewStrip"></div>
 
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 6px;">
+            <div style="background:#0d0d0d; border:1px solid rgba(255,122,0,0.3); border-radius:12px; padding:14px; text-align:center;">
+                <div style="font-size:11px; color:#ff9944; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">FULL DECK</div>
+                <div style="font-size:11px; color:#666; margin-bottom:10px;">12–16 slides · complete pitch</div>
+                <a href="/download/latest.pptx" class="primary-button" style="display:inline-block; text-decoration:none; padding:8px 14px; font-size:12px; margin-bottom:6px;">Download PPTX</a>
+            </div>
+            <div style="background:#0d0d0d; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; text-align:center;">
+                <div style="font-size:11px; color:#aaa; font-weight:700; letter-spacing:0.08em; margin-bottom:4px;">PRODUCER'S DECK</div>
+                <div style="font-size:11px; color:#666; margin-bottom:10px;">5–6 slides · tight pre-meeting send</div>
+                <a href="/download/latest_producer.pptx" class="primary-button" style="display:inline-block; text-decoration:none; padding:8px 14px; font-size:12px; margin-bottom:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:#cfcfcf;">Download PPTX</a>
+            </div>
+        </div>
+
         <div class="complete-actions">
-            <button class="primary-button" type="button" onclick="downloadCurrentDeck()">Download PowerPoint</button>
-            <button class="primary-button" type="button" onclick="openRefinementStage()">Refine Deck</button>
+            <button class="primary-button" type="button" id="refineDeckBtn" onclick="openRefinementStage()">Refine Deck</button>
             <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
         </div>
     </div>
@@ -361,6 +386,41 @@
         </div>
     </div>
 </div>
+
+<!-- ===== WELCOME MODAL ===================================== -->
+<style>
+.welcome-choice-card {
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 24px 20px;
+    width: 180px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: center;
+}
+.welcome-choice-card:hover {
+    background: #222;
+    border-color: #e8630a;
+}
+.welcome-choice-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+}
+.welcome-choice-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 4px;
+}
+.welcome-choice-sub {
+    font-size: 12px;
+    color: #888;
+}
+@media (max-width: 480px) {
+    .welcome-choice-card { width: 140px; padding: 18px 12px; }
+}
+</style>
 
 <!-- ===== AUTH MODAL ===================================== -->
 <style>
@@ -550,7 +610,8 @@
         <div class="modal-close" onclick="closeModal('actorPrepModal')">×</div>
         <h3>Actor Preparation</h3>
         <div class="info-copy">Enter the role you are preparing and choose the script you want analyzed.</div>
-        <input type="text" id="actorRoleInput" placeholder="Enter Role">
+        <input type="text" id="actorRoleInput" placeholder="Role (e.g. Marcus)" style="margin-bottom:8px;">
+        <input type="text" id="actorPrepMovieTitle" placeholder="Movie / Project title (optional)" style="margin-bottom:8px;">
         <input type="file" id="actorPrepFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
         <div class="upload-actions">
             <button class="primary-button" type="button" onclick="submitActorPrep()">Analyze</button>
@@ -607,7 +668,8 @@
         <div class="modal-close" onclick="closeModal('actorBookedModal')">×</div>
         <h3>Booked Role Analyzer</h3>
         <div class="info-copy">Enter the role you booked and choose the full script you want analyzed.</div>
-        <input type="text" id="actorBookedRoleInput" placeholder="Enter Role">
+        <input type="text" id="actorBookedRoleInput" placeholder="Role (e.g. Marcus)" style="margin-bottom:8px;">
+        <input type="text" id="actorBookedMovieTitle" placeholder="Movie / Project title (optional)" style="margin-bottom:8px;">
         <input type="file" id="actorBookedFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
         <div class="upload-actions">
             <button class="primary-button" type="button" onclick="submitActorBooked()">Analyze</button>
@@ -681,6 +743,26 @@
     </div>
 </div>
     
+<div class="modal" id="welcomeModal">
+    <div class="modal-content" style="max-width:520px; text-align:center;">
+        <div class="modal-close" onclick="closeModal('welcomeModal')">×</div>
+        <h2 id="welcomeModalHeading" style="margin-bottom:6px;">Welcome to EVOLUM</h2>
+        <p id="welcomeModalSubtext" style="color:#aaa; font-size:14px; margin-bottom:28px;">What would you like to do?</p>
+        <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+            <div class="welcome-choice-card" onclick="closeModal('welcomeModal'); navTo('/studio')">
+                <div class="welcome-choice-icon">🎬</div>
+                <div class="welcome-choice-label">My Studio</div>
+                <div class="welcome-choice-sub">View projects &amp; saved work</div>
+            </div>
+            <div class="welcome-choice-card" onclick="closeModal('welcomeModal'); showUploadAnalyzeModal()">
+                <div class="welcome-choice-icon">✦</div>
+                <div class="welcome-choice-label">Build a Pitch Deck</div>
+                <div class="welcome-choice-sub">Start with a new script</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="modal" id="contactModal">
     <div class="modal-content">
         <div class="modal-close" onclick="closeModal('contactModal')">×</div>

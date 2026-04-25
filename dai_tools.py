@@ -70,6 +70,14 @@ def newest_generated_file(ext: str):
     return max(files, key=lambda p: p.stat().st_mtime)
 
 
+def _next_labeled_pptx(label: str):
+    """Return the most recently written pitch_deck_{label}_v*.pptx file."""
+    files = list(_OUTPUT_DIR.glob(f"pitch_deck_{label}_v*.pptx"))
+    if not files:
+        return None
+    return max(files, key=lambda p: p.stat().st_mtime)
+
+
 def publish_latest_outputs(pptx_source, pdf_source) -> None:
     if pptx_source and pptx_source.exists():
         shutil.copy2(pptx_source, _LATEST_PPTX)
@@ -77,7 +85,7 @@ def publish_latest_outputs(pptx_source, pdf_source) -> None:
         shutil.copy2(pdf_source, _LATEST_PDF)
 
 
-def rebuild_refined_deck(slides: list, latest_manifest_path=None) -> dict:
+def rebuild_refined_deck(slides: list, latest_manifest_path=None, label: str = "") -> dict:
     """Build a new deck from refined slide data. Returns {'deck': name} or {'error': msg}."""
     if not slides or not isinstance(slides, list):
         return {"error": "No slide data provided."}
@@ -129,14 +137,13 @@ def rebuild_refined_deck(slides: list, latest_manifest_path=None) -> dict:
         manifest_out = Path(latest_manifest_path) if latest_manifest_path else (_OUTPUT_DIR / "latest_deck_manifest.json")
         manifest_out.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
 
-        subprocess.run(
-            ["python3", str(_BASE_DIR / "deck_builder.py"), str(slide_plan_path)],
-            cwd=str(_BASE_DIR),
-            check=True,
-        )
+        cmd = ["python3", str(_BASE_DIR / "deck_builder.py"), str(slide_plan_path)]
+        if label:
+            cmd += ["--label", label]
+        subprocess.run(cmd, cwd=str(_BASE_DIR), check=True)
 
-        fresh_pptx = newest_generated_file(".pptx")
-        fresh_pdf = newest_generated_file(".pdf")
+        fresh_pptx = newest_generated_file(".pptx") if not label else _next_labeled_pptx(label)
+        fresh_pdf = newest_generated_file(".pdf") if not label else None
         publish_latest_outputs(fresh_pptx, fresh_pdf)
 
         return {"deck": fresh_pptx.name if fresh_pptx else _LATEST_PPTX.name}
@@ -1065,9 +1072,9 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     card_y = y - box_h - 42
     card_w = (usable_width - 24) / 3
     for i, (label, vals) in enumerate([
-        ("SCENES", [f"{scene_count} scene zones"]),
         ("BEATS", [f"{len(beats)} speaking beats"]),
         ("WORLD", [world]),
+        ("TONE", [tone[:28] if tone else "—"]),
     ]):
         _draw_card(pdf, left + i*(card_w+12), card_y, card_w, 86, label, vals, gold, panel, white, muted)
     _footer(pdf, width, 1); pdf.showPage()
@@ -1095,7 +1102,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     y = height - 62
     pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25); pdf.drawString(left, y, "SCENE JOURNEY MAP")
     y -= 26
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(left, y, f"The booked report expands to the role size: {len(beats)} beats across {scene_count} scene zones.")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(left, y, f"The booked report covers {len(beats)} speaking beats for this role.")
     y -= 36
     if not beats:
         _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found", ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)

@@ -325,11 +325,10 @@ function submitFeedback(){
     if (document.getElementById("feedbackMessage")) document.getElementById("feedbackMessage").value = "";
 }
     function downloadCurrentDeck(){
-    if (window.latestGeneratedDeck){
-        window.location.href = "/output-file?name=" + encodeURIComponent(window.latestGeneratedDeck);
-        return;
-    }
-    window.location.href = "/download/latest.pptx";
+    const url = activeDeckType === "producer"
+        ? "/download/latest_producer.pptx"
+        : "/download/latest.pptx";
+    window.location.href = url;
 }
 
 function closeAllModals(){
@@ -544,6 +543,22 @@ async function analyzeSelectedScript(){
         actionsEl.style.display = "flex";
         actionsEl.querySelector("button").textContent = "Close";
         actionsEl.querySelector("button").onclick = closeBuildProgressModal;
+    }
+}
+
+function setDeckMode(mode) {
+    document.getElementById("deckModeInput").value = mode;
+    const producer = document.getElementById("deckModeProducer");
+    const full = document.getElementById("deckModeFull");
+    if (!producer || !full) return;
+    const activeStyle = "border-color:rgba(255,122,0,0.6); background:rgba(255,122,0,0.06);";
+    const inactiveStyle = "";
+    if (mode === "producer") {
+        producer.style.cssText = activeStyle;
+        full.style.cssText = inactiveStyle;
+    } else {
+        full.style.cssText = activeStyle;
+        producer.style.cssText = inactiveStyle;
     }
 }
 
@@ -798,9 +813,16 @@ async function syncLatestSlidesForPreview(){
     return loaded;
 }
 
-async function loadLatestRefineSlides(){
+let activeDeckType = "full";
+
+async function loadLatestRefineSlides(type){
+    type = type || activeDeckType || "full";
+    activeDeckType = type;
+    const manifestFile = type === "producer"
+        ? "output/latest_deck_manifest_producer.json"
+        : "output/latest_deck_manifest.json";
     try {
-        const response = await fetch("/project-file?path=output/latest_deck_manifest.json", { cache: "no-store" });
+        const response = await fetch(`/project-file?path=${manifestFile}`, { cache: "no-store" });
         if (!response.ok) throw new Error("manifest_missing");
 
         const data = await response.json();
@@ -809,6 +831,7 @@ async function loadLatestRefineSlides(){
         refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
         latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
+        _syncDeckTypeTabs();
         return true;
     } catch (err) {
         refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
@@ -816,6 +839,27 @@ async function loadLatestRefineSlides(){
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
         return false;
     }
+}
+
+async function switchDeckType(type) {
+    if (type === activeDeckType) return;
+    activeDeckType = type;
+    currentRefineSlide = 0;
+    await loadLatestRefineSlides(type);
+    renderDeckPreview();
+    if (activeCompleteView === "refine") renderCurrentRefineSlide();
+    _syncDeckTypeTabs();
+}
+
+function _syncDeckTypeTabs() {
+    const tabFull = document.getElementById("deckTabFull");
+    const tabProducer = document.getElementById("deckTabProducer");
+    const refineBtn = document.getElementById("refineDeckBtn");
+    const activeStyle = "background:rgba(255,122,0,0.15); border-color:rgba(255,122,0,0.6); color:#ff9944;";
+    const inactiveStyle = "background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.1); color:#666;";
+    if (tabFull) tabFull.style.cssText = activeDeckType === "full" ? activeStyle : inactiveStyle;
+    if (tabProducer) tabProducer.style.cssText = activeDeckType === "producer" ? activeStyle : inactiveStyle;
+    if (refineBtn) refineBtn.textContent = activeDeckType === "producer" ? "Refine Producer's Deck" : "Refine Full Deck";
 }
 
 function renderDeckPreview(){
@@ -836,7 +880,14 @@ function renderDeckPreview(){
             ? `<div class="deck-preview-overlay"><div class="deck-preview-overlay-title">${titleText}</div></div>`
             : "";
         return `
-            <div class="deck-preview-card" onclick="jumpToRefineSlide(${index})" title="${titleText} — click to edit">
+            <div class="deck-preview-card" draggable="true"
+                 onclick="jumpToRefineSlide(${index})" title="${titleText} — click to edit"
+                 ondragstart="previewDragStart(event,${index})"
+                 ondragover="previewDragOver(event,${index})"
+                 ondragleave="previewDragLeave(event)"
+                 ondrop="previewDrop(event,${index})"
+                 ondragend="previewDragEnd(event)">
+                <button class="deck-preview-delete" onclick="event.stopPropagation();deletePreviewSlide(${index})" title="Delete slide">×</button>
                 <div class="deck-preview-img-wrap">
                     <img src="${previewImageSrcForSlide(slide)}" alt="Slide ${index + 1}">
                     ${overlay}
@@ -853,6 +904,62 @@ function renderDeckPreview(){
 function jumpToRefineSlide(index){
     currentRefineSlide = Math.max(0, Math.min(index, refineSlides.length - 1));
     openRefinementStage();
+}
+
+// --- Preview panel: delete & drag-reorder ---
+let _previewDragSrc = null;
+
+function deletePreviewSlide(index) {
+    if (refineSlides.length <= 1) { alert("A deck needs at least one slide."); return; }
+    const label = refineSlides[index].type || refineSlides[index].title || "Slide";
+    if (!confirm(`Delete slide ${index + 1}: "${label}"?`)) return;
+    refineSlides.splice(index, 1);
+    if (currentRefineSlide >= refineSlides.length) currentRefineSlide = refineSlides.length - 1;
+    renderDeckPreview();
+    renderRefineSlideList();
+}
+
+function previewDragStart(e, index) {
+    _previewDragSrc = index;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", String(index));
+    setTimeout(() => { if (e.target) e.target.classList.add("dragging"); }, 0);
+}
+
+function previewDragOver(e, index) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (_previewDragSrc !== null && _previewDragSrc !== index) {
+        e.currentTarget.classList.add("drag-over");
+    }
+}
+
+function previewDragLeave(e) {
+    e.currentTarget.classList.remove("drag-over");
+}
+
+function previewDragEnd(e) {
+    document.querySelectorAll(".deck-preview-card").forEach(c => c.classList.remove("drag-over", "dragging"));
+    _previewDragSrc = null;
+}
+
+function previewDrop(e, toIndex) {
+    e.preventDefault();
+    e.stopPropagation();
+    const from = _previewDragSrc;
+    _previewDragSrc = null;
+    if (from === null || from === toIndex) return;
+    const moved = refineSlides.splice(from, 1)[0];
+    refineSlides.splice(toIndex, 0, moved);
+    if (currentRefineSlide === from) {
+        currentRefineSlide = toIndex;
+    } else if (from < currentRefineSlide && toIndex >= currentRefineSlide) {
+        currentRefineSlide--;
+    } else if (from > currentRefineSlide && toIndex <= currentRefineSlide) {
+        currentRefineSlide++;
+    }
+    renderDeckPreview();
+    renderRefineSlideList();
 }
 
 function renderRefineSlideList(){
@@ -1204,7 +1311,7 @@ async function regenerateDeckPlaceholder(){
         const response = await fetch("/refine-deck", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: latestRefineProjectTitle, slides: refineSlides })
+            body: JSON.stringify({ title: latestRefineProjectTitle, slides: refineSlides, deck_type: activeDeckType })
         });
 
         const data = await response.json();
@@ -1232,6 +1339,7 @@ function startActorPrepFlow(){
 async function submitActorPrep(){
     if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
     const role = (document.getElementById("actorRoleInput").value || "").trim();
+    const movieTitle = (document.getElementById("actorPrepMovieTitle")?.value || "").trim();
     const fileInput = document.getElementById("actorPrepFile");
     const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
 
@@ -1246,16 +1354,18 @@ async function submitActorPrep(){
     }
 
     closeModal("actorPrepModal");
+    setProgress(0);
     document.getElementById("buildProgressTitle").textContent = "Analyzing Your Sides";
     document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is breaking down your script. This takes about 30–60 seconds.";
     document.getElementById("buildProgressStage").textContent = "Analyzing sides with Developum AI Engine…";
-    document.getElementById("buildProgressFill").style.width = "35%";
     document.getElementById("buildProgressWorking").style.display = "block";
     document.getElementById("buildProgressActions").style.display = "none";
     document.getElementById("buildProgressModal").classList.add("show");
+    startProgressCreep(88, 1.1, 600);
 
     const formData = new FormData();
     formData.append("character_name", role);
+    if (movieTitle) formData.append("movie_title", movieTitle);
     formData.append("script", file);
 
     try {
@@ -1265,6 +1375,7 @@ async function submitActorPrep(){
         });
         const data = await response.json();
 
+        stopProgressCreep();
         if (response.status === 422 && data.needs_paste){
             closeBuildProgressModal();
             document.getElementById("actorPrepPasteModal").classList.add("show");
@@ -1282,7 +1393,7 @@ async function submitActorPrep(){
             return;
         }
 
-        document.getElementById("buildProgressFill").style.width = "100%";
+        setProgress(100);
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Audition Analysis Complete";
         document.getElementById("buildProgressCopy").textContent = "Your preparation packet is ready.";
@@ -1295,6 +1406,7 @@ async function submitActorPrep(){
             document.getElementById("actorPrepCompleteModal").classList.add("show");
         };
     } catch (err) {
+        stopProgressCreep();
         closeBuildProgressModal();
         showInfoModal("Actor Preparation", "Actor preparation failed. Please try again.");
     }
@@ -1349,6 +1461,7 @@ function startActorBookedFlow(){
 async function submitActorBooked(){
     if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
     const role = (document.getElementById("actorBookedRoleInput").value || "").trim();
+    const movieTitle = (document.getElementById("actorBookedMovieTitle")?.value || "").trim();
     const fileInput = document.getElementById("actorBookedFile");
     const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
 
@@ -1363,16 +1476,18 @@ async function submitActorBooked(){
     }
 
     closeModal("actorBookedModal");
+    setProgress(0);
     document.getElementById("buildProgressTitle").textContent = "Analyzing Your Role";
     document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is building your character breakdown. This takes about 30–60 seconds.";
     document.getElementById("buildProgressStage").textContent = "Analyzing full script with Developum AI Engine…";
-    document.getElementById("buildProgressFill").style.width = "35%";
     document.getElementById("buildProgressWorking").style.display = "block";
     document.getElementById("buildProgressActions").style.display = "none";
     document.getElementById("buildProgressModal").classList.add("show");
+    startProgressCreep(88, 1.1, 600);
 
     const formData = new FormData();
     formData.append("character_name", role);
+    if (movieTitle) formData.append("movie_title", movieTitle);
     formData.append("script", file);
 
     try {
@@ -1382,6 +1497,7 @@ async function submitActorBooked(){
         });
         const data = await response.json();
 
+        stopProgressCreep();
         if (response.status === 422 && data.needs_paste){
             closeBuildProgressModal();
             document.getElementById("actorBookedPasteModal").classList.add("show");
@@ -1399,7 +1515,7 @@ async function submitActorBooked(){
             return;
         }
 
-        document.getElementById("buildProgressFill").style.width = "100%";
+        setProgress(100);
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Role Analysis Complete";
         document.getElementById("buildProgressCopy").textContent = "Your character breakdown is ready.";
@@ -1412,6 +1528,7 @@ async function submitActorBooked(){
             document.getElementById("actorBookedCompleteModal").classList.add("show");
         };
     } catch (err) {
+        stopProgressCreep();
         closeBuildProgressModal();
         showInfoModal("Booked Role Analyzer", "Booked role analysis failed. Please try again.");
     }
@@ -1570,3 +1687,23 @@ if (new URLSearchParams(window.location.search).get("loaded") === "1") {
 
 setInterval(pollStatus, 1200);
 pollStatus();
+
+// Post-login welcome modal
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    const welcome = params.get("welcome");
+    if (!welcome) return;
+    history.replaceState({}, "", "/");
+    const heading = document.getElementById("welcomeModalHeading");
+    const sub = document.getElementById("welcomeModalSubtext");
+    const userName = (document.querySelector(".top-nav-item[style*='cursor:default']") || {}).textContent || "";
+    const firstName = userName.split(" ")[0].trim();
+    if (welcome === "new") {
+        if (heading) heading.textContent = "Welcome to EVOLUM" + (firstName && firstName !== "Account" ? ", " + firstName : "") + "!";
+        if (sub) sub.textContent = "You're in. What would you like to do first?";
+    } else {
+        if (heading) heading.textContent = "Welcome back" + (firstName && firstName !== "Account" ? ", " + firstName : "") + "!";
+        if (sub) sub.textContent = "Pick up where you left off or start something new.";
+    }
+    document.getElementById("welcomeModal").classList.add("show");
+})();

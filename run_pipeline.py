@@ -112,16 +112,26 @@ def main(input_file):
 
     run(
         f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan.json",
-        "deck_builder",
-        75,
-        "Building pitch deck...",
+        "deck_builder_full",
+        72,
+        "Building full pitch deck...",
         start_time
     )
+
+    producer_plan = APP_DIR / "slide_plan_producer.json"
+    if producer_plan.exists():
+        run(
+            f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan_producer.json --label producer",
+            "deck_builder_producer",
+            88,
+            "Building producer's deck...",
+            start_time
+        )
 
     find_latest_pptx()
 
     write_status("complete", 100, "Complete", start_time, state="complete")
-    print("\n🎉 Pipeline complete")
+    print("\n🎉 Pipeline complete — full deck + producer's deck built")
 
 
 if __name__ == "__main__":

@@ -29,6 +29,7 @@ import io
 import json
 import os
 import re
+import shutil
 import tempfile
 import urllib.request
 from pathlib import Path
@@ -71,13 +72,13 @@ TOP_RULE_Y = Inches(0.36)
 TOP_RULE_H = Inches(0.05)
 
 LAYOUT_THEMES = {
-    "cinematic_grounded":      {"base": (18,18,22), "base2": (34,32,30), "glow": (196,126,76,44),  "accent": (206,210,219)},
-    "cinematic_high_tension":  {"base": (14,10,10), "base2": (28,18,14), "glow": (220,60,40,50),   "accent": (220,100,80)},
-    "contained_nocturnal":     {"base": (8,8,16),   "base2": (16,16,28), "glow": (60,80,200,40),   "accent": (100,140,220)},
-    "institutional_cinematic": {"base": (12,14,18), "base2": (24,28,34), "glow": (80,120,180,36),  "accent": (160,185,210)},
-    "storybook_satirical":     {"base": (20,16,10), "base2": (36,28,18), "glow": (220,180,80,44),  "accent": (220,180,80)},
-    "neon_social_chaos":       {"base": (10,8,18),  "base2": (20,14,30), "glow": (180,40,240,50),  "accent": (180,80,240)},
-    "athletic_prestige":       {"base": (8,14,20),  "base2": (16,26,36), "glow": (40,160,220,44),  "accent": (60,160,220)},
+    "cinematic_grounded":      {"base": (18,18,22), "base2": (34,32,30), "glow": (196,126,76,44),  "accent": (206,210,219), "font": "Georgia"},
+    "cinematic_high_tension":  {"base": (14,10,10), "base2": (28,18,14), "glow": (220,60,40,50),   "accent": (220,100,80),  "font": "Arial Black"},
+    "contained_nocturnal":     {"base": (8,8,16),   "base2": (16,16,28), "glow": (60,80,200,40),   "accent": (100,140,220), "font": "Trebuchet MS"},
+    "institutional_cinematic": {"base": (12,14,18), "base2": (24,28,34), "glow": (80,120,180,36),  "accent": (160,185,210), "font": "Verdana"},
+    "storybook_satirical":     {"base": (20,16,10), "base2": (36,28,18), "glow": (220,180,80,44),  "accent": (220,180,80),  "font": "Georgia"},
+    "neon_social_chaos":       {"base": (10,8,18),  "base2": (20,14,30), "glow": (180,40,240,50),  "accent": (180,80,240),  "font": "Trebuchet MS"},
+    "athletic_prestige":       {"base": (8,14,20),  "base2": (16,26,36), "glow": (40,160,220,44),  "accent": (60,160,220),  "font": "Verdana"},
 }
 
 _active_theme: dict = LAYOUT_THEMES["cinematic_grounded"]
@@ -85,6 +86,10 @@ _active_theme: dict = LAYOUT_THEMES["cinematic_grounded"]
 
 def rgb(r: int, g: int, b: int) -> RGBColor:
     return RGBColor(r, g, b)
+
+
+def _theme_font() -> str:
+    return _active_theme.get("font", "Arial")
 
 
 def clean(text) -> str:
@@ -106,14 +111,16 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def next_output_path(output_dir: Path) -> Path:
+def next_output_path(output_dir: Path, label: str = "") -> Path:
+    prefix = f"pitch_deck_{label}" if label else "pitch_deck"
     nums = []
-    for p in output_dir.glob("pitch_deck_v*.pptx"):
-        m = re.search(r"pitch_deck_v(\d+)\.pptx$", p.name)
+    pattern = f"{prefix}_v*.pptx"
+    for p in output_dir.glob(pattern):
+        m = re.search(rf"{re.escape(prefix)}_v(\d+)\.pptx$", p.name)
         if m:
             nums.append(int(m.group(1)))
     nxt = max(nums) + 1 if nums else 1
-    return output_dir / f"pitch_deck_v{nxt}.pptx"
+    return output_dir / f"{prefix}_v{nxt}.pptx"
 
 
 def resolve_paths(args) -> tuple[Path, Path, Path]:
@@ -1004,6 +1011,7 @@ def add_title_text(slide, text: str) -> None:
     p = tf.paragraphs[0]
     run = p.add_run()
     run.text = clean(text)
+    run.font.name = _theme_font()
     run.font.size = Pt(17)
     run.font.bold = True
     run.font.color.rgb = rgb(255, 255, 255)
@@ -1032,6 +1040,7 @@ def add_text_box(slide, left, top, width, height, text: str, *, font_size: int =
     p = tf.paragraphs[0]
     run = p.add_run()
     run.text = clean(text)
+    run.font.name = _theme_font()
     run.font.size = Pt(font_size)
     run.font.bold = True
     run.font.color.rgb = rgb(255, 255, 255)
@@ -1063,6 +1072,7 @@ def add_cinematic_caption(slide, body: str, font_size: int = 18) -> None:
     p = tf.paragraphs[0]
     run = p.add_run()
     run.text = clean(body)
+    run.font.name = _theme_font()
     run.font.size = Pt(font_size)
     run.font.bold = True
     run.font.color.rgb = rgb(255, 255, 255)
@@ -1141,6 +1151,7 @@ def build_slide_split_panel(slide, image_path: Optional[Path], slide_title: str,
     p = tf.paragraphs[0]
     run = p.add_run()
     run.text = clean(slide_title.split("(")[0].strip())
+    run.font.name = _theme_font()
     run.font.size = Pt(15)
     run.font.bold = True
     run.font.color.rgb = rgb(*accent)
@@ -1216,7 +1227,7 @@ def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
     add_cinematic_caption(slide, body, font_size=fs)
 
 
-def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path) -> Path:
+def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path, label: str = "") -> Path:
     global _active_theme
     reset_image_selection_state()
     plan = load_json(slide_plan_path)
@@ -1292,15 +1303,20 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             add_top_rule(slide)
             add_title_text(slide, deck_title)
             place_text_by_stage(slide, stage, layout, body)
-        else:
-            # Full bleed — every non-title slide
+        elif stage_lower in {"character", "world"}:
+            build_slide_split_panel(slide, image_for_slide, slide_title.split("(")[0].strip(), body)
+        elif stage_lower in {"market", "why_now", "themes"}:
+            build_slide_editorial(slide, image_for_slide, slide_title.split("(")[0].strip(), body)
+        elif stage_lower == "closing":
             add_base_background(slide)
             add_full_bleed_image(slide, image_for_slide)
-            add_top_rule(slide)
-            if stage_lower != "closing":
-                add_title_text(slide, slide_title.split("(")[0].strip())
-            else:
-                add_title_text(slide, deck_title)
+            add_title_text(slide, deck_title)
+            place_text_by_stage(slide, stage, layout, body)
+        else:
+            # Full bleed + cinematic caption — hook, conflict, stakes, tone, engine, turn, etc.
+            add_base_background(slide)
+            add_full_bleed_image(slide, image_for_slide)
+            add_title_text(slide, slide_title.split("(")[0].strip())
             place_text_by_stage(slide, stage, layout, body)
 
         resolved_image_options = resolve_image_options_for_slide(
@@ -1327,10 +1343,15 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             "selected_option_id": resolved_image_options[0].get("option_id", "selected") if resolved_image_options else "",
         })
 
-    out_path = next_output_path(output_dir)
+    out_path = next_output_path(output_dir, label=label)
     prs.save(str(out_path))
-    manifest_path = output_dir / "latest_deck_manifest.json"
+    manifest_name = f"latest_deck_manifest_{label}.json" if label else "latest_deck_manifest.json"
+    manifest_path = output_dir / manifest_name
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    # Also write a labeled latest copy so app.py can find it by label
+    if label:
+        labeled_latest = output_dir / f"latest_{label}.pptx"
+        shutil.copy2(str(out_path), str(labeled_latest))
     print(f"📦 Deck manifest created: {manifest_path}")
     print(f"✅ Pitch deck created: {out_path}")
     return out_path
@@ -1340,6 +1361,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("slide_plan", nargs="?", help="Path to slide_plan.json")
     parser.add_argument("--project", help="Project/app directory containing slide_plan.json and visuals/")
+    parser.add_argument("--label", default="", help="Output label (e.g. 'producer') for file naming")
     return parser.parse_args()
 
 
@@ -1351,7 +1373,7 @@ def main() -> None:
         print(f"Slide plan not found: {slide_plan_path}")
         raise SystemExit(1)
 
-    build_presentation(slide_plan_path, visuals_dir, output_dir)
+    build_presentation(slide_plan_path, visuals_dir, output_dir, label=args.label)
 
 
 if __name__ == "__main__":
