@@ -1565,10 +1565,13 @@ async function submitActorBooked(){
     const fileInput = document.getElementById("actorBookedFile");
     const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
 
+    const roleErr = document.getElementById("actorBookedRoleError");
     if (!role){
-        showInfoModal("Booked Role Analyzer", "Please enter the role you booked.");
+        if (roleErr) { roleErr.style.display = "block"; }
+        document.getElementById("actorBookedRoleInput").focus();
         return;
     }
+    if (roleErr) roleErr.style.display = "none";
 
     if (!file){
         showInfoModal("Booked Role Analyzer", "Please choose a script before continuing.");

@@ -1084,6 +1084,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
 
     title = _project_title(brain_data)
     world = _world_value(brain_data)
+    tone = _safe(brain_data.get("tone"), "")
     intelligence = _actor_ai_json(character_name, title, "booked", brain_data, beats)
     image_path = _find_actor_report_image(brain_data, "actor_booked", character_name, title)
     scene_count = len(_unique_scenes(beats)) or 1
