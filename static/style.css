@@ -495,6 +495,17 @@ body.active-build.complete-mode .workspace-title {
     padding: 8px;
     scroll-snap-align: start;
     flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.12s;
+}
+.deck-preview-card:hover {
+    border-color: rgba(255,122,0,0.55);
+    transform: translateY(-2px);
+}
+.deck-preview-img-wrap {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
 }
 .deck-preview-card img {
     width: 100%;
@@ -504,11 +515,45 @@ body.active-build.complete-mode .workspace-title {
     display: block;
     border: 1px solid rgba(255,255,255,0.08);
 }
+.deck-preview-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 22px 7px 7px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.82) 0%, transparent 100%);
+    pointer-events: none;
+}
+.deck-preview-overlay-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
 .deck-preview-card-title {
     color: #cfcfcf;
     font-size: 11px;
-    margin-top: 8px;
+    margin-top: 7px;
     line-height: 1.35;
+}
+.deck-preview-num {
+    display: inline-block;
+    color: #555;
+    margin-right: 4px;
+    font-variant-numeric: tabular-nums;
+}
+.deck-preview-snippet {
+    color: #666;
+    font-size: 10px;
+    margin-top: 3px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
 }
 .terminal-prompt { color: #52a8ff; }
 .terminal-accent { color: #ffb25c; }

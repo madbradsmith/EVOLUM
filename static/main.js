@@ -798,12 +798,32 @@ function renderDeckPreview(){
         return;
     }
 
-    strip.innerHTML = refineSlides.map((slide, index) => `
-        <div class="deck-preview-card">
-            <img src="${previewImageSrcForSlide(slide)}" alt="Preview slide ${index + 1}">
-            <div class="deck-preview-card-title">Slide ${index + 1} • ${slide.type}</div>
-        </div>
-    `).join("");
+    strip.innerHTML = refineSlides.map((slide, index) => {
+        const hasRealImage = !!(slide.image_url || slide.image_path);
+        const titleText = escapeHtml(slide.title || `Slide ${index + 1}`);
+        const typeText = escapeHtml(slide.type || `Slide ${index + 1}`);
+        const bodySnippet = escapeHtml((slide.subtitle || slide.body || "").slice(0, 55));
+        const overlay = hasRealImage
+            ? `<div class="deck-preview-overlay"><div class="deck-preview-overlay-title">${titleText}</div></div>`
+            : "";
+        return `
+            <div class="deck-preview-card" onclick="jumpToRefineSlide(${index})" title="${titleText} — click to edit">
+                <div class="deck-preview-img-wrap">
+                    <img src="${previewImageSrcForSlide(slide)}" alt="Slide ${index + 1}">
+                    ${overlay}
+                </div>
+                <div class="deck-preview-card-title">
+                    <span class="deck-preview-num">${index + 1}</span>${typeText}
+                    ${bodySnippet ? `<div class="deck-preview-snippet">${bodySnippet}</div>` : ""}
+                </div>
+            </div>
+        `;
+    }).join("");
+}
+
+function jumpToRefineSlide(index){
+    currentRefineSlide = Math.max(0, Math.min(index, refineSlides.length - 1));
+    openRefinementStage();
 }
 
 function renderRefineSlideList(){
