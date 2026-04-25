@@ -868,8 +868,7 @@ def create_checkout_session():
         pass
 
     stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
-    price_id = os.environ.get("STRIPE_PRICE_ID", "")
-    if not stripe_lib.api_key or not price_id:
+    if not stripe_lib.api_key:
         return redirect("/?auth_error=" + quote("Payment system unavailable — please try again later."))
 
     session["pending_name"] = name
@@ -880,7 +879,15 @@ def create_checkout_session():
         base_url = request.host_url.rstrip("/")
         checkout = stripe_lib.checkout.Session.create(
             payment_method_types=["card"],
-            line_items=[{"price": price_id, "quantity": 1}],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": 500,
+                    "recurring": {"interval": "month"},
+                    "product_data": {"name": "EVOLUM Studio — Monthly"},
+                },
+                "quantity": 1,
+            }],
             mode="subscription",
             customer_email=email,
             success_url=f"{base_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
