@@ -862,6 +862,84 @@ def terms():
     return render_template("terms.html")
 
 
+@app.route("/cancel")
+def cancel_page():
+    if not session.get("user_id") and not session.get("user_email"):
+        return redirect("/")
+    user = get_user_by_email(session.get("user_email", "")) if session.get("user_email") else None
+    if not user:
+        return redirect("/")
+    import datetime
+    created_at = user.get("created_at")
+    in_window = False
+    if created_at:
+        if isinstance(created_at, str):
+            created_at = datetime.datetime.fromisoformat(created_at)
+        now = datetime.datetime.utcnow()
+        if created_at.tzinfo:
+            now = datetime.datetime.now(datetime.timezone.utc)
+        in_window = (now - created_at).total_seconds() <= 3 * 24 * 3600
+    has_sub = bool(user.get("stripe_subscription_id") and user.get("subscription_active"))
+    return render_template("cancel.html",
+        user_name=user.get("name", ""),
+        in_window=in_window,
+        has_sub=has_sub,
+    )
+
+
+@app.route("/cancel/confirm", methods=["POST"])
+def cancel_confirm():
+    if not session.get("user_id") and not session.get("user_email"):
+        return redirect("/")
+    user = get_user_by_email(session.get("user_email", "")) if session.get("user_email") else None
+    if not user:
+        return redirect("/")
+
+    import datetime, stripe as stripe_lib
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+
+    sub_id = user.get("stripe_subscription_id")
+    refund_issued = False
+    error_msg = None
+
+    if sub_id and stripe_lib.api_key:
+        try:
+            # Check if within 3-day window
+            created_at = user.get("created_at")
+            if isinstance(created_at, str):
+                created_at = datetime.datetime.fromisoformat(created_at)
+            now = datetime.datetime.utcnow()
+            if created_at and created_at.tzinfo:
+                now = datetime.datetime.now(datetime.timezone.utc)
+            in_window = created_at and (now - created_at).total_seconds() <= 3 * 24 * 3600
+
+            if in_window:
+                # Get latest invoice and refund the payment
+                sub = stripe_lib.Subscription.retrieve(sub_id, expand=["latest_invoice.payment_intent"])
+                pi = sub.latest_invoice.payment_intent if sub.latest_invoice else None
+                if pi and pi.status == "succeeded":
+                    stripe_lib.Refund.create(payment_intent=pi.id)
+                    refund_issued = True
+
+            # Cancel the subscription immediately
+            stripe_lib.Subscription.cancel(sub_id)
+        except Exception as e:
+            error_msg = str(e)
+
+    # Mark inactive in DB regardless of Stripe result
+    if DB_ENGINE:
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text(
+                "UPDATE beta_users SET subscription_active=FALSE WHERE id=:uid"
+            ), {"uid": user["id"]})
+
+    log_activity_event("cancel_subscription", route="/cancel/confirm",
+                       user_email=user.get("email", ""),
+                       metadata={"refund_issued": refund_issued, "error": error_msg})
+    session.clear()
+    return render_template("cancel_done.html", refund_issued=refund_issued)
+
+
 # ===== STRIPE PAYMENT ROUTES START ===================
 @app.route("/stripe-env-check")
 def stripe_env_check():
