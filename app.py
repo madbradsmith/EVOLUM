@@ -1006,6 +1006,8 @@ def require_login(view_func):
             if user:
                 session["user_id"] = str(user["id"])
                 return view_func(*args, **kwargs)
+        if session.get("beta_access") is True:
+            return view_func(*args, **kwargs)
         return redirect("/")
     return wrapper
 

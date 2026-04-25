@@ -110,8 +110,8 @@
                         </div>
                     </a>
                     <form method="POST" action="/project/{{ project.id }}/load-deck" style="margin:0;">
-                        <button type="submit" class="choice" style="width:100%; padding:10px; text-align:center; background:none; border:1px solid rgba(255,255,255,0.12); border-radius:12px; color:#cfcfcf; cursor:pointer; font-size:14px;">
-                            Load for Editing
+                        <button type="submit" class="choice" style="width:100%; padding:10px; text-align:center; background:rgba(255,122,0,0.1); border:1px solid rgba(255,122,0,0.4); border-radius:12px; color:#ff9944; cursor:pointer; font-size:14px; font-weight:700;">
+                            Preview & Edit Slides
                         </button>
                     </form>
                 </div>
@@ -207,74 +207,13 @@
     </div>
 </div>
 
-<!-- FLOATING VIDEO CHAT WIDGET -->
-<div id="vidWidget" style="position:fixed; bottom:24px; right:24px; z-index:900; width:230px; background:#111; border:1px solid rgba(255,122,0,0.35); border-radius:14px; box-shadow:0 6px 28px rgba(0,0,0,0.6); user-select:none;">
-    <div id="vidWidgetHeader" style="padding:10px 12px; cursor:grab; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.07);">
-        <span style="font-size:12px; font-weight:700; color:#ff7a00;">📹 Team Call</span>
-        <span id="vidToggle" onclick="toggleVid()" style="cursor:pointer; color:#555; font-size:18px; line-height:1; padding:0 2px;">−</span>
-    </div>
-    <div id="vidBody" style="padding:12px;">
-        <input id="vidLink" type="url" placeholder="Paste Zoom or Meet link..."
-            style="width:100%; background:#0c0c0c; border:1px solid rgba(255,255,255,0.1); border-radius:8px; color:#d8d8d8; font-size:11px; padding:7px 9px; margin-bottom:8px; font-family:inherit; box-sizing:border-box;">
-        <div style="display:flex; gap:6px;">
-            <button onclick="joinCall()" style="flex:1; background:#ff7a00; color:#fff; border:none; border-radius:8px; padding:7px; font-size:11px; font-weight:700; cursor:pointer; font-family:inherit;">Join</button>
-            <button onclick="copyCallLink()" id="copyCallBtn" style="flex:1; background:rgba(255,255,255,0.06); color:#aaa; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px; font-size:11px; cursor:pointer; font-family:inherit;">Copy</button>
-        </div>
-    </div>
-</div>
 
 <script>
-// Video widget drag
-(function() {
-    const widget = document.getElementById("vidWidget");
-    const header = document.getElementById("vidWidgetHeader");
-    let dragging = false, ox, oy, wx, wy;
-    header.addEventListener("mousedown", e => {
-        dragging = true;
-        const r = widget.getBoundingClientRect();
-        ox = e.clientX; oy = e.clientY; wx = r.left; wy = r.top;
-        header.style.cursor = "grabbing"; e.preventDefault();
-    });
-    document.addEventListener("mousemove", e => {
-        if (!dragging) return;
-        widget.style.left = (wx + e.clientX - ox) + "px";
-        widget.style.top = (wy + e.clientY - oy) + "px";
-        widget.style.right = "auto"; widget.style.bottom = "auto";
-    });
-    document.addEventListener("mouseup", () => { dragging = false; header.style.cursor = "grab"; });
-})();
-
-// Persist meeting link per project
-const VID_KEY = "evolum_call_{{ project.id }}";
-const savedVid = localStorage.getItem(VID_KEY);
-if (savedVid) document.getElementById("vidLink").value = savedVid;
-document.getElementById("vidLink").addEventListener("input", function() {
-    localStorage.setItem(VID_KEY, this.value);
-});
-
-let vidCollapsed = false;
-function toggleVid() {
-    vidCollapsed = !vidCollapsed;
-    document.getElementById("vidBody").style.display = vidCollapsed ? "none" : "block";
-    document.getElementById("vidToggle").textContent = vidCollapsed ? "+" : "−";
-}
-function joinCall() {
-    const link = document.getElementById("vidLink").value.trim();
-    if (link) { localStorage.setItem(VID_KEY, link); window.open(link, "_blank"); }
-    else document.getElementById("vidLink").focus();
-}
-function copyCallLink() {
-    const link = document.getElementById("vidLink").value.trim();
-    if (!link) return;
-    navigator.clipboard.writeText(link).then(() => {
-        const btn = document.getElementById("copyCallBtn");
-        btn.textContent = "Copied!";
-        setTimeout(() => btn.textContent = "Copy", 1400);
-    });
-}
-
 // Project invite
 async function generateProjectInvite() {
+    const btn = event.target;
+    btn.textContent = "Generating...";
+    btn.disabled = true;
     try {
         const res = await fetch("/project/{{ project.id }}/create-invite", { method: "POST" });
         const data = await res.json();
@@ -283,8 +222,14 @@ async function generateProjectInvite() {
             document.getElementById("projectInviteCode").textContent = data.code;
             document.getElementById("projectInviteResult").style.display = "block";
             window._projInviteLink = data.link;
+        } else {
+            alert(data.error || "Could not generate invite link. Please try again.");
         }
-    } catch(e) {}
+    } catch(e) {
+        alert("Connection error — please try again.");
+    }
+    btn.textContent = "Generate Invite Link";
+    btn.disabled = false;
 }
 function copyProjectLink() {
     if (window._projInviteLink) {
