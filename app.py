@@ -1469,6 +1469,14 @@ def apply_upload_text_overrides(project_dir, logline_override="", synopsis_overr
             candidate.write_text(json.dumps(data, indent=2), encoding="utf-8")
 # ===== UPLOAD OVERRIDE HELPERS END ======================
 
+@app.route("/debug-log")
+def debug_log():
+    log_path = BASE_DIR / "pipeline.log"
+    if not log_path.exists():
+        return "No pipeline.log found.", 200, {"Content-Type": "text/plain; charset=utf-8"}
+    return log_path.read_text(encoding="utf-8"), 200, {"Content-Type": "text/plain; charset=utf-8"}
+
+
 @app.route("/upload", methods=["POST"])
 def upload():
     submitted_logline = (request.form.get("logline") or "").strip()
