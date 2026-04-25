@@ -295,13 +295,18 @@ textarea {
     text-align: left;
     max-width: 520px;
     margin: 0 auto 12px;
-    opacity: 0.8;
 }
 .field-help {
-    color: #9f9f9f;
+    color: #aaa;
     font-size: 11px;
     margin-top: -4px;
     margin-bottom: 8px;
+}
+input::placeholder, textarea::placeholder {
+    color: rgba(255,255,255,0.35);
+}
+input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
+    color: rgba(255,255,255,0.35);
 }
 .footer-powered {
     margin-top: auto;

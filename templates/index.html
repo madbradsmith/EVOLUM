@@ -46,6 +46,13 @@
 <div class="logo">
     <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
 </div>
+
+{% if request.args.get('signed_out') %}
+<div style="background:rgba(82,201,122,0.1); border:1px solid rgba(82,201,122,0.3); border-radius:10px; padding:10px 16px; text-align:center; margin:0 auto 12px; max-width:400px; font-size:13px; color:#52c97a;">
+    You've been signed out. See you next time.
+</div>
+{% endif %}
+
 <div id="siteHeadline" style="text-align:center; margin:10px 0 18px 0;">
 
     <div style="
@@ -85,9 +92,11 @@
          Deep script insights in secconds!
     </div>
     
+    {% if not user_logged_in %}
     <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
         <button class="secondary-button" type="button">Try Now</button>
     </div>
+    {% endif %}
 </div>
 
 <!-- Generate Pitch Deck -->
@@ -97,9 +106,11 @@
     <div class="choice-copy">
         Create your pitch deck in minutes!
     </div>
+    {% if not user_logged_in %}
     <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
         <button class="secondary-button" type="button">Try Now</button>
     </div>
+    {% endif %}
 </div>
 
 <!-- Actor Preparation -->
@@ -109,9 +120,11 @@
     <div class="choice-copy">
         Let's get you booked using our complete sides analysis!
     </div>
+    {% if not user_logged_in %}
     <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
         <button class="secondary-button" type="button">Try Now</button>
     </div>
+    {% endif %}
 </div>
 
 <!-- Booked -->
@@ -121,9 +134,11 @@
     <div class="choice-copy">
          Get your full character analysis in seconds!
     </div>
+    {% if not user_logged_in %}
     <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
         <button class="secondary-button" type="button">Try Now</button>
     </div>
+    {% endif %}
 </div>
 
 </div>

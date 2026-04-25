@@ -854,7 +854,7 @@ def logout():
     if email:
         log_activity_event("sign_out", route="/logout", user_email=email)
     session.clear()
-    return redirect(url_for("index"))
+    return redirect("/?signed_out=1")
 
 
 # ===== STRIPE PAYMENT ROUTES START ===================
@@ -1099,7 +1099,8 @@ Rules:
         return jsonify({"reply": reply})
     except Exception as e:
         print(f"⚠️ Studio chat error: {e}", flush=True)
-        return jsonify({"reply": "Something went wrong — please try again."}), 200
+        short_err = str(e)[:120]
+        return jsonify({"reply": f"Studio Helper hit an error: {short_err}. Please try again."}), 200
 
 
 @app.route("/session-test")
@@ -1306,10 +1307,15 @@ def admin():
     messages = []
 
     try:
-        disk = shutil.disk_usage("/")
-        stats["disk_total_mb"] = disk.total / (1024 * 1024)
-        stats["disk_used_mb"] = (disk.total - disk.free) / (1024 * 1024)
-        stats["disk_pct"] = round((disk.total - disk.free) / disk.total * 100, 1)
+        projects_dir = BASE_DIR / "sessions"
+        if projects_dir.exists():
+            used_bytes = sum(f.stat().st_size for f in projects_dir.rglob("*") if f.is_file())
+        else:
+            used_bytes = 0
+        limit_mb = 10 * 1024  # 10 GB limit
+        stats["disk_total_mb"] = limit_mb
+        stats["disk_used_mb"] = round(used_bytes / (1024 * 1024), 1)
+        stats["disk_pct"] = round(stats["disk_used_mb"] / limit_mb * 100, 1)
     except Exception:
         pass
 
