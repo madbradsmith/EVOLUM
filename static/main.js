@@ -222,6 +222,11 @@ function toggleTopNavMenu(){
     if (!menu) return;
     menu.classList.toggle("show");
 }
+function navTo(url){
+    const menu = document.getElementById("topNavMenu");
+    if (menu) menu.classList.remove("show");
+    setTimeout(() => { window.location.href = url; }, 80);
+}
 document.addEventListener("click", function(event){
     const shell = document.querySelector(".top-nav-shell");
     const menu = document.getElementById("topNavMenu");
@@ -409,6 +414,12 @@ function showUploadAnalyzeModal(){
 function openAnalyzePassModal(){
     closeAllModals();
     document.getElementById("analyzePassModal").classList.add("show");
+}
+
+function analyzeToDecFlow(){
+    closeAllModals();
+    analyzeFlowMode = "upload";
+    continueToApprovedUpload();
 }
 
 function continueToApprovedUpload(){

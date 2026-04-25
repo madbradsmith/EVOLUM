@@ -32,7 +32,11 @@ from pptx import Presentation
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 from werkzeug.security import generate_password_hash, check_password_hash
-from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline
+from dai_tools import (
+    build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline,
+    normalize_project_relative_path, project_file_url_for_path, normalize_manifest_image_options,
+    newest_generated_file, publish_latest_outputs, rebuild_refined_deck,
+)
 
 # ===== IMPORTS / SETUP END ===========================
 
@@ -212,15 +216,6 @@ def clear_latest_targets():
         except OSError:
             pass
 
-
-def newest_generated_file(ext: str):
-    excluded = {LATEST_PPTX.name, LATEST_PDF.name}
-    files = [p for p in OUTPUT_DIR.glob(f"pitch_deck_v*{ext}") if p.name not in excluded]
-
-    if not files:
-        return None
-
-    return max(files, key=lambda p: p.stat().st_mtime)
 
 def find_latest_slide_plan_file():
     candidates = []
@@ -492,29 +487,6 @@ def build_project_file_url(image_path: Path) -> str:
     return "/project-file?path=" + quote(str(rel).replace('\\', '/'))
 
 
-def normalize_project_relative_path(raw_path: str) -> str:
-    cleaned = str(raw_path or "").strip().replace("\\", "/")
-    if not cleaned:
-        return ""
-    prefixes = [
-        str(BASE_DIR).replace("\\", "/").rstrip("/") + "/",
-        "/opt/render/project/src/",
-        "opt/render/project/src/",
-    ]
-    for prefix in prefixes:
-        if cleaned.startswith(prefix):
-            cleaned = cleaned[len(prefix):]
-    return cleaned.lstrip("/")
-
-def normalize_project_path_string(raw_path: str) -> str:
-    return normalize_project_relative_path(raw_path)
-
-def project_file_url_for_path(raw_path: str) -> str:
-    rel = normalize_project_relative_path(raw_path)
-    if not rel:
-        return ""
-    return "/project-file?path=" + quote(rel)
-
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
 
 _SLIDE_VISUAL_CONCEPTS = {
@@ -664,21 +636,6 @@ def generate_slide_option_images(slide_plan_file, slide_title: str, slide_body: 
         options.append(payload)
     return options
 
-def normalize_manifest_image_options(options):
-    normalized = []
-    if not isinstance(options, list):
-        return normalized
-    for item in options:
-        if not isinstance(item, dict):
-            continue
-        entry = dict(item)
-        entry["image_path"] = normalize_project_relative_path(entry.get("image_path", "") or "")
-        if not entry.get("image_url"):
-            entry["image_url"] = project_file_url_for_path(entry.get("image_path", "") or "")
-        normalized.append(entry)
-    return normalized
-
-
 def make_slide_payload_cache_key(slide_plan_file=None):
     if not slide_plan_file or not slide_plan_file.exists():
         return "missing"
@@ -694,14 +651,6 @@ def make_slide_payload_cache_key(slide_plan_file=None):
         parts.append(f"builder:{builder_path}:{builder_path.stat().st_mtime_ns}")
 
     return "|".join(parts)
-
-
-def publish_latest_outputs(pptx_source, pdf_source):
-    if pptx_source and pptx_source.exists():
-        shutil.copy2(pptx_source, LATEST_PPTX)
-
-    if pdf_source and pdf_source.exists():
-        shutil.copy2(pdf_source, LATEST_PDF)
 
 
 def safe_text(value, fallback="-"):
@@ -1783,75 +1732,18 @@ def refine_deck():
     data = request.get_json(silent=True) or {}
     slides = data.get("slides", [])
 
-    if not slides or not isinstance(slides, list):
-        return jsonify({"error": "No slide data provided."}), 400
+    result = rebuild_refined_deck(slides, latest_manifest_path=LATEST_DECK_MANIFEST_JSON)
 
-    try:
-        slide_plan_payload = {
-            "title": slides[0].get("title", "Refined Deck") if slides else "Refined Deck",
-            "slides": [
-                {
-                    "title": str(slide_data.get("title", "") or "").strip(),
-                    "body": str(slide_data.get("body", "") or "").strip(),
-                    "layout": str(slide_data.get("layout", "") or "text").strip(),
-                    "stage": str(slide_data.get("stage", "") or "refine").strip(),
-                    "subtitle": str(slide_data.get("subtitle", "") or "").strip(),
-                    "image_path": normalize_project_relative_path(slide_data.get("image_path", "") or ""),
-                    "image_name": str(slide_data.get("image_name", "") or "").strip(),
-                    "image_url": str(slide_data.get("image_url", "") or "").strip(),
-                    "image_source": str(slide_data.get("image_source", "") or "").strip(),
-                    "image_options": normalize_manifest_image_options(slide_data.get("image_options", [])),
-                    "selected_option_id": str(slide_data.get("selected_option_id", "") or "").strip(),
-                }
-                for slide_data in slides
-            ],
-            "slide_count": len(slides),
-        }
+    if "error" in result:
+        return jsonify(result), 400 if result["error"] == "No slide data provided." else 500
 
-        slide_plan_path = BASE_DIR / "slide_plan.json"
-        temp_slide_plan_path = BASE_DIR / "slide_plan.tmp.json"
-        temp_slide_plan_path.write_text(json.dumps(slide_plan_payload, indent=2), encoding="utf-8")
-        temp_slide_plan_path.replace(slide_plan_path)
+    _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+    _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
 
-        manifest_payload = []
-        for i, slide_data in enumerate(slides, start=1):
-            manifest_payload.append({
-                "slide_number": i,
-                "title": str(slide_data.get("title", "") or "").strip(),
-                "body": str(slide_data.get("body", "") or "").strip(),
-                "layout": str(slide_data.get("layout", "") or "").strip(),
-                "stage": str(slide_data.get("stage", "") or "").strip(),
-                "image_path": normalize_project_relative_path(slide_data.get("image_path", "") or ""),
-
-                "image_name": str(slide_data.get("image_name", "") or "").strip(),
-                "image_url": str(slide_data.get("image_url", "") or "").strip(),
-                "image_source": str(slide_data.get("image_source", "") or "").strip(),
-                "image_options": normalize_manifest_image_options(slide_data.get("image_options", [])),
-                "selected_option_id": str(slide_data.get("selected_option_id", "") or "").strip(),
-            })
-
-        LATEST_DECK_MANIFEST_JSON.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
-
-        subprocess.run(
-            ["python3", str(BASE_DIR / "deck_builder.py"), str(slide_plan_path)],
-            cwd=str(BASE_DIR),
-            check=True,
-        )
-
-        fresh_pptx = newest_generated_file(".pptx")
-        fresh_pdf = newest_generated_file(".pdf")
-        publish_latest_outputs(fresh_pptx, fresh_pdf)
-
-        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
-        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
-
-        return jsonify({
-            "message": "Your refined deck has been rebuilt successfully.",
-            "deck": fresh_pptx.name if fresh_pptx else LATEST_PPTX.name,
-        })
-
-    except Exception as e:
-        return jsonify({"error": f"Refine rebuild failed: {e}"}), 500
+    return jsonify({
+        "message": "Your refined deck has been rebuilt successfully.",
+        "deck": result["deck"],
+    })
 
 # ===== REFINE DECK ROUTES END =========================
 

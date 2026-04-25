@@ -126,8 +126,8 @@
         </div>
     </button>
     <div class="top-nav-menu" id="topNavMenu">
-        <button class="top-nav-item" type="button" onclick="window.location.href=’/’">Home</button>
-        <button class="top-nav-item" type="button" onclick="window.location.href=’/studio’">My Studio</button>
+        <button class="top-nav-item" type="button" onclick="navTo(‘/’)">Home</button>
+        <button class="top-nav-item" type="button" onclick="navTo(‘/studio’)">My Studio</button>
         <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
         <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
         <button class="top-nav-item" type="button" onclick="openPrivacyModal()">Privacy</button>
@@ -430,18 +430,22 @@
             DIME puts Zena at the center of a high-pressure world where identity, ambition, and competition collide. There is strong emotional weight here, along with the kind of grounded sports drama energy that can connect with an audience.
         </div>
 
-        <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
-            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+        <div class="complete-actions" style="flex-wrap:wrap; gap:6px;">
+            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px;"
                 onclick="window.open('/analysis-report','_blank')">
                 View Report
             </button>
 
-            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
+            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px;"
                 onclick="window.location.href='/download/latest_analysis_report.pdf'">
                 Download PDF
             </button>
 
-            <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;" onclick="startAnalyzeFlow()">
+            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px; background:rgba(255,122,0,0.85);" onclick="analyzeToDecFlow()">
+                Create Pitch Deck
+            </button>
+
+            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px;" onclick="startAnalyzeFlow()">
                 Run Another
             </button>
         </div>

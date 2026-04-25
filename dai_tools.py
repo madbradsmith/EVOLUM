@@ -1,15 +1,148 @@
 from __future__ import annotations
 
+import json
 import os
 import re
+import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
+from urllib.parse import quote
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.utils import simpleSplit, ImageReader
 from reportlab.pdfgen import canvas
+
+# ── PATH CONSTANTS ────────────────────────────────────────────────────────────
+
+_BASE_DIR = Path(__file__).resolve().parent
+_OUTPUT_DIR = _BASE_DIR / "output"
+_LATEST_PPTX = _OUTPUT_DIR / "latest.pptx"
+_LATEST_PDF = _OUTPUT_DIR / "latest.pdf"
+
+
+# ── DECK UTILITY HELPERS ──────────────────────────────────────────────────────
+
+def normalize_project_relative_path(raw_path: str) -> str:
+    cleaned = str(raw_path or "").strip().replace("\\", "/")
+    if not cleaned:
+        return ""
+    prefixes = [
+        str(_BASE_DIR).replace("\\", "/").rstrip("/") + "/",
+        "/opt/render/project/src/",
+        "opt/render/project/src/",
+    ]
+    for prefix in prefixes:
+        if cleaned.startswith(prefix):
+            cleaned = cleaned[len(prefix):]
+    return cleaned.lstrip("/")
+
+
+def project_file_url_for_path(raw_path: str) -> str:
+    rel = normalize_project_relative_path(raw_path)
+    if not rel:
+        return ""
+    return "/project-file?path=" + quote(rel)
+
+
+def normalize_manifest_image_options(options) -> list:
+    normalized = []
+    if not isinstance(options, list):
+        return normalized
+    for item in options:
+        if not isinstance(item, dict):
+            continue
+        entry = dict(item)
+        entry["image_path"] = normalize_project_relative_path(entry.get("image_path", "") or "")
+        if not entry.get("image_url"):
+            entry["image_url"] = project_file_url_for_path(entry.get("image_path", "") or "")
+        normalized.append(entry)
+    return normalized
+
+
+def newest_generated_file(ext: str):
+    excluded = {_LATEST_PPTX.name, _LATEST_PDF.name}
+    files = [p for p in _OUTPUT_DIR.glob(f"pitch_deck_v*{ext}") if p.name not in excluded]
+    if not files:
+        return None
+    return max(files, key=lambda p: p.stat().st_mtime)
+
+
+def publish_latest_outputs(pptx_source, pdf_source) -> None:
+    if pptx_source and pptx_source.exists():
+        shutil.copy2(pptx_source, _LATEST_PPTX)
+    if pdf_source and pdf_source.exists():
+        shutil.copy2(pdf_source, _LATEST_PDF)
+
+
+def rebuild_refined_deck(slides: list, latest_manifest_path=None) -> dict:
+    """Build a new deck from refined slide data. Returns {'deck': name} or {'error': msg}."""
+    if not slides or not isinstance(slides, list):
+        return {"error": "No slide data provided."}
+
+    try:
+        slide_plan_payload = {
+            "title": slides[0].get("title", "Refined Deck") if slides else "Refined Deck",
+            "slides": [
+                {
+                    "title": str(s.get("title", "") or "").strip(),
+                    "body": str(s.get("body", "") or "").strip(),
+                    "layout": str(s.get("layout", "") or "text").strip(),
+                    "stage": str(s.get("stage", "") or "refine").strip(),
+                    "subtitle": str(s.get("subtitle", "") or "").strip(),
+                    "image_path": normalize_project_relative_path(s.get("image_path", "") or ""),
+                    "image_name": str(s.get("image_name", "") or "").strip(),
+                    "image_url": str(s.get("image_url", "") or "").strip(),
+                    "image_source": str(s.get("image_source", "") or "").strip(),
+                    "image_options": normalize_manifest_image_options(s.get("image_options", [])),
+                    "selected_option_id": str(s.get("selected_option_id", "") or "").strip(),
+                }
+                for s in slides
+            ],
+            "slide_count": len(slides),
+        }
+
+        slide_plan_path = _BASE_DIR / "slide_plan.json"
+        temp_path = _BASE_DIR / "slide_plan.tmp.json"
+        temp_path.write_text(json.dumps(slide_plan_payload, indent=2), encoding="utf-8")
+        temp_path.replace(slide_plan_path)
+
+        manifest_payload = [
+            {
+                "slide_number": i,
+                "title": str(s.get("title", "") or "").strip(),
+                "body": str(s.get("body", "") or "").strip(),
+                "layout": str(s.get("layout", "") or "").strip(),
+                "stage": str(s.get("stage", "") or "").strip(),
+                "image_path": normalize_project_relative_path(s.get("image_path", "") or ""),
+                "image_name": str(s.get("image_name", "") or "").strip(),
+                "image_url": str(s.get("image_url", "") or "").strip(),
+                "image_source": str(s.get("image_source", "") or "").strip(),
+                "image_options": normalize_manifest_image_options(s.get("image_options", [])),
+                "selected_option_id": str(s.get("selected_option_id", "") or "").strip(),
+            }
+            for i, s in enumerate(slides, start=1)
+        ]
+
+        manifest_out = Path(latest_manifest_path) if latest_manifest_path else (_OUTPUT_DIR / "latest_deck_manifest.json")
+        manifest_out.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
+
+        subprocess.run(
+            ["python3", str(_BASE_DIR / "deck_builder.py"), str(slide_plan_path)],
+            cwd=str(_BASE_DIR),
+            check=True,
+        )
+
+        fresh_pptx = newest_generated_file(".pptx")
+        fresh_pdf = newest_generated_file(".pdf")
+        publish_latest_outputs(fresh_pptx, fresh_pdf)
+
+        return {"deck": fresh_pptx.name if fresh_pptx else _LATEST_PPTX.name}
+
+    except Exception as e:
+        return {"error": f"Refine rebuild failed: {e}"}
 
 
 # ── SHARED DATA STRUCTURES ────────────────────────────────────────────────────
