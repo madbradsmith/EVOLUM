@@ -22,7 +22,7 @@
         <button class="top-nav-item" type="button" onclick="navTo(‘/’)">Home</button>
         {% if user_logged_in %}
         <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
-        <button class="top-nav-item" type="button" onclick="window.location.href=’/logout’" style="color:#e05555;">Sign Out</button>
+        <a class="top-nav-item" href="/logout" style="color:#e05555; display:block; text-decoration:none;">Sign Out</a>
         {% else %}
         <button class="top-nav-item" type="button" onclick="showAuthModal()">Sign In</button>
         <button class="top-nav-item" type="button" onclick="showAuthModal()" style="color:#ff9944;">Get Access — $5/mo</button>
