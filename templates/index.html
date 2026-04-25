@@ -20,7 +20,14 @@
     </button>
     <div class="top-nav-menu" id="topNavMenu">
         <button class="top-nav-item" type="button" onclick="navTo(‘/’)">Home</button>
+        {% if user_logged_in %}
         <button class="top-nav-item" type="button" onclick="navTo(‘/studio’)">My Studio</button>
+        <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
+        <button class="top-nav-item" type="button" onclick="navTo(‘/logout’)" style="color:#e05555;">Sign Out</button>
+        {% else %}
+        <button class="top-nav-item" type="button" onclick="showAuthModal()">Sign In</button>
+        <button class="top-nav-item" type="button" onclick="showAuthModal()" style="color:#ff9944;">Get Access — $5/mo</button>
+        {% endif %}
         <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
         <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
         <button class="top-nav-item" type="button" onclick="openPrivacyModal()">Privacy</button>
