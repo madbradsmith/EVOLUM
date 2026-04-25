@@ -2245,7 +2245,9 @@ def actor_prep_pass():
 
     log_usage("actor_prep_start", role=character_name, mode=source_mode)
 
-    brain_data = {"title": movie_title} if movie_title else {}
+    brain_data = load_latest_brain_output() or {}
+    if movie_title:
+        brain_data.setdefault("title", movie_title)
     try:
         build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF, brain_data=brain_data)
     except Exception as e:
@@ -2308,7 +2310,9 @@ def actor_booked_pass():
 
     log_usage("actor_booked_start", role=character_name, mode=source_mode)
 
-    brain_data = {"title": movie_title} if movie_title else {}
+    brain_data = load_latest_brain_output() or {}
+    if movie_title:
+        brain_data.setdefault("title", movie_title)
     try:
         build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF, brain_data=brain_data)
     except Exception as e:

@@ -987,24 +987,37 @@ scene_priorities: list of 6 specific bullets
 
 def _find_actor_report_image(brain_data: Dict, mode: str, character_name: str, title: str) -> Optional[Path]:
     """Find existing image first; optionally generate one with FAL if configured."""
-    candidates: List[str] = []
+    candidates: List[Path] = []
+
+    # 1. Explicit paths from brain image_plan (local_path/image_path keys)
     for item in brain_data.get("image_plan") or []:
         if isinstance(item, dict):
-            for key in ["local_path", "image_path", "path", "selected_image_path", "url", "image_url"]:
+            for key in ["local_path", "image_path", "path", "selected_image_path"]:
                 val = str(item.get(key) or "").strip()
-                if val:
-                    candidates.append(val)
-    for base in ["output", "static", "static/generated", "generated_images", "images", "visuals"]:
-        bp = Path(base)
+                if val and not val.startswith("http"):
+                    p = Path(val)
+                    if p.exists() and p.is_file():
+                        candidates.append(p)
+
+    # 2. Scan generated_images/ recursively — sort newest first so current session wins
+    gen_dir = _BASE_DIR / "generated_images"
+    if gen_dir.exists():
+        found = []
+        for pat in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
+            found.extend(gen_dir.rglob(pat))
+        found.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+        candidates.extend(found)
+
+    # 3. Fallback: visuals/user_uploaded
+    for base in ["visuals/user_uploaded", "static/generated"]:
+        bp = _BASE_DIR / base
         if bp.exists():
-            for pat in ["*.png", "*.jpg", "*.jpeg", "*.webp"]:
-                candidates.extend(str(x) for x in bp.glob(pat))
-                candidates.extend(str(x) for x in bp.rglob(pat))
-    for raw in candidates:
-        if raw.startswith("http"):
-            continue
-        path = Path(raw)
-        if path.exists() and path.is_file():
+            for pat in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
+                hits = sorted(bp.rglob(pat), key=lambda p: p.stat().st_mtime, reverse=True)
+                candidates.extend(hits)
+
+    for path in candidates:
+        if path.exists() and path.is_file() and path.stat().st_size > 1000:
             return path
 
     fal_key = os.getenv("FAL_KEY") or os.getenv("FAL_API_KEY")
@@ -1544,6 +1557,8 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
                 parts.append(query[:90] + ("…" if len(query) > 90 else ""))
             image_summary.append(" — ".join([p for p in parts if p]))
 
+    cover_image = _find_actor_report_image(report_output, "analysis", lead or title, title)
+
     pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
     pdf.setTitle(f"{title} — Script Analysis Report")
 
@@ -1597,6 +1612,9 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     for item in contents:
         pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10); pdf.drawString(L, cy, "—")
         pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(L + 16, cy, item); cy -= 14
+
+    if cy > 80:
+        _draw_cover_image(pdf, cover_image, L, max(54, cy - 140), UW, min(120, cy - 60), gold)
 
     pdf.setFillColor(gold)
     pdf.rect(0, 0, W, 4, stroke=0, fill=1)
