@@ -225,7 +225,11 @@ def _clean_text(text: str) -> str:
 
 def _is_scene_heading(line: str) -> bool:
     s = line.strip().upper()
-    return s.startswith("INT.") or s.startswith("EXT.") or s.startswith("INT ") or s.startswith("EXT ")
+    # Strip leading scene numbers like "1.", "4A.", "12B." before checking
+    s = re.sub(r'^\d+[A-Z]?\.\s*', '', s)
+    return (s.startswith("INT.") or s.startswith("EXT.") or
+            s.startswith("INT ") or s.startswith("EXT ") or
+            s.startswith("INT/EXT") or s.startswith("I/E "))
 
 
 def _is_parenthetical(line: str) -> bool:
@@ -259,69 +263,191 @@ def _infer_beat(dialogue: str, scene_heading: str) -> Tuple[str, str, str, str]:
     """Returns (beat_name, subtext, playable_note, category)."""
     lower = dialogue.strip().lower()
 
-    if any(k in lower for k in ["i'm sorry", "i am sorry", "forgive", "i never told", "truth is", "i have to tell"]):
+    # --- EMOTIONAL beats ---
+    if any(k in lower for k in ["i'm sorry", "i am sorry", "forgive", "i never told", "truth is",
+                                  "i have to tell", "i need you to know", "i lied", "the truth is",
+                                  "i should have", "i was afraid", "i was wrong"]):
         return (
             "Reveal Something True",
             "The character is dropping a guard they've been holding the whole scene.",
             "Let the vulnerability come from the body, not just the words.",
             "EMOTIONAL",
         )
-    if any(k in lower for k in ["please", "i need you", "i need this", "help me", "you have to", "you've got to"]):
+    if any(k in lower for k in ["please", "i need you", "i need this", "help me", "you have to",
+                                  "you've got to", "i'm begging", "don't leave", "don't go",
+                                  "i can't do this without"]):
         return (
             "Make a Plea",
             "The character is asking from a place of genuine need, not strategy.",
             "Earn this beat. The ask only lands when the stakes are completely visible.",
             "EMOTIONAL",
         )
-    if any(k in lower for k in ["what if", "hear me out", "let's say", "suppose", "what would it take", "i'll give you"]):
+    if any(k in lower for k in ["it's okay", "it'll be", "i'm here", "you're safe", "don't worry",
+                                  "i've got you", "everything's going to be", "nothing's going to happen",
+                                  "i'll take care", "you're going to be fine"]):
+        return (
+            "Offer Comfort",
+            "The character is softening — choosing connection over self-protection.",
+            "Let the care be specific. Generic comfort is just noise. Find the real thing they're soothing.",
+            "EMOTIONAL",
+        )
+    if any(k in lower for k in ["i am", "i know who i am", "this is who", "i've always been",
+                                  "i believe", "i stand by", "my whole life", "i was born",
+                                  "this is what i do", "i'm not that", "i'm a", "that's who i am"]):
+        return (
+            "Assert Identity",
+            "The character is claiming who they are — often under pressure to be something else.",
+            "Don't perform it. Let the certainty land like a fact, not a speech.",
+            "EMOTIONAL",
+        )
+
+    # --- RELATIONAL beats ---
+    if any(k in lower for k in ["what if", "hear me out", "let's say", "suppose",
+                                  "what would it take", "i'll give you", "how about",
+                                  "deal", "i can offer", "let's make a deal", "i propose"]):
         return (
             "Negotiate",
             "The character is in problem-solving mode — offering terms, testing possibilities.",
             "Stay two steps ahead. Every offer has something held back.",
             "RELATIONAL",
         )
-    if any(k in lower for k in ["that's not true", "you're wrong", "i don't believe", "that's a lie", "you never"]):
+    if any(k in lower for k in ["that's not true", "you're wrong", "i don't believe",
+                                  "that's a lie", "you never", "that's ridiculous",
+                                  "that's not what", "you said", "you told me"]):
         return (
             "Challenge",
             "The character is pushing back and forcing the other person to justify themselves.",
             "Make it feel like a real refusal, not a reaction. The character chose this.",
+            "RELATIONAL",
+        )
+
+    # --- CONCEALMENT beats ---
+    if any(k in lower for k in ["nothing", "nothing's wrong", "never happened", "forget it",
+                                  "nobody needs to know", "doesn't matter", "i don't know what you're talking",
+                                  "you imagined", "you're confused", "that never", "drop it",
+                                  "leave it alone", "it's nothing", "i don't want to talk about"]):
+        return (
+            "Protect a Secret",
+            "The character is concealing something — from the other person or from themselves.",
+            "Play what's being hidden, not the deflection. The audience should feel the weight behind the nothing.",
+            "CONCEALMENT",
+        )
+
+    # --- TACTICAL beats ---
+    if any(k in lower for k in ["be careful", "watch yourself", "you don't want to",
+                                  "last chance", "i'm warning you", "don't make me",
+                                  "you'll regret", "think about what you're doing",
+                                  "i suggest you", "tread carefully"]):
+        return (
+            "Deliver a Warning",
+            "The character is making consequences clear without fully committing to them yet.",
+            "Keep it quiet. The most effective warnings land like facts, not threats.",
             "TACTICAL",
         )
-    if any(k in lower for k in ["who", "what", "where", "why", "how"]):
+    if any(k in lower for k in ["kill", "hurt you", "destroy", "finish you", "end this",
+                                  "going to get you", "going to make you", "you'll pay",
+                                  "punishment", "i'll make sure", "you're dead", "bash your"]):
+        return (
+            "Express Threat",
+            "The character has crossed from warning into open aggression.",
+            "Don't rush to volume. The menace lives in the specificity, not the size.",
+            "TACTICAL",
+        )
+    if any(k in lower for k in ["who", "what", "where", "why", "how", "tell me",
+                                  "i need to know", "what happened", "where were you",
+                                  "explain", "what do you mean"]):
         return (
             "Pressure for Information",
             "The character is trying to get clarity while still keeping leverage.",
             "Ask like it matters. Curiosity is not enough here.",
-            "INFORMATIONAL",
+            "TACTICAL",
         )
-    if any(k in lower for k in ["calm down", "sit down", "listen", "hold on", "wait"]):
+    if any(k in lower for k in ["calm down", "sit down", "listen", "hold on", "wait",
+                                  "easy", "relax", "everybody", "settle", "take a breath",
+                                  "let me finish", "let me explain"]):
         return (
             "Control the Room",
             "The character is slowing the chaos down and forcing the scene back under control.",
             "Use calm authority. The power is in the certainty, not the volume.",
             "TACTICAL",
         )
-    if any(k in lower for k in ["don't", "do not", "can't", "cannot", "won't", "stop"]):
+    if any(k in lower for k in ["don't", "do not", "can't", "cannot", "won't", "stop",
+                                  "not going to", "never again", "that's enough", "enough"]):
         return (
             "Set a Boundary",
             "The character is drawing a line and making the other person feel the limit.",
             "Keep it clear and definite. This beat lands when the line feels real.",
             "TACTICAL",
         )
-    if any(k in lower for k in ["good", "okay", "alright", "cool", "fine", "right"]):
-        return (
-            "Reset and Move Forward",
-            "The character absorbs the moment and redirects the energy instead of sitting in it.",
-            "Treat it like a pivot, not relief.",
-            "EMOTIONAL",
-        )
-    if scene_heading and ("OFFICE" in scene_heading.upper() or "INTERROGATION" in scene_heading.upper()):
+    if scene_heading and any(k in scene_heading.upper() for k in
+                              ["OFFICE", "INTERROGATION", "BAR", "LOUNGE", "MEETING"]):
         return (
             "Apply Pressure",
             "The character is reading the other person and leaning in for leverage.",
             "Push with intelligence. Let the pressure come from focus, not force.",
             "TACTICAL",
         )
+
+    # --- OBSERVATIONAL beats ---
+    if any(k in lower for k in ["that means", "which means", "those are", "this is",
+                                  "that's a", "it looks like", "notice", "clearly",
+                                  "something's", "this means", "if.*is happening",
+                                  "connect", "map", "symbol", "route", "coup", "planted",
+                                  "that has to be", "that must be", "that would be",
+                                  "is moving", "is looking for", "are looking for",
+                                  "you know about", "so the entire", "the entire"]):
+        return (
+            "Read the Situation",
+            "The character is processing information and forming a picture. Their intelligence is the weapon here.",
+            "Let the thinking show. The audience should feel them assembling the truth in real time.",
+            "OBSERVATIONAL",
+        )
+    if any(k in lower for k in ["i know", "i run", "i've seen", "i've heard", "i've been",
+                                  "you should know", "here's what", "here's the thing",
+                                  "two things", "one thing", "the thing is",
+                                  "in this castle", "in this place", "around here",
+                                  "dozens", "hundreds", "everyone knows", "nobody knows",
+                                  "happens every", "every year", "days away", "two days",
+                                  "we bring", "bring news", "stay with the"]):
+        return (
+            "Share Intelligence",
+            "The character has information the other person needs. They control the room through what they know.",
+            "Don't over-explain. Drop the intel with the confidence of someone who's been watching for a long time.",
+            "OBSERVATIONAL",
+        )
+    if any(k in lower for k in ["didn't you", "isn't it", "wasn't it", "aren't you",
+                                  "i think", "probably", "i'd guess", "my guess",
+                                  "look at it this way", "congratulations", "at least",
+                                  "you're now", "welcome to", "interesting", "fascinating",
+                                  "look festive", "look busy", "carry something"]):
+        return (
+            "Test and Probe",
+            "The character is reading the other person — using wit or indirect questions to surface a reaction.",
+            "Stay light. The probe only works if the other person doesn't feel it coming.",
+            "RELATIONAL",
+        )
+    if any(k in lower for k in ["just stay", "just keep", "just move", "time to go",
+                                  "we have been", "they are gaining", "they are chasing",
+                                  "we've been discovered", "run", "move fast", "better move",
+                                  "stay on the", "just carry", "bolt", "go go", "get out",
+                                  "left!", "right!", "down!", "up!", "jump!", "now!"]):
+        return (
+            "Navigate Danger",
+            "The character is executing under pressure — managing an escape, a pursuit, or a critical real-time decision.",
+            "These beats are instinct, not strategy. Stay in the body. Thought slows the scene down.",
+            "TACTICAL",
+        )
+
+    # --- TRANSITIONAL beats ---
+    if any(k in lower for k in ["good", "okay", "alright", "cool", "fine", "right",
+                                  "understood", "got it", "move on", "let's move", "fair enough"]):
+        return (
+            "Reset and Move Forward",
+            "The character absorbs the moment and redirects the energy instead of sitting in it.",
+            "Treat it like a pivot, not relief.",
+            "TRANSITIONAL",
+        )
+
     return (
         "Hold Authority",
         "The character is managing the scene from a position of control.",
@@ -395,18 +521,77 @@ def extract_beats(script_text: str, character_name: str) -> List[BeatEntry]:
 # ── FRIENDLIER CUSTOMER-FACING LANGUAGE ──────────────────────────────────────
 
 _FRIENDLY_BEAT_TITLES: Dict[str, List[str]] = {
-    "Pressure for Information": ["Push for Answers", "Get the Truth", "Lean In for Clarity"],
-    "Control the Room": ["Take Control", "Steady the Room", "Own the Moment"],
-    "Set a Boundary": ["Draw the Line", "Hold Your Ground", "Make the Limit Clear"],
-    "Reset and Move Forward": ["Shift the Energy", "Reset and Move On", "Pivot Cleanly"],
-    "Apply Pressure": ["Turn Up the Pressure", "Lean In", "Press the Point"],
-    "Hold Authority": ["Stay in Command", "Lead Quietly", "Keep Control"],
+    "Reveal Something True":   ["Drop the Guard", "Let It Out", "Tell the Truth"],
+    "Make a Plea":             ["Ask from Need", "Reach Out", "The Real Ask"],
+    "Offer Comfort":           ["Steady the Other", "Hold Space", "Be Present"],
+    "Assert Identity":         ["Stand Your Ground", "Claim Your Space", "This Is Who I Am"],
+    "Negotiate":               ["Find the Deal", "Make the Offer", "Work the Room"],
+    "Challenge":               ["Push Back", "Refuse the Reality", "Hold the Line"],
+    "Protect a Secret":        ["Cover the Ground", "Deflect and Hold", "Nothing to See"],
+    "Deliver a Warning":       ["Make It Clear", "Last Warning", "State the Consequence"],
+    "Express Threat":          ["Show the Edge", "Let Them Feel It", "Full Menace"],
+    "Pressure for Information":["Push for Answers", "Get the Truth", "Lean In for Clarity"],
+    "Control the Room":        ["Take Control", "Steady the Room", "Own the Moment"],
+    "Set a Boundary":          ["Draw the Line", "Hold Your Ground", "Make the Limit Clear"],
+    "Apply Pressure":          ["Turn Up the Pressure", "Lean In", "Press the Point"],
+    "Read the Situation":      ["Piece It Together", "See What's There", "Work the Picture"],
+    "Share Intelligence":      ["Drop the Intel", "Show What You Know", "Brief the Room"],
+    "Test and Probe":          ["Read the Reaction", "Feel Them Out", "Try the Line"],
+    "Navigate Danger":         ["Execute Now", "Make the Move", "Stay in Motion"],
+    "Reset and Move Forward":  ["Shift the Energy", "Reset and Move On", "Pivot Cleanly"],
+    "Hold Authority":          ["Stay in Command", "Lead Quietly", "Keep Control"],
 }
 
 
 def _friendly_beat_title(beat: str, index: int) -> str:
     options = _FRIENDLY_BEAT_TITLES.get(beat, [beat])
     return options[(index - 1) % len(options)]
+
+
+_GROUP_COACHING: Dict[str, str] = {
+    "Reveal Something True":    "This is the role's most exposed beat. What gets revealed here should visibly cost the character. Find the moment the guard actually drops — it's in the body, not the words.",
+    "Make a Plea":              "The character is operating without armor. Earn the need. If the stakes aren't visible before the ask, the plea reads as manipulation, not desperation.",
+    "Offer Comfort":            "The character is choosing someone else over their own self-protection. Play what they're giving up to give this. That's where the scene lives.",
+    "Assert Identity":          "These beats are declarations under pressure. Don't let them become speeches. The certainty should land like a closed door, not an open argument.",
+    "Negotiate":                "The character is always thinking two moves ahead. Every offer conceals what they're actually protecting. Find the thing they won't give, and play from there.",
+    "Challenge":                "The character refuses to accept the other person's version of reality. Anchor the refusal — this was a choice, not a reaction.",
+    "Protect a Secret":         "The most textured beats in the role. Play what's underneath the deflection — the weight of what can't be said is what the audience reads. Let it be effortful.",
+    "Deliver a Warning":        "The most effective warnings are stated like facts. Strip the emotion out. The consequence is real — say it like something that's already decided.",
+    "Express Threat":           "Don't go to volume. The menace lives in specificity. The character knows exactly what they're capable of and wants the other person to feel that certainty.",
+    "Pressure for Information": "The character isn't just asking — they're tracking what the other person gives away with each answer. Play the listening as much as the questioning.",
+    "Control the Room":         "Calm is the weapon here. The character is slowing the scene down on purpose. Every steady breath is an assertion of power.",
+    "Set a Boundary":           "Play the clarity, not the anger. The line is already drawn. The beat is making the other person feel where it is.",
+    "Apply Pressure":           "The character is leaning in with a read on the other person. Intelligence drives this beat, not force. Let the pressure be precise.",
+    "Read the Situation":       "The character is assembling a picture in real time. Intelligence is the weapon. Let the audience watch the pieces connect.",
+    "Share Intelligence":       "The character controls through what they know. Each detail shared is a deliberate choice about what to reveal and when.",
+    "Test and Probe":           "This beat is a read. The character is listening for something in the response. The probe only works if it doesn't feel like one.",
+    "Navigate Danger":          "These are instinct beats. The character acts before they think. Stay in the body — deliberation kills the urgency of these scenes.",
+    "Reset and Move Forward":   "This is a pivot beat. The character absorbs what just happened and redirects — it should feel like a choice, not a collapse.",
+    "Hold Authority":           "The baseline state of this role. The danger is flatness — keep it textured. Authority that never wavers reads as bored, not powerful.",
+}
+_DEFAULT_GROUP_COACHING = "Protect the role's internal logic on these beats. Find the specific thing the character wants in each scene and let that drive the line."
+
+
+def group_beats_by_type(beats: List[BeatEntry]) -> List[dict]:
+    """Groups beats by type. Returns list ordered by frequency, each entry has coaching + up to 3 sample beats."""
+    from collections import defaultdict
+    groups: dict = defaultdict(list)
+    for b in beats:
+        groups[b.beat].append(b)
+
+    result = []
+    for beat_type, group in sorted(groups.items(), key=lambda x: -len(x[1])):
+        pages = sorted(set(b.reference for b in group), key=lambda r: int(re.sub(r'\D', '', r) or 0))
+        samples = group[:3]
+        result.append({
+            "beat_type": beat_type,
+            "label": _friendly_beat_title(beat_type, 1),
+            "coaching": _GROUP_COACHING.get(beat_type, _DEFAULT_GROUP_COACHING),
+            "count": len(group),
+            "pages": pages,
+            "samples": samples,
+        })
+    return result
 
 
 # ── SHARED PDF DRAWING UTILITIES ──────────────────────────────────────────────
@@ -1000,34 +1185,44 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     page_no = 4
     y = height - 62
     pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, y, "SCENE BEAT BREAKDOWN")
+    pdf.drawString(left, y, "BEAT PATTERN BREAKDOWN")
     y -= 26
-    plural = "s" if len(beats) != 1 else ""
     pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-    pdf.drawString(left, y, f"{len(beats)} detected playable beat{plural}. The report expands when the role has more material.")
-    y -= 18
-    if beats:
-        from collections import Counter
-        cat_counts = Counter(b.category for b in beats)
-        cat_summary = "  |  ".join(f"{cat}: {n}" for cat, n in sorted(cat_counts.items()))
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(left, y, f"BEAT CATEGORIES  —  {cat_summary}")
+    pdf.drawString(left, y, f"{len(beats)} beats grouped by type. Each group shows coaching and 3 pulled scenes.")
     y -= 22
     if not beats:
         _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found", ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
         _footer(pdf, width, page_no); pdf.save(); return output_path
-    for idx, beat in enumerate(beats, start=1):
-        card_h = 118
-        if y - card_h < 54:
+    groups = group_beats_by_type(beats)
+    for grp in groups:
+        # header card height: label + count + pages + coaching = ~110, plus up to 3 sample cards ~80 each
+        header_h = 110
+        sample_h = 82
+        total_h = header_h + len(grp["samples"]) * (sample_h + 8)
+        if y - total_h < 54:
             _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
             _page_bg(pdf, width, height, charcoal, gold)
             y = height - 54
-            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20); pdf.drawString(left, y, "SCENE BEAT BREAKDOWN")
+            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
+            pdf.drawString(left, y, "BEAT PATTERN BREAKDOWN")
             y -= 34
-        title_line = f"Beat {idx}: {_friendly_beat_title(beat.beat, idx)}"
-        lines = [f"[{beat.category}]  {beat.reference} | {beat.scene_heading}", f"Line: {beat.dialogue[:190]}", f"Play: {beat.playable_note}"]
-        _draw_card(pdf, left, y, usable_width, card_h, title_line, lines, gold, panel, white, muted)
-        y -= card_h + 14
+        page_range = f"{grp['pages'][0]} – {grp['pages'][-1]}" if len(grp['pages']) > 1 else grp['pages'][0] if grp['pages'] else ""
+        header_lines = [
+            f"{grp['count']} beat{'s' if grp['count'] != 1 else ''}  ·  {page_range}",
+            grp["coaching"],
+        ]
+        _draw_card(pdf, left, y, usable_width, header_h, grp["beat_type"].upper(), header_lines, gold, panel, white, muted)
+        y -= header_h + 8
+        for sample in grp["samples"]:
+            if y - sample_h < 54:
+                _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
+                _page_bg(pdf, width, height, charcoal, gold)
+                y = height - 54
+            scene_label = sample.scene_heading if sample.scene_heading and sample.scene_heading != "SCENE NOT DETECTED" else sample.reference
+            slines = [f"{scene_label}", f'"{sample.dialogue[:200]}"']
+            _draw_card(pdf, left + 20, y, usable_width - 20, sample_h, f"↳  {sample.reference}", slines, muted, charcoal, white, muted)
+            y -= sample_h + 8
+        y -= 14
     _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
 
     _page_bg(pdf, width, height, charcoal, gold)
@@ -1050,16 +1245,25 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
 # ── MODE 2: BOOKED ROLE PREP ─────────────────────────────────────────────────
 
 _CONTINUITY_NOTES: Dict[str, str] = {
+    "Reveal Something True":    "What the character reveals here must carry through every subsequent scene. Track the weight of exposure.",
+    "Make a Plea":              "The character is exposed here. Track the moment the need overcomes the defense.",
+    "Offer Comfort":            "The role is giving something away. Track the cost so it reads as real, not performed.",
+    "Assert Identity":          "This declaration anchors the role. Every later scene should echo back to this moment.",
+    "Negotiate":                "The character is thinking ahead. Let each offer cost them something or it feels free.",
+    "Challenge":                "The character refuses to accept the other person's reality. Keep the refusal grounded.",
+    "Protect a Secret":         "What's being concealed must remain consistent — never let the audience forget it's there.",
+    "Deliver a Warning":        "The consequence stated here is a promise. If the character doesn't follow through later, the warning felt hollow.",
+    "Express Threat":           "The level of menace established here is the ceiling for every threat that follows.",
     "Pressure for Information": "Track what the character learns here and let that new information change the next beat.",
-    "Control the Room": "This is a control beat. Keep the body and pace consistent so the authority feels earned.",
-    "Set a Boundary": "This is where the line gets drawn. Play the clarity, not the anger.",
-    "Reset and Move Forward": "This beat shifts the energy. Let it feel like a clean redirect, not a full emotional reset.",
-    "Apply Pressure": "The role is leaning in here. The scene changes because the character chooses to press.",
-    "Hold Authority": "This is the baseline control state. Keep it textured so it does not flatten.",
-    "Reveal Something True": "This is a vulnerability beat. What the character reveals here should cost them something.",
-    "Make a Plea": "The character is exposed here. Track the moment the need overcomes the defense.",
-    "Negotiate": "The character is thinking ahead. Let each offer cost them something or it feels free.",
-    "Challenge": "The character refuses to accept the other person's reality. Keep the refusal grounded.",
+    "Control the Room":         "This is a control beat. Keep the body and pace consistent so the authority feels earned.",
+    "Set a Boundary":           "This is where the line gets drawn. Play the clarity, not the anger.",
+    "Apply Pressure":           "The role is leaning in here. The scene changes because the character chooses to press.",
+    "Read the Situation":       "Track what the character now knows after this beat. Every subsequent scene inherits this new information.",
+    "Share Intelligence":       "Protect what the character chose NOT to share here — that's as important as what they did reveal.",
+    "Test and Probe":           "Track what the character learned from the reaction. The probe is only useful if they carry the read forward.",
+    "Navigate Danger":          "Physical state continuity matters here — injuries, exhaustion, adrenaline. Track what the body carries out of these scenes.",
+    "Reset and Move Forward":   "This beat shifts the energy. Let it feel like a clean redirect, not a full emotional reset.",
+    "Hold Authority":           "This is the baseline control state. Keep it textured so it does not flatten.",
 }
 _DEFAULT_CONTINUITY = "Protect continuity first. Let pressure change pace and patience while core identity stays recognizable."
 
@@ -1151,30 +1355,43 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     y = height - 62
     pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25); pdf.drawString(left, y, "SCENE JOURNEY MAP")
     y -= 26
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(left, y, f"The booked report covers {len(beats)} speaking beats for this role.")
-    y -= 18
-    if beats:
-        from collections import Counter
-        cat_counts = Counter(b.category for b in beats)
-        cat_summary = "  |  ".join(f"{cat}: {n}" for cat, n in sorted(cat_counts.items()))
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-        pdf.drawString(left, y, f"BEAT CATEGORIES  —  {cat_summary}")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(left, y, f"{len(beats)} beats grouped by type. Coaching note + 3 pulled scenes per pattern.")
     y -= 22
     if not beats:
         _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found", ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
         _footer(pdf, width, page_no); pdf.save(); return output_path
-    for idx, beat in enumerate(beats, start=1):
-        card_h = 106
-        if y - card_h < 54:
+    groups = group_beats_by_type(beats)
+    for grp in groups:
+        header_h = 110
+        sample_h = 82
+        total_h = header_h + len(grp["samples"]) * (sample_h + 8)
+        if y - total_h < 54:
             _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
             _page_bg(pdf, width, height, charcoal, gold)
             y = height - 54
-            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20); pdf.drawString(left, y, "SCENE JOURNEY MAP")
+            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
+            pdf.drawString(left, y, "SCENE JOURNEY MAP")
             y -= 34
-        continuity = _CONTINUITY_NOTES.get(beat.beat, _DEFAULT_CONTINUITY)
-        lines = [f"[{beat.category}]  {beat.reference} | {beat.scene_heading}", f"Beat: {_friendly_beat_title(beat.beat, idx)}", f"Continuity: {continuity}"]
-        _draw_card(pdf, left, y, usable_width, card_h, f"Scene Beat {idx}", lines, gold, panel, white, muted)
-        y -= card_h + 12
+        page_range = f"{grp['pages'][0]} – {grp['pages'][-1]}" if len(grp['pages']) > 1 else grp['pages'][0] if grp['pages'] else ""
+        continuity = _CONTINUITY_NOTES.get(grp["beat_type"], _DEFAULT_CONTINUITY)
+        header_lines = [
+            f"{grp['count']} beat{'s' if grp['count'] != 1 else ''}  ·  {page_range}",
+            grp["coaching"],
+            f"Continuity: {continuity}",
+        ]
+        _draw_card(pdf, left, y, usable_width, header_h + 20, grp["beat_type"].upper(), header_lines, gold, panel, white, muted)
+        y -= header_h + 28
+        for sample in grp["samples"]:
+            if y - sample_h < 54:
+                _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
+                _page_bg(pdf, width, height, charcoal, gold)
+                y = height - 54
+            scene_label = sample.scene_heading if sample.scene_heading and sample.scene_heading != "SCENE NOT DETECTED" else sample.reference
+            slines = [f"{scene_label}", f'"{sample.dialogue[:200]}"']
+            _draw_card(pdf, left + 20, y, usable_width - 20, sample_h, f"↳  {sample.reference}", slines, muted, charcoal, white, muted)
+            y -= sample_h + 8
+        y -= 14
     _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
 
     _page_bg(pdf, width, height, charcoal, gold)
