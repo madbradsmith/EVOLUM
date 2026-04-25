@@ -83,6 +83,8 @@ def db_init() -> None:
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS name TEXT"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS password_hash TEXT"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+        conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS user_email TEXT"))
+        conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS route TEXT"))
 
 def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
     if not DB_ENGINE:
