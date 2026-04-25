@@ -812,6 +812,20 @@ def sign_in():
         return redirect("/?auth_error=" + quote(f"Sign in failed: {e}"))
 
 
+@app.route("/contact", methods=["POST"])
+def contact():
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"error": "No message provided."}), 400
+    log_activity_event("contact_message", route="/contact",
+                       user_email=email or session.get("user_email"),
+                       metadata={"name": name, "message": message[:500]})
+    return jsonify({"ok": True})
+
+
 @app.route("/logout")
 def logout():
     email = get_current_user_email()
@@ -945,9 +959,14 @@ from functools import wraps
 def require_login(view_func):
     @wraps(view_func)
     def wrapper(*args, **kwargs):
-        if not session.get("user_id"):
-            return redirect("/")
-        return view_func(*args, **kwargs)
+        if session.get("user_id"):
+            return view_func(*args, **kwargs)
+        if session.get("user_email") and DB_ENGINE:
+            user = get_user_by_email(session["user_email"])
+            if user:
+                session["user_id"] = str(user["id"])
+                return view_func(*args, **kwargs)
+        return redirect("/")
     return wrapper
 
 
@@ -1342,10 +1361,13 @@ def upload():
     if not allowed_file(file.filename):
         return "Only .txt and .pdf supported", 400
 
-    # Studio mode: create project record before pipeline starts
+    # Studio mode: create or reuse project record before pipeline starts
     project_title = (request.form.get("project_title") or "").strip()
     project_type = (request.form.get("project_type") or "").strip()
-    if project_title and session.get("user_id") and DB_ENGINE:
+    existing_project_id = (request.form.get("project_id") or "").strip()
+    if existing_project_id and session.get("user_id") and DB_ENGINE:
+        session["active_project_id"] = existing_project_id
+    elif project_title and session.get("user_id") and DB_ENGINE:
         ensure_projects_table()
         with DB_ENGINE.begin() as conn:
             result = conn.execute(text("""
@@ -1357,7 +1379,7 @@ def upload():
                 "type": project_type or "Project"
             })
             session["active_project_id"] = str(result.scalar())
-    elif not project_title:
+    elif not project_title and not existing_project_id:
         session.pop("active_project_id", None)
 
     clear_latest_targets()

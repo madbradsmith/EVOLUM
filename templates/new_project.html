@@ -63,12 +63,20 @@
     <div class="shell">
         <div class="card" style="padding:18px; max-width:720px; margin:0 auto;">
 
+            {% if request.args.get('project_id') %}
+            <div class="workspace-title" style="text-align:center;">REBUILD PITCH DECK</div>
+            <div class="workspace-copy" style="text-align:center; margin-bottom:18px;">
+                Upload your script and assets — we'll rebuild the deck for this project.
+            </div>
+            {% else %}
             <div class="workspace-title" style="text-align:center;">NEW PROJECT</div>
             <div class="workspace-copy" style="text-align:center; margin-bottom:18px;">
                 Name your project, upload your script, and let EVOLUM build your pitch deck.
             </div>
+            {% endif %}
 
             <form id="newProjectForm" enctype="multipart/form-data">
+                <input type="hidden" name="project_id" id="existingProjectId" value="{{ request.args.get('project_id', '') }}">
 
                 <!-- PROJECT INFO -->
                 <div class="field-group">

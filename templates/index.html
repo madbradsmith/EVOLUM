@@ -85,9 +85,8 @@
          Deep script insights in secconds!
     </div>
     
-    <div class="choice-link" onclick="event.stopPropagation(); window.open('/static/analysis_dark_v3.pdf','_blank')">
-        <button class="secondary-button" type="button">
-        Try Now</button>
+    <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
+        <button class="secondary-button" type="button">Try Now</button>
     </div>
 </div>
 
@@ -98,9 +97,8 @@
     <div class="choice-copy">
         Create your pitch deck in minutes!
     </div>
-    <div class="choice-link" onclick="event.stopPropagation(); document.getElementById('demoDeckCardForm').submit();">
-        <button class="secondary-button" type="button">
-        Try Now</button>
+    <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
+        <button class="secondary-button" type="button">Try Now</button>
     </div>
 </div>
 
@@ -111,12 +109,10 @@
     <div class="choice-copy">
         Let's get you booked using our complete sides analysis!
     </div>
-    <div class="choice-link" onclick="event.stopPropagation(); window.open('/output/latest_actor_prep_report.pdf','_blank')">
-    <button class="secondary-button" type="button">
-        Try Now</button>
+    <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
+        <button class="secondary-button" type="button">Try Now</button>
     </div>
 </div>
-
 
 <!-- Booked -->
 <div class="choice home-module-card" onclick="startActorBookedFlow()">
@@ -125,9 +121,8 @@
     <div class="choice-copy">
          Get your full character analysis in seconds!
     </div>
-    <div class="choice-link" onclick="event.stopPropagation(); window.open('/output/latest_actor_booked_report.pdf','_blank')">
-    <button class="secondary-button" type="button">
-        Try Now</button>
+    <div class="choice-link" onclick="event.stopPropagation(); showAuthModal()">
+        <button class="secondary-button" type="button">Try Now</button>
     </div>
 </div>
 
@@ -353,49 +348,179 @@
 </div>
 
 <!-- ===== AUTH MODAL ===================================== -->
+<style>
+.auth-modal-content {
+    max-width: 820px;
+    width: 95%;
+    text-align: left;
+    padding: 0;
+    overflow: hidden;
+    background: #111;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 18px;
+}
+.auth-modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 600px) {
+    .auth-modal-grid { grid-template-columns: 1fr; }
+    .auth-showcase { display: none; }
+}
+.auth-showcase {
+    background: linear-gradient(160deg, #1a0a00 0%, #0d0d0d 100%);
+    padding: 32px 24px;
+    border-right: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 20px;
+}
+.auth-showcase-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+.auth-showcase-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: rgba(255,122,0,0.12);
+    border: 1px solid rgba(255,122,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+.auth-showcase-text { flex: 1; }
+.auth-showcase-title { font-size: 13px; font-weight: 700; color: #e8e8e8; margin-bottom: 3px; }
+.auth-showcase-desc { font-size: 11px; color: #888; line-height: 1.5; }
+.auth-forms {
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+}
+.auth-form-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.auth-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 0;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-family: inherit;
+    transition: color 0.15s, border-color 0.15s;
+}
+.auth-tab.active { color: #ff7a00; border-bottom-color: #ff7a00; }
+.auth-panel { display: none; }
+.auth-panel.active { display: block; }
+.auth-forms input {
+    width: 100%;
+    max-width: 100%;
+    background: #1a1a1a;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #f0f0f0;
+    border-radius: 8px;
+    padding: 11px 12px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    box-sizing: border-box;
+    font-family: inherit;
+    display: block;
+}
+.auth-forms input::placeholder { color: #666; }
+.auth-forms input:focus { outline: none; border-color: rgba(255,122,0,0.5); }
+</style>
 <div class="modal" id="authModal">
-    <div class="modal-content" style="max-width:680px; width:92%; text-align:left;">
-        <div class="modal-close" onclick="closeModal('authModal')">×</div>
+    <div class="modal-content auth-modal-content">
+        <div class="modal-close" onclick="closeModal('authModal')" style="top:12px; right:14px;">×</div>
+        <div class="auth-modal-grid">
 
-        <div style="text-align:center; margin-bottom:18px;">
-            <div style="font-size:11px; font-weight:700; letter-spacing:0.14em; color:#ff7a00; text-transform:uppercase; margin-bottom:6px;">Members Only</div>
-            <div class="workspace-title" style="margin-bottom:4px;">This feature requires an account</div>
-            <div style="font-size:13px; color:#888;">$5/month — full suite. Cancel anytime.</div>
-            <div style="font-size:11px; color:#666; margin-top:4px;">Not the right fit? Cancel within 3 days for a full refund.</div>
-        </div>
-
-        {% if auth_error %}
-        <div style="color:#ff8a8a; font-size:13px; text-align:center; margin-bottom:12px;">{{ auth_error }}</div>
-        {% endif %}
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
-            <div style="background:#0e0e0e; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
-                <div class="choice-title" style="font-size:14px; margin-bottom:4px;">Start Now</div>
-                <div style="font-size:11px; color:#555; margin-bottom:12px;">Create account → secure checkout</div>
-                <form method="POST" action="/create-checkout-session">
-                    <input type="text" name="name" placeholder="Full Name" required style="margin-bottom:8px; font-size:13px;">
-                    <input type="email" name="email" placeholder="Email Address" required style="margin-bottom:8px; font-size:13px;">
-                    <input type="password" name="password" placeholder="Password (6+ chars)" required style="margin-bottom:12px; font-size:13px;">
-                    <button class="primary-button" type="submit" style="width:100%; background:rgba(255,122,0,0.9); font-size:13px;">Continue to Payment →</button>
-                </form>
+            <!-- LEFT: SHOWCASE -->
+            <div class="auth-showcase">
+                <div style="margin-bottom:8px;">
+                    <div style="font-size:10px; font-weight:700; letter-spacing:0.16em; color:#ff7a00; text-transform:uppercase; margin-bottom:8px;">EVOLUM Studio</div>
+                    <div style="font-size:20px; font-weight:800; color:#fff; line-height:1.3;">AI tools built for<br>film & TV creators.</div>
+                    <div style="font-size:13px; color:#888; margin-top:8px;">$5/month. Cancel anytime.<br><span style="color:#666; font-size:11px;">Not a fit? Full refund within 3 days.</span></div>
+                </div>
+                <div class="auth-showcase-item">
+                    <div class="auth-showcase-icon">🎬</div>
+                    <div class="auth-showcase-text">
+                        <div class="auth-showcase-title">Pitch Deck Generator</div>
+                        <div class="auth-showcase-desc">Upload your script — get a full investor deck with slides, images, and comps in under 2 minutes.</div>
+                    </div>
+                </div>
+                <div class="auth-showcase-item">
+                    <div class="auth-showcase-icon">📋</div>
+                    <div class="auth-showcase-text">
+                        <div class="auth-showcase-title">Script Analyzer</div>
+                        <div class="auth-showcase-desc">Deep character breakdowns, story structure, and market analysis — instantly.</div>
+                    </div>
+                </div>
+                <div class="auth-showcase-item">
+                    <div class="auth-showcase-icon">🎭</div>
+                    <div class="auth-showcase-text">
+                        <div class="auth-showcase-title">Actor Prep Tools</div>
+                        <div class="auth-showcase-desc">Audition intel and booked-role character analysis so you walk in owning the room.</div>
+                    </div>
+                </div>
+                <div class="auth-showcase-item">
+                    <div class="auth-showcase-icon">🤝</div>
+                    <div class="auth-showcase-text">
+                        <div class="auth-showcase-title">Studio Collaboration</div>
+                        <div class="auth-showcase-desc">Share projects, invite collaborators, and build together in real time.</div>
+                    </div>
+                </div>
             </div>
 
-            <div style="background:#0e0e0e; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
-                <div class="choice-title" style="font-size:14px; margin-bottom:12px;">Sign In</div>
-                <form method="POST" action="/sign-in">
-                    <input type="email" name="email" placeholder="Email Address" required style="margin-bottom:8px; font-size:13px;">
-                    <input type="password" name="password" placeholder="Password" required style="margin-bottom:12px; font-size:13px;">
-                    <button class="primary-button" type="submit" style="width:100%; font-size:13px;">Sign In</button>
-                </form>
-                <div style="font-size:11px; color:#555; text-align:center; margin-top:14px;">Have a beta access code?</div>
-                <form method="POST" action="/beta-access" style="margin-top:8px;">
-                    <input type="password" name="access_code" placeholder="Access Code" style="margin-bottom:8px; font-size:13px;">
-                    <button class="secondary-button" type="submit" style="width:100%; font-size:11px;">Enter With Code</button>
-                </form>
+            <!-- RIGHT: FORMS -->
+            <div class="auth-forms">
+                {% if auth_error %}
+                <div style="color:#ff8a8a; font-size:13px; background:rgba(255,80,80,0.08); border:1px solid rgba(255,80,80,0.2); border-radius:8px; padding:10px 12px; margin-bottom:14px;">{{ auth_error }}</div>
+                {% endif %}
+
+                <div class="auth-form-tabs">
+                    <button class="auth-tab active" onclick="switchAuthTab('signup', this)">Get Access</button>
+                    <button class="auth-tab" onclick="switchAuthTab('signin', this)">Sign In</button>
+                </div>
+
+                <div class="auth-panel active" id="authPanel_signup">
+                    <div style="font-size:12px; color:#888; margin-bottom:14px;">Create your account — you'll be taken to secure checkout.</div>
+                    <form method="POST" action="/create-checkout-session">
+                        <input type="text" name="name" placeholder="Full Name" required>
+                        <input type="email" name="email" placeholder="Email Address" required>
+                        <input type="password" name="password" placeholder="Password (6+ characters)" required>
+                        <button class="primary-button" type="submit" style="width:100%; margin-top:4px; background:rgba(255,122,0,0.95); font-size:14px; padding:13px;">Continue to Payment →</button>
+                    </form>
+                    <div style="font-size:11px; color:#555; text-align:center; margin-top:10px;">Stripe-secured checkout. Cancel anytime.</div>
+                </div>
+
+                <div class="auth-panel" id="authPanel_signin">
+                    <div style="font-size:12px; color:#888; margin-bottom:14px;">Welcome back.</div>
+                    <form method="POST" action="/sign-in">
+                        <input type="email" name="email" placeholder="Email Address" required>
+                        <input type="password" name="password" placeholder="Password" required>
+                        <button class="primary-button" type="submit" style="width:100%; margin-top:4px; font-size:14px; padding:13px;">Sign In</button>
+                    </form>
+                    <div style="font-size:11px; color:#666; text-align:center; margin-top:16px;">Have a beta access code?</div>
+                    <form method="POST" action="/beta-access" style="margin-top:8px;">
+                        <input type="password" name="access_code" placeholder="Access Code">
+                        <button class="secondary-button" type="submit" style="width:100%; font-size:12px;">Enter With Code</button>
+                    </form>
+                </div>
+
+                <div class="footer-powered" style="text-align:center; margin-top:18px;">Powered by the Developum AI Engine</div>
             </div>
         </div>
-
-        <div class="footer-powered" style="text-align:center; margin-top:16px;">Powered by the Developum AI Engine</div>
     </div>
 </div>
 <!-- ===== AUTH MODAL END ================================= -->

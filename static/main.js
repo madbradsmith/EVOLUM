@@ -236,6 +236,13 @@ function requireAuth(fn){
     if (typeof userLoggedIn !== "undefined" && userLoggedIn) { fn(); return; }
     showAuthModal();
 }
+function switchAuthTab(tab, el){
+    document.querySelectorAll(".auth-tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".auth-panel").forEach(p => p.classList.remove("active"));
+    if (el) el.classList.add("active");
+    const panel = document.getElementById("authPanel_" + tab);
+    if (panel) panel.classList.add("active");
+}
 document.addEventListener("click", function(event){
     const shell = document.querySelector(".top-nav-shell");
     const menu = document.getElementById("topNavMenu");
