@@ -149,10 +149,16 @@ LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
 ACCESS_CODES = [
-    "beta1",
-    "beta2",
-    "vip",
-    "madbrad",
+    "EVOLUM-REEL-471",
+    "EVOLUM-SLATE-829",
+    "EVOLUM-GRIP-356",
+    "EVOLUM-FRAME-914",
+    "EVOLUM-LENS-273",
+    "EVOLUM-ROLL-648",
+    "EVOLUM-MARK-195",
+    "EVOLUM-CUT-537",
+    "EVOLUM-FADE-762",
+    "EVOLUM-WRAP-483",
 ]
 
 BETA_ACCESS_LOGS_DIR = BASE_DIR / "beta_access_logs"
