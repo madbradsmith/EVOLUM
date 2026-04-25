@@ -5,6 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EVOLUM Studio</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+.project-card-link {
+    text-decoration: none;
+    display: block;
+}
+.project-card-link .choice {
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+.project-card-link .choice:hover {
+    border-color: rgba(255,122,0,0.6);
+}
+.new-project-link .choice {
+    border-color: rgba(255,122,0,0.5);
+}
+.new-project-link .choice:hover {
+    border-color: rgba(255,122,0,0.9);
+}
+.storage-bar-track {
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin-top: 6px;
+}
+.storage-bar-fill {
+    height: 4px;
+    background: rgba(255,122,0,0.7);
+    border-radius: 2px;
+}
+</style>
 </head>
 <body>
 <div class="container">
@@ -18,71 +53,85 @@
                 Peace, {{ user_name or "Creator" }}. Manage your projects, momentum, and collaborations.
             </div>
 
-            <div class="choice home-module-card" style="min-height:210px; padding:14px; margin-bottom:12px;">
+            <!-- MY PROJECTS -->
+            <div class="choice home-module-card" style="padding:14px; margin-bottom:12px;">
                 <div class="choice-title">My Projects</div>
                 <div class="choice-copy" style="min-height:0; margin-bottom:10px;">
-                    Select a project, continue work, or start something new.
+                    Select a project to continue work, or start something new.
                 </div>
 
                 <div class="choices-row" style="grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:6px;">
-                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <div style="font-size:28px;">📁</div>
-                        <div class="choice-title" style="font-size:16px; margin-top:6px;">Not Today</div>
-                        <div class="choice-copy" style="font-size:11px; min-height:0;">Pitch package</div>
-                    </div>
-                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <div style="font-size:28px;">📁</div>
-                        <div class="choice-title" style="font-size:16px; margin-top:6px;">Court Jester</div>
-                        <div class="choice-copy" style="font-size:11px; min-height:0;">Animated feature</div>
-                    </div>
-                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center;">
-                        <div style="font-size:28px;">📁</div>
-                        <div class="choice-title" style="font-size:16px; margin-top:6px;">Roach Coach</div>
-                        <div class="choice-copy" style="font-size:11px; min-height:0;">Comedy feature</div>
-                    </div>
-                    <div class="choice" style="min-height:92px; display:flex; flex-direction:column; align-items:center; justify-content:center; border-color:rgba(255,122,0,0.75);">
-                        <div class="project-card new-project-card" onclick="window.location='/new-project'">
-                            <div class="plus-icon">+</div>
-                            <div class="project-title">New Project</div>
-                            <div class="project-subtitle">Start from deck flow</div>
-                        </div>
 
+                    {% for project in projects %}
+                    <a href="/project/{{ project.id }}" class="project-card-link">
+                        <div class="choice">
+                            <div style="font-size:26px;">📁</div>
+                            <div class="choice-title" style="font-size:15px; margin-top:5px; text-align:center; word-break:break-word;">{{ project.title }}</div>
+                            <div class="choice-copy" style="font-size:11px; min-height:0; text-align:center;">{{ project.type or 'Project' }}</div>
+                        </div>
+                    </a>
+                    {% endfor %}
+
+                    {% if not projects %}
+                    <div style="grid-column:1/-1; text-align:center; color:#555; font-size:13px; padding:18px 0;">
+                        No projects yet — create your first one.
                     </div>
+                    {% endif %}
+
+                    <a href="/new-project" class="project-card-link new-project-link">
+                        <div class="choice">
+                            <div style="font-size:26px; color:rgba(255,122,0,0.8);">+</div>
+                            <div class="choice-title" style="font-size:15px; margin-top:5px; text-align:center;">New Project</div>
+                            <div class="choice-copy" style="font-size:11px; min-height:0; text-align:center;">Start from deck flow</div>
+                        </div>
+                    </a>
+
                 </div>
             </div>
 
+            <!-- BOTTOM ROW -->
             <div class="choices-row" style="grid-template-columns:1.2fr 0.8fr; gap:12px;">
+
+                <!-- STUDIO HELPER -->
                 <div class="choice home-module-card" style="min-height:230px; padding:16px; text-align:left;">
                     <div class="choice-title" style="text-align:left;">Studio Helper</div>
                     <div class="choice-copy" style="min-height:0; margin:8px 0 12px;">
                         What do you want to do today?
                     </div>
-                    <div style="background:#0c0c0c;border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:12px;margin-bottom:12px;color:#aaa;">
+                    <div style="background:#0c0c0c;border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:12px;margin-bottom:12px;color:#555;">
                         Ask EVOLUM to help with a project, deck, pitch, image, or script task...
                     </div>
                     <div class="choices-row" style="grid-template-columns:repeat(2,1fr); gap:8px;">
-                        <div class="choice" style="padding:10px;">Build a pitch deck</div>
-                        <div class="choice" style="padding:10px;">Generate images</div>
-                        <div class="choice" style="padding:10px;">Write project copy</div>
-                        <div class="choice" style="padding:10px;">Continue last project</div>
+                        <div class="choice" style="padding:10px; color:#555;">Build a pitch deck</div>
+                        <div class="choice" style="padding:10px; color:#555;">Generate images</div>
+                        <div class="choice" style="padding:10px; color:#555;">Write project copy</div>
+                        <div class="choice" style="padding:10px; color:#555;">Continue last project</div>
                     </div>
+                    <div style="font-size:11px; color:#444; margin-top:8px; text-align:center;">Coming soon</div>
                 </div>
 
+                <!-- COLLABORATE -->
                 <div class="choice home-module-card" style="min-height:230px; padding:16px; text-align:left;">
                     <div class="choice-title" style="text-align:left;">Collaborate</div>
                     <div class="choice-copy" style="min-height:0; margin:8px 0 12px;">
                         Invite collaborators and manage shared project access.
                     </div>
-                    <div class="choice" style="padding:10px; margin-bottom:8px;">
-                        Not Today<br>
-                        <span style="font-size:11px;color:#aaa;">Invite collaborator</span>
+
+                    {% if projects %}
+                        {% for project in projects[:3] %}
+                        <div class="choice" style="padding:10px; margin-bottom:8px; cursor:default;">
+                            {{ project.title }}<br>
+                            <span style="font-size:11px;color:#aaa;">{{ project.type or 'Project' }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="choice-copy" style="color:#555; font-size:12px; padding:10px 0;">
+                        Create a project to invite collaborators.
                     </div>
-                    <div class="choice" style="padding:10px; margin-bottom:8px;">
-                        Court Jester<br>
-                        <span style="font-size:11px;color:#aaa;">Shared workspace</span>
-                    </div>
-                    <div class="choice" style="padding:10px; border-color:rgba(255,122,0,0.75);">
-                        + New Invite
+                    {% endif %}
+
+                    <div class="choice" style="padding:10px; border-color:rgba(255,122,0,0.5); color:#aaa; margin-top:4px;">
+                        + New Invite <span style="font-size:11px;">(coming soon)</span>
                     </div>
                 </div>
             </div>

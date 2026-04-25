@@ -885,10 +885,22 @@ def login_test():
 @app.route("/studio")
 @require_login
 def studio():
+    projects = []
+    if DB_ENGINE:
+        ensure_projects_table()
+        with DB_ENGINE.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT id, title, type, status, created_at
+                FROM projects
+                WHERE owner_user_id = :user_id
+                ORDER BY created_at DESC
+            """), {"user_id": session.get("user_id")}).mappings().all()
+            projects = [dict(r) for r in rows]
     return render_template(
         "my_studio.html",
         user_name=session.get("user_name"),
-        user_email=session.get("user_email")
+        user_email=session.get("user_email"),
+        projects=projects
     )
 @app.route("/session-test")
 def session_test():
