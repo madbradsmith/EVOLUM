@@ -741,12 +741,7 @@ def beta_access():
 
     log_beta_access(access_code or "blank", "ACCESS FAILED")
     log_usage("beta_access", code=access_code or "blank", success=False)
-    return render_template(
-        "index.html",
-        is_render=is_render_env(),
-        gate_locked=True,
-        gate_error="Incorrect access code. Please try again.",
-    )
+    return redirect("/?auth_error=" + quote("Incorrect access code. Please try again."))
 
 
 @app.route("/create-account", methods=["POST"])
@@ -757,25 +752,26 @@ def create_account():
     access_code = (request.form.get("access_code") or "").strip()
 
     if not name or not email or not password or not access_code:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="Please complete all Create Account fields, including your access code.")
+        return redirect("/?auth_error=" + quote("Please complete all fields including your access code."))
 
     if access_code not in ACCESS_CODES:
         log_beta_access(access_code or "blank", "CREATE ACCOUNT ACCESS FAILED")
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="That access code is not approved yet.")
+        return redirect("/?auth_error=" + quote("That access code is not approved yet."))
 
     try:
         db_init()
         existing = get_user_by_email(email)
         if existing:
-            return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="That email already has an account. Please sign in instead.")
+            return redirect("/?auth_error=" + quote("That email already has an account. Please sign in."))
 
         password_hash = generate_password_hash(password)
         with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
+            row = conn.execute(text("""
                 INSERT INTO beta_users (email, name, password_hash)
-                VALUES (:email, :name, :password_hash)
-            """), {"email": email, "name": name, "password_hash": password_hash})
+                VALUES (:email, :name, :password_hash) RETURNING id
+            """), {"email": email, "name": name, "password_hash": password_hash}).fetchone()
 
+        session["user_id"] = str(row[0])
         session["user_email"] = email
         session["user_name"] = name
         session["beta_access"] = True
@@ -785,7 +781,7 @@ def create_account():
         log_activity_event("account_created", route="/create-account", user_email=email, metadata={"name": name})
         return redirect(url_for("index"))
     except Exception as e:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error=f"Create account failed: {e}")
+        return redirect("/?auth_error=" + quote(f"Account creation failed: {e}"))
 
 
 @app.route("/sign-in", methods=["POST"])
@@ -794,14 +790,14 @@ def sign_in():
     password = (request.form.get("password") or "").strip()
 
     if not email or not password:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="Please enter your email and password to sign in.")
+        return redirect("/?auth_error=" + quote("Please enter your email and password."))
 
     try:
         db_init()
         user = get_user_by_email(email)
         if not user or not user.get("password_hash") or not check_password_hash(user["password_hash"], password):
             log_activity_event("sign_in_failed", route="/sign-in", user_email=email)
-            return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="We couldn't sign you in with those credentials.")
+            return redirect("/?auth_error=" + quote("We couldn't sign you in with those credentials."))
 
         session["user_id"] = str(user["id"])
         session["user_email"] = user["email"]
@@ -813,7 +809,7 @@ def sign_in():
         log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
         return redirect(url_for("index"))
     except Exception as e:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error=f"Sign in failed: {e}")
+        return redirect("/?auth_error=" + quote(f"Sign in failed: {e}"))
 
 
 @app.route("/logout")
@@ -834,26 +830,22 @@ def create_checkout_session():
     password = (request.form.get("password") or "").strip()
 
     if not name or not email or not password:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
-                               gate_error="Please fill in all fields to continue.")
+        return redirect("/?auth_error=" + quote("Please fill in all fields to continue."))
     if len(password) < 6:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
-                               gate_error="Password must be at least 6 characters.")
+        return redirect("/?auth_error=" + quote("Password must be at least 6 characters."))
 
     try:
         db_init()
         ensure_subscription_columns()
         if get_user_by_email(email):
-            return render_template("index.html", is_render=is_render_env(), gate_locked=True,
-                                   gate_error="That email already has an account. Please sign in.")
+            return redirect("/?auth_error=" + quote("That email already has an account. Please sign in."))
     except Exception:
         pass
 
     stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
     price_id = os.environ.get("STRIPE_PRICE_ID", "")
     if not stripe_lib.api_key or not price_id:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
-                               gate_error="Payment system unavailable — please try again later.")
+        return redirect("/?auth_error=" + quote("Payment system unavailable — please try again later."))
 
     session["pending_name"] = name
     session["pending_email"] = email
@@ -871,8 +863,7 @@ def create_checkout_session():
         )
         return redirect(checkout.url, code=303)
     except Exception as e:
-        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
-                               gate_error=f"Could not start checkout: {e}")
+        return redirect("/?auth_error=" + quote(f"Could not start checkout: {e}"))
 
 
 @app.route("/payment-success")
@@ -944,8 +935,10 @@ def index():
     return render_template(
         "index.html",
         is_render=is_render_env(),
-        gate_locked=not has_beta_access(),
-        gate_error=None,
+        user_logged_in=has_beta_access(),
+        user_name=get_current_user_name() or "",
+        auth_error=request.args.get("auth_error", ""),
+        show_auth=bool(request.args.get("auth_error") or request.args.get("cancelled")),
     )
 from functools import wraps
 

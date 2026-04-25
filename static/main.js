@@ -227,6 +227,15 @@ function navTo(url){
     if (menu) menu.classList.remove("show");
     setTimeout(() => { window.location.href = url; }, 80);
 }
+function showAuthModal(){
+    closeAllModals();
+    const m = document.getElementById("authModal");
+    if (m) m.classList.add("show");
+}
+function requireAuth(fn){
+    if (typeof userLoggedIn !== "undefined" && userLoggedIn) { fn(); return; }
+    showAuthModal();
+}
 document.addEventListener("click", function(event){
     const shell = document.querySelector(".top-nav-shell");
     const menu = document.getElementById("topNavMenu");
@@ -438,6 +447,7 @@ function continueToApprovedUpload(){
 }
 
 async function analyzeSelectedScript(){
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
     const fileInput = document.getElementById("uploadAnalyzeFile");
 
     if (!fileInput || !fileInput.files || fileInput.files.length === 0){
@@ -531,6 +541,7 @@ async function analyzeSelectedScript(){
 }
 
 function validateUploadAndStart(){
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return false; }
     const form = document.querySelector('#uploadState form');
     const imagesInput = document.getElementById("imagesInput");
 
@@ -1212,6 +1223,7 @@ function startActorPrepFlow(){
 }
 
 async function submitActorPrep(){
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
     const role = (document.getElementById("actorRoleInput").value || "").trim();
     const fileInput = document.getElementById("actorPrepFile");
     const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
@@ -1328,6 +1340,7 @@ function startActorBookedFlow(){
 }
 
 async function submitActorBooked(){
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
     const role = (document.getElementById("actorBookedRoleInput").value || "").trim();
     const fileInput = document.getElementById("actorBookedFile");
     const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;

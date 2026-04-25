@@ -10,122 +10,6 @@
 </head>
 
 <body>
-{% if gate_locked %}
-<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:18px;">
-    <div class="shell" style="max-width:760px;width:100%;">
-        <div class="card" style="padding:22px 22px 18px;min-height:auto;">
-            <div class="logo" style="padding-top:0;">
-                <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
-            </div>
-
-            <div id="betaGatePage1">
-                <div class="workspace-title" style="text-align:center;">Developum AI</div>
-                <div class="workspace-copy" style="text-align:center;max-width:640px;margin:0 auto 14px;">
-                    Private Beta Access
-                </div>
-
-                <div class="info-copy" style="max-width:620px;margin:0 auto 18px;text-align:left;">
-                    <p><strong>Peace,</strong></p>
-
-                    <p>
-                        Thank you all for coming through and supporting me by checking out this project I created for filmmakers, writers, producers, and creatives around the world.
-                    </p>
-
-                    <p>
-                        I’m working every day, reviewing your feedback, and making live fixes, tweaks, and upgrades alongside my AI entity partners.
-                    </p>
-
-                    <p>
-                        If you run into bugs or anything that feels off, please use the <strong>Feedback</strong> button and tell me exactly what happened so we can keep improving it together.
-                    </p>
-
-                    <p>
-                        Thank you again for being early and being part of this journey.
-                    </p>
-
-                    <p><strong>Peace,<br>MadBrad</strong></p>
-                </div>
-
-                <div class="upload-actions" style="grid-template-columns:1fr;max-width:320px;margin:0 auto 10px;">
-                    <button class="primary-button" type="button"
-                        onclick="document.getElementById('betaGatePage1').style.display='none';document.getElementById('betaGatePage2').style.display='block';">
-                        Continue
-                    </button>
-                </div>
-
-                <div class="footer-powered" style="margin-top:14px;text-align:center;">
-                    Powered by the Developum AI Engine
-                </div>
-            </div>
-
-            <div id="betaGatePage2" style="display:none;">
-                <div class="workspace-title" style="text-align:center;">Get Access</div>
-                <div class="workspace-copy" style="text-align:center;max-width:620px;margin:0 auto 6px;">
-                    $5/month — full suite access. Cancel anytime.
-                </div>
-                <div class="upload-note" style="text-align:center;margin-bottom:16px;color:#888;">
-                    Not the right fit? Cancel within 3 days for a full refund — no questions asked.
-                </div>
-
-                {% if gate_error %}
-                <div style="color:#ff8a8a;margin-bottom:10px;text-align:center;">{{ gate_error }}</div>
-                {% endif %}
-
-                {% if request.args.get('cancelled') %}
-                <div style="color:#aaa;margin-bottom:10px;text-align:center;">Checkout was cancelled — no charge was made.</div>
-                {% endif %}
-
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto 12px;">
-                    <div class="card" style="padding:16px;background:#111111;">
-                        <div class="choice-title" style="margin-bottom:4px;">Start Now</div>
-                        <div style="font-size:11px;color:#666;margin-bottom:10px;">Create account → secure checkout</div>
-                        <form method="POST" action="/create-checkout-session">
-                            <input type="text" name="name" placeholder="Full Name" required style="margin-bottom:8px;">
-                            <input type="email" name="email" placeholder="Email Address" required style="margin-bottom:8px;">
-                            <input type="password" name="password" placeholder="Create Password (6+ chars)" required style="margin-bottom:12px;">
-                            <button class="primary-button" type="submit" style="width:100%;background:rgba(255,122,0,0.9);">Continue to Payment →</button>
-                        </form>
-                    </div>
-
-                    <div class="card" style="padding:16px;background:#111111;">
-                        <div class="choice-title" style="margin-bottom:10px;">Sign In</div>
-                        <form method="POST" action="/sign-in">
-                            <input type="email" name="email" placeholder="Email Address" required style="margin-bottom:8px;">
-                            <input type="password" name="password" placeholder="Password" required style="margin-bottom:12px;">
-                            <button class="primary-button" type="submit" style="width:100%;">Sign In</button>
-                        </form>
-
-                        <div class="upload-note" style="margin-top:14px;text-align:center;">
-                            Have a beta access code?
-                        </div>
-                        <form method="POST" action="/beta-access" style="margin-top:8px;">
-                            <input type="password" name="access_code" placeholder="Access Code" style="margin-bottom:8px;">
-                            <button class="secondary-button" type="submit" style="width:100%;">Enter With Code</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="upload-actions" style="grid-template-columns:1fr;max-width:200px;margin:10px auto 0;">
-                    <button class="secondary-button" type="button"
-                        onclick="document.getElementById('betaGatePage2').style.display='none';document.getElementById('betaGatePage1').style.display='block';">
-                        Back
-                    </button>
-                </div>
-
-                <div class="footer-powered" style="margin-top:14px;text-align:center;">
-                    Powered by the Developum AI Engine
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% if request.args.get('cancelled') or gate_error %}
-<script>
-document.getElementById('betaGatePage1').style.display='none';
-document.getElementById('betaGatePage2').style.display='block';
-</script>
-{% endif %}
-{% else %}
 
 
 <div class="top-nav-shell">
@@ -461,6 +345,54 @@ document.getElementById('betaGatePage2').style.display='block';
     </div>
 </div>
 
+<!-- ===== AUTH MODAL ===================================== -->
+<div class="modal" id="authModal">
+    <div class="modal-content" style="max-width:680px; width:92%; text-align:left;">
+        <div class="modal-close" onclick="closeModal('authModal')">×</div>
+
+        <div style="text-align:center; margin-bottom:18px;">
+            <div style="font-size:11px; font-weight:700; letter-spacing:0.14em; color:#ff7a00; text-transform:uppercase; margin-bottom:6px;">Members Only</div>
+            <div class="workspace-title" style="margin-bottom:4px;">This feature requires an account</div>
+            <div style="font-size:13px; color:#888;">$5/month — full suite. Cancel anytime.</div>
+            <div style="font-size:11px; color:#666; margin-top:4px;">Not the right fit? Cancel within 3 days for a full refund.</div>
+        </div>
+
+        {% if auth_error %}
+        <div style="color:#ff8a8a; font-size:13px; text-align:center; margin-bottom:12px;">{{ auth_error }}</div>
+        {% endif %}
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+            <div style="background:#0e0e0e; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+                <div class="choice-title" style="font-size:14px; margin-bottom:4px;">Start Now</div>
+                <div style="font-size:11px; color:#555; margin-bottom:12px;">Create account → secure checkout</div>
+                <form method="POST" action="/create-checkout-session">
+                    <input type="text" name="name" placeholder="Full Name" required style="margin-bottom:8px; font-size:13px;">
+                    <input type="email" name="email" placeholder="Email Address" required style="margin-bottom:8px; font-size:13px;">
+                    <input type="password" name="password" placeholder="Password (6+ chars)" required style="margin-bottom:12px; font-size:13px;">
+                    <button class="primary-button" type="submit" style="width:100%; background:rgba(255,122,0,0.9); font-size:13px;">Continue to Payment →</button>
+                </form>
+            </div>
+
+            <div style="background:#0e0e0e; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:16px;">
+                <div class="choice-title" style="font-size:14px; margin-bottom:12px;">Sign In</div>
+                <form method="POST" action="/sign-in">
+                    <input type="email" name="email" placeholder="Email Address" required style="margin-bottom:8px; font-size:13px;">
+                    <input type="password" name="password" placeholder="Password" required style="margin-bottom:12px; font-size:13px;">
+                    <button class="primary-button" type="submit" style="width:100%; font-size:13px;">Sign In</button>
+                </form>
+                <div style="font-size:11px; color:#555; text-align:center; margin-top:14px;">Have a beta access code?</div>
+                <form method="POST" action="/beta-access" style="margin-top:8px;">
+                    <input type="password" name="access_code" placeholder="Access Code" style="margin-bottom:8px; font-size:13px;">
+                    <button class="secondary-button" type="submit" style="width:100%; font-size:11px;">Enter With Code</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="footer-powered" style="text-align:center; margin-top:16px;">Powered by the Developum AI Engine</div>
+    </div>
+</div>
+<!-- ===== AUTH MODAL END ================================= -->
+
 <!-- ===== MODALS: ACTOR PREP FLOW START ================= -->
 
 <div class="modal" id="actorPrepModal">
@@ -717,6 +649,9 @@ document.getElementById('betaGatePage2').style.display='block';
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}";</script>
   <script src="{{ url_for('static', filename='main.js') }}"></script>
-{% endif %}
+  <script>
+    const userLoggedIn = {{ user_logged_in | tojson }};
+    {% if show_auth %}window.addEventListener('DOMContentLoaded', () => showAuthModal());{% endif %}
+  </script>
 </body>
 </html>
