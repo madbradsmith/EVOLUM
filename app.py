@@ -907,6 +907,70 @@ def studio():
         user_email=session.get("user_email"),
         projects=projects
     )
+@app.route("/studio/chat", methods=["POST"])
+@require_login
+def studio_chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    history = data.get("history") or []
+
+    if not message:
+        return jsonify({"error": "No message"}), 400
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"reply": "Studio Helper isn't configured yet — ANTHROPIC_API_KEY missing."}), 200
+
+    # Build project context from user's projects
+    projects_ctx = ""
+    if DB_ENGINE:
+        ensure_projects_table()
+        with DB_ENGINE.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT title, type, status FROM projects
+                WHERE owner_user_id = :uid ORDER BY created_at DESC LIMIT 5
+            """), {"uid": session.get("user_id")}).mappings().all()
+            if rows:
+                projects_ctx = "User's projects: " + "; ".join(
+                    f"{r['title']} ({r['type'] or 'Project'})" for r in rows
+                )
+
+    user_name = session.get("user_name") or "Creator"
+    system = f"""You are EVOLUM's Studio Helper — a sharp, practical AI partner for film and TV creatives.
+EVOLUM is a professional production suite for writers, actors, directors, and producers.
+
+You help with: pitch decks, loglines, synopses, investor pitches, comp titles, script development, actor prep, character breakdowns, market positioning, and general production strategy.
+
+User: {user_name}
+{projects_ctx}
+
+Rules:
+- Be specific and industry-savvy. No filler or vague encouragement.
+- Keep responses concise: 2-3 short paragraphs max unless explicitly asked for more.
+- Match the creative's energy — direct, confident, collaborative.
+- Do not mention AI, models, or training data. You are a creative partner, not a chatbot.
+- Format with short paragraphs. Use bullet lists only when listing discrete items."""
+
+    # Keep last 8 messages to avoid blowing token budget
+    trimmed_history = history[-8:] if len(history) > 8 else history
+    messages = trimmed_history + [{"role": "user", "content": message}]
+
+    try:
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=600,
+            system=system,
+            messages=messages,
+        )
+        reply = (resp.content[0].text or "").strip()
+        return jsonify({"reply": reply})
+    except Exception as e:
+        print(f"⚠️ Studio chat error: {e}", flush=True)
+        return jsonify({"reply": "Something went wrong — please try again."}), 200
+
+
 @app.route("/session-test")
 def session_test():
     session.clear()

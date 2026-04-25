@@ -6,6 +6,105 @@
 <title>EVOLUM Studio</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <style>
+/* Studio Helper Chat */
+#chatThread {
+    min-height: 110px;
+    max-height: 190px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-right: 2px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,122,0,0.3) transparent;
+}
+.chat-msg {
+    font-size: 12px;
+    line-height: 1.55;
+    padding: 8px 10px;
+    border-radius: 10px;
+    max-width: 92%;
+    word-break: break-word;
+}
+.chat-msg.assistant {
+    background: rgba(255,122,0,0.08);
+    border: 1px solid rgba(255,122,0,0.15);
+    color: #d8d8d8;
+    align-self: flex-start;
+}
+.chat-msg.user {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #cfcfcf;
+    align-self: flex-end;
+    text-align: right;
+}
+.chat-msg.typing {
+    background: rgba(255,122,0,0.06);
+    border: 1px solid rgba(255,122,0,0.1);
+    color: #555;
+    align-self: flex-start;
+    font-style: italic;
+}
+.chat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 8px;
+}
+.chat-chip {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #888;
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    font-family: inherit;
+}
+.chat-chip:hover {
+    border-color: rgba(255,122,0,0.5);
+    color: #ff9944;
+}
+.chat-input-row {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+}
+#chatInput {
+    flex: 1;
+    background: #0c0c0c;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    color: #d8d8d8;
+    font-size: 12px;
+    padding: 8px 10px;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+    min-height: 38px;
+    max-height: 80px;
+}
+#chatInput:focus { outline: none; border-color: rgba(255,122,0,0.4); }
+#chatSend {
+    background: #ff7a00;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    align-self: flex-end;
+    font-family: inherit;
+    transition: opacity 0.15s;
+}
+#chatSend:hover { opacity: 0.85; }
+#chatSend:disabled { opacity: 0.4; cursor: default; }
+
 .project-card-link {
     text-decoration: none;
     display: block;
@@ -93,21 +192,24 @@
             <div class="choices-row" style="grid-template-columns:1.2fr 0.8fr; gap:12px;">
 
                 <!-- STUDIO HELPER -->
-                <div class="choice home-module-card" style="min-height:230px; padding:16px; text-align:left;">
-                    <div class="choice-title" style="text-align:left;">Studio Helper</div>
-                    <div class="choice-copy" style="min-height:0; margin:8px 0 12px;">
-                        What do you want to do today?
+                <div class="choice home-module-card" style="padding:16px; text-align:left; display:flex; flex-direction:column;">
+                    <div class="choice-title" style="text-align:left; margin-bottom:8px;">Studio Helper</div>
+
+                    <div id="chatThread">
+                        <div class="chat-msg assistant">Peace, {{ user_name or 'Creator' }}. What are you working on today? I can help with loglines, comps, deck copy, investor strategy, character notes — just ask.</div>
                     </div>
-                    <div style="background:#0c0c0c;border:1px solid rgba(255,255,255,0.14);border-radius:12px;padding:12px;margin-bottom:12px;color:#555;">
-                        Ask EVOLUM to help with a project, deck, pitch, image, or script task...
+
+                    <div class="chat-chips">
+                        <button class="chat-chip" onclick="sendChip('Write a logline for my latest project')">Write a logline</button>
+                        <button class="chat-chip" onclick="sendChip('Suggest comparable titles for my genre')">Comp titles</button>
+                        <button class="chat-chip" onclick="sendChip('Help me sharpen my pitch deck')">Improve deck</button>
+                        <button class="chat-chip" onclick="sendChip('Give me investor talking points')">Investor pitch</button>
                     </div>
-                    <div class="choices-row" style="grid-template-columns:repeat(2,1fr); gap:8px;">
-                        <div class="choice" style="padding:10px; color:#555;">Build a pitch deck</div>
-                        <div class="choice" style="padding:10px; color:#555;">Generate images</div>
-                        <div class="choice" style="padding:10px; color:#555;">Write project copy</div>
-                        <div class="choice" style="padding:10px; color:#555;">Continue last project</div>
+
+                    <div class="chat-input-row">
+                        <textarea id="chatInput" rows="2" placeholder="Ask anything about your project..."></textarea>
+                        <button id="chatSend" onclick="sendChat()">Send</button>
                     </div>
-                    <div style="font-size:11px; color:#444; margin-top:8px; text-align:center;">Coming soon</div>
                 </div>
 
                 <!-- COLLABORATE -->
@@ -145,5 +247,73 @@
         </div>
     </div>
 </div>
+<script>
+const chatHistory = [];
+
+function scrollChat() {
+    const t = document.getElementById("chatThread");
+    if (t) t.scrollTop = t.scrollHeight;
+}
+
+function appendMsg(role, text) {
+    const thread = document.getElementById("chatThread");
+    const div = document.createElement("div");
+    div.className = "chat-msg " + role;
+    div.textContent = text;
+    thread.appendChild(div);
+    scrollChat();
+    return div;
+}
+
+async function sendChat() {
+    const input = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("chatSend");
+    const message = (input.value || "").trim();
+    if (!message) return;
+
+    input.value = "";
+    input.style.height = "";
+    sendBtn.disabled = true;
+
+    appendMsg("user", message);
+    chatHistory.push({ role: "user", content: message });
+
+    const typingEl = appendMsg("typing", "Thinking…");
+
+    try {
+        const res = await fetch("/studio/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, history: chatHistory.slice(-8) })
+        });
+        const data = await res.json();
+        typingEl.remove();
+
+        const reply = data.reply || "No response — please try again.";
+        chatHistory.push({ role: "assistant", content: reply });
+        appendMsg("assistant", reply);
+    } catch (e) {
+        typingEl.remove();
+        appendMsg("assistant", "Connection error — please try again.");
+    }
+
+    sendBtn.disabled = false;
+    input.focus();
+}
+
+function sendChip(text) {
+    const input = document.getElementById("chatInput");
+    input.value = text;
+    input.focus();
+    sendChat();
+}
+
+document.getElementById("chatInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+    }
+});
+</script>
 </body>
 </html>
