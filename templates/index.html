@@ -21,9 +21,8 @@
     <div class="top-nav-menu" id="topNavMenu">
         <button class="top-nav-item" type="button" onclick="navTo(‘/’)">Home</button>
         {% if user_logged_in %}
-        <button class="top-nav-item" type="button" onclick="navTo(‘/studio’)">My Studio</button>
         <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
-        <button class="top-nav-item" type="button" onclick="navTo(‘/logout’)" style="color:#e05555;">Sign Out</button>
+        <button class="top-nav-item" type="button" onclick="window.location.href=’/logout’" style="color:#e05555;">Sign Out</button>
         {% else %}
         <button class="top-nav-item" type="button" onclick="showAuthModal()">Sign In</button>
         <button class="top-nav-item" type="button" onclick="showAuthModal()" style="color:#ff9944;">Get Access — $5/mo</button>
@@ -548,13 +547,6 @@
                         <div class="auth-showcase-desc">Audition intel and booked-role analysis so you walk in owning the room.</div>
                     </div>
                 </div>
-                <div class="auth-showcase-item">
-                    <div class="auth-showcase-icon">🎛️</div>
-                    <div class="auth-showcase-text">
-                        <div class="auth-showcase-title">EVOLUM Studio</div>
-                        <div class="auth-showcase-desc">Your private project workspace — manage decks, invite collaborators, and build your slate.</div>
-                    </div>
-                </div>
             </div>
 
             <!-- RIGHT: FORMS -->
@@ -727,13 +719,8 @@
     <div class="modal-content" style="max-width:520px; text-align:center;">
         <div class="modal-close" onclick="closeModal('welcomeModal')">×</div>
         <h2 id="welcomeModalHeading" style="margin-bottom:6px;">Welcome to EVOLUM</h2>
-        <p id="welcomeModalSubtext" style="color:#aaa; font-size:14px; margin-bottom:28px;">What would you like to do?</p>
+        <p id="welcomeModalSubtext" style="color:#aaa; font-size:14px; margin-bottom:28px;">Ready when you are.</p>
         <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-            <div class="welcome-choice-card" onclick="closeModal('welcomeModal'); navTo('/studio')">
-                <div class="welcome-choice-icon">🎬</div>
-                <div class="welcome-choice-label">My Studio</div>
-                <div class="welcome-choice-sub">View projects &amp; saved work</div>
-            </div>
             <div class="welcome-choice-card" onclick="closeModal('welcomeModal'); showUploadAnalyzeModal()">
                 <div class="welcome-choice-icon">✦</div>
                 <div class="welcome-choice-label">Build a Pitch Deck</div>
