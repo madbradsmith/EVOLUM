@@ -2362,14 +2362,25 @@ def join_project(token):
     if not invite:
         return render_template("join.html", error="This invite link is invalid or has expired.", project=None)
 
+    # Already logged in — auto-join without showing the form
+    if session.get("user_id"):
+        user_id = session["user_id"]
+        name = session.get("user_name") or "Collaborator"
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO project_collaborators (project_id, user_id, user_name, joined_via)
+                VALUES (:pid, :uid, :name, :token)
+                ON CONFLICT (project_id, user_id) DO NOTHING
+            """), {"pid": invite["project_id"], "uid": user_id, "name": name, "token": token})
+        return redirect(f"/project/{invite['project_id']}")
+
     if request.method == "POST":
         name = (request.form.get("name") or "").strip()
         if not name:
             return render_template("join.html", project=invite, token=token, error="Please enter your name.")
-        user_id = session.get("user_id") or f"collab_{secrets.token_hex(8)}"
+        user_id = f"collab_{secrets.token_hex(8)}"
         session["user_id"] = user_id
         session["user_name"] = name
-        # Add as collaborator (ignore if already exists)
         with DB_ENGINE.begin() as conn:
             conn.execute(text("""
                 INSERT INTO project_collaborators (project_id, user_id, user_name, joined_via)

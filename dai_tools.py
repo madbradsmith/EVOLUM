@@ -163,6 +163,7 @@ class BeatEntry:
     beat: str
     subtext: str
     playable_note: str
+    category: str = "TACTICAL"
 
 
 # ── AI HELPERS (OPTIONAL / SAFE FALLBACKS) ───────────────────────────────────
@@ -254,43 +255,78 @@ def _estimate_page_no(global_line_index: int, lines_per_page: int = 55) -> int:
     return max(1, (global_line_index // lines_per_page) + 1)
 
 
-def _infer_beat(dialogue: str, scene_heading: str) -> Tuple[str, str, str]:
+def _infer_beat(dialogue: str, scene_heading: str) -> Tuple[str, str, str, str]:
+    """Returns (beat_name, subtext, playable_note, category)."""
     lower = dialogue.strip().lower()
 
+    if any(k in lower for k in ["i'm sorry", "i am sorry", "forgive", "i never told", "truth is", "i have to tell"]):
+        return (
+            "Reveal Something True",
+            "The character is dropping a guard they've been holding the whole scene.",
+            "Let the vulnerability come from the body, not just the words.",
+            "EMOTIONAL",
+        )
+    if any(k in lower for k in ["please", "i need you", "i need this", "help me", "you have to", "you've got to"]):
+        return (
+            "Make a Plea",
+            "The character is asking from a place of genuine need, not strategy.",
+            "Earn this beat. The ask only lands when the stakes are completely visible.",
+            "EMOTIONAL",
+        )
+    if any(k in lower for k in ["what if", "hear me out", "let's say", "suppose", "what would it take", "i'll give you"]):
+        return (
+            "Negotiate",
+            "The character is in problem-solving mode — offering terms, testing possibilities.",
+            "Stay two steps ahead. Every offer has something held back.",
+            "RELATIONAL",
+        )
+    if any(k in lower for k in ["that's not true", "you're wrong", "i don't believe", "that's a lie", "you never"]):
+        return (
+            "Challenge",
+            "The character is pushing back and forcing the other person to justify themselves.",
+            "Make it feel like a real refusal, not a reaction. The character chose this.",
+            "TACTICAL",
+        )
     if any(k in lower for k in ["who", "what", "where", "why", "how"]):
         return (
             "Pressure for Information",
             "The character is trying to get clarity while still keeping leverage.",
             "Ask like it matters. Curiosity is not enough here.",
+            "INFORMATIONAL",
         )
     if any(k in lower for k in ["calm down", "sit down", "listen", "hold on", "wait"]):
         return (
             "Control the Room",
             "The character is slowing the chaos down and forcing the scene back under control.",
             "Use calm authority. The power is in the certainty, not the volume.",
+            "TACTICAL",
         )
     if any(k in lower for k in ["don't", "do not", "can't", "cannot", "won't", "stop"]):
         return (
             "Set a Boundary",
             "The character is drawing a line and making the other person feel the limit.",
             "Keep it clear and definite. This beat lands when the line feels real.",
+            "TACTICAL",
         )
-    if any(k in lower for k in ["good", "okay", "alright", "cool"]):
+    if any(k in lower for k in ["good", "okay", "alright", "cool", "fine", "right"]):
         return (
             "Reset and Move Forward",
             "The character absorbs the moment and redirects the energy instead of sitting in it.",
             "Treat it like a pivot, not relief.",
+            "EMOTIONAL",
         )
     if scene_heading and ("OFFICE" in scene_heading.upper() or "INTERROGATION" in scene_heading.upper()):
         return (
             "Apply Pressure",
             "The character is reading the other person and leaning in for leverage.",
             "Push with intelligence. Let the pressure come from focus, not force.",
+            "TACTICAL",
         )
     return (
         "Hold Authority",
         "The character is managing the scene from a position of control.",
         "Stay grounded and specific. Quiet command usually wins this beat.",
+        "TACTICAL",
     )
 
 
@@ -333,7 +369,7 @@ def extract_beats(script_text: str, character_name: str) -> List[BeatEntry]:
                 dialogue = " ".join(dialogue_lines).strip()
                 dialogue = re.sub(r'\s{2,}', ' ', dialogue)
                 if dialogue:
-                    beat, subtext, playable = _infer_beat(dialogue, current_scene)
+                    beat, subtext, playable, category = _infer_beat(dialogue, current_scene)
                     beats.append(
                         BeatEntry(
                             reference=f"Page {page_no}",
@@ -343,6 +379,7 @@ def extract_beats(script_text: str, character_name: str) -> List[BeatEntry]:
                             beat=beat,
                             subtext=subtext,
                             playable_note=playable,
+                            category=category,
                         )
                     )
                 i = max(i + 1, j)
@@ -968,7 +1005,14 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     plural = "s" if len(beats) != 1 else ""
     pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
     pdf.drawString(left, y, f"{len(beats)} detected playable beat{plural}. The report expands when the role has more material.")
-    y -= 36
+    y -= 18
+    if beats:
+        from collections import Counter
+        cat_counts = Counter(b.category for b in beats)
+        cat_summary = "  |  ".join(f"{cat}: {n}" for cat, n in sorted(cat_counts.items()))
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+        pdf.drawString(left, y, f"BEAT CATEGORIES  —  {cat_summary}")
+    y -= 22
     if not beats:
         _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found", ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
         _footer(pdf, width, page_no); pdf.save(); return output_path
@@ -981,7 +1025,7 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
             pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20); pdf.drawString(left, y, "SCENE BEAT BREAKDOWN")
             y -= 34
         title_line = f"Beat {idx}: {_friendly_beat_title(beat.beat, idx)}"
-        lines = [f"{beat.reference} | {beat.scene_heading}", f"Line: {beat.dialogue[:190]}", f"Play: {beat.playable_note}"]
+        lines = [f"[{beat.category}]  {beat.reference} | {beat.scene_heading}", f"Line: {beat.dialogue[:190]}", f"Play: {beat.playable_note}"]
         _draw_card(pdf, left, y, usable_width, card_h, title_line, lines, gold, panel, white, muted)
         y -= card_h + 14
     _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
@@ -1012,6 +1056,10 @@ _CONTINUITY_NOTES: Dict[str, str] = {
     "Reset and Move Forward": "This beat shifts the energy. Let it feel like a clean redirect, not a full emotional reset.",
     "Apply Pressure": "The role is leaning in here. The scene changes because the character chooses to press.",
     "Hold Authority": "This is the baseline control state. Keep it textured so it does not flatten.",
+    "Reveal Something True": "This is a vulnerability beat. What the character reveals here should cost them something.",
+    "Make a Plea": "The character is exposed here. Track the moment the need overcomes the defense.",
+    "Negotiate": "The character is thinking ahead. Let each offer cost them something or it feels free.",
+    "Challenge": "The character refuses to accept the other person's reality. Keep the refusal grounded.",
 }
 _DEFAULT_CONTINUITY = "Protect continuity first. Let pressure change pace and patience while core identity stays recognizable."
 
@@ -1103,7 +1151,14 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25); pdf.drawString(left, y, "SCENE JOURNEY MAP")
     y -= 26
     pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(left, y, f"The booked report covers {len(beats)} speaking beats for this role.")
-    y -= 36
+    y -= 18
+    if beats:
+        from collections import Counter
+        cat_counts = Counter(b.category for b in beats)
+        cat_summary = "  |  ".join(f"{cat}: {n}" for cat, n in sorted(cat_counts.items()))
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+        pdf.drawString(left, y, f"BEAT CATEGORIES  —  {cat_summary}")
+    y -= 22
     if not beats:
         _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found", ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
         _footer(pdf, width, page_no); pdf.save(); return output_path
@@ -1116,7 +1171,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
             pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20); pdf.drawString(left, y, "SCENE JOURNEY MAP")
             y -= 34
         continuity = _CONTINUITY_NOTES.get(beat.beat, _DEFAULT_CONTINUITY)
-        lines = [f"{beat.reference} | {beat.scene_heading}", f"Beat: {_friendly_beat_title(beat.beat, idx)}", f"Continuity: {continuity}"]
+        lines = [f"[{beat.category}]  {beat.reference} | {beat.scene_heading}", f"Beat: {_friendly_beat_title(beat.beat, idx)}", f"Continuity: {continuity}"]
         _draw_card(pdf, left, y, usable_width, card_h, f"Scene Beat {idx}", lines, gold, panel, white, muted)
         y -= card_h + 12
     _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
