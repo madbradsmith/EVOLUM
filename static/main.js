@@ -1195,8 +1195,14 @@ async function submitActorPrep(){
         return;
     }
 
-    const btn = document.querySelector("#actorPrepModal .primary-button[onclick='submitActorPrep()']");
-    if (btn){ btn.disabled = true; btn.textContent = "Analyzing..."; btn.classList.add("analyzing"); }
+    closeModal("actorPrepModal");
+    document.getElementById("buildProgressTitle").textContent = "Analyzing Your Sides";
+    document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is breaking down your script. This takes about 30–60 seconds.";
+    document.getElementById("buildProgressStage").textContent = "Analyzing sides with Developum AI Engine…";
+    document.getElementById("buildProgressFill").style.width = "35%";
+    document.getElementById("buildProgressWorking").style.display = "block";
+    document.getElementById("buildProgressActions").style.display = "none";
+    document.getElementById("buildProgressModal").classList.add("show");
 
     const formData = new FormData();
     formData.append("character_name", role);
@@ -1210,24 +1216,36 @@ async function submitActorPrep(){
         const data = await response.json();
 
         if (response.status === 422 && data.needs_paste){
-            if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
-            closeModal("actorPrepModal");
+            closeBuildProgressModal();
             document.getElementById("actorPrepPasteModal").classList.add("show");
             return;
         }
 
         if (!response.ok){
-            if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
-            showInfoModal("Actor Preparation", data.error || "Actor preparation failed.");
+            document.getElementById("buildProgressWorking").style.display = "none";
+            document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
+            document.getElementById("buildProgressCopy").textContent = data.error || "Actor preparation failed. Please try again.";
+            const actionsEl = document.getElementById("buildProgressActions");
+            actionsEl.style.display = "flex";
+            actionsEl.querySelector("button").textContent = "Close";
+            actionsEl.querySelector("button").onclick = closeBuildProgressModal;
             return;
         }
 
-        document.getElementById("actorPrepSummaryCopy").textContent = data.summary_note || "Your actor preparation packet is ready.";
-        if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
-        closeModal("actorPrepModal");
-        document.getElementById("actorPrepCompleteModal").classList.add("show");
+        document.getElementById("buildProgressFill").style.width = "100%";
+        document.getElementById("buildProgressWorking").style.display = "none";
+        document.getElementById("buildProgressTitle").textContent = "Audition Analysis Complete";
+        document.getElementById("buildProgressCopy").textContent = "Your preparation packet is ready.";
+        const actionsEl = document.getElementById("buildProgressActions");
+        actionsEl.style.display = "flex";
+        actionsEl.querySelector("button").textContent = "View Results";
+        actionsEl.querySelector("button").onclick = () => {
+            closeBuildProgressModal();
+            document.getElementById("actorPrepSummaryCopy").textContent = data.summary_note || "Your actor preparation packet is ready.";
+            document.getElementById("actorPrepCompleteModal").classList.add("show");
+        };
     } catch (err) {
-        if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
+        closeBuildProgressModal();
         showInfoModal("Actor Preparation", "Actor preparation failed. Please try again.");
     }
 }
@@ -1293,8 +1311,14 @@ async function submitActorBooked(){
         return;
     }
 
-    const btn = document.querySelector("#actorBookedModal .primary-button[onclick='submitActorBooked()']");
-    if (btn){ btn.disabled = true; btn.textContent = "Analyzing..."; btn.classList.add("analyzing"); }
+    closeModal("actorBookedModal");
+    document.getElementById("buildProgressTitle").textContent = "Analyzing Your Role";
+    document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is building your character breakdown. This takes about 30–60 seconds.";
+    document.getElementById("buildProgressStage").textContent = "Analyzing full script with Developum AI Engine…";
+    document.getElementById("buildProgressFill").style.width = "35%";
+    document.getElementById("buildProgressWorking").style.display = "block";
+    document.getElementById("buildProgressActions").style.display = "none";
+    document.getElementById("buildProgressModal").classList.add("show");
 
     const formData = new FormData();
     formData.append("character_name", role);
@@ -1308,24 +1332,36 @@ async function submitActorBooked(){
         const data = await response.json();
 
         if (response.status === 422 && data.needs_paste){
-            if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
-            closeModal("actorBookedModal");
+            closeBuildProgressModal();
             document.getElementById("actorBookedPasteModal").classList.add("show");
             return;
         }
 
         if (!response.ok){
-            if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
-            showInfoModal("Booked Role Analyzer", data.error || "Booked role analysis failed.");
+            document.getElementById("buildProgressWorking").style.display = "none";
+            document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
+            document.getElementById("buildProgressCopy").textContent = data.error || "Booked role analysis failed. Please try again.";
+            const actionsEl = document.getElementById("buildProgressActions");
+            actionsEl.style.display = "flex";
+            actionsEl.querySelector("button").textContent = "Close";
+            actionsEl.querySelector("button").onclick = closeBuildProgressModal;
             return;
         }
 
-        document.getElementById("actorBookedSummaryCopy").textContent = data.summary_note || "Your booked role preparation packet is ready.";
-        if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
-        closeModal("actorBookedModal");
-        document.getElementById("actorBookedCompleteModal").classList.add("show");
+        document.getElementById("buildProgressFill").style.width = "100%";
+        document.getElementById("buildProgressWorking").style.display = "none";
+        document.getElementById("buildProgressTitle").textContent = "Role Analysis Complete";
+        document.getElementById("buildProgressCopy").textContent = "Your character breakdown is ready.";
+        const actionsEl = document.getElementById("buildProgressActions");
+        actionsEl.style.display = "flex";
+        actionsEl.querySelector("button").textContent = "View Results";
+        actionsEl.querySelector("button").onclick = () => {
+            closeBuildProgressModal();
+            document.getElementById("actorBookedSummaryCopy").textContent = data.summary_note || "Your booked role preparation packet is ready.";
+            document.getElementById("actorBookedCompleteModal").classList.add("show");
+        };
     } catch (err) {
-        if (btn){ btn.disabled = false; btn.textContent = "Analyze"; btn.classList.remove("analyzing"); }
+        closeBuildProgressModal();
         showInfoModal("Booked Role Analyzer", "Booked role analysis failed. Please try again.");
     }
 }
@@ -1460,6 +1496,7 @@ async function pollStatus(){
                     return;
                 }
             }
+            if (!buildInFlight && data.status === "COMPLETE") return;
             updateStatusUI(data.status);
         }
     } catch (e) {}

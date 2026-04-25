@@ -1,33 +1,350 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <link rel="stylesheet" href="/static/style.css">
-    <title>MadBrad Admin</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EVOLUM Admin</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0b0b0b;
+    color: #e8e8e8;
+    min-height: 100vh;
+    padding: 0 0 40px;
+}
+.topbar {
+    background: #111;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+.topbar-title { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+.topbar-sub { font-size: 12px; color: #888; }
+.topbar-links { display: flex; gap: 10px; }
+.topbar-links a {
+    font-size: 12px;
+    color: #ff7a00;
+    text-decoration: none;
+    padding: 6px 12px;
+    border: 1px solid rgba(255,122,0,0.35);
+    border-radius: 8px;
+}
+.topbar-links a:hover { background: rgba(255,122,0,0.12); }
+
+.page { max-width: 1200px; margin: 0 auto; padding: 24px 20px; }
+
+.section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #666;
+    margin: 28px 0 10px;
+}
+.section-label:first-child { margin-top: 0; }
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.stat-card {
+    background: #151515;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+.stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.stat-value { font-size: 28px; font-weight: 800; color: #fff; line-height: 1; }
+.stat-value.orange { color: #ff7a00; }
+.stat-value.green { color: #52c97a; }
+.stat-value.blue { color: #52a8ff; }
+.stat-sub { font-size: 11px; color: #666; margin-top: 4px; }
+
+.health-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+}
+.health-card {
+    background: #151515;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.health-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.health-dot.ok { background: #52c97a; box-shadow: 0 0 6px rgba(82,201,122,0.5); }
+.health-dot.warn { background: #ffb347; box-shadow: 0 0 6px rgba(255,179,71,0.5); }
+.health-dot.err { background: #ff5555; box-shadow: 0 0 6px rgba(255,85,85,0.5); }
+.health-text { font-size: 13px; font-weight: 600; }
+.health-sub { font-size: 11px; color: #777; margin-top: 2px; }
+
+.disk-bar-wrap {
+    background: #151515;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+.disk-bar-label { font-size: 12px; color: #aaa; margin-bottom: 8px; display: flex; justify-content: space-between; }
+.disk-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.disk-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #52c97a, #52a8ff);
+    transition: width 0.5s ease;
+}
+.disk-bar-fill.warn { background: linear-gradient(90deg, #ffb347, #ff7a00); }
+.disk-bar-fill.danger { background: linear-gradient(90deg, #ff7a00, #ff5555); }
+
+.table-wrap {
+    background: #151515;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: #0d0d0d; }
+th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #666;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: #ccc;
+    vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,0.02); }
+.email-cell { color: #fff; font-weight: 600; }
+.event-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.badge-sign_in { background: rgba(82,168,255,0.15); color: #52a8ff; }
+.badge-sign_out { background: rgba(255,255,255,0.08); color: #888; }
+.badge-account_created { background: rgba(82,201,122,0.15); color: #52c97a; }
+.badge-deck_run { background: rgba(255,122,0,0.15); color: #ff7a00; }
+.badge-script_analysis { background: rgba(255,179,71,0.15); color: #ffb347; }
+.badge-actor_prep { background: rgba(173,130,255,0.15); color: #ad82ff; }
+.badge-actor_booked { background: rgba(255,100,100,0.15); color: #ff6464; }
+.badge-page_view { background: rgba(255,255,255,0.06); color: #666; }
+.badge-default { background: rgba(255,255,255,0.06); color: #888; }
+.time-cell { color: #555; font-size: 11px; white-space: nowrap; }
+.empty-state { text-align: center; color: #555; padding: 32px; font-size: 13px; }
+
+.quick-links {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.quick-link {
+    background: #151515;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #ff7a00;
+    text-decoration: none;
+    font-weight: 600;
+}
+.quick-link:hover { border-color: rgba(255,122,0,0.5); background: rgba(255,122,0,0.08); }
+
+@media (max-width: 700px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .health-grid { grid-template-columns: 1fr; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+</style>
 </head>
 <body>
-    <h1>MADBRAD ADMIN</h1>
-    <p>Control room online.</p>
-    <h2>Latest Downloads</h2>
-    <div class=".box">
-<p><a href="analysis-report/latest.pdf" target="_blank">
-Open Sample Script Analysis
-</a></p>
-<p><a href="/output/latest_actor_prep_report.pdf" target="_blank">
-Open Latest Audition Report
-</a></p>
-<p><a href="/output/latest_actor_booked_report.pdf" target="_blank">
-Open Latest Booked Role Report
-</a></p>
-    </<div>
-    <h2>Live Stats</h2>
 
+<div class="topbar">
     <div>
-        <p>Total Users: {{ stats.users }}</p>
-        <p>Total Logins: {{ stats.logins }}</p>
-        <p>Deck Runs: {{ stats.deck_runs }}</p>
-        <p>Script Analyses: {{ stats.script_analyses }}</p>
-        <p>Actor Runs: {{ stats.actor_runs }}</p>
-        <p>Feedback: {{ stats.feedback }}</p>
+        <div class="topbar-title">EVOLUM Admin</div>
+        <div class="topbar-sub">Control room — internal only</div>
     </div>
+    <div class="topbar-links">
+        <a href="/">Main Site</a>
+        <a href="/studio">Studio</a>
+        <a href="/db-check">DB Check</a>
+    </div>
+</div>
+
+<div class="page">
+
+    <div class="section-label">Users & Projects</div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value orange">{{ stats.users }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Projects</div>
+            <div class="stat-value blue">{{ stats.projects }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Sign-ins (All Time)</div>
+            <div class="stat-value">{{ stats.logins_total }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Sign-ins (Today)</div>
+            <div class="stat-value green">{{ stats.logins_today }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active (30 min)</div>
+            <div class="stat-value green">{{ stats.active_sessions }}</div>
+        </div>
+    </div>
+
+    <div class="section-label">Tool Usage</div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Deck Runs</div>
+            <div class="stat-value orange">{{ stats.deck_runs }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Script Analyses</div>
+            <div class="stat-value">{{ stats.script_analyses }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Audition Analyses</div>
+            <div class="stat-value">{{ stats.actor_prep }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Booked Role Analyses</div>
+            <div class="stat-value">{{ stats.actor_booked }}</div>
+        </div>
+    </div>
+
+    <div class="section-label">Site Health</div>
+    <div class="health-grid">
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.db_ok else 'err' }}"></div>
+            <div>
+                <div class="health-text">Database</div>
+                <div class="health-sub">{{ 'Connected' if stats.db_ok else ('Error: ' + stats.get('db_error', 'Unknown')) }}</div>
+            </div>
+        </div>
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.api_key_set else 'err' }}"></div>
+            <div>
+                <div class="health-text">Anthropic API Key</div>
+                <div class="health-sub">{{ 'Set' if stats.api_key_set else 'Not configured' }}</div>
+            </div>
+        </div>
+        {% if stats.disk_total_mb %}
+        <div class="health-card" style="flex-direction:column; align-items:flex-start; gap:8px;">
+            <div style="display:flex; align-items:center; gap:10px; width:100%;">
+                <div class="health-dot {{ 'err' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else 'ok') }}"></div>
+                <div>
+                    <div class="health-text">Disk Usage</div>
+                    <div class="health-sub">{{ stats.disk_used_mb | int | filesizeformat if false else (stats.disk_used_mb // 1024)|string + ' GB used of ' + (stats.disk_total_mb // 1024)|string + ' GB (' + stats.disk_pct|string + '%)' }}</div>
+                </div>
+            </div>
+            <div class="disk-bar" style="width:100%;">
+                <div class="disk-bar-fill {{ 'danger' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else '') }}" style="width:{{ stats.disk_pct }}%;"></div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="section-label">Quick Links</div>
+    <div class="quick-links">
+        <a class="quick-link" href="/analysis-report/latest.pdf" target="_blank">Latest Script Analysis</a>
+        <a class="quick-link" href="/output/latest_actor_prep_report.pdf" target="_blank">Latest Audition Report</a>
+        <a class="quick-link" href="/output/latest_actor_booked_report.pdf" target="_blank">Latest Booked Report</a>
+        <a class="quick-link" href="/status">Status JSON</a>
+        <a class="quick-link" href="/db-init">Init DB</a>
+    </div>
+
+    <div class="section-label">Beta Users ({{ users | length }})</div>
+    <div class="table-wrap">
+        {% if users %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Joined</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td style="color:#555;">{{ u.id }}</td>
+                    <td class="email-cell">{{ u.email or '—' }}</td>
+                    <td>{{ u.name or '—' }}</td>
+                    <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No users yet.</div>
+        {% endif %}
+    </div>
+
+    <div class="section-label">Recent Activity (last 25 events)</div>
+    <div class="table-wrap">
+        {% if recent_activity %}
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Event</th>
+                    <th>Route</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in recent_activity %}
+                <tr>
+                    <td class="email-cell">{{ ev.user_email or 'anon' }}</td>
+                    <td>
+                        <span class="event-badge badge-{{ ev.event_type }} badge-default">{{ ev.event_type }}</span>
+                    </td>
+                    <td style="color:#666; font-size:12px;">{{ ev.route or '—' }}</td>
+                    <td class="time-cell">{{ ev.created_at.strftime('%m-%d %H:%M') if ev.created_at else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No activity logged yet. Events will appear here as users interact with the site.</div>
+        {% endif %}
+    </div>
+
+</div>
 </body>
 </html>

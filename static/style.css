@@ -3,17 +3,17 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: linear-gradient(135deg, #0b0b0b, #1a1a1a);
     color: white;
-    overflow: hidden;
+    overflow-y: auto;
     justify-content: space-between;
 }
 .container {
-    width: 1040px;
+    max-width: 1040px;
+    width: 100%;
     margin: 0 auto;
     padding: 6px 9px 4px;
     text-align: center;
     box-sizing: border-box;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
     justify-content: space-between;
     display: flex;
     flex-direction: column;
@@ -98,7 +98,8 @@ body {
     color: white;
 }
 .button-row {
-    width: 520px;
+    max-width: 520px;
+    width: 100%;
     margin: 20px auto;
     display: flex;
     justify-content: space-between;
@@ -760,8 +761,24 @@ body.active-build.complete-mode #refinementStage .upload-actions .secondary-butt
 }
 .active-build #demoForm,
 .active-build #createHeader,
-.active-build #choiceStack {
+.active-build #choiceStack,
+.active-build .home-card-grid,
+.active-build #siteHeadline {
     display: none !important;
+}
+.flow-mode #siteHeadline,
+.flow-mode .home-card-grid {
+    display: none !important;
+}
+.flow-mode .feedback-fab,
+.active-build .feedback-fab {
+    padding: 10px;
+    min-width: 0 !important;
+    gap: 0;
+}
+.flow-mode .feedback-fab-text,
+.active-build .feedback-fab-text {
+    display: none;
 }
 .active-build .container {
     padding: 8px 16px 4px;
@@ -814,7 +831,8 @@ body.active-build.complete-mode #refinementStage .upload-actions {
 
 @media (max-width: 1100px) {
     .container {
-        width: min(100%, 1040px);
+        width: 100%;
+        max-width: 1040px;
     }
     .home-card-grid {
         max-width: 100%;
@@ -825,6 +843,36 @@ body.active-build.complete-mode #refinementStage .upload-actions {
     }
     .home-module-card {
         min-height: auto;
+    }
+}
+
+/* Short viewport fix — unlocks scrolling on Chromebooks and small screens at 100% zoom */
+@media (max-height: 820px) {
+    body.active-build {
+        overflow-y: auto;
+    }
+    body.active-build .container {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+    body.active-build.complete-mode .container {
+        height: auto;
+        overflow: visible;
+    }
+    body.active-build.complete-mode .card {
+        min-height: 0;
+    }
+    body.active-build.complete-mode .complete-panel {
+        min-height: 0;
+    }
+    body.active-build.complete-mode #refinementStage .edit-panel {
+        max-height: none;
+        overflow-y: visible;
+    }
+    body.active-build.complete-mode #refinementStage .preview-panel {
+        max-height: none;
+        overflow: visible;
     }
 }
 
@@ -920,14 +968,15 @@ input[type="file"] {
     display: block;
 }
 .button-row {
-    width: 520px;
+    max-width: 520px;
+    width: 100%;
     margin: 20px auto;
     display: flex;
     justify-content: space-between;
     gap: 12px;
 }
 body {
-    overflow-y: hidden;
+    overflow-y: auto;
 }
 .upload-actions .primary-button {
     width: 180px;
@@ -1190,8 +1239,8 @@ body {
 
 /* Upload Script Height Pass */
 #uploadState {
-    max-height: calc(100vh - 250px) !important;
-    overflow: hidden !important;
+    max-height: calc(100vh - 200px) !important;
+    overflow-y: auto !important;
     padding: 8px 8px 0 !important;
 }
 #uploadState .workspace-title {

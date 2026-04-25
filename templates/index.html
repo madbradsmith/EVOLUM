@@ -126,17 +126,11 @@
         </div>
     </button>
     <div class="top-nav-menu" id="topNavMenu">
-        <button class="top-nav-item" type="button" onclick="window.location.href='/'">Home</button>
+        <button class="top-nav-item" type="button" onclick="window.location.href=’/’">Home</button>
+        <button class="top-nav-item" type="button" onclick="window.location.href=’/studio’">My Studio</button>
         <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
         <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
         <button class="top-nav-item" type="button" onclick="openPrivacyModal()">Privacy</button>
-    </div>
-</div>
-<div class="feedback-fab" style="bottom:80px; min-width:150px;" onclick="window.location.href='/studio'">
-    <div class="feedback-fab-icon">🎬</div>
-    <div class="feedback-fab-text">
-        <div class="feedback-fab-label">My Studio</div>
-        <div class="feedback-fab-sub">Projects & Files</div>
     </div>
 </div>
 
@@ -152,7 +146,7 @@
 <div class="logo">
     <img src="/static/logo.png" alt="EVOLUM Logo" class="logo-img">
 </div>
-<div style="text-align:center; margin:10px 0 18px 0;">
+<div id="siteHeadline" style="text-align:center; margin:10px 0 18px 0;">
 
     <div style="
         font-size:32px;
