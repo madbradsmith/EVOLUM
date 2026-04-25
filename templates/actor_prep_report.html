@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ report.character_name or 'Actor Prep' }} — EVOLUM Audition Report</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: #090909; color: #d8d8d8;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100vh; padding: 0 0 60px;
+}
+a { color: inherit; text-decoration: none; }
+.report-header {
+    background: #111; border-bottom: 1px solid rgba(240,193,93,0.2);
+    padding: 18px 32px; display: flex; align-items: center;
+    justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.report-logo { font-size: 18px; font-weight: 800; color: #f0c15d; letter-spacing: 0.08em; }
+.btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: opacity 0.15s;
+}
+.btn:hover { opacity: 0.85; }
+.btn-gold { background: #f0c15d; color: #111; }
+.btn-secondary { background: rgba(255,255,255,0.08); color: #cfcfcf; }
+.header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.hero {
+    background: linear-gradient(160deg, #111 0%, #0d0d0d 100%);
+    border-bottom: 1px solid rgba(240,193,93,0.15);
+    padding: 36px 32px 28px; max-width: 100%;
+}
+.hero-inner { max-width: 980px; margin: 0 auto; }
+.report-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.16em;
+    color: #f0c15d; text-transform: uppercase; margin-bottom: 10px;
+}
+.char-name {
+    font-size: clamp(32px, 6vw, 60px);
+    font-weight: 800; line-height: 1; color: #fff; letter-spacing: -0.01em;
+    margin-bottom: 6px;
+}
+.project-name { font-size: 15px; color: #888; margin-bottom: 16px; font-weight: 500; }
+.badge-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge {
+    padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    background: rgba(240,193,93,0.1); color: #f0c15d;
+    border: 1px solid rgba(240,193,93,0.2);
+}
+.badge.dim { background: rgba(255,255,255,0.06); color: #999; border-color: rgba(255,255,255,0.1); }
+
+.section { max-width: 980px; margin: 0 auto; padding: 28px 32px 0; }
+.section-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
+    color: #f0c15d; text-transform: uppercase; margin-bottom: 14px;
+}
+
+.snapshot-box {
+    background: rgba(240,193,93,0.05); border: 1px solid rgba(240,193,93,0.18);
+    border-left: 3px solid #f0c15d; border-radius: 10px;
+    padding: 18px 20px; font-size: 15px; line-height: 1.7; color: #e0e0e0;
+}
+
+.intel-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.intel-card {
+    background: #111; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 16px;
+}
+.intel-card-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    color: #f0c15d; text-transform: uppercase; margin-bottom: 10px;
+}
+.intel-list { list-style: none; }
+.intel-list li {
+    font-size: 13px; color: #cfcfcf; line-height: 1.55;
+    padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-left: 14px; position: relative;
+}
+.intel-list li:last-child { border-bottom: none; }
+.intel-list li::before {
+    content: "—"; position: absolute; left: 0; color: #f0c15d; font-size: 11px;
+}
+
+.stat-row {
+    display: flex; gap: 16px; flex-wrap: wrap;
+}
+.stat-chip {
+    background: #111; border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 12px 18px; flex: 1; min-width: 120px;
+}
+.stat-chip-label { font-size: 10px; color: #555; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+.stat-chip-value { font-size: 22px; font-weight: 800; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="report-header">
+    <div class="report-logo">EVOLUM</div>
+    <div class="header-actions">
+        <a href="/output/latest_actor_prep_report.pdf" target="_blank" class="btn btn-secondary">View PDF</a>
+        <a href="/download/latest_actor_prep_report.pdf" class="btn btn-gold">Download PDF</a>
+        <a href="/" class="btn btn-secondary">Back to EVOLUM</a>
+    </div>
+</div>
+
+<div class="hero">
+    <div class="hero-inner">
+        <div class="report-label">Audition Preparation Report</div>
+        <div class="char-name">{{ (report.character_name or 'CHARACTER').upper() }}</div>
+        <div class="project-name">{{ report.title or 'Project' }}</div>
+        <div class="badge-row">
+            {% if report.beat_count %}<span class="badge">{{ report.beat_count }} Beats Detected</span>{% endif %}
+            {% if report.tone %}<span class="badge dim">{{ report.tone }}</span>{% endif %}
+            {% if report.world %}<span class="badge dim">{{ report.world }}</span>{% endif %}
+        </div>
+    </div>
+</div>
+
+{% set intel = report.intelligence or {} %}
+
+{% if intel.summary %}
+<div class="section" style="padding-top:32px;">
+    <div class="section-title">Role Snapshot</div>
+    <div class="snapshot-box">{{ intel.summary }}</div>
+</div>
+{% endif %}
+
+<div class="section" style="padding-top:28px;">
+    <div class="section-title">Audition Command Center</div>
+    <div class="intel-grid">
+
+        {% if intel.casting_read %}
+        <div class="intel-card">
+            <div class="intel-card-label">Casting Read</div>
+            <ul class="intel-list">
+                {% for item in intel.casting_read %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if intel.playable_tactics %}
+        <div class="intel-card">
+            <div class="intel-card-label">Playable Tactics</div>
+            <ul class="intel-list">
+                {% for item in intel.playable_tactics %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if intel.emotional_triggers %}
+        <div class="intel-card">
+            <div class="intel-card-label">Emotional Triggers</div>
+            <ul class="intel-list">
+                {% for item in intel.emotional_triggers %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if intel.danger_zones %}
+        <div class="intel-card">
+            <div class="intel-card-label">Danger Zones</div>
+            <ul class="intel-list">
+                {% for item in intel.danger_zones %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if intel.memorization_beats %}
+        <div class="intel-card">
+            <div class="intel-card-label">Memorization Beats</div>
+            <ul class="intel-list">
+                {% for item in intel.memorization_beats %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if intel.reader_chemistry %}
+        <div class="intel-card">
+            <div class="intel-card-label">Reader Chemistry</div>
+            <ul class="intel-list">
+                {% for item in intel.reader_chemistry %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+</body>
+</html>

@@ -746,6 +746,21 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     intelligence = _actor_ai_json(character_name, title, "audition", brain_data, beats)
     image_path = _find_actor_report_image(brain_data, "actor_prep", character_name, title)
 
+    # Save JSON for HTML report page
+    try:
+        json_path = output_path.with_suffix(".json")
+        json_path.write_text(json.dumps({
+            "character_name": character_name,
+            "title": title,
+            "tone": _safe(brain_data.get("tone"), ""),
+            "world": world,
+            "genre": _safe(brain_data.get("genre"), ""),
+            "beat_count": len(beats),
+            "intelligence": intelligence,
+        }, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+
     _page_bg(pdf, width, height, charcoal, gold)
     pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 15)
     pdf.drawString(left, height - 54, "ACTOR PREP REPORT")
@@ -884,6 +899,22 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     intelligence = _actor_ai_json(character_name, title, "booked", brain_data, beats)
     image_path = _find_actor_report_image(brain_data, "actor_booked", character_name, title)
     scene_count = len(_unique_scenes(beats)) or 1
+
+    # Save JSON for HTML report page
+    try:
+        json_path = output_path.with_suffix(".json")
+        json_path.write_text(json.dumps({
+            "character_name": character_name,
+            "title": title,
+            "tone": _safe(brain_data.get("tone"), ""),
+            "world": world,
+            "genre": _safe(brain_data.get("genre"), ""),
+            "beat_count": len(beats),
+            "scene_count": scene_count,
+            "intelligence": intelligence,
+        }, indent=2), encoding="utf-8")
+    except Exception:
+        pass
 
     _page_bg(pdf, width, height, charcoal, gold)
     pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 15); pdf.drawString(left, height - 54, "BOOKED ROLE REPORT")

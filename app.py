@@ -131,7 +131,12 @@ LATEST_PDF = OUTPUT_DIR / "latest.pdf"
 LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
+LATEST_ACTOR_PREP_JSON = OUTPUT_DIR / "latest_actor_prep_report.json"
 LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
+LATEST_ACTOR_BOOKED_JSON = OUTPUT_DIR / "latest_actor_booked_report.json"
+
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+_TMDB_CACHE: dict = {}
 LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
@@ -1345,6 +1350,86 @@ def analyze_script_pass():
             "report_pdf": str(LATEST_ANALYSIS_PDF.name),
         }
     )
+
+
+def fetch_tmdb_comps(genre_str: str, n: int = 4) -> list:
+    if not TMDB_API_KEY or not genre_str:
+        return []
+    cache_key = genre_str.lower().strip()
+    cached = _TMDB_CACHE.get(cache_key)
+    if cached and (time.time() - cached["ts"] < 3600):
+        return cached["data"]
+    GENRE_MAP = {
+        "crime": 80, "drama": 18, "thriller": 53, "horror": 27,
+        "comedy": 35, "action": 28, "sci-fi": 878, "science fiction": 878,
+        "documentary": 99, "animation": 16, "animated": 16, "romance": 10749,
+        "adventure": 12, "mystery": 9648, "war": 10752, "western": 37,
+        "fantasy": 14, "family": 10751, "biography": 36, "history": 36,
+        "sport": 18, "sports": 18,
+    }
+    genre_lower = genre_str.lower()
+    genre_ids = list({str(gid) for kw, gid in GENRE_MAP.items() if kw in genre_lower})
+    try:
+        import urllib.request, urllib.parse
+        params = {
+            "api_key": TMDB_API_KEY,
+            "sort_by": "revenue.desc",
+            "vote_average.gte": "6.5",
+            "vote_count.gte": "500",
+            "with_original_language": "en",
+        }
+        if genre_ids:
+            params["with_genres"] = ",".join(genre_ids[:2])
+        url = "https://api.themoviedb.org/3/discover/movie?" + urllib.parse.urlencode(params)
+        with urllib.request.urlopen(url, timeout=6) as resp:
+            data = json.loads(resp.read().decode())
+        results = data.get("results", [])[:n]
+        comps = [{
+            "title": r.get("title", ""),
+            "year": (r.get("release_date") or "")[:4],
+            "overview": (r.get("overview") or "")[:180],
+            "poster_url": f"https://image.tmdb.org/t/p/w200{r['poster_path']}" if r.get("poster_path") else "",
+            "rating": round(r.get("vote_average", 0), 1),
+        } for r in results]
+        _TMDB_CACHE[cache_key] = {"data": comps, "ts": time.time()}
+        return comps
+    except Exception as e:
+        print(f"⚠️ TMDB fetch failed: {e}", flush=True)
+        return []
+
+
+@app.route("/analysis-report")
+def analysis_report_page():
+    if not LATEST_ANALYSIS_JSON.exists():
+        return redirect("/")
+    try:
+        report = json.loads(LATEST_ANALYSIS_JSON.read_text(encoding="utf-8"))
+    except Exception:
+        return redirect("/")
+    comps = fetch_tmdb_comps(report.get("genre", "drama"))
+    return render_template("analysis_report.html", report=report, comps=comps)
+
+
+@app.route("/actor-prep-report")
+def actor_prep_report_page():
+    if not LATEST_ACTOR_PREP_JSON.exists():
+        return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False) if LATEST_ACTOR_PREP_PDF.exists() else redirect("/")
+    try:
+        report = json.loads(LATEST_ACTOR_PREP_JSON.read_text(encoding="utf-8"))
+    except Exception:
+        return redirect("/")
+    return render_template("actor_prep_report.html", report=report)
+
+
+@app.route("/actor-booked-report")
+def actor_booked_report_page():
+    if not LATEST_ACTOR_BOOKED_JSON.exists():
+        return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=False) if LATEST_ACTOR_BOOKED_PDF.exists() else redirect("/")
+    try:
+        report = json.loads(LATEST_ACTOR_BOOKED_JSON.read_text(encoding="utf-8"))
+    except Exception:
+        return redirect("/")
+    return render_template("actor_booked_report.html", report=report)
 
 
 @app.route("/analysis-report/latest.json")
