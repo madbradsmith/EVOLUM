@@ -315,6 +315,40 @@ tr:hover td { background: rgba(255,255,255,0.02); }
         {% endif %}
     </div>
 
+    <div class="section-label">Feedback & Contact Messages ({{ messages | length }})</div>
+    <div class="table-wrap">
+        {% if messages %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>From</th>
+                    <th>Message</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in messages %}
+                <tr>
+                    <td><span class="event-badge badge-{{ m.event_type }} badge-default">{{ 'Feedback' if m.event_type == 'feedback_message' else 'Contact' }}</span></td>
+                    <td class="email-cell">{{ m.user_email or '—' }}</td>
+                    <td style="color:#ccc; max-width:480px; word-break:break-word;">
+                        {% if m.metadata_json %}
+                            {% set meta = m.metadata_json if m.metadata_json is mapping else {} %}
+                            {% if meta.get('category') %}<span style="color:#ff7a00; font-size:11px; font-weight:700; margin-right:6px;">{{ meta.category }}</span>{% endif %}
+                            {{ meta.get('message', '—') }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">No messages yet.</div>
+        {% endif %}
+    </div>
+
     <div class="section-label">Recent Activity (last 25 events)</div>
     <div class="table-wrap">
         {% if recent_activity %}

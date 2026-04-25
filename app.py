@@ -818,6 +818,20 @@ def sign_in():
         return redirect("/?auth_error=" + quote(f"Sign in failed: {e}"))
 
 
+@app.route("/feedback", methods=["POST"])
+def submit_feedback():
+    data = request.get_json(silent=True) or {}
+    category = (data.get("category") or "").strip()
+    message = (data.get("message") or "").strip()
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or session.get("user_email") or "").strip()
+    if not message:
+        return jsonify({"error": "No message provided."}), 400
+    log_activity_event("feedback_message", route="/feedback",
+                       user_email=email,
+                       metadata={"name": name, "category": category, "message": message[:500]})
+    return jsonify({"ok": True})
+
 @app.route("/contact", methods=["POST"])
 def contact():
     data = request.get_json(silent=True) or {}
@@ -1277,16 +1291,77 @@ def load_project_deck(project_id):
 
 @app.route("/admin")
 def admin():
+    import shutil
     stats = {
-        "users": 0,
-        "logins": 0,
-        "deck_runs": 0,
-        "script_analyses": 0,
-        "actor_runs": 0,
-        "feedback": 0,
+        "users": 0, "projects": 0,
+        "logins_total": 0, "logins_today": 0, "active_sessions": 0,
+        "deck_runs": 0, "script_analyses": 0, "actor_prep": 0, "actor_booked": 0,
+        "db_ok": False, "db_error": "", "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "disk_used_mb": 0, "disk_total_mb": 0, "disk_pct": 0,
     }
+    users = []
+    recent_activity = []
+    messages = []
 
-    return render_template("admin.html", stats=stats)
+    try:
+        disk = shutil.disk_usage("/")
+        stats["disk_total_mb"] = disk.total / (1024 * 1024)
+        stats["disk_used_mb"] = (disk.total - disk.free) / (1024 * 1024)
+        stats["disk_pct"] = round((disk.total - disk.free) / disk.total * 100, 1)
+    except Exception:
+        pass
+
+    if not DB_ENGINE:
+        return render_template("admin.html", stats=stats, users=users,
+                               recent_activity=recent_activity, messages=messages)
+    try:
+        with DB_ENGINE.connect() as conn:
+            stats["db_ok"] = True
+
+            stats["users"] = conn.execute(text("SELECT COUNT(*) FROM beta_users")).scalar() or 0
+            stats["projects"] = conn.execute(text("SELECT COUNT(*) FROM projects")).scalar() or 0
+
+            stats["logins_total"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in'")).scalar() or 0
+            stats["logins_today"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '24 hours'")).scalar() or 0
+            stats["active_sessions"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '30 minutes'")).scalar() or 0
+
+            stats["deck_runs"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='deck_run'")).scalar() or 0
+            stats["script_analyses"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='script_analysis'")).scalar() or 0
+            stats["actor_prep"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_prep'")).scalar() or 0
+            stats["actor_booked"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_booked'")).scalar() or 0
+
+            rows = conn.execute(text(
+                "SELECT id, email, name, created_at FROM beta_users ORDER BY created_at DESC"
+            )).mappings().all()
+            users = [dict(r) for r in rows]
+
+            rows = conn.execute(text(
+                "SELECT user_email, event_type, route, created_at FROM activity_events "
+                "WHERE event_type NOT IN ('contact_message','feedback_message') "
+                "ORDER BY created_at DESC LIMIT 25"
+            )).mappings().all()
+            recent_activity = [dict(r) for r in rows]
+
+            rows = conn.execute(text(
+                "SELECT user_email, event_type, metadata_json, created_at FROM activity_events "
+                "WHERE event_type IN ('contact_message','feedback_message') "
+                "ORDER BY created_at DESC LIMIT 50"
+            )).mappings().all()
+            messages = [dict(r) for r in rows]
+
+    except Exception as e:
+        stats["db_ok"] = False
+        stats["db_error"] = str(e)[:120]
+
+    return render_template("admin.html", stats=stats, users=users,
+                           recent_activity=recent_activity, messages=messages)
 
 @app.route("/status")
 def status():
