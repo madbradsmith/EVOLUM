@@ -836,6 +836,17 @@ def logout():
 
 
 # ===== STRIPE PAYMENT ROUTES START ===================
+@app.route("/stripe-env-check")
+def stripe_env_check():
+    sk = os.environ.get("STRIPE_SECRET_KEY", "")
+    pid = os.environ.get("STRIPE_PRICE_ID", "")
+    return jsonify({
+        "sk_prefix": sk[:10] if sk else "MISSING",
+        "sk_len": len(sk),
+        "price_id": pid,
+        "price_id_len": len(pid),
+    })
+
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
     import stripe as stripe_lib
