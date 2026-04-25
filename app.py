@@ -30,7 +30,7 @@ from pptx import Presentation
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 from werkzeug.security import generate_password_hash, check_password_hash
-from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf
+from dai_tools import build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline
 
 # ===== IMPORTS / SETUP END ===========================
 
