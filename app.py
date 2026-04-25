@@ -949,7 +949,7 @@ def project_workspace(project_id):
 
     with DB_ENGINE.begin() as conn:
         row = conn.execute(text("""
-            SELECT id, owner_user_id, title, type, status, storage_used_mb
+            SELECT id, owner_user_id, title, type, status, storage_used_mb, output_dir
             FROM projects
             WHERE id = :project_id
             AND owner_user_id = :owner_user_id
@@ -962,8 +962,12 @@ def project_workspace(project_id):
         return redirect("/studio")
 
     project = dict(row)
+    if session.get("active_project_id") == str(project_id):
+        session.pop("active_project_id", None)
 
-    return render_template("project.html", project=project)
+    has_deck = bool(project.get("output_dir")) and (BASE_DIR / project["output_dir"] / "deck.pdf").exists()
+
+    return render_template("project.html", project=project, has_deck=has_deck)
 
     
 @app.route("/admin")
@@ -981,7 +985,10 @@ def admin():
 
 @app.route("/status")
 def status():
-    return jsonify({"status": get_status()})
+    return jsonify({
+        "status": get_status(),
+        "project_id": session.get("active_project_id")
+    })
     
 # ===== PITCH DECK ROUTES START =======================
 
@@ -1072,6 +1079,24 @@ def upload():
 
     if not allowed_file(file.filename):
         return "Only .txt and .pdf supported", 400
+
+    # Studio mode: create project record before pipeline starts
+    project_title = (request.form.get("project_title") or "").strip()
+    project_type = (request.form.get("project_type") or "").strip()
+    if project_title and session.get("user_id") and DB_ENGINE:
+        ensure_projects_table()
+        with DB_ENGINE.begin() as conn:
+            result = conn.execute(text("""
+                INSERT INTO projects (owner_user_id, title, type)
+                VALUES (:uid, :title, :type) RETURNING id
+            """), {
+                "uid": session.get("user_id"),
+                "title": project_title,
+                "type": project_type or "Project"
+            })
+            session["active_project_id"] = str(result.scalar())
+    elif not project_title:
+        session.pop("active_project_id", None)
 
     clear_latest_targets()
     set_status("UPLOADED")
@@ -1174,6 +1199,26 @@ def upload():
     set_status("COMPLETE")
     elapsed = int(time.time() - started_at)
     log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
+    log_activity_event("deck_run", route="/upload", user_email=session.get("user_email"))
+
+    # Save deck to user-scoped project directory
+    active_pid = session.get("active_project_id")
+    if active_pid and DB_ENGINE:
+        try:
+            uid = session.get("user_id", "anon")
+            proj_out = BASE_DIR / "user_data" / str(uid) / str(active_pid)
+            proj_out.mkdir(parents=True, exist_ok=True)
+            if fresh_pptx and fresh_pptx.exists():
+                shutil.copy2(fresh_pptx, proj_out / "deck.pptx")
+            if fresh_pdf and fresh_pdf.exists():
+                shutil.copy2(fresh_pdf, proj_out / "deck.pdf")
+            with DB_ENGINE.begin() as conn:
+                conn.execute(text("""
+                    UPDATE projects SET output_dir = :output_dir WHERE id = :id
+                """), {"output_dir": f"user_data/{uid}/{active_pid}", "id": int(active_pid)})
+        except Exception as e:
+            print(f"⚠️ Failed to save project output: {e}", flush=True)
+
     return ("OK", 200)
 
 
@@ -1699,9 +1744,33 @@ def ensure_projects_table():
                 type TEXT,
                 status TEXT DEFAULT 'Active',
                 storage_used_mb INTEGER DEFAULT 0,
+                output_dir TEXT DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """))
+        try:
+            conn.execute(text(
+                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS output_dir TEXT DEFAULT NULL"
+            ))
+        except Exception:
+            pass
+
+@app.route("/project/<project_id>/deck.<ext>")
+@require_login
+def project_deck_file(project_id, ext):
+    if ext not in ("pdf", "pptx"):
+        abort(404)
+    ensure_projects_table()
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text("""
+            SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid
+        """), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+    if not row or not row["output_dir"]:
+        abort(404)
+    file_path = BASE_DIR / row["output_dir"] / f"deck.{ext}"
+    if not file_path.exists():
+        abort(404)
+    return send_file(file_path, as_attachment=(ext == "pptx"))
 
 @app.route("/db-check")
 def db_check_route():

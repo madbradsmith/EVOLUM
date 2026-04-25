@@ -33,16 +33,33 @@
                 </div>
 
                 <div class="workspace-copy" style="text-align:center; margin-bottom:10px;">
-                    Storage: 0MB / 100MB • Status: Active
+                    Status: {{ project.status or 'Active' }}
                 </div>
 
+                {% if has_deck %}
+                <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:10px;">
+                    <a href="/project/{{ project.id }}/deck.pdf" target="_blank" style="text-decoration:none;">
+                        <div class="choice" style="padding:10px; text-align:center;">View Deck (PDF)</div>
+                    </a>
+                    <a href="/project/{{ project.id }}/deck.pptx" style="text-decoration:none;">
+                        <div class="choice" style="padding:10px; text-align:center;">Download PPTX</div>
+                    </a>
+                    <a href="/" style="text-decoration:none;">
+                        <div class="choice" style="padding:10px; text-align:center;">Refine Deck</div>
+                    </a>
+                </div>
+                {% else %}
+                <div style="text-align:center; margin:10px 0;">
+                    <a href="/new-project" class="primary-button" style="text-decoration:none; padding:10px 20px; display:inline-block;">Build Pitch Deck</a>
+                </div>
+                {% endif %}
+
                 <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px;">
-                    <div class="choice">Edit Deck</div>
-                    <div class="choice">Generate Images</div>
-                    <div class="choice">Generate Copy</div>
-                    <div class="choice">Assets</div>
-                    <div class="choice">Collaborators</div>
-                    <div class="choice">Preview</div>
+                    <div class="choice" style="color:#555;">Generate Images</div>
+                    <div class="choice" style="color:#555;">Generate Copy</div>
+                    <div class="choice" style="color:#555;">Assets</div>
+                    <div class="choice" style="color:#555;">Collaborators</div>
+                    <div class="choice" style="color:#555; grid-column:span 2;">Studio Helper</div>
                 </div>
             </div>
 

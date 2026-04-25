@@ -3,11 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>New Project</title>
+<title>New Project — EVOLUM Studio</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+#progressOverlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+}
+#progressOverlay.active { display: flex; }
+.progress-stage-text {
+    font-size: 18px;
+    color: #ff7a00;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.progress-sub-text {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    max-width: 320px;
+}
+.progress-bar-wrap {
+    width: 260px;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    height: 4px;
+    background: rgba(255,122,0,0.8);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.6s ease;
+}
+</style>
 </head>
-
 <body>
+
+<!-- Progress overlay shown during build -->
+<div id="progressOverlay">
+    <div class="progress-stage-text" id="progressStage">Starting...</div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
+    <div class="progress-sub-text">Building your pitch deck — usually about 90 seconds.</div>
+</div>
 
 <div class="container">
     <div class="logo">
@@ -17,28 +63,55 @@
     <div class="shell">
         <div class="card" style="padding:18px; max-width:720px; margin:0 auto;">
 
-            <div class="workspace-title" style="text-align:center;">
-                NEW PROJECT
-            </div>
-
+            <div class="workspace-title" style="text-align:center;">NEW PROJECT</div>
             <div class="workspace-copy" style="text-align:center; margin-bottom:18px;">
-                Start a project folder inside EVOLUM Studio.
+                Name your project, upload your script, and let EVOLUM build your pitch deck.
             </div>
 
-            <form method="POST" action="/new-project">
+            <form id="newProjectForm" enctype="multipart/form-data">
 
+                <!-- PROJECT INFO -->
                 <div class="field-group">
-                    <label class="label" for="project_title">Project Title</label>
-                    <input type="text" id="project_title" name="project_title" placeholder="Example: Not Today" required>
+                    <label class="label" for="project_title">Project Title <span style="color:#ff7a00;">*</span></label>
+                    <input type="text" id="project_title" name="project_title" placeholder="e.g. Not Today" required>
                 </div>
 
                 <div class="field-group">
                     <label class="label" for="project_type">Project Type</label>
-                    <input type="text" id="project_type" name="project_type" placeholder="Feature, Series, Short, Actor Prep, Pitch Package">
+                    <input type="text" id="project_type" name="project_type" placeholder="Feature, Series, Short, Pilot, Documentary...">
                 </div>
 
-                <div class="upload-actions" style="margin-top:16px;">
-                    <button class="primary-button" type="submit">Create Project</button>
+                <!-- SCRIPT -->
+                <div class="field-group">
+                    <label class="label" for="scriptFile">Script File <span style="color:#ff7a00;">*</span></label>
+                    <input type="file" id="scriptFile" name="script" accept=".txt,text/plain,.pdf,application/pdf" required>
+                    <div class="field-help">Upload a .txt or .pdf of your script.</div>
+                </div>
+
+                <!-- LOGLINE + SYNOPSIS -->
+                <div class="field-group">
+                    <label class="label" for="logline">Logline <span style="color:#777; font-weight:400;">(optional)</span></label>
+                    <textarea id="logline" name="logline" rows="2" placeholder="One sentence that captures the story, stakes, and tone..."></textarea>
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="synopsis">Synopsis <span style="color:#777; font-weight:400;">(optional)</span></label>
+                    <textarea id="synopsis" name="synopsis" rows="3" placeholder="Brief story overview for the deck..."></textarea>
+                </div>
+
+                <!-- IMAGES -->
+                <div class="field-group">
+                    <label class="label" for="posterInput">Poster Image <span style="color:#777; font-weight:400;">(optional)</span></label>
+                    <input type="file" id="posterInput" name="poster" accept="image/png,image/jpeg,image/webp">
+                </div>
+
+                <div class="field-group">
+                    <label class="label" for="imagesInput">Additional Images <span style="color:#777; font-weight:400;">(optional, up to 10, 1MB each)</span></label>
+                    <input type="file" id="imagesInput" name="images" accept="image/png,image/jpeg,image/webp" multiple>
+                </div>
+
+                <div class="upload-actions" style="margin-top:20px;">
+                    <button class="primary-button" type="button" onclick="submitNewProject()">Build Pitch Deck</button>
                     <a href="/studio" class="secondary-button" style="text-decoration:none; padding:12px 18px; display:inline-block;">Back</a>
                 </div>
 
@@ -47,6 +120,78 @@
         </div>
     </div>
 </div>
+
+<script>
+let sawBuildStart = false;
+let pollTimer = null;
+const BAR_STAGES = { UPLOADED: 8, ANALYZING: 35, running: 40, BUILDING: 75, COMPLETE: 100 };
+
+function setProgressBar(pct) {
+    document.getElementById("progressBar").style.width = pct + "%";
+}
+
+async function submitNewProject() {
+    const form = document.getElementById("newProjectForm");
+    const title = document.getElementById("project_title").value.trim();
+    const scriptFile = document.getElementById("scriptFile").files[0];
+    const images = document.getElementById("imagesInput").files;
+
+    if (!title) { alert("Please enter a project title."); return; }
+    if (!scriptFile) { alert("Please select a script file."); return; }
+    if (images.length > 10) { alert("Please upload no more than 10 images."); return; }
+    for (const img of images) {
+        if (img.size > 1024 * 1024) { alert("Each image must be 1 MB or smaller."); return; }
+    }
+
+    document.getElementById("progressOverlay").classList.add("active");
+    document.getElementById("progressStage").textContent = "Uploading script...";
+    setProgressBar(5);
+    sawBuildStart = false;
+
+    const formData = new FormData(form);
+    fetch("/upload", { method: "POST", body: formData })
+        .catch(err => console.error("Upload error:", err));
+
+    pollTimer = setTimeout(pollForCompletion, 1200);
+}
+
+async function pollForCompletion() {
+    try {
+        const res = await fetch("/status", { cache: "no-store" });
+        const data = await res.json();
+        const st = data.status;
+
+        if (st === "ANALYZING" || st === "running" || st === "BUILDING") {
+            sawBuildStart = true;
+        }
+
+        const stage = document.getElementById("progressStage");
+
+        if (st === "ANALYZING" || st === "running") {
+            stage.textContent = "Analyzing script...";
+            setProgressBar(BAR_STAGES[st] || 40);
+        } else if (st === "BUILDING") {
+            stage.textContent = "Building deck...";
+            setProgressBar(75);
+        } else if (st === "COMPLETE" && sawBuildStart) {
+            stage.textContent = "Done! Opening workspace...";
+            setProgressBar(100);
+            if (data.project_id) {
+                window.location.href = "/project/" + data.project_id;
+            } else {
+                window.location.href = "/studio";
+            }
+            return;
+        } else if (st === "ERROR") {
+            stage.textContent = "Something went wrong. Please try again.";
+            document.getElementById("progressOverlay").classList.remove("active");
+            return;
+        }
+    } catch (e) {}
+
+    pollTimer = setTimeout(pollForCompletion, 1500);
+}
+</script>
 
 </body>
 </html>
