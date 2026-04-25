@@ -1324,3 +1324,46 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     ctx.methodology_box()
     _footer(pdf, W, ctx.page_no)
     pdf.save()
+
+#========== DAI DECK PIPELINE ==============
+def run_deck_pipeline(script_path=None, project_id=None, user_id=None):
+    """
+    Main DAI deck lane.
+    Central wrapper for deck generation flow.
+    Safe first bridge step.
+    """
+
+    import subprocess
+    import os
+    from pathlib import Path
+
+    base_dir = Path(__file__).resolve().parent
+
+    cmd = ["python3", str(base_dir / "run_pipeline.py")]
+
+    env = os.environ.copy()
+
+    if script_path:
+        env["DAI_SCRIPT_PATH"] = str(script_path)
+
+    if project_id:
+        env["DAI_PROJECT_ID"] = str(project_id)
+
+    if user_id:
+        env["DAI_USER_ID"] = str(user_id)
+
+    result = subprocess.run(
+        cmd,
+        cwd=str(base_dir),
+        env=env,
+        capture_output=True,
+        text=True
+    )
+
+    return {
+        "ok": result.returncode == 0,
+        "returncode": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr
+    }
+
