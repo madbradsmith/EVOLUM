@@ -359,30 +359,16 @@
 <div class="modal" id="analyzePassModal">
     <div class="modal-content" style="max-width:620px;">
         <div class="modal-close" onclick="closeModal('analyzePassModal')">×</div>
-        <h3>Success! <b>Script Analysis Complete!</b></h3>
-
-        <div class="complete-copy" id="analysisSummaryCopy">
+        <div class="modal-complete-label">Script Analysis</div>
+        <div class="modal-complete-title">Your analysis is ready.</div>
+        <div class="modal-complete-copy" id="analysisSummaryCopy">
             DIME puts Zena at the center of a high-pressure world where identity, ambition, and competition collide. There is strong emotional weight here, along with the kind of grounded sports drama energy that can connect with an audience.
         </div>
-
-        <div class="complete-actions" style="flex-wrap:wrap; gap:6px;">
-            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px;"
-                onclick="window.open('/analysis-report','_blank')">
-                View Report
-            </button>
-
-            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px;"
-                onclick="window.location.href='/download/latest_analysis_report.pdf'">
-                Download PDF
-            </button>
-
-            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px; background:rgba(255,122,0,0.85);" onclick="analyzeToDecFlow()">
-                Create Pitch Deck
-            </button>
-
-            <button class="primary-button" type="button" style="flex:1; min-width:120px; font-size:12px; padding:12px 8px;" onclick="startAnalyzeFlow()">
-                Run Another
-            </button>
+        <div class="complete-actions" style="flex-wrap:wrap;">
+            <button class="primary-button" type="button" onclick="window.open('/analysis-report','_blank')">View Report</button>
+            <button class="primary-button" type="button" onclick="window.location.href='/download/latest_analysis_report.pdf'">Download PDF</button>
+            <button class="primary-button" type="button" onclick="analyzeToDecFlow()">Create Pitch Deck</button>
+            <button class="primary-button" type="button" onclick="startAnalyzeFlow()">Run Another</button>
         </div>
     </div>
 </div>
@@ -635,32 +621,19 @@
 
 
 <div class="modal" id="actorPrepCompleteModal">
-   <div class="modal-content" style="max-width:620px;">
-    <div class="modal-close" onclick="closeModal('actorPrepCompleteModal')">×</div>
-    <h3>Success! <b>Audition Analysis Complete!</b></h3>
-
-    <div class="complete-copy" id="actorPrepSummaryCopy">
-        Your audition preparation packet is ready.
+    <div class="modal-content" style="max-width:620px;">
+        <div class="modal-close" onclick="closeModal('actorPrepCompleteModal')">×</div>
+        <div class="modal-complete-label">Audition Prep</div>
+        <div class="modal-complete-title">Your prep report is ready.</div>
+        <div class="modal-complete-copy" id="actorPrepSummaryCopy">
+            Your audition preparation packet is ready.
+        </div>
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="window.open('/actor-prep-report','_blank')">View Report</button>
+            <button class="primary-button" type="button" onclick="window.location.href='/download/latest_actor_prep_report.pdf'">Download PDF</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorPrepCompleteModal'); startActorPrepFlow();">Run Another</button>
+        </div>
     </div>
-
-    <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
-        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
-            onclick="window.open('/actor-prep-report','_blank')">
-            View Report
-        </button>
-
-        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
-            onclick="window.location.href='/download/latest_actor_prep_report.pdf'">
-            Download PDF
-        </button>
-
-        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
-            onclick="closeModal('actorPrepCompleteModal'); startActorPrepFlow();">
-            Run Another
-        </button>
-
-    </div>
-   </div>
 </div>
 
 <div class="modal" id="actorBookedModal">
@@ -692,30 +665,19 @@
 </div>
 
 <div class="modal" id="actorBookedCompleteModal">
-   <div class="modal-content" style="max-width:620px;">
-    <div class="modal-close" onclick="closeModal('actorBookedCompleteModal')">×</div>
-    <h3>Success! <b>Booked Role Analysis Complete!</b></h3>
-
-    <div class="complete-copy" id="actorBookedSummaryCopy">
-        Your booked role preparation packet is ready.
+    <div class="modal-content" style="max-width:620px;">
+        <div class="modal-close" onclick="closeModal('actorBookedCompleteModal')">×</div>
+        <div class="modal-complete-label">Booked Role</div>
+        <div class="modal-complete-title">Your role breakdown is ready.</div>
+        <div class="modal-complete-copy" id="actorBookedSummaryCopy">
+            Your booked role preparation packet is ready.
+        </div>
+        <div class="complete-actions">
+            <button class="primary-button" type="button" onclick="window.open('/actor-booked-report','_blank')">View Report</button>
+            <button class="primary-button" type="button" onclick="window.location.href='/download/latest_actor_booked_report.pdf'">Download PDF</button>
+            <button class="primary-button" type="button" onclick="closeModal('actorBookedCompleteModal'); startActorBookedFlow();">Run Another</button>
+        </div>
     </div>
-
-    <div class="complete-actions" style="flex-wrap:nowrap; gap:6px;">
-        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
-            onclick="window.open('/actor-booked-report','_blank')">
-            View Report
-        </button>
-
-        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;"
-            onclick="window.location.href='/download/latest_actor_booked_report.pdf'">
-            Download PDF
-        </button>
-
-        <button class="primary-button" type="button" style="flex:1; font-size:12px; padding:12px 8px;" onclick="startActorBookedFlow()">
-            Run Another
-        </button>
-    </div>
-   </div>
 </div>
 
 <div class="modal" id="feedbackModal">

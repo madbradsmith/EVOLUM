@@ -1002,12 +1002,27 @@ body.active-build.complete-mode #refinementStage .upload-actions {
     display: flex;
     flex-direction: column;
 }
-#actorPrepCompleteModal h3 {
+.modal-complete-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #ff9944;
+    text-transform: uppercase;
+    margin-bottom: 8px;
     text-align: center;
-    color: #00ff88;
 }
-#actorPrepCompleteModal h3,
-#actorPrepCompleteModal .complete-copy {
+.modal-complete-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.modal-complete-copy {
+    color: #aaa;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 20px;
     text-align: center;
 }
 .upload-actions {

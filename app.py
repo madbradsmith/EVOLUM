@@ -906,12 +906,18 @@ def create_checkout_session():
                     "currency": "usd",
                     "unit_amount": 500,
                     "recurring": {"interval": "month"},
-                    "product_data": {"name": "EVOLUM Studio — Monthly"},
+                    "product_data": {
+                        "name": "EVOLUM Studio",
+                        "description": "Full access to the EVOLUM beta — pitch deck builder, script analyzer, and actor tools. Cancel anytime.",
+                    },
                 },
                 "quantity": 1,
             }],
             mode="subscription",
             customer_email=email,
+            custom_text={
+                "submit": {"message": "You're joining the private beta. $5/month · cancel any time."},
+            },
             success_url=f"{base_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{base_url}/?cancelled=1",
         )
