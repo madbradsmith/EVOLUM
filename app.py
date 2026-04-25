@@ -970,11 +970,115 @@ def project_workspace(project_id):
     if session.get("active_project_id") == str(project_id):
         session.pop("active_project_id", None)
 
-    has_deck = bool(project.get("output_dir")) and (BASE_DIR / project["output_dir"] / "deck.pdf").exists()
+    # Calculate storage and enumerate assets
+    storage_mb = 0.0
+    assets = []
+    has_deck = False
 
-    return render_template("project.html", project=project, has_deck=has_deck)
+    if project.get("output_dir"):
+        proj_dir = BASE_DIR / project["output_dir"]
+        if proj_dir.exists():
+            total_bytes = sum(f.stat().st_size for f in proj_dir.rglob("*") if f.is_file())
+            storage_mb = round(total_bytes / (1024 * 1024), 2)
+            has_deck = (proj_dir / "deck.pdf").exists()
+            for f in sorted(proj_dir.iterdir()):
+                if f.is_file() and not f.name.startswith("."):
+                    ext = f.suffix.lower()
+                    size_kb = round(f.stat().st_size / 1024, 1)
+                    ftype = ("deck" if ext in (".pptx", ".pdf") else
+                             "image" if ext in (".jpg", ".jpeg", ".png", ".webp") else
+                             "data" if ext == ".json" else "file")
+                    assets.append({"name": f.name, "size_kb": size_kb, "type": ftype, "ext": ext})
+            # Sync storage to DB if drifted
+            if abs(storage_mb - (project.get("storage_used_mb") or 0)) > 0.05:
+                with DB_ENGINE.begin() as conn2:
+                    conn2.execute(text("UPDATE projects SET storage_used_mb = :mb WHERE id = :id"),
+                                  {"mb": storage_mb, "id": project_id})
+                project["storage_used_mb"] = storage_mb
 
-    
+    storage_pct = min(int(storage_mb / 100 * 100), 100)
+    storage_color = "#e05555" if storage_pct >= 90 else "#ff9944" if storage_pct >= 70 else "#ff7a00"
+
+    return render_template("project.html", project=project, has_deck=has_deck,
+                           assets=assets, storage_mb=storage_mb,
+                           storage_pct=storage_pct, storage_color=storage_color)
+
+
+@app.route("/project/<project_id>/delete-asset", methods=["POST"])
+@require_login
+def delete_project_asset(project_id):
+    filename = (request.form.get("filename") or "").strip()
+    if not filename or "/" in filename or "\\" in filename or filename.startswith("."):
+        return jsonify({"error": "Invalid filename"}), 400
+    ensure_projects_table()
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text(
+            "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+    if not row or not row["output_dir"]:
+        return jsonify({"error": "Project not found"}), 404
+    proj_dir = (BASE_DIR / row["output_dir"]).resolve()
+    file_path = (proj_dir / filename).resolve()
+    try:
+        file_path.relative_to(proj_dir)
+    except ValueError:
+        return jsonify({"error": "Invalid path"}), 400
+    if not file_path.exists():
+        return jsonify({"error": "File not found"}), 404
+    file_path.unlink()
+    return jsonify({"ok": True})
+
+
+@app.route("/project/<project_id>/upload-asset", methods=["POST"])
+@require_login
+def upload_project_asset(project_id):
+    ensure_projects_table()
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text(
+            "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+    if not row or not row["output_dir"]:
+        return jsonify({"error": "Project not found"}), 404
+    proj_dir = BASE_DIR / row["output_dir"]
+    proj_dir.mkdir(parents=True, exist_ok=True)
+    f = request.files.get("asset")
+    if not f or not f.filename:
+        return jsonify({"error": "No file"}), 400
+    safe_name = Path(f.filename).name
+    allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".pdf", ".txt", ".fdx", ".docx"}
+    if Path(safe_name).suffix.lower() not in allowed_exts:
+        return jsonify({"error": "File type not allowed"}), 400
+    dest = proj_dir / safe_name
+    f.save(dest)
+    size_kb = round(dest.stat().st_size / 1024, 1)
+    return jsonify({"ok": True, "name": safe_name, "size_kb": size_kb})
+
+
+@app.route("/project/<project_id>/load-deck", methods=["POST"])
+@require_login
+def load_project_deck(project_id):
+    ensure_projects_table()
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text(
+            "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+    if not row or not row["output_dir"]:
+        return redirect(f"/project/{project_id}")
+    proj_dir = BASE_DIR / row["output_dir"]
+    try:
+        if (proj_dir / "deck.pptx").exists():
+            shutil.copy2(proj_dir / "deck.pptx", LATEST_PPTX)
+        if (proj_dir / "deck.pdf").exists():
+            shutil.copy2(proj_dir / "deck.pdf", LATEST_PDF)
+        if (proj_dir / "deck_manifest.json").exists():
+            shutil.copy2(proj_dir / "deck_manifest.json", LATEST_DECK_MANIFEST_JSON)
+        set_status("COMPLETE")
+    except Exception as e:
+        print(f"⚠️ load_project_deck error: {e}", flush=True)
+        return redirect(f"/project/{project_id}")
+    return redirect("/?loaded=1")
+
+
 @app.route("/admin")
 def admin():
     stats = {
@@ -1217,6 +1321,8 @@ def upload():
                 shutil.copy2(fresh_pptx, proj_out / "deck.pptx")
             if fresh_pdf and fresh_pdf.exists():
                 shutil.copy2(fresh_pdf, proj_out / "deck.pdf")
+            if LATEST_DECK_MANIFEST_JSON.exists():
+                shutil.copy2(LATEST_DECK_MANIFEST_JSON, proj_out / "deck_manifest.json")
             with DB_ENGINE.begin() as conn:
                 conn.execute(text("""
                     UPDATE projects SET output_dir = :output_dir WHERE id = :id

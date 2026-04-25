@@ -1525,6 +1525,17 @@ async function pollStatus(){
 refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
 renderDeckPreview();
 renderCurrentRefineSlide();
-updateStatusUI("IDLE");
+
+// Auto-open refine if redirected here after loading a saved project deck
+if (new URLSearchParams(window.location.search).get("loaded") === "1") {
+    history.replaceState({}, "", "/");
+    buildInFlight = true;
+    sawFreshBuildStatus = true;
+    showLiveProcess();
+    updateStatusUI("COMPLETE");
+} else {
+    updateStatusUI("IDLE");
+}
+
 setInterval(pollStatus, 1200);
 pollStatus();

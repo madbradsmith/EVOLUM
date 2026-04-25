@@ -3,87 +3,163 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ project.title }} Workspace</title>
+<title>{{ project.title }} — EVOLUM Studio</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+.storage-track {
+    height: 6px; background: rgba(255,255,255,0.08);
+    border-radius: 3px; overflow: hidden; margin: 6px 0 4px;
+}
+.storage-fill {
+    height: 6px; border-radius: 3px;
+    transition: width 0.4s ease;
+}
+.asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-top: 10px;
+}
+.asset-tile {
+    background: #111;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px 8px 8px;
+    text-align: center;
+    position: relative;
+}
+.asset-tile:hover { border-color: rgba(255,122,0,0.35); }
+.asset-icon { font-size: 26px; margin-bottom: 6px; line-height: 1; }
+.asset-name {
+    font-size: 10px; color: #aaa; word-break: break-all;
+    overflow: hidden; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    margin-bottom: 4px;
+}
+.asset-size { font-size: 10px; color: #555; }
+.asset-delete {
+    position: absolute; top: 5px; right: 6px;
+    font-size: 13px; color: #444; cursor: pointer;
+    line-height: 1; padding: 2px 4px; border-radius: 4px;
+    transition: color 0.15s;
+}
+.asset-delete:hover { color: #e05555; }
+.upload-zone {
+    border: 1px dashed rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 14px;
+    text-align: center; margin-top: 10px;
+    cursor: pointer; transition: border-color 0.15s;
+}
+.upload-zone:hover { border-color: rgba(255,122,0,0.5); }
+.upload-zone input[type="file"] { display: none; }
+.upload-zone-label { font-size: 12px; color: #555; }
+.upload-zone-label span { color: #ff7a00; }
+.empty-assets { color: #444; font-size: 12px; text-align: center; padding: 16px 0; }
+</style>
 </head>
-
 <body>
-
 <div class="container">
     <div class="logo">
         <img src="/static/logo.png" class="logo-img">
     </div>
-
     <div class="shell">
         <div class="card" style="padding:14px;">
 
-            <div class="workspace-title" style="text-align:center;">
-                PROJECT WORKSPACE
-            </div>
-
+            <div class="workspace-title" style="text-align:center;">PROJECT WORKSPACE</div>
             <div class="workspace-copy" style="text-align:center; margin-bottom:12px;">
-                {{ project.title }}{% if project.type %} • {{ project.type }}{% endif %}
+                {{ project.title }}{% if project.type %} &bull; {{ project.type }}{% endif %}
+                <span style="color:#555; font-size:11px; margin-left:8px;">{{ project.status or 'Active' }}</span>
             </div>
 
+            <!-- STORAGE METER -->
+            <div class="choice home-module-card" style="padding:12px 14px; margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <div class="choice-title" style="font-size:13px;">Storage</div>
+                    <div style="font-size:12px; color:#aaa;">
+                        <span style="color:{{ storage_color }}; font-weight:700;">{{ storage_mb }} MB</span> / 100 MB
+                    </div>
+                </div>
+                <div class="storage-track">
+                    <div class="storage-fill" style="width:{{ storage_pct }}%; background:{{ storage_color }};"></div>
+                </div>
+                <div style="font-size:10px; color:#444;">{{ 100 - storage_mb|round(1) }} MB available</div>
+            </div>
+
+            <!-- DECK PANEL -->
             <div class="choice home-module-card" style="padding:14px; margin-bottom:12px;">
-                <div class="choice-title">{{ project.title }}</div>
-
-                <div style="height:140px; background:#111; border-radius:12px; margin:10px 0; display:flex; align-items:center; justify-content:center; color:#777;">
-                    Project Poster
-                </div>
-
-                <div class="workspace-copy" style="text-align:center; margin-bottom:10px;">
-                    Status: {{ project.status or 'Active' }}
-                </div>
+                <div class="choice-title">Pitch Deck</div>
 
                 {% if has_deck %}
-                <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:10px;">
+                <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px;">
                     <a href="/project/{{ project.id }}/deck.pdf" target="_blank" style="text-decoration:none;">
-                        <div class="choice" style="padding:10px; text-align:center;">View Deck (PDF)</div>
+                        <div class="choice" style="padding:10px; text-align:center;">
+                            View PDF
+                        </div>
                     </a>
                     <a href="/project/{{ project.id }}/deck.pptx" style="text-decoration:none;">
-                        <div class="choice" style="padding:10px; text-align:center;">Download PPTX</div>
+                        <div class="choice" style="padding:10px; text-align:center;">
+                            Download PPTX
+                        </div>
                     </a>
-                    <a href="/" style="text-decoration:none;">
-                        <div class="choice" style="padding:10px; text-align:center;">Refine Deck</div>
-                    </a>
+                    <form method="POST" action="/project/{{ project.id }}/load-deck" style="margin:0;">
+                        <button type="submit" class="choice" style="width:100%; padding:10px; text-align:center; background:none; border:1px solid rgba(255,255,255,0.12); border-radius:12px; color:#cfcfcf; cursor:pointer; font-size:14px;">
+                            Load for Editing
+                        </button>
+                    </form>
                 </div>
                 {% else %}
-                <div style="text-align:center; margin:10px 0;">
+                <div style="text-align:center; margin:14px 0 4px;">
+                    <div class="choice-copy" style="margin-bottom:10px;">No deck built yet for this project.</div>
                     <a href="/new-project" class="primary-button" style="text-decoration:none; padding:10px 20px; display:inline-block;">Build Pitch Deck</a>
                 </div>
                 {% endif %}
-
-                <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px;">
-                    <div class="choice" style="color:#555;">Generate Images</div>
-                    <div class="choice" style="color:#555;">Generate Copy</div>
-                    <div class="choice" style="color:#555;">Assets</div>
-                    <div class="choice" style="color:#555;">Collaborators</div>
-                    <div class="choice" style="color:#555; grid-column:span 2;">Studio Helper</div>
-                </div>
             </div>
 
+            <!-- BOTTOM ROW -->
             <div class="choices-row" style="grid-template-columns:1fr 1fr; gap:12px;">
 
+                <!-- ASSETS FOLDER -->
                 <div class="choice home-module-card" style="padding:14px;">
                     <div class="choice-title">Assets Folder</div>
 
-                    <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px;">
-                        <div class="choice">IMG</div>
-                        <div class="choice">IMG</div>
-                        <div class="choice">IMG</div>
-                        <div class="choice">IMG</div>
-                        <div class="choice">IMG</div>
-                        <div class="choice">＋</div>
+                    {% if assets %}
+                    <div class="asset-grid" id="assetGrid">
+                        {% for asset in assets %}
+                        <div class="asset-tile" id="asset-{{ loop.index }}" data-name="{{ asset.name }}">
+                            <div class="asset-icon">
+                                {% if asset.type == 'deck' and asset.ext == '.pptx' %}📊
+                                {% elif asset.type == 'deck' and asset.ext == '.pdf' %}📄
+                                {% elif asset.type == 'image' %}🖼
+                                {% elif asset.type == 'data' %}📋
+                                {% else %}📎{% endif %}
+                            </div>
+                            <div class="asset-name" title="{{ asset.name }}">{{ asset.name }}</div>
+                            <div class="asset-size">{{ asset.size_kb }} KB</div>
+                            <span class="asset-delete" onclick="deleteAsset('{{ project.id }}', '{{ asset.name }}', this)" title="Delete">×</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-assets" id="emptyAssets">No files yet. Build a deck or upload assets below.</div>
+                    {% endif %}
+
+                    <div class="upload-zone" onclick="document.getElementById('assetFileInput').click()">
+                        <input type="file" id="assetFileInput" accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.fdx,.docx" onchange="uploadAsset('{{ project.id }}', this)">
+                        <div class="upload-zone-label">
+                            <span>+ Upload File</span> — image, PDF, or script
+                        </div>
                     </div>
                 </div>
 
+                <!-- STUDIO HELPER -->
                 <div class="choice home-module-card" style="padding:14px;">
                     <div class="choice-title">Studio Helper</div>
-
-                    <div class="choice" style="margin-top:10px;">Improve Deck</div>
-                    <div class="choice" style="margin-top:8px;">Create Posters</div>
-                    <div class="choice" style="margin-top:8px;">Investor Summary</div>
+                    <div class="choice-copy" style="min-height:0; margin:8px 0 12px; font-size:12px;">
+                        AI assistance for this project. Coming soon.
+                    </div>
+                    <div class="choice" style="padding:10px; color:#555; margin-bottom:8px;">Improve Deck Copy</div>
+                    <div class="choice" style="padding:10px; color:#555; margin-bottom:8px;">Generate Poster Ideas</div>
+                    <div class="choice" style="padding:10px; color:#555;">Investor Summary</div>
                 </div>
 
             </div>
@@ -91,10 +167,101 @@
             <div style="margin-top:12px; text-align:center;">
                 <a href="/studio" class="secondary-button" style="text-decoration:none; padding:10px 16px; display:inline-block;">Back to Studio</a>
             </div>
-
+            <div class="footer-powered" style="margin-top:10px; text-align:center;">
+                Powered by the Developum AI Engine
+            </div>
         </div>
     </div>
 </div>
 
+<script>
+async function deleteAsset(projectId, filename, btn) {
+    const isDeck = filename === "deck.pptx" || filename === "deck.pdf";
+    const msg = isDeck
+        ? `Delete ${filename}? This will remove the saved deck file for this project.`
+        : `Delete ${filename}?`;
+    if (!confirm(msg)) return;
+
+    const tile = btn.closest(".asset-tile");
+    btn.style.color = "#e05555";
+
+    const fd = new FormData();
+    fd.append("filename", filename);
+
+    try {
+        const res = await fetch(`/project/${projectId}/delete-asset`, { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.ok) {
+            tile.style.opacity = "0";
+            tile.style.transition = "opacity 0.2s";
+            setTimeout(() => {
+                tile.remove();
+                const grid = document.getElementById("assetGrid");
+                if (grid && !grid.querySelector(".asset-tile")) {
+                    grid.innerHTML = "";
+                    const empty = document.getElementById("emptyAssets");
+                    if (empty) empty.style.display = "block";
+                }
+            }, 220);
+        } else {
+            alert(data.error || "Delete failed.");
+            btn.style.color = "";
+        }
+    } catch (e) {
+        alert("Delete failed — check your connection.");
+        btn.style.color = "";
+    }
+}
+
+async function uploadAsset(projectId, input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const zone = input.closest(".upload-zone");
+    const label = zone.querySelector(".upload-zone-label");
+    label.textContent = "Uploading...";
+
+    const fd = new FormData();
+    fd.append("asset", file);
+
+    try {
+        const res = await fetch(`/project/${projectId}/upload-asset`, { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.ok) {
+            label.innerHTML = '<span>+ Upload File</span> — image, PDF, or script';
+            input.value = "";
+            // Add tile to grid
+            let grid = document.getElementById("assetGrid");
+            if (!grid) {
+                const emptyEl = document.getElementById("emptyAssets");
+                if (emptyEl) {
+                    grid = document.createElement("div");
+                    grid.className = "asset-grid";
+                    grid.id = "assetGrid";
+                    emptyEl.parentNode.insertBefore(grid, emptyEl);
+                    emptyEl.style.display = "none";
+                }
+            }
+            if (grid) {
+                const ext = data.name.split(".").pop().toLowerCase();
+                const icon = ["jpg","jpeg","png","webp"].includes(ext) ? "🖼" : ext === "pdf" ? "📄" : "📎";
+                const tile = document.createElement("div");
+                tile.className = "asset-tile";
+                tile.dataset.name = data.name;
+                tile.innerHTML = `<div class="asset-icon">${icon}</div><div class="asset-name" title="${data.name}">${data.name}</div><div class="asset-size">${data.size_kb} KB</div><span class="asset-delete" onclick="deleteAsset('${projectId}','${data.name}',this)" title="Delete">×</span>`;
+                grid.appendChild(tile);
+            }
+        } else {
+            label.innerHTML = '<span>+ Upload File</span> — image, PDF, or script';
+            alert(data.error || "Upload failed.");
+            input.value = "";
+        }
+    } catch (e) {
+        label.innerHTML = '<span>+ Upload File</span> — image, PDF, or script';
+        alert("Upload failed — check your connection.");
+        input.value = "";
+    }
+}
+</script>
 </body>
 </html>
