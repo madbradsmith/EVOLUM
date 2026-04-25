@@ -1240,7 +1240,7 @@ def delete_project_asset(project_id):
     with DB_ENGINE.connect() as conn:
         row = conn.execute(text(
             "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
-        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
     if not row or not row["output_dir"]:
         return jsonify({"error": "Project not found"}), 404
     proj_dir = (BASE_DIR / row["output_dir"]).resolve()
@@ -1262,7 +1262,7 @@ def upload_project_asset(project_id):
     with DB_ENGINE.connect() as conn:
         row = conn.execute(text(
             "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
-        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
     if not row or not row["output_dir"]:
         return jsonify({"error": "Project not found"}), 404
     proj_dir = BASE_DIR / row["output_dir"]
@@ -1287,7 +1287,7 @@ def load_project_deck(project_id):
     with DB_ENGINE.connect() as conn:
         row = conn.execute(text(
             "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
-        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
     if not row or not row["output_dir"]:
         return redirect(f"/project/{project_id}")
     proj_dir = BASE_DIR / row["output_dir"]
@@ -1589,7 +1589,12 @@ def upload():
         set_status("BUILDING")
     except subprocess.CalledProcessError:
         set_status("ERROR")
-        return "Engine failed", 500
+        try:
+            tail = log_path.read_text(encoding="utf-8").strip().split("\n")
+            last_lines = "\n".join(tail[-40:])
+        except Exception:
+            last_lines = "(log unavailable)"
+        return f"Engine failed\n\n{last_lines}", 500
 
     fresh_pptx = newest_generated_file(".pptx")
     fresh_pdf = newest_generated_file(".pdf")
@@ -2329,7 +2334,7 @@ def create_project_invite(project_id):
     with DB_ENGINE.connect() as conn:
         proj = conn.execute(text(
             "SELECT id FROM projects WHERE id = :id AND owner_user_id = :uid"
-        ), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
     if not proj:
         return jsonify({"error": "Project not found"}), 404
 
@@ -2421,7 +2426,7 @@ def project_deck_file(project_id, ext):
     with DB_ENGINE.connect() as conn:
         row = conn.execute(text("""
             SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid
-        """), {"id": project_id, "owner_user_id": session.get("user_id")}).mappings().first()
+        """), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
     if not row or not row["output_dir"]:
         abort(404)
     file_path = BASE_DIR / row["output_dir"] / f"deck.{ext}"
