@@ -114,7 +114,8 @@ def get_user_by_email(email: str):
         return None
     with DB_ENGINE.connect() as conn:
         row = conn.execute(text("""
-            SELECT id, email, name, password_hash, created_at
+            SELECT id, email, name, password_hash, created_at,
+                   stripe_customer_id, stripe_subscription_id, subscription_active
             FROM beta_users
             WHERE lower(email) = :email
             LIMIT 1
@@ -163,7 +164,20 @@ def is_render_env() -> bool:
 
 
 def has_beta_access() -> bool:
-    return session.get("beta_access") is True or bool(session.get("user_email"))
+    return (
+        session.get("beta_access") is True or
+        bool(session.get("user_email")) or
+        session.get("subscription_active") is True
+    )
+
+
+def ensure_subscription_columns():
+    if not DB_ENGINE:
+        return
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE"))
 
 
 def log_beta_access(access_code: str, status: str):
@@ -789,9 +803,12 @@ def sign_in():
             log_activity_event("sign_in_failed", route="/sign-in", user_email=email)
             return render_template("index.html", is_render=is_render_env(), gate_locked=True, gate_error="We couldn't sign you in with those credentials.")
 
+        session["user_id"] = str(user["id"])
         session["user_email"] = user["email"]
         session["user_name"] = user.get("name") or ""
         session["beta_access"] = True
+        if user.get("subscription_active"):
+            session["subscription_active"] = True
 
         log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
         return redirect(url_for("index"))
@@ -806,6 +823,117 @@ def logout():
         log_activity_event("sign_out", route="/logout", user_email=email)
     session.clear()
     return redirect(url_for("index"))
+
+
+# ===== STRIPE PAYMENT ROUTES START ===================
+@app.route("/create-checkout-session", methods=["POST"])
+def create_checkout_session():
+    import stripe as stripe_lib
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    password = (request.form.get("password") or "").strip()
+
+    if not name or not email or not password:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
+                               gate_error="Please fill in all fields to continue.")
+    if len(password) < 6:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
+                               gate_error="Password must be at least 6 characters.")
+
+    try:
+        db_init()
+        ensure_subscription_columns()
+        if get_user_by_email(email):
+            return render_template("index.html", is_render=is_render_env(), gate_locked=True,
+                                   gate_error="That email already has an account. Please sign in.")
+    except Exception:
+        pass
+
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    price_id = os.environ.get("STRIPE_PRICE_ID", "")
+    if not stripe_lib.api_key or not price_id:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
+                               gate_error="Payment system unavailable — please try again later.")
+
+    session["pending_name"] = name
+    session["pending_email"] = email
+    session["pending_password_hash"] = generate_password_hash(password)
+
+    try:
+        base_url = request.host_url.rstrip("/")
+        checkout = stripe_lib.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{"price": price_id, "quantity": 1}],
+            mode="subscription",
+            customer_email=email,
+            success_url=f"{base_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/?cancelled=1",
+        )
+        return redirect(checkout.url, code=303)
+    except Exception as e:
+        return render_template("index.html", is_render=is_render_env(), gate_locked=True,
+                               gate_error=f"Could not start checkout: {e}")
+
+
+@app.route("/payment-success")
+def payment_success():
+    import stripe as stripe_lib
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    stripe_session_id = request.args.get("session_id", "")
+
+    if not stripe_lib.api_key or not stripe_session_id:
+        return redirect("/")
+
+    try:
+        checkout = stripe_lib.checkout.Session.retrieve(stripe_session_id)
+        if checkout.payment_status not in ("paid", "no_payment_required"):
+            return redirect("/?payment_failed=1")
+
+        name = session.pop("pending_name", "") or ""
+        email = session.pop("pending_email", "") or checkout.customer_email or ""
+        password_hash = session.pop("pending_password_hash", "") or generate_password_hash(secrets.token_hex(16))
+        customer_id = checkout.customer or ""
+        subscription_id = checkout.subscription or ""
+
+        if not email:
+            return redirect("/")
+
+        db_init()
+        ensure_subscription_columns()
+        existing = get_user_by_email(email)
+
+        if existing:
+            with DB_ENGINE.begin() as conn:
+                conn.execute(text("""
+                    UPDATE beta_users SET stripe_customer_id=:cid, stripe_subscription_id=:sid,
+                    subscription_active=TRUE WHERE lower(email)=:email
+                """), {"cid": customer_id, "sid": subscription_id, "email": email})
+            user_id = str(existing["id"])
+            name = existing.get("name") or name
+        else:
+            if not name:
+                name = email.split("@")[0].title()
+            with DB_ENGINE.begin() as conn:
+                row = conn.execute(text("""
+                    INSERT INTO beta_users (email, name, password_hash, stripe_customer_id, stripe_subscription_id, subscription_active)
+                    VALUES (:email, :name, :ph, :cid, :sid, TRUE) RETURNING id
+                """), {"email": email, "name": name, "ph": password_hash,
+                       "cid": customer_id, "sid": subscription_id}).fetchone()
+                user_id = str(row[0])
+
+        session["user_id"] = user_id
+        session["user_email"] = email
+        session["user_name"] = name
+        session["beta_access"] = True
+        session["subscription_active"] = True
+
+        log_activity_event("payment_success", route="/payment-success", user_email=email,
+                           metadata={"stripe_session": stripe_session_id})
+        return redirect("/studio")
+
+    except Exception as e:
+        return redirect("/")
+# ===== STRIPE PAYMENT ROUTES END =====================
 
 
 # ===== CORE ROUTES START =============================
