@@ -1162,6 +1162,7 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         deduped.append(slide)
         seen.add(key)
     plan = deduped
+    catalog = build_intelligence_catalog(data)
 
     return {
         "title": title,
