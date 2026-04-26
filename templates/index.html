@@ -108,7 +108,7 @@
 </div>
 
 <!-- Generate Pitch Deck -->
-<div class="choice home-module-card" onclick="startUploadFlow()">
+<div class="choice home-module-card" onclick="{% if user_logged_in %}window.location.href='/new-project'{% else %}showAuthModal(){% endif %}">
     <div class="choice-title">Deck Generator</div>
     <img src="/static/deck_thumb.jpg" class="home-thumb-img">
     <div class="choice-copy">
