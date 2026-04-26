@@ -1652,6 +1652,11 @@ def upload():
         stem = Path(file.filename).stem
         project_title = stem.replace("_", " ").replace("-", " ").strip().title() or "Untitled Project"
     uid = session.get("user_id")
+    if not uid and session.get("user_email") and DB_ENGINE:
+        user = get_user_by_email(session["user_email"])
+        if user:
+            uid = str(user["id"])
+            session["user_id"] = uid
     print(f"[UPLOAD] project_title={project_title!r} existing_pid={existing_project_id!r} uid={uid!r} db={bool(DB_ENGINE)}", flush=True)
     if existing_project_id and uid and DB_ENGINE:
         session["active_project_id"] = existing_project_id
