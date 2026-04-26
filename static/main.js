@@ -1920,19 +1920,57 @@ function renderProjectsList(projects) {
 }
 
 async function loadProjectFromPanel(projectId) {
-    if (activeLoadedProjectId === projectId) return;
+    if (activeLoadedProjectId === projectId && document.body.classList.contains("complete-mode")) return;
     try {
         const res = await fetch(`/project/${projectId}/load`, { method: "POST" });
         const data = await res.json();
         if (data.ok) {
             activeLoadedProjectId = projectId;
-            renderProjectsList(_cachedProjects);
-            syncLatestSlidesForPreview();
-            const titleEl = document.getElementById("studioTitle");
             const p = _cachedProjects.find(x => x.id === projectId);
+            const titleEl = document.getElementById("studioTitle");
             if (titleEl && p) titleEl.textContent = p.title;
+            updateStatusUI("COMPLETE");
+            renderProjectsList(_cachedProjects);
         }
     } catch(e) {}
+}
+
+function resetWelcomeModal() {
+    const choices = document.getElementById("welcomeChoices");
+    const list = document.getElementById("welcomeProjectsList");
+    if (choices) choices.style.display = "block";
+    if (list) list.style.display = "none";
+}
+
+async function openWelcomeProjectsPicker() {
+    document.getElementById("welcomeChoices").style.display = "none";
+    document.getElementById("welcomeProjectsList").style.display = "block";
+    const itemsEl = document.getElementById("welcomeProjectsItems");
+    itemsEl.innerHTML = '<div style="color:#aaa; font-size:13px; padding:8px 0;">Loading...</div>';
+    try {
+        if (!_cachedProjects || !_cachedProjects.length) {
+            const res = await fetch("/my-projects");
+            _cachedProjects = await res.json();
+        }
+        renderWelcomeProjects(_cachedProjects);
+    } catch(e) {
+        itemsEl.innerHTML = '<div style="color:#aaa; font-size:13px;">Could not load projects.</div>';
+    }
+}
+
+function renderWelcomeProjects(projects) {
+    const el = document.getElementById("welcomeProjectsItems");
+    if (!el) return;
+    if (!projects || !projects.length) {
+        el.innerHTML = '<div style="color:#aaa; font-size:13px; padding:8px 0;">No saved projects yet.</div>';
+        return;
+    }
+    el.innerHTML = projects.map(p => `
+        <div class="proj-list-item" onclick="closeModal('welcomeModal'); resetWelcomeModal(); loadProjectFromPanel('${p.id}')">
+            <span class="proj-list-title">${escapeHtml(p.title)}</span>
+            ${p.has_deck ? '<span class="proj-list-badge">✓</span>' : ''}
+        </div>
+    `).join('');
 }
 
 async function deleteProjectFromPanel(projectId, title) {

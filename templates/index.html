@@ -759,15 +759,29 @@
     
 <div class="modal" id="welcomeModal">
     <div class="modal-content" style="max-width:520px; text-align:center;">
-        <div class="modal-close" onclick="closeModal('welcomeModal')">×</div>
-        <h2 id="welcomeModalHeading" style="margin-bottom:6px;">Welcome to EVOLUM</h2>
-        <p id="welcomeModalSubtext" style="color:#aaa; font-size:14px; margin-bottom:28px;">Ready when you are.</p>
-        <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-            <div class="welcome-choice-card" onclick="closeModal('welcomeModal'); showUploadAnalyzeModal()">
-                <div class="welcome-choice-icon">✦</div>
-                <div class="welcome-choice-label">Build a Pitch Deck</div>
-                <div class="welcome-choice-sub">Start with a new script</div>
+        <div class="modal-close" onclick="closeModal('welcomeModal'); resetWelcomeModal()">×</div>
+        <div id="welcomeChoices">
+            <h2 id="welcomeModalHeading" style="margin-bottom:6px;">Welcome to EVOLUM</h2>
+            <p id="welcomeModalSubtext" style="color:#aaa; font-size:14px; margin-bottom:28px;">Ready when you are.</p>
+            <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
+                <div class="welcome-choice-card" onclick="closeModal('welcomeModal'); resetWelcomeModal(); showUploadAnalyzeModal()">
+                    <div class="welcome-choice-icon">✦</div>
+                    <div class="welcome-choice-label">New Project</div>
+                    <div class="welcome-choice-sub">Start with a new script</div>
+                </div>
+                {% if user_logged_in %}
+                <div class="welcome-choice-card" onclick="openWelcomeProjectsPicker()">
+                    <div class="welcome-choice-icon">⊞</div>
+                    <div class="welcome-choice-label">My Projects</div>
+                    <div class="welcome-choice-sub">Continue a saved deck</div>
+                </div>
+                {% endif %}
             </div>
+        </div>
+        <div id="welcomeProjectsList" style="display:none; text-align:left;">
+            <button onclick="resetWelcomeModal()" style="background:none; border:none; color:#aaa; cursor:pointer; font-size:13px; margin-bottom:16px; padding:0;">← Back</button>
+            <div style="font-weight:600; font-size:15px; margin-bottom:14px; color:#fff;">My Projects</div>
+            <div id="welcomeProjectsItems" style="max-height:260px; overflow-y:auto;"></div>
         </div>
     </div>
 </div>
