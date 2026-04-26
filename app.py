@@ -1750,8 +1750,11 @@ def upload():
         print("⚠️ Failed to write override files:", e)
 
 
+    # Capture project_id before pipeline overwrites STATUS_FILE with its own JSON
+    saved_pid = session.get("active_project_id") or get_status_project_id()
+
     try:
-        set_status("ANALYZING")
+        set_status("ANALYZING", project_id=saved_pid)
         log_path = BASE_DIR / "pipeline.log"
 
         with open(log_path, "w", encoding="utf-8") as log_file:
@@ -1764,7 +1767,7 @@ def upload():
                 check=True,
             )
 
-        set_status("BUILDING")
+        set_status("BUILDING", project_id=saved_pid)
     except subprocess.CalledProcessError:
         set_status("ERROR")
         try:
@@ -1795,13 +1798,13 @@ def upload():
         set_status("ERROR")
         return "Latest deck publish failed", 500
 
-    set_status("COMPLETE")
+    set_status("COMPLETE", project_id=saved_pid)
     elapsed = int(time.time() - started_at)
     log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
     log_activity_event("deck_run", route="/upload", user_email=session.get("user_email"))
 
     # Save deck to user-scoped project directory
-    active_pid = get_status_project_id() or session.get("active_project_id")
+    active_pid = saved_pid or get_status_project_id() or session.get("active_project_id")
     if active_pid and DB_ENGINE:
         try:
             uid = session.get("user_id", "anon")
