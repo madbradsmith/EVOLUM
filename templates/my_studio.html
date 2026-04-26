@@ -183,6 +183,31 @@
 .new-proj-plus { font-size: 28px; color: rgba(255,122,0,0.8); line-height: 1; }
 .new-proj-label { font-size: 13px; font-weight: 700; color: #ff9944; }
 .new-proj-sub { font-size: 10px; color: #555; }
+.proj-delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50%;
+    color: #666;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    z-index: 2;
+}
+.proj-delete-btn:hover {
+    background: rgba(220,60,60,0.18);
+    border-color: rgba(220,60,60,0.5);
+    color: #e05555;
+}
 .storage-bar-track {
     height: 4px;
     background: rgba(255,255,255,0.1);
@@ -218,32 +243,43 @@
                 <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-top:10px;">
 
                     {% for project in projects %}
-                    <a href="/project/{{ project.id }}" class="project-card-link">
-                        <div class="proj-card">
-                            <div class="proj-card-icon">{{ '🎬' if project.has_deck else '📁' }}</div>
-                            <div class="proj-card-title">{{ project.title }}</div>
-                            {% if project.type %}
-                            <div class="proj-card-type">{{ project.type }}</div>
-                            {% endif %}
-                            {% if project.has_deck %}
-                            <div class="proj-deck-badge">✓ Deck Ready</div>
-                            {% else %}
-                            <div class="proj-nodeck-badge">No deck yet</div>
-                            {% endif %}
-                            <div class="proj-card-date">
-                                {% if project.created_at %}
-                                    {{ project.created_at.strftime('%b %d, %Y') }}
+                    <div class="proj-card-wrap" style="position:relative;">
+                        <a href="/project/{{ project.id }}" class="project-card-link">
+                            <div class="proj-card">
+                                <div class="proj-card-icon">{{ '🎬' if project.has_deck else '📁' }}</div>
+                                <div class="proj-card-title">{{ project.title }}</div>
+                                {% if project.type %}
+                                <div class="proj-card-type">{{ project.type }}</div>
                                 {% endif %}
+                                {% if project.has_deck %}
+                                <div class="proj-deck-badge">✓ Deck Ready</div>
+                                {% else %}
+                                <div class="proj-nodeck-badge">No deck yet</div>
+                                {% endif %}
+                                <div class="proj-card-date">
+                                    {% if project.created_at %}
+                                        {{ project.created_at.strftime('%b %d, %Y') }}
+                                    {% endif %}
+                                </div>
                             </div>
-                        </div>
-                    </a>
+                        </a>
+                        <button class="proj-delete-btn" onclick="deleteProject('{{ project.id }}', '{{ project.title | e }}', this)" title="Delete project">×</button>
+                    </div>
                     {% endfor %}
 
+                    {% if projects | length < 6 %}
                     <a href="/new-project" class="new-proj-card">
                         <div class="new-proj-plus">+</div>
                         <div class="new-proj-label">New Project</div>
                         <div class="new-proj-sub">Build a pitch deck</div>
                     </a>
+                    {% else %}
+                    <div class="new-proj-card" style="opacity:0.4; cursor:default; pointer-events:none;">
+                        <div class="new-proj-plus" style="font-size:20px;">⊘</div>
+                        <div class="new-proj-label" style="font-size:11px;">Limit reached</div>
+                        <div class="new-proj-sub">Delete a project to add more</div>
+                    </div>
+                    {% endif %}
 
                 </div>
 
@@ -331,6 +367,28 @@
     </div>
 </div>
 <script>
+async function deleteProject(projectId, title, btn) {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    btn.disabled = true;
+    btn.textContent = "…";
+    try {
+        const res = await fetch(`/project/${projectId}/delete`, { method: "POST" });
+        const data = await res.json();
+        if (data.ok) {
+            const card = btn.closest(".proj-card-wrap");
+            if (card) card.remove();
+        } else {
+            alert("Delete failed — try again.");
+            btn.disabled = false;
+            btn.textContent = "×";
+        }
+    } catch(e) {
+        alert("Delete failed — try again.");
+        btn.disabled = false;
+        btn.textContent = "×";
+    }
+}
+
 // Invite generation
 async function generateInvite(projectId, btn) {
     btn.textContent = "Generating...";

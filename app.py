@@ -1235,6 +1235,12 @@ def new_project():
             return render_template("new_project.html")
 
         with DB_ENGINE.begin() as conn:
+            count = conn.execute(text(
+                "SELECT COUNT(*) FROM projects WHERE owner_user_id = :uid"
+            ), {"uid": owner_user_id}).scalar()
+            if count >= 6:
+                return render_template("new_project.html", error="Project limit reached (6 max). Delete an existing project to create a new one.")
+
             result = conn.execute(text("""
                 INSERT INTO projects (owner_user_id, title, type)
                 VALUES (:owner_user_id, :title, :type)
@@ -1398,6 +1404,26 @@ def load_project_deck(project_id):
         print(f"⚠️ load_project_deck error: {e}", flush=True)
         return redirect(f"/project/{project_id}")
     return redirect(f"/?loaded=1&from_project={project_id}")
+
+
+@app.route("/project/<project_id>/delete", methods=["POST"])
+@require_login
+def delete_project(project_id):
+    ensure_projects_table()
+    uid = session.get("user_id")
+    with DB_ENGINE.begin() as conn:
+        row = conn.execute(text(
+            "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "uid": uid}).mappings().first()
+        if not row:
+            return jsonify({"ok": False, "error": "Not found"}), 404
+        conn.execute(text(
+            "DELETE FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "uid": uid})
+    proj_dir = BASE_DIR / "user_data" / str(uid) / str(project_id)
+    if proj_dir.exists():
+        shutil.rmtree(proj_dir, ignore_errors=True)
+    return jsonify({"ok": True})
 
 
 @app.route("/project/<project_id>/slides")
@@ -1698,6 +1724,11 @@ def upload():
     elif project_title and session.get("user_id") and DB_ENGINE:
         ensure_projects_table()
         with DB_ENGINE.begin() as conn:
+            count = conn.execute(text(
+                "SELECT COUNT(*) FROM projects WHERE owner_user_id = :uid"
+            ), {"uid": session.get("user_id")}).scalar()
+            if count >= 6:
+                return jsonify({"error": "Project limit reached (6 max). Delete an existing project first."}), 403
             result = conn.execute(text("""
                 INSERT INTO projects (owner_user_id, title, type)
                 VALUES (:uid, :title, :type) RETURNING id
