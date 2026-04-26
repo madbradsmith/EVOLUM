@@ -1825,6 +1825,10 @@ async function pollStatus(){
             if (buildInFlight && !sawFreshBuildStatus) {
                 if (data.status === "ANALYZING" || data.status === "BUILDING" || data.status === "running") {
                     sawFreshBuildStatus = true;
+                } else if (data.status === "COMPLETE" || data.status === "ERROR") {
+                    // Server was single-threaded — we never saw ANALYZING/BUILDING,
+                    // but the build finished. Accept it.
+                    sawFreshBuildStatus = true;
                 } else {
                     return;
                 }

@@ -2686,7 +2686,7 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"⚠️ Database init skipped: {e}", flush=True)
     port = int(os.environ.get("PORT", 7000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, threaded=True)
 
 
 # ===== APP RUN END ===================================
