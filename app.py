@@ -1540,7 +1540,7 @@ def admin():
 def status():
     return jsonify({
         "status": get_status(),
-        "project_id": get_status_project_id() or session.get("active_project_id")
+        "project_id": get_status_project_id() or session.get("active_project_id") or (ACTIVE_PROJECT_FILE.read_text(encoding="utf-8").strip() if ACTIVE_PROJECT_FILE.exists() else None)
     })
     
 # ===== PITCH DECK ROUTES START =======================
@@ -1676,6 +1676,7 @@ def upload():
             })
             new_pid = str(result.scalar())
             session["active_project_id"] = new_pid
+            ACTIVE_PROJECT_FILE.write_text(new_pid, encoding="utf-8")
             set_status("UPLOADED", project_id=new_pid)
     else:
         if not project_title and not existing_project_id:
@@ -1750,8 +1751,12 @@ def upload():
         print("⚠️ Failed to write override files:", e)
 
 
-    # Capture project_id before pipeline overwrites STATUS_FILE with its own JSON
-    saved_pid = session.get("active_project_id") or get_status_project_id()
+    # Capture project_id before pipeline starts — read from dedicated file (most reliable)
+    saved_pid = (
+        (ACTIVE_PROJECT_FILE.read_text(encoding="utf-8").strip() if ACTIVE_PROJECT_FILE.exists() else "")
+        or session.get("active_project_id")
+        or get_status_project_id()
+    )
 
     try:
         set_status("ANALYZING", project_id=saved_pid)
