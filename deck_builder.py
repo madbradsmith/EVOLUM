@@ -672,6 +672,34 @@ def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "
 
     period_content, period_render = _detect_period_style(brain_output)
 
+    # Title slide gets a dedicated movie poster prompt
+    film_title = str(brain_output.get("title", "")).strip()
+    if film_title and normalize_key(slide_title) == normalize_key(film_title):
+        protagonist = str(brain_output.get("protagonist", "")).strip()
+        protagonist_summary = str(brain_output.get("protagonist_summary", "")).strip()
+        char_hint = f"{protagonist} — {protagonist_summary[:80]}" if protagonist and protagonist_summary else protagonist
+        tone_hint = f", {tone[:60]}" if tone else ""
+        if period_render:
+            prompt = (
+                f"{period_render}, {period_content}, "
+                f"movie poster composition, lone hero figure, dramatic portrait lighting, "
+                f"cinematic title card framing"
+                f"{', ' + char_hint if char_hint else ''}"
+                f"{tone_hint}, "
+                f"highly detailed, no text, no watermarks, no logos, 16:9 aspect ratio"
+            )
+        else:
+            prompt = (
+                f"movie poster composition, lone hero figure, dramatic portrait lighting, "
+                f"cinematic title card framing"
+                f"{', ' + char_hint if char_hint else ''}"
+                f"{', ' + genre_style if genre_style else ''}"
+                f"{tone_hint}, "
+                f"professional film poster, ultra-detailed, photorealistic, no text, no watermarks, 16:9 aspect ratio"
+            )
+        print(f"🎨 FAL prompt [{slide_title}]: {prompt}")
+        return prompt
+
     if period_render:
         scene_hint = f", scene depicting: {scene}" if scene else f", {concept}"
         tone_hint = f", {tone[:50]}" if tone else ""

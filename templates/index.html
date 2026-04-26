@@ -278,6 +278,15 @@
                     <div class="field-help">Describe the look you want for this slide's image. Leave blank to use the script's tone automatically.</div>
                 </div>
 
+                <div class="field-group">
+                    <label class="label">Upload Your Own Image <span class="label-optional">(optional)</span></label>
+                    <input type="file" id="slideImageUpload" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleSlideImageUpload(this)">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <button class="secondary-button" type="button" style="font-size:12px; padding:7px 12px;" onclick="document.getElementById('slideImageUpload').click()">Choose Image</button>
+                        <span id="slideImageUploadName" style="font-size:11px; color:#555;">No image selected</span>
+                    </div>
+                </div>
+
                 <div class="upload-actions refine-actions-single">
     <button class="primary-button" type="button" onclick="regenerateDeckPlaceholder()">Update &amp; Rebuild</button>
     <button class="secondary-button" type="button" id="regenImageBtn" onclick="regenerateSlideImage()">Regenerate Image</button>

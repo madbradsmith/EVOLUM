@@ -1859,6 +1859,33 @@ def download_latest_pdf():
     return send_file(LATEST_PDF, as_attachment=True)
 
 
+@app.route("/upload-slide-image", methods=["POST"])
+@require_login
+def upload_slide_image():
+    file = request.files.get("image")
+    if not file or not file.filename:
+        return jsonify({"ok": False, "error": "No file"}), 400
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+        return jsonify({"ok": False, "error": "Image files only"}), 400
+    uid = session.get("user_id", "anon")
+    dest = BASE_DIR / "user_data" / str(uid) / "slide_images"
+    dest.mkdir(parents=True, exist_ok=True)
+    import uuid as _uuid
+    safe_name = f"{_uuid.uuid4().hex}{ext}"
+    save_path = dest / safe_name
+    file.save(save_path)
+    return jsonify({"ok": True, "path": str(save_path), "url": f"/slide-image/{uid}/{safe_name}"})
+
+
+@app.route("/slide-image/<uid>/<filename>")
+def serve_slide_image(uid, filename):
+    path = BASE_DIR / "user_data" / str(uid) / "slide_images" / filename
+    if not path.exists():
+        abort(404)
+    return send_file(path)
+
+
 # ===== ANALYZE ROUTES START ==========================
 @app.route("/analyze-script-pass", methods=["POST"])
 def analyze_script_pass():

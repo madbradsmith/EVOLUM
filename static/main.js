@@ -450,6 +450,23 @@ function analyzeToDecFlow(){
     continueToApprovedUpload();
 }
 
+function startBuildDirect() {
+    if (!approvedScriptFile) return;
+    buildInFlight = true;
+    sawFreshBuildStatus = false;
+    showLiveProcess();
+    setLocalStatus("UPLOADED");
+
+    const formData = new FormData();
+    formData.append("script", approvedScriptFile);
+    const stem = approvedScriptFile.name.replace(/\.[^.]+$/, "");
+    const title = stem.replace(/[_\-]+/g, " ").trim();
+    if (title) formData.append("project_title", title);
+
+    fetch("/upload", { method: "POST", body: formData })
+        .catch(err => console.error("Upload failed:", err));
+}
+
 function continueToApprovedUpload(){
     closeAllModals();
     showUploadState();
@@ -545,7 +562,7 @@ async function analyzeSelectedScript(){
         } else {
             approvedScriptFile = file;
             closeBuildProgressModal();
-            continueToApprovedUpload();
+            startBuildDirect();
         }
 
     } catch (err) {
@@ -1191,8 +1208,11 @@ function renderCurrentRefineSlide(){
     document.getElementById("refineTitleInput").value = slide.title;
     document.getElementById("refineSubtitleInput").value = slide.subtitle;
     document.getElementById("refineBodyInput").value = slide.body;
-    document.getElementById("refineSlideImage").src = previewImageSrcForSlide(slide);
+    const customImg = slideCustomImages[currentRefineSlide];
+    document.getElementById("refineSlideImage").src = customImg ? customImg.url : previewImageSrcForSlide(slide);
     document.getElementById("refineSlideCaption").textContent = slide.caption || `Preview for ${latestRefineProjectTitle}`;
+    const nameEl = document.getElementById("slideImageUploadName");
+    if (nameEl) nameEl.textContent = customImg ? "Custom image set" : "No image selected";
     renderImageOptionStrip();
     document.getElementById("refineBackBtn").disabled = currentRefineSlide === 0;
     document.getElementById("refineNextBtn").disabled = currentRefineSlide === refineSlides.length - 1;
@@ -1802,6 +1822,38 @@ renderCurrentRefineSlide();
 
 updateStatusUI("IDLE");
 
+
+// ===== PER-SLIDE IMAGE UPLOAD =================================
+const slideCustomImages = {};
+
+async function handleSlideImageUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const nameEl = document.getElementById("slideImageUploadName");
+    if (nameEl) nameEl.textContent = "Uploading...";
+
+    const formData = new FormData();
+    formData.append("image", file);
+    try {
+        const res = await fetch("/upload-slide-image", { method: "POST", body: formData });
+        const data = await res.json();
+        if (data.ok) {
+            slideCustomImages[currentRefineSlide] = { path: data.path, url: data.url };
+            if (refineSlides[currentRefineSlide]) {
+                refineSlides[currentRefineSlide].image_path = data.path;
+            }
+            const img = document.getElementById("refineSlideImage");
+            if (img) img.src = data.url;
+            if (nameEl) nameEl.textContent = file.name;
+        } else {
+            if (nameEl) nameEl.textContent = "Upload failed";
+        }
+    } catch(e) {
+        if (nameEl) nameEl.textContent = "Upload failed";
+    }
+    input.value = "";
+}
+// ===== PER-SLIDE IMAGE UPLOAD END ============================
 
 // ===== MY PROJECTS PANEL =====================================
 let activeLoadedProjectId = null;
