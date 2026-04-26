@@ -217,14 +217,27 @@ def log_usage(event, **kwargs):
     print(line, flush=True)
 
 
-def set_status(text: str):
-    STATUS_FILE.write_text(text, encoding="utf-8")
+def set_status(text: str, project_id: str = None):
+    if project_id:
+        STATUS_FILE.write_text(f"{text}|{project_id}", encoding="utf-8")
+    else:
+        current = STATUS_FILE.read_text(encoding="utf-8").strip() if STATUS_FILE.exists() else ""
+        existing_pid = current.split("|")[1] if "|" in current else ""
+        STATUS_FILE.write_text(f"{text}|{existing_pid}" if existing_pid else text, encoding="utf-8")
 
 
 def get_status() -> str:
     if not STATUS_FILE.exists():
         return "IDLE"
-    return STATUS_FILE.read_text(encoding="utf-8").strip() or "IDLE"
+    raw = STATUS_FILE.read_text(encoding="utf-8").strip()
+    return (raw.split("|")[0] if "|" in raw else raw) or "IDLE"
+
+
+def get_status_project_id() -> str:
+    if not STATUS_FILE.exists():
+        return ""
+    raw = STATUS_FILE.read_text(encoding="utf-8").strip()
+    return raw.split("|")[1] if "|" in raw else ""
 
 
 def allowed_file(filename: str) -> bool:
@@ -1572,15 +1585,9 @@ def admin():
 
 @app.route("/status")
 def status():
-    pid = None
-    try:
-        if ACTIVE_PROJECT_FILE.exists():
-            pid = ACTIVE_PROJECT_FILE.read_text(encoding="utf-8").strip() or None
-    except Exception:
-        pass
     return jsonify({
         "status": get_status(),
-        "project_id": pid or session.get("active_project_id")
+        "project_id": get_status_project_id() or session.get("active_project_id")
     })
     
 # ===== PITCH DECK ROUTES START =======================
@@ -1687,10 +1694,7 @@ def upload():
     existing_project_id = (request.form.get("project_id") or "").strip()
     if existing_project_id and session.get("user_id") and DB_ENGINE:
         session["active_project_id"] = existing_project_id
-        try:
-            ACTIVE_PROJECT_FILE.write_text(str(existing_project_id), encoding="utf-8")
-        except Exception:
-            pass
+        set_status("UPLOADED", project_id=existing_project_id)
     elif project_title and session.get("user_id") and DB_ENGINE:
         ensure_projects_table()
         with DB_ENGINE.begin() as conn:
@@ -1704,16 +1708,9 @@ def upload():
             })
             new_pid = str(result.scalar())
             session["active_project_id"] = new_pid
-            try:
-                ACTIVE_PROJECT_FILE.write_text(new_pid, encoding="utf-8")
-            except Exception:
-                pass
+            set_status("UPLOADED", project_id=new_pid)
     elif not project_title and not existing_project_id:
         session.pop("active_project_id", None)
-        try:
-            ACTIVE_PROJECT_FILE.write_text("", encoding="utf-8")
-        except Exception:
-            pass
 
     clear_latest_targets()
     set_status("UPLOADED")
