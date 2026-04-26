@@ -2142,6 +2142,48 @@ def latest_slide_plan():
         _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
     return jsonify(payload)
 
+@app.route("/my-projects")
+def my_projects():
+    if "user_id" not in session:
+        return jsonify({"projects": []})
+
+    user_id = str(session["user_id"])
+    user_folder = os.path.join("users", user_id, "projects")
+
+    projects = []
+
+    if os.path.isdir(user_folder):
+        for project_id in os.listdir(user_folder):
+            project_path = os.path.join(user_folder, project_id)
+
+            if not os.path.isdir(project_path):
+                continue
+
+            meta_file = os.path.join(project_path, "project.json")
+
+            title = project_id
+            if os.path.exists(meta_file):
+                try:
+                    with open(meta_file, "r") as f:
+                        meta = json.load(f)
+                        title = meta.get("title", project_id)
+                except:
+                    pass
+
+            has_deck = os.path.exists(
+                os.path.join(project_path, "latest_deck_manifest.json")
+            )
+
+            projects.append({
+                "id": project_id,
+                "title": title,
+                "has_deck": has_deck
+            })
+
+    projects.sort(key=lambda x: x["title"].lower())
+
+    return jsonify({"projects": projects})
+            
 
 @app.route("/project-file")
 def project_file():
