@@ -1117,12 +1117,15 @@ def studio():
         ensure_projects_table()
         with DB_ENGINE.connect() as conn:
             rows = conn.execute(text("""
-                SELECT id, title, type, status, created_at
+                SELECT id, title, type, status, created_at, output_dir, storage_used_mb
                 FROM projects
                 WHERE owner_user_id = :user_id
                 ORDER BY created_at DESC
             """), {"user_id": session.get("user_id")}).mappings().all()
             projects = [dict(r) for r in rows]
+        for p in projects:
+            out = p.get("output_dir")
+            p["has_deck"] = bool(out and (BASE_DIR / out / "deck.pdf").exists())
     return render_template(
         "my_studio.html",
         user_name=session.get("user_name"),

@@ -22,6 +22,7 @@
         <button class="top-nav-item" type="button" onclick="navTo(‘/’)">Home</button>
         {% if user_logged_in %}
         <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
+        <a class="top-nav-item" href="/studio" style="color:#ff9944; display:block; text-decoration:none; font-weight:700;">My Studio</a>
         <a class="top-nav-item" href="/cancel" style="color:#aaa; display:block; text-decoration:none;">Cancel Subscription</a>
         <a class="top-nav-item" href="/logout" style="color:#e05555; display:block; text-decoration:none;">Sign Out</a>
         {% else %}
