@@ -1398,14 +1398,12 @@ def refine_project_deck(project_id):
         return jsonify({"error": "No deck to refine"}), 400
     try:
         result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label="")
-        if result.get("ok"):
+        if result.get("deck"):
             if LATEST_PPTX.exists():
                 shutil.copy2(LATEST_PPTX, proj_dir / "deck.pptx")
             if LATEST_PDF.exists():
                 shutil.copy2(LATEST_PDF, proj_dir / "deck.pdf")
-            latest_manifest = OUTPUT_DIR / "latest_deck_manifest.json"
-            if latest_manifest.exists():
-                shutil.copy2(latest_manifest, proj_dir / "deck_manifest.json")
+            # manifest was already written to proj_dir by rebuild_refined_deck
         return jsonify(result)
     except Exception as e:
         print(f"⚠️ Project refine failed for {project_id}: {e}", flush=True)
@@ -1836,6 +1834,12 @@ def demo():
 
 @app.route("/download/latest.pptx")
 def download_latest_pptx():
+    uid = session.get("user_id")
+    pid = session.get("active_project_id") or get_status_project_id()
+    if uid and pid:
+        proj_path = BASE_DIR / "user_data" / str(uid) / str(pid) / "deck.pptx"
+        if proj_path.exists():
+            return send_file(proj_path, as_attachment=True)
     if not LATEST_PPTX.exists():
         abort(404)
     return send_file(LATEST_PPTX, as_attachment=True)
@@ -1851,6 +1855,12 @@ def download_latest_producer_pptx():
 
 @app.route("/download/latest.pdf")
 def download_latest_pdf():
+    uid = session.get("user_id")
+    pid = session.get("active_project_id") or get_status_project_id()
+    if uid and pid:
+        proj_path = BASE_DIR / "user_data" / str(uid) / str(pid) / "deck.pdf"
+        if proj_path.exists():
+            return send_file(proj_path, as_attachment=True)
     if not LATEST_PDF.exists():
         abort(404)
     return send_file(LATEST_PDF, as_attachment=True)
