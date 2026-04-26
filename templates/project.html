@@ -98,23 +98,70 @@
                 <div class="choice-title">Pitch Deck</div>
 
                 {% if has_deck %}
-                <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px;">
-                    <a href="/project/{{ project.id }}/deck.pdf" target="_blank" style="text-decoration:none;">
-                        <div class="choice" style="padding:10px; text-align:center;">
-                            View PDF
-                        </div>
-                    </a>
+                <div class="choices-row" style="grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px;">
                     <a href="/project/{{ project.id }}/deck.pptx" style="text-decoration:none;">
                         <div class="choice" style="padding:10px; text-align:center;">
-                            Download PPTX
+                            ↓ Download PPTX
                         </div>
                     </a>
-                    <form method="POST" action="/project/{{ project.id }}/load-deck" style="margin:0;">
-                        <button type="submit" class="choice" style="width:100%; padding:10px; text-align:center; background:rgba(255,122,0,0.1); border:1px solid rgba(255,122,0,0.4); border-radius:12px; color:#ff9944; cursor:pointer; font-size:14px; font-weight:700;">
-                            Preview & Edit Slides
-                        </button>
-                    </form>
+                    <button type="button" onclick="openPreviewRefine()" class="choice" style="width:100%; padding:10px; text-align:center; background:rgba(255,122,0,0.1); border:1px solid rgba(255,122,0,0.4); border-radius:12px; color:#ff9944; cursor:pointer; font-size:14px; font-weight:700; font-family:inherit;">
+                        Preview &amp; Refine Slides
+                    </button>
                 </div>
+
+                <!-- PREVIEW & REFINE PANEL -->
+                <div id="refinePanel" style="display:none; margin-top:16px; border-top:1px solid rgba(255,255,255,0.08); padding-top:16px;">
+
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+                        <div style="font-size:13px; font-weight:700; color:#e8e8e8;">Deck Refinement Studio</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="chat-chip" onclick="toggleRefineView()" id="viewToggleBtn">Grid View</button>
+                            <button class="chat-chip" onclick="rebuildDeck()" id="rebuildBtn" style="color:#ff9944; border-color:rgba(255,122,0,0.4);">Rebuild Deck</button>
+                        </div>
+                    </div>
+
+                    <div id="slidesLoading" style="text-align:center; padding:30px; color:#555; font-size:12px;">Loading slides...</div>
+
+                    <!-- GRID VIEW -->
+                    <div id="gridView" style="display:none;">
+                        <div id="slideGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px;"></div>
+                    </div>
+
+                    <!-- REFINE VIEW -->
+                    <div id="refineView" style="display:none;">
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px;">
+                            <!-- LEFT: Slide Preview -->
+                            <div>
+                                <div style="font-size:10px; color:#555; font-weight:700; letter-spacing:0.08em; margin-bottom:6px;">SLIDE PREVIEW</div>
+                                <div style="background:#0a0a0a; border:1px solid rgba(255,255,255,0.08); border-radius:12px; aspect-ratio:16/9; display:flex; flex-direction:column; justify-content:center; padding:20px;">
+                                    <div id="previewSlideNum" style="font-size:9px; color:#ff7a00; font-weight:700; letter-spacing:0.12em; margin-bottom:10px;"></div>
+                                    <div id="previewTitle" style="font-size:16px; font-weight:800; color:#fff; margin-bottom:10px; line-height:1.2;"></div>
+                                    <div id="previewBody" style="font-size:10px; color:rgba(255,255,255,0.55); line-height:1.6; overflow:hidden; max-height:100px;"></div>
+                                </div>
+                            </div>
+                            <!-- RIGHT: Edit Fields -->
+                            <div>
+                                <div style="font-size:10px; color:#555; font-weight:700; letter-spacing:0.08em; margin-bottom:6px;">EDIT SLIDE CONTENT</div>
+                                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px;">
+                                    <div style="font-size:10px; color:#555; margin-bottom:4px;">TITLE</div>
+                                    <input id="editTitle" type="text" style="width:100%; background:#0c0c0c; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px 10px; color:#e8e8e8; font-size:13px; margin-bottom:10px; box-sizing:border-box; font-family:inherit;" oninput="syncPreview()">
+                                    <div style="font-size:10px; color:#555; margin-bottom:4px;">BODY COPY</div>
+                                    <textarea id="editBody" rows="6" style="width:100%; background:#0c0c0c; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:7px 10px; color:#e8e8e8; font-size:11px; line-height:1.6; resize:vertical; box-sizing:border-box; font-family:inherit;" oninput="syncPreview()"></textarea>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                                        <div style="display:flex; gap:6px;">
+                                            <button class="chat-chip" onclick="prevSlide()">← Prev</button>
+                                            <button class="chat-chip" onclick="nextSlide()">Next →</button>
+                                        </div>
+                                        <button class="chat-chip" onclick="saveCurrentSlide()" style="color:#ff9944;">Save Slide</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- THUMBNAIL STRIP -->
+                        <div id="thumbStrip" style="display:flex; gap:8px; overflow-x:auto; padding:6px 0; scrollbar-width:thin;"></div>
+                    </div>
+                </div>
+
                 {% else %}
                 <div style="text-align:center; margin:14px 0 4px;">
                     <div class="choice-copy" style="margin-bottom:10px;">No deck built yet for this project.</div>
@@ -327,6 +374,122 @@ async function uploadAsset(projectId, input) {
         input.value = "";
     }
 }
+
+// ── Preview & Refine ──────────────────────────────────────────
+const PROJECT_ID = "{{ project.id }}";
+let slides = [];
+let currentSlide = 0;
+let currentView = 'grid';
+
+async function openPreviewRefine() {
+    const panel = document.getElementById('refinePanel');
+    if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (slides.length > 0) return;
+
+    try {
+        const res = await fetch(`/project/${PROJECT_ID}/slides`, { cache: 'no-store' });
+        const data = await res.json();
+        slides = data.slides || [];
+    } catch(e) { slides = []; }
+
+    const loadingEl = document.getElementById('slidesLoading');
+    if (slides.length === 0) {
+        loadingEl.textContent = 'No slide data found. Try rebuilding the deck.';
+        return;
+    }
+    loadingEl.style.display = 'none';
+    renderGrid();
+    renderThumbStrip();
+    showView('grid');
+}
+
+function showView(view) {
+    currentView = view;
+    document.getElementById('gridView').style.display = view === 'grid' ? 'block' : 'none';
+    document.getElementById('refineView').style.display = view === 'refine' ? 'block' : 'none';
+    document.getElementById('viewToggleBtn').textContent = view === 'grid' ? 'Refine View' : 'Grid View';
+}
+
+function toggleRefineView() {
+    if (currentView === 'grid') { showView('refine'); loadSlide(currentSlide); }
+    else { showView('grid'); }
+}
+
+function renderGrid() {
+    document.getElementById('slideGrid').innerHTML = slides.map((s, i) => `
+        <div onclick="openRefineAt(${i})" style="background:#0a0a0a;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;cursor:pointer;aspect-ratio:16/9;display:flex;flex-direction:column;justify-content:space-between;transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(255,122,0,0.6)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'">
+            <div style="font-size:9px;color:#ff7a00;font-weight:700;letter-spacing:0.08em;">SLIDE ${i+1}</div>
+            <div style="font-size:11px;font-weight:700;color:#e8e8e8;line-height:1.3;margin:6px 0;overflow:hidden;max-height:36px;">${esc(s.title||s.type||'')}</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.35);line-height:1.4;overflow:hidden;max-height:28px;">${esc((s.body||s.copy||'').substring(0,90))}${(s.body||s.copy||'').length>90?'…':''}</div>
+        </div>`).join('');
+}
+
+function renderThumbStrip() {
+    document.getElementById('thumbStrip').innerHTML = slides.map((s, i) => `
+        <div id="thumb-${i}" onclick="loadSlide(${i})" style="min-width:80px;max-width:80px;background:#0a0a0a;border:2px solid rgba(255,255,255,0.08);border-radius:8px;padding:7px;cursor:pointer;flex-shrink:0;transition:border-color 0.2s;">
+            <div style="font-size:8px;color:#ff7a00;font-weight:700;margin-bottom:2px;">SLIDE ${i+1}</div>
+            <div style="font-size:9px;color:#e8e8e8;font-weight:600;line-height:1.3;overflow:hidden;max-height:24px;">${esc(s.title||s.type||'')}</div>
+        </div>`).join('');
+}
+
+function openRefineAt(index) { currentSlide = index; showView('refine'); loadSlide(index); }
+
+function loadSlide(index) {
+    if (slides[currentSlide] && document.getElementById('editTitle')) {
+        slides[currentSlide] = { ...slides[currentSlide], title: document.getElementById('editTitle').value, body: document.getElementById('editBody').value };
+    }
+    currentSlide = index;
+    const s = slides[index]; if (!s) return;
+    document.getElementById('previewSlideNum').textContent = `SLIDE ${index+1} OF ${slides.length}`;
+    document.getElementById('previewTitle').textContent = s.title || s.type || '';
+    document.getElementById('previewBody').textContent = s.body || s.copy || '';
+    document.getElementById('editTitle').value = s.title || s.type || '';
+    document.getElementById('editBody').value = s.body || s.copy || '';
+    document.querySelectorAll('[id^="thumb-"]').forEach(t => t.style.borderColor = 'rgba(255,255,255,0.08)');
+    const th = document.getElementById(`thumb-${index}`);
+    if (th) { th.style.borderColor = 'rgba(255,122,0,0.7)'; th.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' }); }
+}
+
+function syncPreview() {
+    document.getElementById('previewTitle').textContent = document.getElementById('editTitle').value;
+    document.getElementById('previewBody').textContent = document.getElementById('editBody').value;
+}
+
+function saveCurrentSlide() {
+    slides[currentSlide] = { ...slides[currentSlide], title: document.getElementById('editTitle').value, body: document.getElementById('editBody').value };
+    renderGrid(); renderThumbStrip(); loadSlide(currentSlide);
+}
+
+function prevSlide() { if (currentSlide > 0) loadSlide(currentSlide - 1); }
+function nextSlide() { if (currentSlide < slides.length - 1) loadSlide(currentSlide + 1); }
+
+async function rebuildDeck() {
+    saveCurrentSlide();
+    const btn = document.getElementById('rebuildBtn');
+    btn.textContent = 'Rebuilding...'; btn.disabled = true;
+    try {
+        const res = await fetch(`/project/${PROJECT_ID}/refine`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slides }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+            btn.textContent = '✓ Deck Rebuilt!';
+            setTimeout(() => { btn.textContent = 'Rebuild Deck'; btn.disabled = false; }, 3000);
+        } else {
+            btn.textContent = 'Rebuild Failed';
+            setTimeout(() => { btn.textContent = 'Rebuild Deck'; btn.disabled = false; }, 3000);
+        }
+    } catch(e) {
+        btn.textContent = 'Error';
+        setTimeout(() => { btn.textContent = 'Rebuild Deck'; btn.disabled = false; }, 3000);
+    }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 </script>
 </body>
 </html>

@@ -1386,6 +1386,63 @@ def load_project_deck(project_id):
     return redirect(f"/?loaded=1&from_project={project_id}")
 
 
+@app.route("/project/<project_id>/slides")
+@require_login
+def get_project_slides(project_id):
+    ensure_projects_table()
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text(
+            "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
+    if not row or not row["output_dir"]:
+        return jsonify({"error": "Project not found", "slides": []}), 404
+    proj_dir = BASE_DIR / row["output_dir"]
+    manifest_path = proj_dir / "deck_manifest.json"
+    if not manifest_path.exists():
+        return jsonify({"slides": [], "slide_count": 0, "error": "No deck built yet"}), 200
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            slide_plan_data = json.load(f)
+        payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=manifest_path)
+        return jsonify(payload)
+    except Exception as e:
+        return jsonify({"error": str(e), "slides": []}), 500
+
+
+@app.route("/project/<project_id>/refine", methods=["POST"])
+@require_login
+def refine_project_deck(project_id):
+    ensure_projects_table()
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text(
+            "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
+    if not row or not row["output_dir"]:
+        return jsonify({"error": "Project not found"}), 404
+    data = request.get_json(silent=True) or {}
+    slides = data.get("slides", [])
+    if not slides:
+        return jsonify({"error": "No slides provided"}), 400
+    proj_dir = BASE_DIR / row["output_dir"]
+    manifest_path = proj_dir / "deck_manifest.json"
+    if not manifest_path.exists():
+        return jsonify({"error": "No deck to refine"}), 400
+    try:
+        result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label="")
+        if result.get("ok"):
+            if LATEST_PPTX.exists():
+                shutil.copy2(LATEST_PPTX, proj_dir / "deck.pptx")
+            if LATEST_PDF.exists():
+                shutil.copy2(LATEST_PDF, proj_dir / "deck.pdf")
+            latest_manifest = OUTPUT_DIR / "latest_deck_manifest.json"
+            if latest_manifest.exists():
+                shutil.copy2(latest_manifest, proj_dir / "deck_manifest.json")
+        return jsonify(result)
+    except Exception as e:
+        print(f"⚠️ Project refine failed for {project_id}: {e}", flush=True)
+        return jsonify({"error": str(e)}), 500
+
+
 _ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 
