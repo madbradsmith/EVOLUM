@@ -1383,7 +1383,7 @@ def load_project_deck(project_id):
     except Exception as e:
         print(f"⚠️ load_project_deck error: {e}", flush=True)
         return redirect(f"/project/{project_id}")
-    return redirect("/?loaded=1")
+    return redirect(f"/?loaded=1&from_project={project_id}")
 
 
 _ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")

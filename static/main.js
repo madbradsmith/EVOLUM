@@ -1778,8 +1778,18 @@ renderDeckPreview();
 renderCurrentRefineSlide();
 
 // Auto-open refine if redirected here after loading a saved project deck
-if (new URLSearchParams(window.location.search).get("loaded") === "1") {
+const _loadParams = new URLSearchParams(window.location.search);
+if (_loadParams.get("loaded") === "1") {
+    const _fromProject = _loadParams.get("from_project");
     history.replaceState({}, "", "/");
+    if (_fromProject) {
+        const bar = document.getElementById("studioBackBar");
+        const link = document.getElementById("studioBackLink");
+        if (bar && link) {
+            link.href = "/project/" + _fromProject;
+            bar.style.display = "flex";
+        }
+    }
     buildInFlight = true;
     sawFreshBuildStatus = true;
     showLiveProcess();

@@ -10,25 +10,27 @@
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.88);
+    background: rgba(0,0,0,0.92);
     z-index: 1000;
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 #progressOverlay.active { display: flex; }
 .progress-stage-text {
-    font-size: 18px;
+    font-size: 17px;
     color: #ff7a00;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.03em;
+    text-align: center;
 }
 .progress-sub-text {
-    font-size: 13px;
-    color: #666;
+    font-size: 12px;
+    color: #555;
     text-align: center;
-    max-width: 320px;
+    max-width: 300px;
+    line-height: 1.5;
 }
 .progress-bar-wrap {
     width: 260px;
@@ -42,17 +44,55 @@
     background: rgba(255,122,0,0.8);
     border-radius: 2px;
     width: 0%;
-    transition: width 0.6s ease;
+    transition: width 0.7s ease;
 }
+.progress-steps {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+.progress-step {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.4s;
+}
+.progress-step.done { background: rgba(255,122,0,0.7); }
+.progress-step.active { background: #ff7a00; box-shadow: 0 0 6px rgba(255,122,0,0.6); }
+
+/* More options toggle */
+.more-opts-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #666;
+    margin: 6px 0 14px;
+    user-select: none;
+    width: fit-content;
+}
+.more-opts-toggle:hover { color: #ff9944; }
+.more-opts-arrow { transition: transform 0.2s; font-size: 10px; }
+.more-opts-arrow.open { transform: rotate(90deg); }
+#moreOptsBody { display: none; }
+#moreOptsBody.open { display: block; }
 </style>
 </head>
 <body>
 
 <!-- Progress overlay shown during build -->
 <div id="progressOverlay">
-    <div class="progress-stage-text" id="progressStage">Starting...</div>
+    <div class="progress-stage-text" id="progressStage">Uploading script...</div>
     <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar"></div></div>
-    <div class="progress-sub-text">Building your pitch deck — usually about 90 seconds.</div>
+    <div class="progress-steps">
+        <div class="progress-step active" id="step1"></div>
+        <div class="progress-step" id="step2"></div>
+        <div class="progress-step" id="step3"></div>
+        <div class="progress-step" id="step4"></div>
+        <div class="progress-step" id="step5"></div>
+    </div>
+    <div class="progress-sub-text" id="progressSub">This takes about 90 seconds. Hang tight.</div>
 </div>
 
 <div class="container">
@@ -61,12 +101,12 @@
     </div>
 
     <div class="shell">
-        <div class="card" style="padding:18px; max-width:720px; margin:0 auto;">
+        <div class="card" style="padding:18px; max-width:680px; margin:0 auto;">
 
             {% if request.args.get('project_id') %}
             <div class="workspace-title" style="text-align:center;">REBUILD PITCH DECK</div>
             <div class="workspace-copy" style="text-align:center; margin-bottom:18px;">
-                Upload your script and assets — we'll rebuild the deck for this project.
+                Upload your script and we'll rebuild the deck for this project.
             </div>
             {% else %}
             <div class="workspace-title" style="text-align:center;">NEW PROJECT</div>
@@ -78,49 +118,55 @@
             <form id="newProjectForm" enctype="multipart/form-data">
                 <input type="hidden" name="project_id" id="existingProjectId" value="{{ request.args.get('project_id', '') }}">
 
-                <!-- PROJECT INFO -->
+                <!-- REQUIRED: TITLE -->
                 <div class="field-group">
                     <label class="label" for="project_title">Project Title <span style="color:#ff7a00;">*</span></label>
                     <input type="text" id="project_title" name="project_title" placeholder="e.g. Not Today" required>
                 </div>
 
-                <div class="field-group">
-                    <label class="label" for="project_type">Project Type</label>
-                    <input type="text" id="project_type" name="project_type" placeholder="Feature, Series, Short, Pilot, Documentary...">
-                </div>
-
-                <!-- SCRIPT -->
+                <!-- REQUIRED: SCRIPT -->
                 <div class="field-group">
                     <label class="label" for="scriptFile">Script File <span style="color:#ff7a00;">*</span></label>
                     <input type="file" id="scriptFile" name="script" accept=".txt,text/plain,.pdf,application/pdf" required>
                     <div class="field-help">Upload a .txt or .pdf of your script.</div>
                 </div>
 
-                <!-- LOGLINE + SYNOPSIS -->
-                <div class="field-group">
-                    <label class="label" for="logline">Logline <span style="color:#777; font-weight:400;">(optional)</span></label>
-                    <textarea id="logline" name="logline" rows="2" placeholder="One sentence that captures the story, stakes, and tone..."></textarea>
+                <!-- MORE OPTIONS TOGGLE -->
+                <div class="more-opts-toggle" onclick="toggleMoreOpts()" id="moreOptsToggle">
+                    <span class="more-opts-arrow" id="moreOptsArrow">▶</span>
+                    <span>More options — logline, synopsis, images, project type</span>
                 </div>
 
-                <div class="field-group">
-                    <label class="label" for="synopsis">Synopsis <span style="color:#777; font-weight:400;">(optional)</span></label>
-                    <textarea id="synopsis" name="synopsis" rows="3" placeholder="Brief story overview for the deck..."></textarea>
-                </div>
+                <div id="moreOptsBody">
+                    <div class="field-group">
+                        <label class="label" for="project_type">Project Type</label>
+                        <input type="text" id="project_type" name="project_type" placeholder="Feature, Series, Short, Pilot, Documentary...">
+                    </div>
 
-                <!-- IMAGES -->
-                <div class="field-group">
-                    <label class="label" for="posterInput">Poster Image <span style="color:#777; font-weight:400;">(optional)</span></label>
-                    <input type="file" id="posterInput" name="poster" accept="image/png,image/jpeg,image/webp">
-                </div>
+                    <div class="field-group">
+                        <label class="label" for="logline">Logline <span style="color:#666; font-weight:400;">(optional)</span></label>
+                        <textarea id="logline" name="logline" rows="2" placeholder="One sentence that captures the story, stakes, and tone..."></textarea>
+                    </div>
 
-                <div class="field-group">
-                    <label class="label" for="imagesInput">Additional Images <span style="color:#777; font-weight:400;">(optional, up to 10, 1MB each)</span></label>
-                    <input type="file" id="imagesInput" name="images" accept="image/png,image/jpeg,image/webp" multiple>
+                    <div class="field-group">
+                        <label class="label" for="synopsis">Synopsis <span style="color:#666; font-weight:400;">(optional)</span></label>
+                        <textarea id="synopsis" name="synopsis" rows="3" placeholder="Brief story overview for the deck..."></textarea>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="label" for="posterInput">Poster Image <span style="color:#666; font-weight:400;">(optional)</span></label>
+                        <input type="file" id="posterInput" name="poster" accept="image/png,image/jpeg,image/webp">
+                    </div>
+
+                    <div class="field-group">
+                        <label class="label" for="imagesInput">Additional Images <span style="color:#666; font-weight:400;">(optional, up to 10, 1 MB each)</span></label>
+                        <input type="file" id="imagesInput" name="images" accept="image/png,image/jpeg,image/webp" multiple>
+                    </div>
                 </div>
 
                 <div class="upload-actions" style="margin-top:20px;">
                     <button class="primary-button" type="button" onclick="submitNewProject()">Build Pitch Deck</button>
-                    <a href="/studio" class="secondary-button" style="text-decoration:none; padding:12px 18px; display:inline-block;">Back</a>
+                    <a href="{{ '/project/' + request.args.get('project_id') if request.args.get('project_id') else '/studio' }}" class="secondary-button" style="text-decoration:none; padding:12px 18px; display:inline-block;">Back</a>
                 </div>
 
             </form>
@@ -130,19 +176,51 @@
 </div>
 
 <script>
+function toggleMoreOpts() {
+    const body = document.getElementById("moreOptsBody");
+    const arrow = document.getElementById("moreOptsArrow");
+    const isOpen = body.classList.contains("open");
+    body.classList.toggle("open", !isOpen);
+    arrow.classList.toggle("open", !isOpen);
+}
+
+// Progress stages: label, sub-text, bar %, step index
+const STAGES = [
+    { label: "Uploading script...",          sub: "Sending your file to the server.",                    pct: 8,  step: 0 },
+    { label: "Reading the script...",        sub: "Parsing scenes, characters, and structure.",          pct: 30, step: 1 },
+    { label: "Building story analysis...",   sub: "Identifying themes, tone, and key moments.",         pct: 55, step: 2 },
+    { label: "Designing your deck...",       sub: "Laying out slides with images and copy.",            pct: 80, step: 3 },
+    { label: "Finishing up...",              sub: "Packaging your pitch deck — almost there.",          pct: 95, step: 4 },
+];
+
 let sawBuildStart = false;
 let pollTimer = null;
-const BAR_STAGES = { UPLOADED: 8, ANALYZING: 35, running: 40, BUILDING: 75, COMPLETE: 100 };
+let currentStep = 0;
 
 function setProgressBar(pct) {
     document.getElementById("progressBar").style.width = pct + "%";
+}
+
+function setStage(idx) {
+    if (idx >= STAGES.length) idx = STAGES.length - 1;
+    const s = STAGES[idx];
+    document.getElementById("progressStage").textContent = s.label;
+    document.getElementById("progressSub").textContent = s.sub;
+    setProgressBar(s.pct);
+    for (let i = 0; i < 5; i++) {
+        const el = document.getElementById("step" + (i + 1));
+        if (!el) continue;
+        el.className = "progress-step" + (i < s.step ? " done" : i === s.step ? " active" : "");
+    }
+    currentStep = idx;
 }
 
 async function submitNewProject() {
     const form = document.getElementById("newProjectForm");
     const title = document.getElementById("project_title").value.trim();
     const scriptFile = document.getElementById("scriptFile").files[0];
-    const images = document.getElementById("imagesInput").files;
+    const imagesEl = document.getElementById("imagesInput");
+    const images = imagesEl ? imagesEl.files : [];
 
     if (!title) { alert("Please enter a project title."); return; }
     if (!scriptFile) { alert("Please select a script file."); return; }
@@ -152,8 +230,7 @@ async function submitNewProject() {
     }
 
     document.getElementById("progressOverlay").classList.add("active");
-    document.getElementById("progressStage").textContent = "Uploading script...";
-    setProgressBar(5);
+    setStage(0);
     sawBuildStart = false;
 
     const formData = new FormData(form);
@@ -169,29 +246,36 @@ async function pollForCompletion() {
         const data = await res.json();
         const st = data.status;
 
-        if (st === "ANALYZING" || st === "running" || st === "BUILDING") {
+        if (st === "ANALYZING" || st === "running") {
             sawBuildStart = true;
+            if (currentStep < 2) setStage(2);
+        } else if (st === "BUILDING") {
+            sawBuildStart = true;
+            if (currentStep < 3) setStage(3);
+        } else if (st === "UPLOADED" && currentStep < 1) {
+            setStage(1);
         }
 
-        const stage = document.getElementById("progressStage");
-
-        if (st === "ANALYZING" || st === "running") {
-            stage.textContent = "Analyzing script...";
-            setProgressBar(BAR_STAGES[st] || 40);
-        } else if (st === "BUILDING") {
-            stage.textContent = "Building deck...";
-            setProgressBar(75);
-        } else if (st === "COMPLETE" && sawBuildStart) {
-            stage.textContent = "Done! Opening workspace...";
+        if (st === "COMPLETE" && sawBuildStart) {
+            setStage(4);
             setProgressBar(100);
-            if (data.project_id) {
-                window.location.href = "/project/" + data.project_id;
-            } else {
-                window.location.href = "/studio";
+            document.getElementById("progressStage").textContent = "Done! Opening workspace...";
+            document.getElementById("progressSub").textContent = "";
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById("step" + i);
+                if (el) el.className = "progress-step done";
             }
+            setTimeout(() => {
+                if (data.project_id) {
+                    window.location.href = "/project/" + data.project_id;
+                } else {
+                    window.location.href = "/studio";
+                }
+            }, 600);
             return;
         } else if (st === "ERROR") {
-            stage.textContent = "Something went wrong. Please try again.";
+            document.getElementById("progressStage").textContent = "Something went wrong. Please try again.";
+            document.getElementById("progressSub").textContent = "";
             document.getElementById("progressOverlay").classList.remove("active");
             return;
         }
