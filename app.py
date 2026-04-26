@@ -1383,8 +1383,45 @@ def load_project_deck(project_id):
     return redirect("/?loaded=1")
 
 
+_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    error = None
+    if request.method == "POST":
+        pw = request.form.get("password", "")
+        if _ADMIN_PASSWORD and pw == _ADMIN_PASSWORD:
+            session["admin_authed"] = True
+            return redirect("/admin")
+        error = "Incorrect password." if _ADMIN_PASSWORD else "ADMIN_PASSWORD env var not set on this server."
+    return render_template("admin_login.html", error=error)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_authed", None)
+    return redirect("/admin/login")
+
+
+@app.route("/admin/delete-event/<int:event_id>", methods=["POST"])
+def admin_delete_event(event_id):
+    if not session.get("admin_authed"):
+        return "", 403
+    if DB_ENGINE:
+        try:
+            with DB_ENGINE.connect() as conn:
+                conn.execute(text("DELETE FROM activity_events WHERE id = :id"), {"id": event_id})
+                conn.commit()
+        except Exception:
+            pass
+    return redirect("/admin")
+
+
 @app.route("/admin")
 def admin():
+    if not session.get("admin_authed"):
+        return redirect("/admin/login")
     import shutil
     stats = {
         "users": 0, "projects": 0,
@@ -1442,16 +1479,16 @@ def admin():
             users = [dict(r) for r in rows]
 
             rows = conn.execute(text(
-                "SELECT user_email, event_type, route, created_at FROM activity_events "
+                "SELECT id, user_email, event_type, route, created_at FROM activity_events "
                 "WHERE event_type NOT IN ('contact_message','feedback_message') "
-                "ORDER BY created_at DESC LIMIT 25"
+                "ORDER BY created_at DESC LIMIT 50"
             )).mappings().all()
             recent_activity = [dict(r) for r in rows]
 
             rows = conn.execute(text(
-                "SELECT user_email, event_type, metadata_json, created_at FROM activity_events "
+                "SELECT id, user_email, event_type, metadata_json, created_at FROM activity_events "
                 "WHERE event_type IN ('contact_message','feedback_message') "
-                "ORDER BY created_at DESC LIMIT 50"
+                "ORDER BY created_at DESC LIMIT 100"
             )).mappings().all()
             messages = [dict(r) for r in rows]
 
@@ -1459,8 +1496,18 @@ def admin():
         stats["db_ok"] = False
         stats["db_error"] = str(e)[:120]
 
+    log_lines = []
+    try:
+        log_path = BASE_DIR / "pipeline.log"
+        if log_path.exists():
+            raw = log_path.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+            log_lines = raw[-60:]
+    except Exception:
+        pass
+
     return render_template("admin.html", stats=stats, users=users,
-                           recent_activity=recent_activity, messages=messages)
+                           recent_activity=recent_activity, messages=messages,
+                           log_lines=log_lines)
 
 @app.route("/status")
 def status():
