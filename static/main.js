@@ -743,7 +743,7 @@ function makePreviewSlideDataUri(title, subtitle, accent){
         <rect x="60" y="688" width="560" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
         <rect x="60" y="726" width="585" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
         <rect x="60" y="764" width="520" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
-        <text x="60" y="890" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#8f8f8f">Preview mockup for Beta v1.6 flow</text>
+        <text x="60" y="890" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">EVOLUM STUDIO</text>
     </svg>`;
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
@@ -888,10 +888,26 @@ function renderDeckPreview(){
         const hasRealImage = !!(slide.image_url || slide.image_path);
         const titleText = escapeHtml(slide.title || `Slide ${index + 1}`);
         const typeText = escapeHtml(slide.type || `Slide ${index + 1}`);
-        const bodySnippet = escapeHtml((slide.subtitle || slide.body || "").slice(0, 55));
-        const overlay = hasRealImage
-            ? `<div class="deck-preview-overlay"><div class="deck-preview-overlay-title">${titleText}</div></div>`
+        const accentColor = slide.accent || "#ff7a00";
+
+        let mediaHtml;
+        if (hasRealImage) {
+            mediaHtml = `<div class="deck-preview-img-wrap">
+                <img src="${previewImageSrcForSlide(slide)}" alt="Slide ${index + 1}">
+                <div class="deck-preview-overlay"><div class="deck-preview-overlay-title">${titleText}</div></div>
+            </div>`;
+        } else {
+            const bodyPreview = escapeHtml((slide.body || slide.subtitle || "").slice(0, 200));
+            mediaHtml = `<div class="deck-preview-text-slide" style="border-top:3px solid ${accentColor};">
+                <div class="deck-preview-text-title">${titleText}</div>
+                ${bodyPreview ? `<div class="deck-preview-text-body">${bodyPreview}</div>` : ""}
+            </div>`;
+        }
+
+        const snippetText = hasRealImage
+            ? escapeHtml((slide.subtitle || slide.body || "").slice(0, 90))
             : "";
+
         return `
             <div class="deck-preview-card" draggable="true"
                  onclick="jumpToRefineSlide(${index})" title="${titleText} — click to edit"
@@ -901,13 +917,10 @@ function renderDeckPreview(){
                  ondrop="previewDrop(event,${index})"
                  ondragend="previewDragEnd(event)">
                 <button class="deck-preview-delete" onclick="event.stopPropagation();deletePreviewSlide(${index})" title="Delete slide">×</button>
-                <div class="deck-preview-img-wrap">
-                    <img src="${previewImageSrcForSlide(slide)}" alt="Slide ${index + 1}">
-                    ${overlay}
-                </div>
+                ${mediaHtml}
                 <div class="deck-preview-card-title">
                     <span class="deck-preview-num">${index + 1}</span>${typeText}
-                    ${bodySnippet ? `<div class="deck-preview-snippet">${bodySnippet}</div>` : ""}
+                    ${snippetText ? `<div class="deck-preview-snippet">${snippetText}</div>` : ""}
                 </div>
             </div>
         `;

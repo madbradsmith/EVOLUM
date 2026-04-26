@@ -558,7 +558,39 @@ body.active-build.complete-mode .workspace-title {
     margin-top: 3px;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+.deck-preview-text-slide {
+    width: 100%;
+    height: 225px;
+    border-radius: 8px;
+    background: #0d0d0d;
+    border: 1px solid rgba(255,255,255,0.09);
+    padding: 14px 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+.deck-preview-text-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e2e2e2;
+    line-height: 1.3;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+.deck-preview-text-body {
+    font-size: 10px;
+    color: #777;
+    line-height: 1.55;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 9;
     -webkit-box-orient: vertical;
 }
 .deck-preview-delete {
