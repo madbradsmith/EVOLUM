@@ -1682,7 +1682,6 @@ def upload():
             session.pop("active_project_id", None)
 
     clear_latest_targets()
-    set_status("UPLOADED")
 
     save_path = UPLOAD_DIR / Path(file.filename).name
     file.save(save_path)
