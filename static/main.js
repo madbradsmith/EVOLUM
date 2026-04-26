@@ -5,6 +5,7 @@ let approvedScriptFile = null;
 let buildInFlight = false;
 let sawFreshBuildStatus = false;
 let analyzeFlowMode = null;
+const slideCustomImages = {};
 
 const QUOTES = [
     { text: "Here's looking at you, kid.", attr: "— Casablanca", type: "SCREENPLAY" },
@@ -1850,7 +1851,6 @@ updateStatusUI("IDLE");
 
 
 // ===== PER-SLIDE IMAGE UPLOAD =================================
-const slideCustomImages = {};
 
 async function handleSlideImageUpload(input) {
     const file = input.files[0];
