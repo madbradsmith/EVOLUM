@@ -464,6 +464,15 @@ function startBuildDirect() {
     if (title) formData.append("project_title", title);
 
     fetch("/upload", { method: "POST", body: formData })
+        .then(res => {
+            if (res.status === 403) {
+                res.json().then(data => {
+                    buildInFlight = false;
+                    resetCreateProject();
+                    showInfoModal("Project Limit Reached", data.error || "You've reached the 6 project limit. Delete a project to create a new one.");
+                });
+            }
+        })
         .catch(err => console.error("Upload failed:", err));
 }
 
@@ -1887,6 +1896,10 @@ function renderProjectsList(projects) {
             <button class="proj-list-del" onclick="event.stopPropagation(); deleteProjectFromPanel('${p.id}', '${escapeHtml(p.title)}')" title="Delete">×</button>
         </div>
     `).join('');
+    // Update header title to active project name
+    const active = projects.find(p => p.id === activeLoadedProjectId);
+    const titleEl = document.getElementById("studioTitle");
+    if (titleEl && active) titleEl.textContent = active.title;
 }
 
 async function loadProjectFromPanel(projectId) {
@@ -1898,6 +1911,9 @@ async function loadProjectFromPanel(projectId) {
             activeLoadedProjectId = projectId;
             renderProjectsList(_cachedProjects);
             syncLatestSlidesForPreview();
+            const titleEl = document.getElementById("studioTitle");
+            const p = _cachedProjects.find(x => x.id === projectId);
+            if (titleEl && p) titleEl.textContent = p.title;
         }
     } catch(e) {}
 }

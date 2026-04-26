@@ -1657,7 +1657,6 @@ def upload():
         if user:
             uid = str(user["id"])
             session["user_id"] = uid
-    print(f"[UPLOAD] project_title={project_title!r} existing_pid={existing_project_id!r} uid={uid!r} db={bool(DB_ENGINE)}", flush=True)
     if existing_project_id and uid and DB_ENGINE:
         session["active_project_id"] = existing_project_id
         set_status("UPLOADED", project_id=existing_project_id)
@@ -1680,9 +1679,7 @@ def upload():
             new_pid = str(result.scalar())
             session["active_project_id"] = new_pid
             set_status("UPLOADED", project_id=new_pid)
-            print(f"[UPLOAD] Created project {new_pid} for user {uid}", flush=True)
     else:
-        print(f"[UPLOAD] No project created — title={project_title!r} uid={uid!r} db={bool(DB_ENGINE)}", flush=True)
         if not project_title and not existing_project_id:
             session.pop("active_project_id", None)
 
