@@ -256,7 +256,7 @@ async function pollForCompletion() {
             setStage(1);
         }
 
-        if (st === "COMPLETE" && sawBuildStart) {
+        if (st === "COMPLETE") {
             setStage(4);
             setProgressBar(100);
             document.getElementById("progressStage").textContent = "Done! Opening workspace...";

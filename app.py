@@ -1718,30 +1718,35 @@ def upload():
     project_title = (request.form.get("project_title") or "").strip()
     project_type = (request.form.get("project_type") or "").strip()
     existing_project_id = (request.form.get("project_id") or "").strip()
-    if existing_project_id and session.get("user_id") and DB_ENGINE:
+    uid = session.get("user_id")
+    print(f"[UPLOAD] project_title={project_title!r} existing_pid={existing_project_id!r} uid={uid!r} db={bool(DB_ENGINE)}", flush=True)
+    if existing_project_id and uid and DB_ENGINE:
         session["active_project_id"] = existing_project_id
         set_status("UPLOADED", project_id=existing_project_id)
-    elif project_title and session.get("user_id") and DB_ENGINE:
+    elif project_title and uid and DB_ENGINE:
         ensure_projects_table()
         with DB_ENGINE.begin() as conn:
             count = conn.execute(text(
                 "SELECT COUNT(*) FROM projects WHERE owner_user_id = :uid"
-            ), {"uid": session.get("user_id")}).scalar()
+            ), {"uid": uid}).scalar()
             if count >= 6:
                 return jsonify({"error": "Project limit reached (6 max). Delete an existing project first."}), 403
             result = conn.execute(text("""
                 INSERT INTO projects (owner_user_id, title, type)
                 VALUES (:uid, :title, :type) RETURNING id
             """), {
-                "uid": session.get("user_id"),
+                "uid": uid,
                 "title": project_title,
                 "type": project_type or "Project"
             })
             new_pid = str(result.scalar())
             session["active_project_id"] = new_pid
             set_status("UPLOADED", project_id=new_pid)
-    elif not project_title and not existing_project_id:
-        session.pop("active_project_id", None)
+            print(f"[UPLOAD] Created project {new_pid} for user {uid}", flush=True)
+    else:
+        print(f"[UPLOAD] No project created — title={project_title!r} uid={uid!r} db={bool(DB_ENGINE)}", flush=True)
+        if not project_title and not existing_project_id:
+            session.pop("active_project_id", None)
 
     clear_latest_targets()
     set_status("UPLOADED")
@@ -1864,7 +1869,7 @@ def upload():
     log_activity_event("deck_run", route="/upload", user_email=session.get("user_email"))
 
     # Save deck to user-scoped project directory
-    active_pid = session.get("active_project_id")
+    active_pid = get_status_project_id() or session.get("active_project_id")
     if active_pid and DB_ENGINE:
         try:
             uid = session.get("user_id", "anon")
