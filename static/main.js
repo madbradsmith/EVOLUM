@@ -1929,7 +1929,12 @@ async function loadProjectFromPanel(projectId) {
             const p = _cachedProjects.find(x => x.id === projectId);
             const titleEl = document.getElementById("studioTitle");
             if (titleEl && p) titleEl.textContent = p.title;
-            updateStatusUI("COMPLETE");
+            document.body.classList.add("complete-mode");
+            document.getElementById("completePanel").style.display = "block";
+            document.getElementById("previewStage").style.display = "block";
+            document.getElementById("refinementStage").style.display = "none";
+            latestSlidesLoadedForComplete = false;
+            syncLatestSlidesForPreview();
             renderProjectsList(_cachedProjects);
         }
     } catch(e) {}
@@ -1950,7 +1955,8 @@ async function openWelcomeProjectsPicker() {
     try {
         if (!_cachedProjects || !_cachedProjects.length) {
             const res = await fetch("/my-projects");
-            _cachedProjects = await res.json();
+            const data = await res.json();
+            _cachedProjects = data.projects || [];
         }
         renderWelcomeProjects(_cachedProjects);
     } catch(e) {
