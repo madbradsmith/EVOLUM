@@ -1124,28 +1124,32 @@ def login_test():
     return redirect("/studio")
 
 @app.route("/studio")
-@require_login
 def studio():
+    return redirect("/")
+
+
+@app.route("/my-projects")
+@require_login
+def my_projects():
     projects = []
     if DB_ENGINE:
         ensure_projects_table()
         with DB_ENGINE.connect() as conn:
             rows = conn.execute(text("""
-                SELECT id, title, type, status, created_at, output_dir, storage_used_mb
+                SELECT id, title, type, status, created_at, output_dir
                 FROM projects
-                WHERE owner_user_id = :user_id
+                WHERE owner_user_id = :uid
                 ORDER BY created_at DESC
-            """), {"user_id": session.get("user_id")}).mappings().all()
+            """), {"uid": session.get("user_id")}).mappings().all()
             projects = [dict(r) for r in rows]
         for p in projects:
             out = p.get("output_dir")
             p["has_deck"] = bool(out and (BASE_DIR / out / "deck.pdf").exists())
-    return render_template(
-        "my_studio.html",
-        user_name=session.get("user_name"),
-        user_email=session.get("user_email"),
-        projects=projects
-    )
+            p.pop("output_dir", None)
+            ca = p.get("created_at")
+            p["created_at"] = ca.strftime("%b %d, %Y") if hasattr(ca, "strftime") else str(ca)[:10] if ca else ""
+            p["id"] = str(p["id"])
+    return jsonify({"projects": projects})
 @app.route("/studio/chat", methods=["POST"])
 @require_login
 def studio_chat():
@@ -1221,114 +1225,39 @@ def session_test():
 
 PROJECTS = {}
 
-@app.route("/new-project", methods=["GET", "POST"])
-@require_login
+@app.route("/new-project")
 def new_project():
-    ensure_projects_table()
-
-    if request.method == "POST":
-        project_title = request.form.get("project_title", "").strip()
-        project_type = request.form.get("project_type", "").strip()
-        owner_user_id = session.get("user_id")
-
-        if not project_title:
-            return render_template("new_project.html")
-
-        with DB_ENGINE.begin() as conn:
-            count = conn.execute(text(
-                "SELECT COUNT(*) FROM projects WHERE owner_user_id = :uid"
-            ), {"uid": owner_user_id}).scalar()
-            if count >= 6:
-                return render_template("new_project.html", error="Project limit reached (6 max). Delete an existing project to create a new one.")
-
-            result = conn.execute(text("""
-                INSERT INTO projects (owner_user_id, title, type)
-                VALUES (:owner_user_id, :title, :type)
-                RETURNING id
-            """), {
-                "owner_user_id": owner_user_id,
-                "title": project_title,
-                "type": project_type
-            })
-
-            project_id = result.scalar()
-
-        return redirect(f"/project/{project_id}")
-
-    return render_template("new_project.html")
+    return redirect("/")
 
 @app.route("/project/<project_id>")
-@require_login
 def project_workspace(project_id):
+    return redirect("/")
+
+
+@app.route("/project/<project_id>/load", methods=["POST"])
+@require_login
+def load_project_json(project_id):
     ensure_projects_table()
-
-    ensure_collab_tables()
-    with DB_ENGINE.begin() as conn:
-        row = conn.execute(text("""
-            SELECT p.id, p.owner_user_id, p.title, p.type, p.status, p.storage_used_mb, p.output_dir
-            FROM projects p
-            WHERE p.id = :project_id
-            AND (
-                p.owner_user_id = :uid
-                OR EXISTS (
-                    SELECT 1 FROM project_collaborators pc
-                    WHERE pc.project_id = p.id AND pc.user_id = :uid
-                )
-            )
-        """), {
-            "project_id": project_id,
-            "uid": session.get("user_id")
-        }).mappings().first()
-
-    if not row:
-        return redirect("/studio")
-
-    project = dict(row)
-    if session.get("active_project_id") == str(project_id):
-        session.pop("active_project_id", None)
-
-    # Calculate storage and enumerate assets
-    storage_mb = 0.0
-    assets = []
-    has_deck = False
-
-    if project.get("output_dir"):
-        proj_dir = BASE_DIR / project["output_dir"]
-        if proj_dir.exists():
-            total_bytes = sum(f.stat().st_size for f in proj_dir.rglob("*") if f.is_file())
-            storage_mb = round(total_bytes / (1024 * 1024), 2)
-            has_deck = (proj_dir / "deck.pdf").exists()
-            for f in sorted(proj_dir.iterdir()):
-                if f.is_file() and not f.name.startswith("."):
-                    ext = f.suffix.lower()
-                    size_kb = round(f.stat().st_size / 1024, 1)
-                    ftype = ("deck" if ext in (".pptx", ".pdf") else
-                             "image" if ext in (".jpg", ".jpeg", ".png", ".webp") else
-                             "data" if ext == ".json" else "file")
-                    assets.append({"name": f.name, "size_kb": size_kb, "type": ftype, "ext": ext})
-            # Sync storage to DB if drifted
-            if abs(storage_mb - (project.get("storage_used_mb") or 0)) > 0.05:
-                with DB_ENGINE.begin() as conn2:
-                    conn2.execute(text("UPDATE projects SET storage_used_mb = :mb WHERE id = :id"),
-                                  {"mb": storage_mb, "id": project_id})
-                project["storage_used_mb"] = storage_mb
-
-    storage_pct = min(int(storage_mb / 100 * 100), 100)
-    storage_color = "#e05555" if storage_pct >= 90 else "#ff9944" if storage_pct >= 70 else "#ff7a00"
-    is_owner = project.get("owner_user_id") == session.get("user_id")
-
-    collaborators = []
+    uid = session.get("user_id")
     with DB_ENGINE.connect() as conn:
-        collab_rows = conn.execute(text("""
-            SELECT user_name, joined_at FROM project_collaborators
-            WHERE project_id = :pid ORDER BY joined_at ASC
-        """), {"pid": project_id}).mappings().all()
-        collaborators = [dict(r) for r in collab_rows]
-
-    return render_template("project.html", project=project, has_deck=has_deck,
-                           assets=assets, storage_mb=storage_mb,
-                           storage_pct=storage_pct, storage_color=storage_color,
-                           is_owner=is_owner, collaborators=collaborators)
+        row = conn.execute(text(
+            "SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "uid": uid}).mappings().first()
+    if not row or not row["output_dir"]:
+        return jsonify({"ok": False, "error": "Not found"}), 404
+    proj_dir = BASE_DIR / row["output_dir"]
+    try:
+        if (proj_dir / "deck.pptx").exists():
+            shutil.copy2(proj_dir / "deck.pptx", LATEST_PPTX)
+        if (proj_dir / "deck.pdf").exists():
+            shutil.copy2(proj_dir / "deck.pdf", LATEST_PDF)
+        if (proj_dir / "deck_manifest.json").exists():
+            shutil.copy2(proj_dir / "deck_manifest.json", LATEST_DECK_MANIFEST_JSON)
+        set_status("COMPLETE", project_id=project_id)
+        session["active_project_id"] = project_id
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+    return jsonify({"ok": True, "project_id": project_id})
 
 
 @app.route("/project/<project_id>/delete-asset", methods=["POST"])
@@ -1718,6 +1647,10 @@ def upload():
     project_title = (request.form.get("project_title") or "").strip()
     project_type = (request.form.get("project_type") or "").strip()
     existing_project_id = (request.form.get("project_id") or "").strip()
+    # Auto-title from filename when none supplied
+    if not project_title and file and file.filename:
+        stem = Path(file.filename).stem
+        project_title = stem.replace("_", " ").replace("-", " ").strip().title() or "Untitled Project"
     uid = session.get("user_id")
     print(f"[UPLOAD] project_title={project_title!r} existing_pid={existing_project_id!r} uid={uid!r} db={bool(DB_ENGINE)}", flush=True)
     if existing_project_id and uid and DB_ENGINE:

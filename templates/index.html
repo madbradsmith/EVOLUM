@@ -22,7 +22,6 @@
         <button class="top-nav-item" type="button" onclick="navTo(‘/’)">Home</button>
         {% if user_logged_in %}
         <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
-        <a class="top-nav-item" href="/studio" style="color:#ff9944; display:block; text-decoration:none; font-weight:700;">My Studio</a>
         <a class="top-nav-item" href="/cancel" style="color:#aaa; display:block; text-decoration:none;">Cancel Subscription</a>
         <a class="top-nav-item" href="/logout" style="color:#e05555; display:block; text-decoration:none;">Sign Out</a>
         {% else %}
@@ -36,11 +35,6 @@
     </div>
 </div>
 
-<!-- Studio back bar — shown when editing a project's saved deck -->
-<div id="studioBackBar" style="display:none; background:rgba(255,122,0,0.07); border-bottom:1px solid rgba(255,122,0,0.18); padding:9px 18px; align-items:center; gap:12px;">
-    <a id="studioBackLink" href="/studio" style="color:#ff9944; text-decoration:none; font-weight:700; font-size:13px;">← Back to Project</a>
-    <span style="color:#555; font-size:11px;">You're editing slides from your Studio project. Changes save when you rebuild.</span>
-</div>
 
 <div class="feedback-fab" onclick="openFeedbackModal()" role="button" tabindex="0">
     <div class="feedback-fab-icon">💬</div>
@@ -108,7 +102,7 @@
 </div>
 
 <!-- Generate Pitch Deck -->
-<div class="choice home-module-card" onclick="{% if user_logged_in %}window.location.href='/new-project'{% else %}showAuthModal(){% endif %}">
+<div class="choice home-module-card" onclick="{% if user_logged_in %}showUploadAnalyzeModal(){% else %}showAuthModal(){% endif %}">
     <div class="choice-title">Deck Generator</div>
     <img src="/static/deck_thumb.jpg" class="home-thumb-img">
     <div class="choice-copy">
@@ -178,7 +172,7 @@
                 
 <div class="complete-panel" id="completePanel">
     <div id="previewStage">
-        <div class="complete-title">Your deck is complete.</div>
+        <div class="complete-title" id="studioTitle">Your deck is complete.</div>
         <div class="complete-copy">
             Preview your generated deck below. You can download it now or refine it before final export.
         </div>
@@ -216,14 +210,26 @@
             <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
         </div>
 
-        <div class="regen-prompt-area" id="regenPromptArea">
-            <div class="regen-prompt-label">Regenerate with a new direction</div>
-            <div class="regen-prompt-row">
-                <input type="text" id="regenPromptInput" class="regen-prompt-input"
-                    placeholder="e.g. make it darker, lean into the horror tone…"
-                    onkeydown="if(event.key==='Enter') submitRegenDeck()">
-                <button class="primary-button regen-prompt-btn" type="button" onclick="submitRegenDeck()">Regenerate</button>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 0;">
+            <div class="regen-prompt-area" id="regenPromptArea" style="margin:0;">
+                <div class="regen-prompt-label">Regenerate with a new direction</div>
+                <div class="regen-prompt-row">
+                    <input type="text" id="regenPromptInput" class="regen-prompt-input"
+                        placeholder="e.g. make it darker, lean into the horror tone…"
+                        onkeydown="if(event.key==='Enter') submitRegenDeck()">
+                    <button class="primary-button regen-prompt-btn" type="button" onclick="submitRegenDeck()">Regenerate</button>
+                </div>
             </div>
+
+            {% if user_logged_in %}
+            <div id="myProjectsPanel" style="background:#0d0d0d; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; display:flex; flex-direction:column;">
+                <div style="font-size:11px; color:#ff9944; font-weight:700; letter-spacing:0.08em; margin-bottom:8px;">MY PROJECTS</div>
+                <div id="projectsList" style="display:flex; flex-direction:column; gap:4px; flex:1; overflow-y:auto; max-height:100px;">
+                    <div style="color:#444; font-size:11px;">Loading...</div>
+                </div>
+                <button onclick="resetCreateProject()" style="margin-top:8px; background:transparent; border:1px dashed rgba(255,122,0,0.35); border-radius:8px; color:#ff9944; font-size:11px; padding:5px 10px; cursor:pointer; font-family:inherit; text-align:center; transition:border-color 0.15s;">+ New Deck</button>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -393,6 +399,31 @@
 
 <!-- ===== WELCOME MODAL ===================================== -->
 <style>
+/* My Projects panel */
+.proj-list-item {
+    padding: 5px 8px;
+    border-radius: 7px;
+    font-size: 11px;
+    color: #888;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.proj-list-item:hover { background: rgba(255,122,0,0.1); color: #ff9944; }
+.proj-list-item.active { background: rgba(255,122,0,0.15); color: #ff9944; font-weight: 700; }
+.proj-list-title { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.proj-list-badge { color: #52c97a; font-size: 10px; flex-shrink: 0; }
+.proj-list-del { color: #444; font-size: 13px; flex-shrink: 0; line-height: 1; padding: 0 2px; background: none; border: none; cursor: pointer; font-family: inherit; transition: color 0.15s; }
+.proj-list-del:hover { color: #e05555; }
+@media (max-width: 540px) {
+    #myProjectsPanel { display: none; }
+    div:has(> #regenPromptArea) { grid-template-columns: 1fr !important; }
+}
 .welcome-choice-card {
     background: #1a1a1a;
     border: 1px solid rgba(255,255,255,0.1);

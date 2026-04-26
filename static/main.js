@@ -600,6 +600,12 @@ function validateUploadAndStart(){
     setLocalStatus("UPLOADED");
 
     const formData = new FormData(form);
+    // Auto-append project title from script filename
+    if (approvedScriptFile && !formData.get("project_title")) {
+        const stem = approvedScriptFile.name.replace(/\.[^.]+$/, "");
+        const title = stem.replace(/[_\-]+/g, " ").trim();
+        if (title) formData.append("project_title", title);
+    }
 
     fetch("/upload", {
         method: "POST",
@@ -1747,6 +1753,7 @@ function updateStatusUI(status){
             if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
                 syncLatestSlidesForPreview();
             }
+            if (previousStatus !== "COMPLETE") fetchMyProjects();
         }
     } else if (status === "ERROR"){
         updateBuildProgressModal("ERROR");
@@ -1781,6 +1788,9 @@ async function pollStatus(){
                 }
             }
             if (!buildInFlight && data.status === "COMPLETE") return;
+            if (data.status === "COMPLETE" && data.project_id) {
+                activeLoadedProjectId = data.project_id;
+            }
             updateStatusUI(data.status);
         }
     } catch (e) {}
@@ -1790,26 +1800,69 @@ refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slid
 renderDeckPreview();
 renderCurrentRefineSlide();
 
-// Auto-open refine if redirected here after loading a saved project deck
-const _loadParams = new URLSearchParams(window.location.search);
-if (_loadParams.get("loaded") === "1") {
-    const _fromProject = _loadParams.get("from_project");
-    history.replaceState({}, "", "/");
-    if (_fromProject) {
-        const bar = document.getElementById("studioBackBar");
-        const link = document.getElementById("studioBackLink");
-        if (bar && link) {
-            link.href = "/project/" + _fromProject;
-            bar.style.display = "flex";
-        }
+updateStatusUI("IDLE");
+
+
+// ===== MY PROJECTS PANEL =====================================
+let activeLoadedProjectId = null;
+let _cachedProjects = [];
+
+async function fetchMyProjects() {
+    const panel = document.getElementById("projectsList");
+    if (!panel) return;
+    try {
+        const res = await fetch("/my-projects", { cache: "no-store" });
+        if (!res.ok) { renderProjectsList([]); return; }
+        const data = await res.json();
+        _cachedProjects = data.projects || [];
+        renderProjectsList(_cachedProjects);
+    } catch(e) {
+        renderProjectsList([]);
     }
-    buildInFlight = true;
-    sawFreshBuildStatus = true;
-    showLiveProcess();
-    updateStatusUI("COMPLETE");
-} else {
-    updateStatusUI("IDLE");
 }
+
+function renderProjectsList(projects) {
+    const panel = document.getElementById("projectsList");
+    if (!panel) return;
+    if (!projects.length) {
+        panel.innerHTML = '<div style="color:#444; font-size:11px;">No saved projects yet.</div>';
+        return;
+    }
+    panel.innerHTML = projects.map(p => `
+        <div class="proj-list-item${activeLoadedProjectId === p.id ? ' active' : ''}" onclick="loadProjectFromPanel('${p.id}')">
+            <span class="proj-list-title">${escapeHtml(p.title)}</span>
+            ${p.has_deck ? '<span class="proj-list-badge">✓</span>' : ''}
+            <button class="proj-list-del" onclick="event.stopPropagation(); deleteProjectFromPanel('${p.id}', '${escapeHtml(p.title)}')" title="Delete">×</button>
+        </div>
+    `).join('');
+}
+
+async function loadProjectFromPanel(projectId) {
+    if (activeLoadedProjectId === projectId) return;
+    try {
+        const res = await fetch(`/project/${projectId}/load`, { method: "POST" });
+        const data = await res.json();
+        if (data.ok) {
+            activeLoadedProjectId = projectId;
+            renderProjectsList(_cachedProjects);
+            syncLatestSlidesForPreview();
+        }
+    } catch(e) {}
+}
+
+async function deleteProjectFromPanel(projectId, title) {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`/project/${projectId}/delete`, { method: "POST" });
+        const data = await res.json();
+        if (data.ok) {
+            _cachedProjects = _cachedProjects.filter(p => p.id !== projectId);
+            if (activeLoadedProjectId === projectId) activeLoadedProjectId = null;
+            renderProjectsList(_cachedProjects);
+        }
+    } catch(e) {}
+}
+// ===== MY PROJECTS PANEL END ==================================
 
 setInterval(pollStatus, 1200);
 pollStatus();
