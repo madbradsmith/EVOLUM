@@ -864,38 +864,42 @@ let activeDeckType = "full";
 async function loadLatestRefineSlides(type){
     type = type || activeDeckType || "full";
     activeDeckType = type;
+
     try {
-        let slides;
-        if (activeLoadedProjectId && type === "full") {
-            const response = await fetch(`/project/${activeLoadedProjectId}/slides`, { cache: "no-store" });
-            if (!response.ok) throw new Error("slides_missing");
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-            slides = data.slides || [];
-            if (!slides.length) throw new Error("manifest_empty");
-            refineSlides = slides.map((slide, index) => normalizeSlideForRefine(slide, index));
-            latestRefineProjectTitle = data.title || refineSlides[0]?.title || "UNTITLED PROJECT";
-        } else {
-            const manifestFile = type === "producer"
-                ? "output/latest_deck_manifest_producer.json"
-                : "output/latest_deck_manifest.json";
-            const response = await fetch(`/project-file?path=${manifestFile}`, { cache: "no-store" });
-            if (!response.ok) throw new Error("manifest_missing");
-            const data = await response.json();
-            if (!Array.isArray(data) || !data.length) throw new Error("manifest_empty");
-            refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
-            latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
+        const manifestFile = type === "producer"
+            ? "output/latest_deck_manifest_producer.json"
+            : "output/latest_deck_manifest.json";
+
+        const response = await fetch(`/project-file?path=${manifestFile}`, { cache: "no-store" });
+
+        if (!response.ok) {
+            throw new Error("manifest_missing");
         }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data) || !data.length) {
+            throw new Error("manifest_empty");
+        }
+
+        refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
+        latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
+
         _syncDeckTypeTabs();
         return true;
+
     } catch (err) {
+        console.error("Could not load deck manifest:", err);
+
         refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
         latestRefineProjectTitle = "UNTITLED PROJECT";
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
+
         return false;
     }
 }
+
 
 async function switchDeckType(type) {
     if (type === activeDeckType) return;
