@@ -1967,17 +1967,38 @@ async function openWelcomeProjectsPicker() {
 function renderWelcomeProjects(projects) {
     const el = document.getElementById("welcomeProjectsItems");
     if (!el) return;
+
     if (!projects || !projects.length) {
         el.innerHTML = '<div style="color:#aaa; font-size:13px; padding:8px 0;">No saved projects yet.</div>';
         return;
     }
+
     el.innerHTML = projects.map(p => `
-        <div class="proj-list-item" onclick="closeModal('welcomeModal'); resetWelcomeModal(); loadProjectFromPanel('${p.id}')">
+        <div class="proj-list-item" onclick="selectWelcomeProject('${p.id}')">
             <span class="proj-list-title">${escapeHtml(p.title)}</span>
             ${p.has_deck ? '<span class="proj-list-badge">✓</span>' : ''}
         </div>
     `).join('');
 }
+
+async function selectWelcomeProject(projectId) {
+    closeModal('welcomeModal');
+    resetWelcomeModal();
+
+    setTimeout(async () => {
+        await loadProjectFromPanel(projectId);
+    }, 150);
+}
+
+async function selectWelcomeProject(projectId) {
+    closeModal('welcomeModal');
+    resetWelcomeModal();
+
+    setTimeout(async () => {
+        await loadProjectFromPanel(projectId);
+    }, 150);
+}
+
 
 async function deleteProjectFromPanel(projectId, title) {
     if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
