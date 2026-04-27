@@ -3,7 +3,7 @@
 # =====================================================
 # ===== Fix global file usage by TempVX ===============
 # ===== IMPORTS / SETUP START =========================
-# BETA v2_0 BUILD 1.1 -— NOT STABLE --- MB
+# BETA v2_0 BUILD 1.1 — NOT STABLE -MB
 
 from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for
 from pathlib import Path
@@ -1161,7 +1161,6 @@ def login_test():
     session["user_name"] = "James Evans"
     session["user_email"] = "test@evolumstudio.com"
     return redirect("/studio")
-
 
 _ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
