@@ -2184,6 +2184,51 @@ def my_projects():
 
     return jsonify({"projects": projects})
             
+@app.route("/project/<project_id>/slides", methods=["GET"])
+def project_slides(project_id):
+    if "user_id" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
+
+    user_id = str(session["user_id"])
+
+    possible_paths = [
+        BASE_DIR / "users" / user_id / "projects" / str(project_id) / "latest_deck_manifest.json",
+        BASE_DIR / "users" / user_id / "projects" / str(project_id) / "output" / "latest_deck_manifest.json",
+        BASE_DIR / "projects" / str(project_id) / "latest_deck_manifest.json",
+        BASE_DIR / "projects" / str(project_id) / "output" / "latest_deck_manifest.json",
+        BASE_DIR / "output" / "latest_deck_manifest.json",
+    ]
+
+    manifest_path = None
+
+    for path in possible_paths:
+        if path.exists():
+            manifest_path = path
+            break
+
+    if not manifest_path:
+        return jsonify({
+            "error": "manifest_not_found",
+            "project_id": project_id,
+            "slides": []
+        }), 404
+
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as f:
+            slides = json.load(f)
+    except Exception as e:
+        return jsonify({
+            "error": "manifest_read_failed",
+            "details": str(e),
+            "slides": []
+        }), 500
+
+    return jsonify({
+        "ok": True,
+        "project_id": project_id,
+        "title": f"Project {project_id}",
+        "slides": slides
+    })
 
 @app.route("/project-file")
 def project_file():
