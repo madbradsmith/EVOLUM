@@ -1808,8 +1808,8 @@ function renderProjectsList(projects) {
 }
 
 async function loadProjectFromPanel(projectId) {
-if (false && activeLoadedProjectId && type === "full") {
- document.body.classList.contains("complete-mode")) return;
+    if (activeLoadedProjectId === projectId && document.body.classList.contains("complete-mode")) return;
+    }
     try {
         const res = await fetch(`/project/${projectId}/load`, { method: "POST" });
         const data = await res.json();
