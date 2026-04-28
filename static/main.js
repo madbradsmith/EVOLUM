@@ -1372,11 +1372,39 @@ function closeBuildProgressModal(){
 }
 
 async function submitRegenDeck() {
-    showInfoModal(
-        "Regenerate Deck",
-        "Regenerate Deck is temporarily paused while we stabilize this beta feature. Your current deck is safe — use Refine Deck or Download PPTX for now."
-    );
-    return;
+    const prompt = (document.getElementById("regenPromptInput")?.value || "").trim();
+
+    document.getElementById("buildProgressTitle").textContent = "Regenerating Deck";
+    document.getElementById("buildProgressCopy").textContent = "Please wait while your updated deck is rebuilt.";
+    document.getElementById("buildProgressStage").textContent = "Rebuilding deck…";
+    document.getElementById("buildProgressFill").style.width = "35%";
+    document.getElementById("buildProgressWorking").style.display = "block";
+    document.getElementById("buildProgressActions").style.display = "none";
+    document.getElementById("buildProgressModal").classList.add("show");
+
+    try {
+        const res = await fetch("/regen-deck", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ prompt })
+        });
+
+        const data = await res.json();
+
+        if (!data.ok) {
+            throw new Error(data.error || "Regenerate failed.");
+        }
+
+        document.getElementById("buildProgressFill").style.width = "100%";
+        closeBuildProgressModal();
+        latestSlidesLoadedForComplete = false;
+        await syncLatestSlidesForPreview();
+        renderCurrentRefineSlide();
+
+    } catch (e) {
+        closeBuildProgressModal();
+        showInfoModal("Regenerate Deck", e.message || "Regenerate failed.");
+    }
 }
 
 
