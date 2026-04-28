@@ -1808,27 +1808,36 @@ function renderProjectsList(projects) {
 }
 
 async function loadProjectFromPanel(projectId) {
-    if (activeLoadedProjectId && type === "full") { document.body.classList.contains("complete-mode") return;
+    if (
+        activeLoadedProjectId === projectId &&
+        document.body.classList.contains("complete-mode")
+    ) {
+        return;
+    }
 
-    
     try {
         const res = await fetch(`/project/${projectId}/load`, { method: "POST" });
         const data = await res.json();
+
         if (data.ok) {
             activeLoadedProjectId = projectId;
+
             const p = _cachedProjects.find(x => x.id === projectId);
             const titleEl = document.getElementById("studioTitle");
             if (titleEl && p) titleEl.textContent = p.title;
+
             document.body.classList.add("complete-mode");
             document.getElementById("completePanel").style.display = "block";
             document.getElementById("previewStage").style.display = "block";
             document.getElementById("refinementStage").style.display = "none";
+
             latestSlidesLoadedForComplete = false;
             syncLatestSlidesForPreview();
             renderProjectsList(_cachedProjects);
         }
-    } catch(e) {}
+    } catch (e) {}
 }
+
 
 function resetWelcomeModal() {
     const choices = document.getElementById("welcomeChoices");
