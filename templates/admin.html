@@ -6,19 +6,32 @@
 <title>EVOLUM Admin</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; }
+:root {
+    --bg: #eef1f5;
+    --card: #ffffff;
+    --ink: #0f172a;
+    --muted: #111827;
+    --soft: #374151;
+    --line: #d7dce5;
+    --line-soft: #e5e7eb;
+    --orange: #f97316;
+    --orange-soft: #fff7ed;
+    --blue: #2563eb;
+    --green: #16a34a;
+    --red: #dc2626;
+    --yellow: #d97706;
+}
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #f0f2f5;
-    color: #111827;
+    background: var(--bg);
+    color: var(--ink);
     min-height: 100vh;
     padding: 0 0 60px;
 }
-
-/* ── TOP BAR ── */
 .topbar {
-    background: #fff;
-    border-bottom: 1px solid #e0e2e8;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
     padding: 14px 28px;
     display: flex;
     align-items: center;
@@ -27,156 +40,178 @@ body {
     position: sticky;
     top: 0;
     z-index: 10;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 6px rgba(15,23,42,0.08);
 }
-.topbar-title { font-size: 18px; font-weight: 800; color: #111827; letter-spacing: 0.3px; }
-.topbar-sub { font-size: 12px; color: #9ca3af; margin-top: 1px; }
+.topbar-title { font-size: 19px; font-weight: 850; color: var(--ink); letter-spacing: 0.3px; }
+.topbar-sub { font-size: 12px; color: var(--soft); margin-top: 2px; font-weight: 600; }
 .topbar-links { display: flex; gap: 8px; flex-wrap: wrap; }
 .topbar-links a {
     font-size: 12px;
-    font-weight: 600;
-    color: #f97316;
+    font-weight: 750;
+    color: var(--orange);
     text-decoration: none;
-    padding: 6px 12px;
+    padding: 7px 12px;
     border: 1px solid #fed7aa;
     border-radius: 8px;
-    background: #fff7ed;
-    transition: background 0.15s;
+    background: var(--orange-soft);
 }
-.topbar-links a:hover { background: #ffedd5; }
 .topbar-links a.logout {
-    color: #6b7280;
-    border-color: #e5e7eb;
+    color: var(--ink);
+    border-color: var(--line);
     background: #f9fafb;
 }
-.topbar-links a.logout:hover { background: #f3f4f6; }
-
-/* ── PAGE LAYOUT ── */
-.page { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
+.page { max-width: 1240px; margin: 0 auto; padding: 24px 18px; }
 
 .section-label {
-    font-size: 10px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 850;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: #9ca3af;
-    margin: 32px 0 12px;
+    color: var(--ink);
+    margin: 24px 0 10px;
 }
 .section-label:first-child { margin-top: 0; }
 
-/* ── STAT CARDS ── */
 .stat-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
     gap: 10px;
-    margin-bottom: 6px;
 }
-.stat-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 16px 18px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+.stat-card, .health-card, .panel-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
 }
-.stat-label { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; font-weight: 600; }
-.stat-value { font-size: 32px; font-weight: 800; color: #111827; line-height: 1; }
-.stat-value.orange { color: #f97316; }
-.stat-value.green { color: #16a34a; }
-.stat-value.blue { color: #2563eb; }
-.stat-sub { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+.stat-card { padding: 16px 17px; }
+.stat-label {
+    font-size: 10.5px;
+    color: var(--ink);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+    font-weight: 850;
+}
+.stat-value { font-size: 31px; font-weight: 850; color: var(--ink); line-height: 1; }
+.stat-value.orange { color: var(--orange); }
+.stat-value.green { color: var(--green); }
+.stat-value.blue { color: var(--blue); }
+.stat-sub { font-size: 11px; color: var(--soft); margin-top: 5px; font-weight: 600; }
 
-/* ── HEALTH CARDS ── */
 .health-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
 }
 .health-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 14px 18px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 82px;
+}
+.health-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.health-dot.ok { background: var(--green); box-shadow: 0 0 7px rgba(22,163,74,0.5); }
+.health-dot.warn { background: var(--yellow); box-shadow: 0 0 7px rgba(217,119,6,0.5); }
+.health-dot.err { background: var(--red); box-shadow: 0 0 7px rgba(220,38,38,0.5); }
+.health-text { font-size: 14px; font-weight: 850; color: var(--ink); }
+.health-sub { font-size: 12px; color: var(--soft); margin-top: 3px; line-height: 1.35; font-weight: 600; }
+.disk-bar { height: 8px; background: #edf0f4; border-radius: 999px; overflow: hidden; margin-top: 10px; width: 100%; }
+.disk-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--blue)); transition: width 0.5s ease; }
+.disk-bar-fill.warn { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+.disk-bar-fill.danger { background: linear-gradient(90deg, var(--orange), var(--red)); }
+
+.quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 8px;
+}
+.quick-link {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--orange);
+    text-decoration: none;
+    font-weight: 800;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+}
+.quick-link:hover { border-color: #fed7aa; background: var(--orange-soft); }
+
+.dashboard-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+}
+.panel-card { overflow: hidden; }
+.panel-head {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--line-soft);
+    padding: 10px 14px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    justify-content: space-between;
+    gap: 10px;
 }
-.health-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.health-dot.ok { background: #16a34a; box-shadow: 0 0 6px rgba(22,163,74,0.4); }
-.health-dot.warn { background: #d97706; box-shadow: 0 0 6px rgba(217,119,6,0.4); }
-.health-dot.err { background: #dc2626; box-shadow: 0 0 6px rgba(220,38,38,0.4); }
-.health-text { font-size: 13px; font-weight: 600; color: #111827; }
-.health-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.panel-title {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+}
+.panel-count {
+    font-size: 11px;
+    font-weight: 850;
+    color: var(--orange);
+    background: var(--orange-soft);
+    border: 1px solid #fed7aa;
+    border-radius: 999px;
+    padding: 2px 8px;
+}
+.scroll-panel {
+    max-height: 245px;
+    overflow-y: auto;
+}
+.scroll-panel.short { max-height: 180px; }
 
-.disk-bar-wrap {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 14px 18px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-.disk-bar-label { font-size: 12px; color: #6b7280; margin-bottom: 8px; display: flex; justify-content: space-between; font-weight: 500; }
-.disk-bar { height: 8px; background: #f3f4f6; border-radius: 999px; overflow: hidden; }
-.disk-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #16a34a, #2563eb); transition: width 0.5s ease; }
-.disk-bar-fill.warn { background: linear-gradient(90deg, #d97706, #f97316); }
-.disk-bar-fill.danger { background: linear-gradient(90deg, #f97316, #dc2626); }
-
-/* ── QUICK LINKS ── */
-.quick-links { display: flex; gap: 8px; flex-wrap: wrap; }
-.quick-link {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 9px 16px;
-    font-size: 13px;
-    color: #f97316;
-    text-decoration: none;
-    font-weight: 600;
-    transition: background 0.15s, border-color 0.15s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-.quick-link:hover { border-color: #fed7aa; background: #fff7ed; }
-
-/* ── TABLES ── */
-.table-wrap {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 thead { background: #f9fafb; }
 th {
     text-align: left;
-    padding: 10px 16px;
+    padding: 10px 14px;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #9ca3af;
-    border-bottom: 1px solid #f3f4f6;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line-soft);
 }
 td {
-    padding: 10px 16px;
-    border-bottom: 1px solid #f3f4f6;
-    color: #374151;
+    padding: 10px 14px;
+    border-bottom: 1px solid #eef0f4;
+    color: #1f2937;
     vertical-align: middle;
 }
 tr:last-child td { border-bottom: none; }
 tr:hover td { background: #fafafa; }
-.email-cell { color: #111827; font-weight: 600; }
+.email-cell { color: var(--ink); font-weight: 750; }
+.time-cell { color: var(--soft); font-size: 11px; white-space: nowrap; font-weight: 650; }
+.empty-state { text-align: center; color: var(--soft); padding: 28px; font-size: 13px; font-weight: 650; }
+
 .event-badge {
     display: inline-block;
-    padding: 2px 8px;
+    padding: 3px 8px;
     border-radius: 999px;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 850;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
 .badge-sign_in { background: #dbeafe; color: #1d4ed8; }
-.badge-sign_out { background: #f3f4f6; color: #6b7280; }
+.badge-sign_out { background: #f3f4f6; color: #374151; }
 .badge-account_created { background: #dcfce7; color: #15803d; }
 .badge-deck_run { background: #fff7ed; color: #c2410c; }
 .badge-script_analysis { background: #fef3c7; color: #92400e; }
@@ -184,64 +219,67 @@ tr:hover td { background: #fafafa; }
 .badge-actor_booked { background: #fee2e2; color: #b91c1c; }
 .badge-feedback_message { background: #dbeafe; color: #1d4ed8; }
 .badge-contact_message { background: #dcfce7; color: #15803d; }
-.badge-default { background: #f3f4f6; color: #6b7280; }
-.time-cell { color: #9ca3af; font-size: 11px; white-space: nowrap; }
-.empty-state { text-align: center; color: #9ca3af; padding: 36px; font-size: 13px; }
+.badge-default { background: #f3f4f6; color: #374151; }
 
-/* ── DELETE BUTTON ── */
-.del-btn {
-    background: none;
-    border: 1px solid #fecaca;
-    color: #ef4444;
-    border-radius: 6px;
-    padding: 3px 9px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s;
-    line-height: 1.4;
+.user-actions {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
 }
-.del-btn:hover { background: #fef2f2; }
+.small-admin-btn {
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 7px;
+    padding: 4px 8px;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+.small-admin-btn:hover { background: #f9fafb; }
+.small-admin-btn.orange { color: var(--orange); border-color: #fed7aa; background: var(--orange-soft); }
 
-/* ── PIPELINE LOG ── */
 .log-wrap {
-    background: #1e1e2e;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    background: #111827;
+    border: 1px solid #d1d5db;
+    border-radius: 13px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 4px rgba(15,23,42,0.08);
 }
 .log-header {
-    background: #16162a;
-    padding: 10px 16px;
+    background: #0b1120;
+    padding: 10px 14px;
     font-size: 10px;
-    font-weight: 700;
+    font-weight: 900;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: #6b7280;
-    border-bottom: 1px solid #2a2a3e;
+    color: #f97316;
+    border-bottom: 1px solid #1f2937;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-.log-header span { color: #f97316; }
 .log-body {
-    padding: 16px;
+    padding: 14px;
     font-family: "SF Mono", "Fira Code", monospace;
     font-size: 11px;
-    line-height: 1.7;
+    line-height: 1.65;
     color: #a3e635;
     white-space: pre-wrap;
-    word-break: break-all;
-    max-height: 400px;
+    word-break: break-word;
+    max-height: 260px;
     overflow-y: auto;
 }
-.log-empty { color: #4b5563; padding: 24px 16px; font-size: 12px; }
+.log-empty { color: #94a3b8; padding: 22px 14px; font-size: 12px; }
 
-@media (max-width: 700px) {
-    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 850px) {
+    .dashboard-two-col { grid-template-columns: 1fr; }
     .health-grid { grid-template-columns: 1fr; }
     .topbar { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+@media (max-width: 560px) {
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+    .page { padding: 18px 12px; }
 }
 </style>
 </head>
@@ -273,15 +311,15 @@ tr:hover td { background: #fafafa; }
             <div class="stat-value blue">{{ stats.projects }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Sign-ins (All Time)</div>
+            <div class="stat-label">Sign-ins All Time</div>
             <div class="stat-value">{{ stats.logins_total }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Sign-ins (Today)</div>
+            <div class="stat-label">Sign-ins Today</div>
             <div class="stat-value green">{{ stats.logins_today }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Active (30 min)</div>
+            <div class="stat-label">Active 30 Min</div>
             <div class="stat-value green">{{ stats.active_sessions }}</div>
         </div>
     </div>
@@ -301,7 +339,7 @@ tr:hover td { background: #fafafa; }
             <div class="stat-value">{{ stats.actor_prep }}</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Booked Role Reports</div>
+            <div class="stat-label">Booked Reports</div>
             <div class="stat-value">{{ stats.actor_booked }}</div>
         </div>
     </div>
@@ -323,16 +361,14 @@ tr:hover td { background: #fafafa; }
             </div>
         </div>
         {% if stats.disk_total_mb %}
-        <div class="health-card" style="flex-direction:column; align-items:flex-start; gap:10px; width:100%; grid-column: 1 / -1;">
-            <div style="display:flex; align-items:center; gap:10px; width:100%;">
-                <div class="health-dot {{ 'err' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else 'ok') }}"></div>
-                <div>
-                    <div class="health-text">Disk Usage</div>
-                    <div class="health-sub">{{ stats.disk_used_mb }} MB used of {{ stats.disk_total_mb // 1024 }} GB ({{ stats.disk_pct }}%)</div>
+        <div class="health-card">
+            <div class="health-dot {{ 'err' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else 'ok') }}"></div>
+            <div style="width:100%;">
+                <div class="health-text">Disk Usage</div>
+                <div class="health-sub">{{ stats.disk_used_mb }} MB used of {{ stats.disk_total_mb // 1024 }} GB ({{ stats.disk_pct }}%)</div>
+                <div class="disk-bar">
+                    <div class="disk-bar-fill {{ 'danger' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else '') }}" style="width:{{ stats.disk_pct }}%;"></div>
                 </div>
-            </div>
-            <div class="disk-bar" style="width:100%;">
-                <div class="disk-bar-fill {{ 'danger' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else '') }}" style="width:{{ stats.disk_pct }}%;"></div>
             </div>
         </div>
         {% endif %}
@@ -340,124 +376,162 @@ tr:hover td { background: #fafafa; }
 
     <div class="section-label">Quick Links</div>
     <div class="quick-links">
-        <a class="quick-link" href="/analysis-report/latest.pdf" target="_blank">Latest Script Analysis</a>
-        <a class="quick-link" href="/output/latest_actor_prep_report.pdf" target="_blank">Latest Audition Report</a>
-        <a class="quick-link" href="/output/latest_actor_booked_report.pdf" target="_blank">Latest Booked Report</a>
         <a class="quick-link" href="/status">Status JSON</a>
+        <a class="quick-link" href="/db-check">DB Check</a>
+        <a class="quick-link" href="/debug-log" target="_blank">Pipeline Log</a>
         <a class="quick-link" href="/db-init">Init DB</a>
     </div>
 
-    <div class="section-label">Beta Users ({{ users | length }})</div>
-    <div class="table-wrap">
-        {% if users %}
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Email</th>
-                    <th>Name</th>
-                    <th>Joined</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for u in users %}
-                <tr>
-                    <td style="color:#9ca3af;">{{ u.id }}</td>
-                    <td class="email-cell">{{ u.email or '—' }}</td>
-                    <td>{{ u.name or '—' }}</td>
-                    <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else '—' }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state">No users yet.</div>
-        {% endif %}
+    <div class="section-label">Users</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Beta Users</div>
+            <div class="panel-count">{{ users | length }}</div>
+        </div>
+        <div class="scroll-panel">
+            {% if users %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Email</th>
+                        <th>Name</th>
+                        <th>Joined</th>
+                        <th>Controls</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td style="color:#374151; font-weight:700;">{{ u.id }}</td>
+                        <td class="email-cell">{{ u.email or '—' }}</td>
+                        <td>{{ u.name or '—' }}</td>
+                        <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else '—' }}</td>
+                        <td>
+                            <div class="user-actions">
+                                <button class="small-admin-btn orange" type="button" onclick="copyUserEmail('{{ u.email or '' }}')">Copy Email</button>
+                                <button class="small-admin-btn" type="button" onclick="showResetHint('{{ u.email or '' }}')">Reset PW</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No users yet.</div>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="section-label">Feedback &amp; Contact Messages ({{ messages | length }})</div>
-    <div class="table-wrap">
-        {% if messages %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>From</th>
-                    <th>Message</th>
-                    <th>Time</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for m in messages %}
-                <tr>
-                    <td><span class="event-badge badge-{{ m.event_type }}">{{ 'Feedback' if m.event_type == 'feedback_message' else 'Contact' }}</span></td>
-                    <td class="email-cell">{{ m.user_email or '—' }}</td>
-                    <td style="max-width:420px; word-break:break-word;">
-                        {% if m.metadata_json %}
-                            {% set meta = m.metadata_json if m.metadata_json is mapping else {} %}
-                            {% if meta.get('category') %}<span style="color:#f97316; font-size:10px; font-weight:700; margin-right:6px; text-transform:uppercase;">{{ meta.category }}</span>{% endif %}
-                            {{ meta.get('message', '—') }}
-                        {% else %}—{% endif %}
-                    </td>
-                    <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
-                    <td>
-                        {% if m.id %}
-                        <form method="POST" action="/admin/delete-event/{{ m.id }}" onsubmit="return confirm('Delete this message?');" style="display:inline;">
-                            <button class="del-btn" type="submit">✕</button>
-                        </form>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state">No messages yet.</div>
-        {% endif %}
+    <div class="section-label">Messages</div>
+    <div class="dashboard-two-col">
+        <div class="panel-card">
+            <div class="panel-head">
+                <div class="panel-title">Feedback</div>
+                <div class="panel-count">{{ messages | selectattr('event_type', 'equalto', 'feedback_message') | list | length }}</div>
+            </div>
+            <div class="scroll-panel short">
+                <table>
+                    <thead>
+                        <tr><th>From</th><th>Message</th><th>Time</th></tr>
+                    </thead>
+                    <tbody>
+                    {% set feedback_items = messages | selectattr('event_type', 'equalto', 'feedback_message') | list %}
+                    {% if feedback_items %}
+                        {% for m in feedback_items %}
+                        <tr>
+                            <td class="email-cell">{{ m.user_email or '—' }}</td>
+                            <td style="word-break:break-word;">
+                                {% if m.metadata_json %}
+                                    {% set meta = m.metadata_json if m.metadata_json is mapping else {} %}
+                                    {% if meta.get('category') %}<span style="color:#f97316; font-size:10px; font-weight:850; margin-right:6px; text-transform:uppercase;">{{ meta.category }}</span>{% endif %}
+                                    {{ meta.get('message', '—') }}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="3" class="empty-state">No feedback yet.</td></tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel-card">
+            <div class="panel-head">
+                <div class="panel-title">Contact</div>
+                <div class="panel-count">{{ messages | selectattr('event_type', 'equalto', 'contact_message') | list | length }}</div>
+            </div>
+            <div class="scroll-panel short">
+                <table>
+                    <thead>
+                        <tr><th>From</th><th>Message</th><th>Time</th></tr>
+                    </thead>
+                    <tbody>
+                    {% set contact_items = messages | selectattr('event_type', 'equalto', 'contact_message') | list %}
+                    {% if contact_items %}
+                        {% for m in contact_items %}
+                        <tr>
+                            <td class="email-cell">{{ m.user_email or '—' }}</td>
+                            <td style="word-break:break-word;">
+                                {% if m.metadata_json %}
+                                    {% set meta = m.metadata_json if m.metadata_json is mapping else {} %}
+                                    {{ meta.get('message', '—') }}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="3" class="empty-state">No contact messages yet.</td></tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <div class="section-label">Recent Activity (last 50 events)</div>
-    <div class="table-wrap">
-        {% if recent_activity %}
-        <table>
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>Event</th>
-                    <th>Route</th>
-                    <th>Time</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ev in recent_activity %}
-                <tr>
-                    <td class="email-cell">{{ ev.user_email or 'anon' }}</td>
-                    <td><span class="event-badge badge-{{ ev.event_type }} badge-default">{{ ev.event_type }}</span></td>
-                    <td style="color:#6b7280; font-size:12px;">{{ ev.route or '—' }}</td>
-                    <td class="time-cell">{{ ev.created_at.strftime('%m-%d %H:%M') if ev.created_at else '—' }}</td>
-                    <td>
-                        {% if ev.id %}
-                        <form method="POST" action="/admin/delete-event/{{ ev.id }}" onsubmit="return confirm('Delete this event?');" style="display:inline;">
-                            <button class="del-btn" type="submit">✕</button>
-                        </form>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty-state">No activity logged yet.</div>
-        {% endif %}
+    <div class="section-label">Recent Activity</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Last 50 Events</div>
+            <div class="panel-count">{{ recent_activity | length }}</div>
+        </div>
+        <div class="scroll-panel">
+            {% if recent_activity %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Event</th>
+                        <th>Route</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in recent_activity %}
+                    <tr>
+                        <td class="email-cell">{{ ev.user_email or 'anon' }}</td>
+                        <td><span class="event-badge badge-{{ ev.event_type }} badge-default">{{ ev.event_type }}</span></td>
+                        <td style="color:#374151; font-size:12px;">{{ ev.route or '—' }}</td>
+                        <td class="time-cell">{{ ev.created_at.strftime('%m-%d %H:%M') if ev.created_at else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No activity logged yet.</div>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="section-label">Pipeline Log (last 60 lines)</div>
+    <div class="section-label">Pipeline Log</div>
     <div class="log-wrap">
         <div class="log-header">
-            <span>pipeline.log</span>
-            <a href="/debug-log" target="_blank" style="color:#6b7280; font-size:10px; text-decoration:none;">Open full log ↗</a>
+            <span>pipeline.log — last 60 lines</span>
+            <a href="/debug-log" target="_blank" style="color:#94a3b8; font-size:10px; text-decoration:none;">Open full log ↗</a>
         </div>
         {% if log_lines %}
         <div class="log-body">{{ log_lines | join('\n') }}</div>
@@ -471,6 +545,14 @@ tr:hover td { background: #fafafa; }
 <script>
 const logBody = document.querySelector('.log-body');
 if (logBody) logBody.scrollTop = logBody.scrollHeight;
+
+function copyUserEmail(email){
+    if (!email) return;
+    navigator.clipboard?.writeText(email);
+}
+function showResetHint(email){
+    alert("Manual reset route is active. Use /admin/reset-password for: " + email);
+}
 </script>
 </body>
 </html>
