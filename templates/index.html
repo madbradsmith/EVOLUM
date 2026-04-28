@@ -907,7 +907,7 @@
 </div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}";</script>
-  <script src="{{ url_for('static', filename='main.js') }}"></script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=20260427_buttons_fix"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
     {% if show_auth %}window.addEventListener('DOMContentLoaded', () => showAuthModal());{% endif %}
