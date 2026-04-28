@@ -1808,7 +1808,7 @@ function renderProjectsList(projects) {
 }
 
 async function loadProjectFromPanel(projectId) {
-    if (activeLoadedProjectId && type === "full") { document.body.classList.contains("complete-mode")) return;
+    if (activeLoadedProjectId && type === "full") { document.body.classList.contains("complete-mode") return;
 
     
     try {
