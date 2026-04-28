@@ -1,7 +1,7 @@
 # =====================================================
 # ===== EVOLUM MASTER APP STRUCTURE (V1 BETA) =========
 # =====================================================
-
+# ===== Fix global file usage by TempVX ===============
 # ===== IMPORTS / SETUP START =========================
 # BETA v2_0 BUILD 1.1 -— NOT STABLE --- MB
 
@@ -2449,3 +2449,16 @@ if __name__ == "__main__":
 
 
 # ===== APP RUN END ===================================
+
+
+@app.route('/deck-manifest')
+def get_manifest():
+    user_id = session.get("user_id")
+    path = f"output/{user_id}_latest_deck_manifest.json"
+    return send_file(path)
+
+@app.route('/deck-manifest-producer')
+def get_manifest_producer():
+    user_id = session.get("user_id")
+    path = f"output/{user_id}_latest_deck_manifest_producer.json"
+    return send_file(path)
