@@ -3,7 +3,7 @@
 # =====================================================
 
 # ===== IMPORTS / SETUP START =========================
-# BETA v2_0 BUILD 1.1 — STABLE
+# BETA v2_0 BUILD 1.1 — NOT STABLE --- MB
 
 from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for
 from pathlib import Path
@@ -1114,6 +1114,45 @@ def require_login(view_func):
         return redirect("/")
     return wrapper
 
+@app.route("/admin/reset-password", methods=["POST"])
+def admin_reset_password():
+    admin_key = (request.form.get("admin_key") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    new_password = (request.form.get("new_password") or "").strip()
+
+    expected_key = os.environ.get("ADMIN_RESET_KEY", "").strip()
+
+    if not expected_key or admin_key != expected_key:
+        return jsonify({"ok": False, "error": "Unauthorized"}), 403
+
+    if not email or not new_password:
+        return jsonify({"ok": False, "error": "Email and new password are required."}), 400
+
+    if not DB_ENGINE:
+        return jsonify({"ok": False, "error": "Database not configured."}), 500
+
+    password_hash = generate_password_hash(new_password)
+
+    with DB_ENGINE.begin() as conn:
+        result = conn.execute(text("""
+            UPDATE beta_users
+            SET password_hash = :password_hash
+            WHERE lower(email) = :email
+        """), {
+            "password_hash": password_hash,
+            "email": email
+        })
+
+    if result.rowcount == 0:
+        return jsonify({"ok": False, "error": "No user found with that email."}), 404
+
+    log_activity_event(
+        "admin_password_reset",
+        route="/admin/reset-password",
+        user_email=email
+    )
+
+    return jsonify({"ok": True, "message": "Password reset successfully."})
 
 @app.route("/login-test")
 def login_test():
