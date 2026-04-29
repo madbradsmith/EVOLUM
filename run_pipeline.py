@@ -110,8 +110,11 @@ def main(input_file):
         start_time
     )
 
+    _uid = os.environ.get("DAI_USER_ID", "")
+    _uid_flag = f" --uid {_uid}" if _uid else ""
+
     run(
-        f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan.json",
+        f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan.json{_uid_flag}",
         "deck_builder_full",
         72,
         "Building full pitch deck...",
@@ -121,7 +124,7 @@ def main(input_file):
     producer_plan = APP_DIR / "slide_plan_producer.json"
     if producer_plan.exists():
         run(
-            f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan_producer.json --label producer",
+            f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan_producer.json --label producer{_uid_flag}",
             "deck_builder_producer",
             88,
             "Building producer's deck...",

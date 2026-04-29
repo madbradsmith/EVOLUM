@@ -1255,7 +1255,7 @@ def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
     add_cinematic_caption(slide, body, font_size=fs)
 
 
-def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path, label: str = "") -> Path:
+def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path, label: str = "", uid: str = "") -> Path:
     global _active_theme
     reset_image_selection_state()
     plan = load_json(slide_plan_path)
@@ -1373,7 +1373,8 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
 
     out_path = next_output_path(output_dir, label=label)
     prs.save(str(out_path))
-    manifest_name = f"latest_deck_manifest_{label}.json" if label else "latest_deck_manifest.json"
+    prefix = f"{uid}_" if uid else ""
+    manifest_name = f"{prefix}latest_deck_manifest_{label}.json" if label else f"{prefix}latest_deck_manifest.json"
     manifest_path = output_dir / manifest_name
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     # Also write a labeled latest copy so app.py can find it by label
@@ -1390,6 +1391,7 @@ def parse_args():
     parser.add_argument("slide_plan", nargs="?", help="Path to slide_plan.json")
     parser.add_argument("--project", help="Project/app directory containing slide_plan.json and visuals/")
     parser.add_argument("--label", default="", help="Output label (e.g. 'producer') for file naming")
+    parser.add_argument("--uid", default="", help="User ID for per-user manifest file naming")
     return parser.parse_args()
 
 
@@ -1401,7 +1403,7 @@ def main() -> None:
         print(f"Slide plan not found: {slide_plan_path}")
         raise SystemExit(1)
 
-    build_presentation(slide_plan_path, visuals_dir, output_dir, label=args.label)
+    build_presentation(slide_plan_path, visuals_dir, output_dir, label=args.label, uid=args.uid)
 
 
 if __name__ == "__main__":

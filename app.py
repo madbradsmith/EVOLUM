@@ -149,6 +149,12 @@ TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 _TMDB_CACHE: dict = {}
 LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
+
+def user_manifest_path(uid: str, label: str = "") -> "Path":
+    prefix = f"{uid}_" if uid else ""
+    name = f"{prefix}latest_deck_manifest_{label}.json" if label else f"{prefix}latest_deck_manifest.json"
+    return OUTPUT_DIR / name
+
 ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
 ACCESS_CODES = [
@@ -1572,8 +1578,11 @@ def upload():
                 shutil.copy2(fresh_pptx, proj_out / "deck.pptx")
             if fresh_pdf and fresh_pdf.exists():
                 shutil.copy2(fresh_pdf, proj_out / "deck.pdf")
-            if LATEST_DECK_MANIFEST_JSON.exists():
-                shutil.copy2(LATEST_DECK_MANIFEST_JSON, proj_out / "deck_manifest.json")
+            _manifest_src = user_manifest_path(uid)
+            if not _manifest_src.exists():
+                _manifest_src = LATEST_DECK_MANIFEST_JSON
+            if _manifest_src.exists():
+                shutil.copy2(_manifest_src, proj_out / "deck_manifest.json")
             with DB_ENGINE.begin() as conn:
                 conn.execute(text("""
                     UPDATE projects SET output_dir = :output_dir WHERE id = :id
@@ -1895,6 +1904,26 @@ def latest_slide_plan():
     return jsonify(payload)
             
 
+@app.route("/api/latest-manifest")
+def api_latest_manifest():
+    deck_type = (request.args.get("type") or "full").strip().lower()
+    uid = session.get("user_id", "")
+    label = "producer" if deck_type == "producer" else ""
+    path = user_manifest_path(uid, label) if uid else (
+        OUTPUT_DIR / f"latest_deck_manifest_{label}.json" if label else LATEST_DECK_MANIFEST_JSON
+    )
+    if not path.exists() and uid:
+        fallback = OUTPUT_DIR / f"latest_deck_manifest_{label}.json" if label else LATEST_DECK_MANIFEST_JSON
+        if fallback.exists():
+            path = fallback
+    if not path.exists():
+        return jsonify([]), 404
+    try:
+        return jsonify(json.loads(path.read_text(encoding="utf-8")))
+    except Exception:
+        return jsonify([]), 500
+
+
 @app.route("/project-file")
 def project_file():
     raw_path = unquote((request.args.get("path") or "").strip())
@@ -1998,15 +2027,18 @@ def refine_deck():
     data = request.get_json(silent=True) or {}
     slides = data.get("slides", [])
     deck_type = (data.get("deck_type") or "full").strip().lower()
+    uid = session.get("user_id", "")
 
     if deck_type == "producer":
-        manifest_path = OUTPUT_DIR / "latest_deck_manifest_producer.json"
         label = "producer"
     else:
-        manifest_path = LATEST_DECK_MANIFEST_JSON
         label = ""
 
-    result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label=label)
+    manifest_path = user_manifest_path(uid, label) if uid else (
+        OUTPUT_DIR / f"latest_deck_manifest_{label}.json" if label else LATEST_DECK_MANIFEST_JSON
+    )
+
+    result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label=label, user_id=uid)
 
     if "error" in result:
         return jsonify(result), 400 if result["error"] == "No slide data provided." else 500

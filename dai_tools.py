@@ -85,7 +85,7 @@ def publish_latest_outputs(pptx_source, pdf_source) -> None:
         shutil.copy2(pdf_source, _LATEST_PDF)
 
 
-def rebuild_refined_deck(slides: list, latest_manifest_path=None, label: str = "") -> dict:
+def rebuild_refined_deck(slides: list, latest_manifest_path=None, label: str = "", user_id: str = "") -> dict:
     """Build a new deck from refined slide data. Returns {'deck': name} or {'error': msg}."""
     if not slides or not isinstance(slides, list):
         return {"error": "No slide data provided."}
@@ -134,12 +134,21 @@ def rebuild_refined_deck(slides: list, latest_manifest_path=None, label: str = "
             for i, s in enumerate(slides, start=1)
         ]
 
-        manifest_out = Path(latest_manifest_path) if latest_manifest_path else (_OUTPUT_DIR / "latest_deck_manifest.json")
+        if latest_manifest_path:
+            manifest_out = Path(latest_manifest_path)
+        elif user_id:
+            prefix = f"{user_id}_"
+            name = f"{prefix}latest_deck_manifest_{label}.json" if label else f"{prefix}latest_deck_manifest.json"
+            manifest_out = _OUTPUT_DIR / name
+        else:
+            manifest_out = _OUTPUT_DIR / "latest_deck_manifest.json"
         manifest_out.write_text(json.dumps(manifest_payload, indent=2), encoding="utf-8")
 
         cmd = ["python3", str(_BASE_DIR / "deck_builder.py"), str(slide_plan_path)]
         if label:
             cmd += ["--label", label]
+        if user_id:
+            cmd += ["--uid", user_id]
         subprocess.run(cmd, cwd=str(_BASE_DIR), check=True)
 
         fresh_pptx = newest_generated_file(".pptx") if not label else _next_labeled_pptx(label)
