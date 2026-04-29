@@ -112,6 +112,8 @@ def main(input_file):
 
     _uid = os.environ.get("DAI_USER_ID", "")
     _uid_flag = f" --uid {_uid}" if _uid else ""
+    if _uid:
+        os.environ["EVOLUM_SESSION_ID"] = _uid
 
     run(
         f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan.json{_uid_flag}",

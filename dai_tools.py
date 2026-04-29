@@ -149,7 +149,10 @@ def rebuild_refined_deck(slides: list, latest_manifest_path=None, label: str = "
             cmd += ["--label", label]
         if user_id:
             cmd += ["--uid", user_id]
-        subprocess.run(cmd, cwd=str(_BASE_DIR), check=True)
+        env = os.environ.copy()
+        if user_id:
+            env["EVOLUM_SESSION_ID"] = user_id
+        subprocess.run(cmd, cwd=str(_BASE_DIR), env=env, check=True)
 
         fresh_pptx = newest_generated_file(".pptx") if not label else _next_labeled_pptx(label)
         fresh_pdf = newest_generated_file(".pdf") if not label else None

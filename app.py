@@ -1413,7 +1413,6 @@ def upload():
         if user:
             uid = str(user["id"])
             session["user_id"] = uid
-    print(f"[UPLOAD_DEBUG] title={repr(project_title)} uid={repr(uid)} db={bool(DB_ENGINE)} existing_pid={repr(existing_project_id)}", flush=True)
     if existing_project_id and uid and DB_ENGINE:
         session["active_project_id"] = existing_project_id
         set_status("UPLOADED", project_id=existing_project_id)
