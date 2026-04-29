@@ -12,6 +12,7 @@ import io
 import contextlib
 import shutil
 import subprocess
+import threading
 import os
 import importlib.util
 import time
@@ -1552,87 +1553,84 @@ def upload():
     )
 
     _uid_str = uid or ""
-    try:
-        set_status("ANALYZING", project_id=saved_pid, uid=_uid_str)
-        log_path = BASE_DIR / f"pipeline_{_uid_str}.log" if _uid_str else BASE_DIR / "pipeline.log"
+    _user_email = session.get("user_email", "")
+    log_path = BASE_DIR / f"pipeline_{_uid_str}.log" if _uid_str else BASE_DIR / "pipeline.log"
 
-        _pipeline_env = os.environ.copy()
-        if _uid_str:
-            _pipeline_env["DAI_USER_ID"] = _uid_str
-            _work_dir = BASE_DIR / "user_data" / _uid_str / str(saved_pid) / "build"
-            _work_dir.mkdir(parents=True, exist_ok=True)
-            (_work_dir / "user_upload_context.json").write_text(_ctx_data, encoding="utf-8")
-            _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
-        with open(log_path, "w", encoding="utf-8") as log_file:
-            subprocess.run(
-                ["python3", str(BASE_DIR / "run_pipeline.py"), str(save_path)],
-                cwd=str(BASE_DIR),
-                env=_pipeline_env,
-                stdout=log_file,
-                stderr=log_file,
-                text=True,
-                check=True,
-            )
+    _pipeline_env = os.environ.copy()
+    if _uid_str:
+        _pipeline_env["DAI_USER_ID"] = _uid_str
+        _work_dir = BASE_DIR / "user_data" / _uid_str / str(saved_pid) / "build"
+        _work_dir.mkdir(parents=True, exist_ok=True)
+        (_work_dir / "user_upload_context.json").write_text(_ctx_data, encoding="utf-8")
+        _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
 
-        set_status("BUILDING", project_id=saved_pid, uid=_uid_str)
-    except subprocess.CalledProcessError:
-        set_status("ERROR", uid=_uid_str)
+    set_status("ANALYZING", project_id=saved_pid, uid=_uid_str)
+
+    def _run_pipeline_bg():
         try:
-            tail = log_path.read_text(encoding="utf-8").strip().split("\n")
-            last_lines = "\n".join(tail[-40:])
+            with open(log_path, "w", encoding="utf-8") as log_file:
+                subprocess.run(
+                    ["python3", str(BASE_DIR / "run_pipeline.py"), str(save_path)],
+                    cwd=str(BASE_DIR),
+                    env=_pipeline_env,
+                    stdout=log_file,
+                    stderr=log_file,
+                    text=True,
+                    check=True,
+                )
+            set_status("BUILDING", project_id=saved_pid, uid=_uid_str)
+        except subprocess.CalledProcessError:
+            set_status("ERROR", uid=_uid_str)
+            return
         except Exception:
-            last_lines = "(log unavailable)"
-        return f"Engine failed\n\n{last_lines}", 500
+            set_status("ERROR", uid=_uid_str)
+            return
 
-    fresh_pptx = newest_generated_file(".pptx")
-    fresh_pdf = newest_generated_file(".pdf")
+        fresh_pptx = newest_generated_file(".pptx")
+        fresh_pdf = newest_generated_file(".pdf")
 
-    if not fresh_pptx or not fresh_pptx.exists():
-        set_status("ERROR", uid=_uid_str)
-        return "No deck generated", 500
+        if not fresh_pptx or not fresh_pptx.exists():
+            set_status("ERROR", uid=_uid_str)
+            return
 
-    publish_latest_outputs(fresh_pptx, fresh_pdf)
+        publish_latest_outputs(fresh_pptx, fresh_pdf)
 
-    # Also publish producer's deck if it was built
-    producer_labeled = OUTPUT_DIR / "latest_producer.pptx"
-    if not producer_labeled.exists():
-        # Fallback: look for freshest pitch_deck_producer_v*.pptx
-        producer_files = sorted(OUTPUT_DIR.glob("pitch_deck_producer_v*.pptx"), key=lambda p: p.stat().st_mtime)
-        if producer_files:
-            shutil.copy2(str(producer_files[-1]), str(producer_labeled))
+        producer_labeled = OUTPUT_DIR / "latest_producer.pptx"
+        if not producer_labeled.exists():
+            producer_files = sorted(OUTPUT_DIR.glob("pitch_deck_producer_v*.pptx"), key=lambda p: p.stat().st_mtime)
+            if producer_files:
+                shutil.copy2(str(producer_files[-1]), str(producer_labeled))
 
-    if not LATEST_PPTX.exists():
-        set_status("ERROR", uid=_uid_str)
-        return "Latest deck publish failed", 500
+        if not LATEST_PPTX.exists():
+            set_status("ERROR", uid=_uid_str)
+            return
 
-    set_status("COMPLETE", project_id=saved_pid, uid=_uid_str)
-    elapsed = int(time.time() - started_at)
-    log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
-    log_activity_event("deck_run", route="/upload", user_email=session.get("user_email"))
+        set_status("COMPLETE", project_id=saved_pid, uid=_uid_str)
+        elapsed = int(time.time() - started_at)
+        log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
+        log_activity_event("deck_run", route="/upload", user_email=_user_email)
 
-    # Save deck to user-scoped project directory
-    active_pid = saved_pid or get_status_project_id() or session.get("active_project_id")
-    if active_pid and DB_ENGINE:
-        try:
-            uid = session.get("user_id", "anon")
-            proj_out = BASE_DIR / "user_data" / str(uid) / str(active_pid)
-            proj_out.mkdir(parents=True, exist_ok=True)
-            if fresh_pptx and fresh_pptx.exists():
-                shutil.copy2(fresh_pptx, proj_out / "deck.pptx")
-            if fresh_pdf and fresh_pdf.exists():
-                shutil.copy2(fresh_pdf, proj_out / "deck.pdf")
-            _manifest_src = user_manifest_path(uid)
-            if not _manifest_src.exists():
-                _manifest_src = LATEST_DECK_MANIFEST_JSON
-            if _manifest_src.exists():
-                shutil.copy2(_manifest_src, proj_out / "deck_manifest.json")
-            with DB_ENGINE.begin() as conn:
-                conn.execute(text("""
-                    UPDATE projects SET output_dir = :output_dir WHERE id = :id
-                """), {"output_dir": f"user_data/{uid}/{active_pid}", "id": int(active_pid)})
-        except Exception as e:
-            print(f"⚠️ Failed to save project output: {e}", flush=True)
+        if saved_pid and DB_ENGINE:
+            try:
+                proj_out = BASE_DIR / "user_data" / _uid_str / str(saved_pid)
+                proj_out.mkdir(parents=True, exist_ok=True)
+                if fresh_pptx and fresh_pptx.exists():
+                    shutil.copy2(fresh_pptx, proj_out / "deck.pptx")
+                if fresh_pdf and fresh_pdf.exists():
+                    shutil.copy2(fresh_pdf, proj_out / "deck.pdf")
+                _manifest_src = user_manifest_path(_uid_str)
+                if not _manifest_src.exists():
+                    _manifest_src = LATEST_DECK_MANIFEST_JSON
+                if _manifest_src.exists():
+                    shutil.copy2(_manifest_src, proj_out / "deck_manifest.json")
+                with DB_ENGINE.begin() as conn:
+                    conn.execute(text("""
+                        UPDATE projects SET output_dir = :output_dir WHERE id = :id
+                    """), {"output_dir": f"user_data/{_uid_str}/{saved_pid}", "id": int(saved_pid)})
+            except Exception as e:
+                print(f"⚠️ Failed to save project output: {e}", flush=True)
 
+    threading.Thread(target=_run_pipeline_bg, daemon=True).start()
     return ("OK", 200)
 
 
