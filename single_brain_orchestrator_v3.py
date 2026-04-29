@@ -2089,7 +2089,11 @@ def main():
     if story_map["image_plan"]:
         print(f"🎞️ IMAGE OPTIONS SAMPLE: {json.dumps(story_map['image_plan'][0].get('image_options', [])[:5], indent=2)}")
 
-    OUT.write_text(json.dumps(story_map, indent=2))
+    _dai_work_dir = os.environ.get("DAI_WORK_DIR", "")
+    out_path = Path(_dai_work_dir) / "approved_brain_output.json" if _dai_work_dir else OUT
+    if _dai_work_dir:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(story_map, indent=2))
 
 
 if __name__ == "__main__":
