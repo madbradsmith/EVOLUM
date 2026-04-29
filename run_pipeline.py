@@ -7,7 +7,18 @@ import time
 from pathlib import Path
 
 APP_DIR = Path(__file__).resolve().parent
-STATUS_FILE = APP_DIR / "status.json"
+_DAI_UID = os.environ.get("DAI_USER_ID", "")
+_DAI_WORK_DIR = os.environ.get("DAI_WORK_DIR", "")
+STATUS_FILE = APP_DIR / (f"pipeline_status_{_DAI_UID}.json" if _DAI_UID else "status.json")
+
+
+def _work_path(filename: str) -> str:
+    """Return the DAI_WORK_DIR path for a file when it exists there, else APP_DIR path."""
+    if _DAI_WORK_DIR:
+        p = Path(_DAI_WORK_DIR) / filename
+        if p.exists():
+            return str(p)
+    return str(APP_DIR / filename)
 
 
 def write_status(step, progress, message, start_time, state="running"):
@@ -70,7 +81,7 @@ def main(input_file):
     )
 
     run(
-        f"python3 {APP_DIR}/single_brain_orchestrator_v3.py {APP_DIR}/input.txt",
+        f'python3 "{APP_DIR}/single_brain_orchestrator_v3.py" "{_work_path("input.txt")}"',
         "brain",
         35,
         "Generating story analysis...",
@@ -107,7 +118,7 @@ def main(input_file):
             print(f"⚠️ Could not merge user upload context: {e}")
 
     run(
-        f"python3 {APP_DIR}/layout_engine.py {APP_DIR}/approved_brain_output.json",
+        f'python3 "{APP_DIR}/layout_engine.py" "{_work_path("approved_brain_output.json")}"',
         "layout",
         55,
         "Building slide plan...",
@@ -120,17 +131,17 @@ def main(input_file):
         os.environ["EVOLUM_SESSION_ID"] = _uid
 
     run(
-        f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan.json{_uid_flag}",
+        f'python3 "{APP_DIR}/deck_builder.py" "{_work_path("slide_plan.json")}"{_uid_flag}',
         "deck_builder_full",
         72,
         "Building full pitch deck...",
         start_time
     )
 
-    producer_plan = APP_DIR / "slide_plan_producer.json"
-    if producer_plan.exists():
+    _producer_plan_path = _work_path("slide_plan_producer.json")
+    if Path(_producer_plan_path).exists():
         run(
-            f"python3 {APP_DIR}/deck_builder.py {APP_DIR}/slide_plan_producer.json --label producer{_uid_flag}",
+            f'python3 "{APP_DIR}/deck_builder.py" "{_producer_plan_path}" --label producer{_uid_flag}',
             "deck_builder_producer",
             88,
             "Building producer's deck...",
