@@ -1179,6 +1179,8 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def main() -> None:
+    _dai_work_dir = os.environ.get("DAI_WORK_DIR", "")
+
     input_path = Path(sys.argv[1]).expanduser() if len(sys.argv) > 1 else DEFAULT_INPUT
     if not input_path.exists():
         print(f"Input file not found: {input_path}")
@@ -1191,9 +1193,17 @@ def main() -> None:
     full_plan = build_slide_plan({**data, "deck_mode": "full"})
     producer_plan = build_slide_plan({**data, "deck_mode": "producer"})
 
-    DEFAULT_OUTPUT.write_text(json.dumps(full_plan, indent=2), encoding="utf-8")
-    producer_output = DEFAULT_OUTPUT.parent / "slide_plan_producer.json"
-    producer_output.write_text(json.dumps(producer_plan, indent=2), encoding="utf-8")
+    if _dai_work_dir:
+        out_dir = Path(_dai_work_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        out_dir = DEFAULT_OUTPUT.parent
+
+    full_out = out_dir / "slide_plan.json"
+    producer_out = out_dir / "slide_plan_producer.json"
+
+    full_out.write_text(json.dumps(full_plan, indent=2), encoding="utf-8")
+    producer_out.write_text(json.dumps(producer_plan, indent=2), encoding="utf-8")
 
     print("✅ Full deck plan generated")
     print(f"✅ Full deck slides: {full_plan['slide_count']}")
