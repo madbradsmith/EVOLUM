@@ -1327,7 +1327,12 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             build_slide_text_only(slide, slide_title, body)
         elif layout == "title":
             add_base_background(slide)
-            add_title_poster_image(slide, Path(POSTER_PATH) if POSTER_PATH else image_for_slide)
+            # If user explicitly selected a non-poster image during refine, respect it
+            if image_source not in {"poster", ""} and image_for_slide is not None:
+                _title_img = image_for_slide
+            else:
+                _title_img = Path(POSTER_PATH) if POSTER_PATH else image_for_slide
+            add_title_poster_image(slide, _title_img)
             add_top_rule(slide)
             add_title_text(slide, deck_title)
             place_text_by_stage(slide, stage, layout, body)

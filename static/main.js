@@ -455,6 +455,7 @@ function startBuildDirect() {
     if (!approvedScriptFile) return;
     buildInFlight = true;
     sawFreshBuildStatus = false;
+    resetTimer();
     showLiveProcess();
     setLocalStatus("UPLOADED");
 
@@ -623,6 +624,7 @@ function validateUploadAndStart(){
 
     buildInFlight = true;
     sawFreshBuildStatus = false;
+    resetTimer();
     showLiveProcess();
     setLocalStatus("UPLOADED");
 
@@ -1376,8 +1378,41 @@ function closeBuildProgressModal(){
     document.getElementById("buildProgressModal").classList.remove("show");
 }
 
+async function submitRefineDeck() {
+    saveCurrentRefineSlide();
+    document.getElementById("buildProgressTitle").textContent = "Rebuilding Deck";
+    document.getElementById("buildProgressCopy").textContent = "Applying your edits and rebuilding the deck.";
+    document.getElementById("buildProgressStage").textContent = "Rebuilding…";
+    document.getElementById("buildProgressFill").style.width = "35%";
+    document.getElementById("buildProgressWorking").style.display = "block";
+    document.getElementById("buildProgressActions").style.display = "none";
+    document.getElementById("buildProgressModal").classList.add("show");
+
+    try {
+        const res = await fetch("/refine-deck", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ slides: refineSlides })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Rebuild failed.");
+        document.getElementById("buildProgressFill").style.width = "100%";
+        closeBuildProgressModal();
+        latestSlidesLoadedForComplete = false;
+        await syncLatestSlidesForPreview();
+        renderCurrentRefineSlide();
+    } catch (e) {
+        closeBuildProgressModal();
+        showInfoModal("Rebuild Failed", e.message || "Rebuild failed.");
+    }
+}
+
 async function submitRegenDeck() {
-    const prompt = (document.getElementById("regenPromptInput")?.value || "").trim();
+    let prompt = (document.getElementById("regenPromptInput")?.value || "").trim();
+    if (!prompt) {
+        prompt = (window.prompt("Enter a new creative direction for the entire deck:", "") || "").trim();
+        if (!prompt) return;
+    }
 
     document.getElementById("buildProgressTitle").textContent = "Regenerating Deck";
     document.getElementById("buildProgressCopy").textContent = "Please wait while your updated deck is rebuilt.";
@@ -1393,19 +1428,15 @@ async function submitRegenDeck() {
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ prompt })
         });
-
         const data = await res.json();
-
         if (!data.ok) {
             throw new Error(data.error || "Regenerate failed.");
         }
-
         document.getElementById("buildProgressFill").style.width = "100%";
         closeBuildProgressModal();
         latestSlidesLoadedForComplete = false;
         await syncLatestSlidesForPreview();
         renderCurrentRefineSlide();
-
     } catch (e) {
         closeBuildProgressModal();
         showInfoModal("Regenerate Deck", e.message || "Regenerate failed.");
