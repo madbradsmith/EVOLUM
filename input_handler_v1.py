@@ -6,6 +6,7 @@
 # ============================================================
 
 # ===== IMPORTS =====
+import os
 import re
 import json
 import sys
@@ -16,8 +17,12 @@ from zipfile import ZipFile
 from pypdf import PdfReader
 
 APP_DIR = Path(__file__).resolve().parent
-ROOT_INPUT_PATH = APP_DIR / "input.txt"
-STATUS_PATH = APP_DIR / "status.json"
+_DAI_WORK_DIR = os.environ.get("DAI_WORK_DIR", "")
+_out_dir = Path(_DAI_WORK_DIR) if _DAI_WORK_DIR else APP_DIR
+if _DAI_WORK_DIR:
+    _out_dir.mkdir(parents=True, exist_ok=True)
+ROOT_INPUT_PATH = _out_dir / "input.txt"
+STATUS_PATH = _out_dir / "status.json"
 ANALYSIS_ERROR_PATH = APP_DIR / "pipeline" / "analysis" / "analysis_error_report.json"
 
 USER_MSG = "File extraction failed. Please upload a valid screenplay TXT, PDF, FDX, or DOCX file."
