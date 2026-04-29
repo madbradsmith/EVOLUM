@@ -1539,22 +1539,8 @@ def upload():
     }
 
     _ctx_name = f"user_upload_context_{uid}.json" if uid else "user_upload_context.json"
-    (BASE_DIR / _ctx_name).write_text(
-        json.dumps(upload_context, indent=2),
-        encoding="utf-8",
-    )
-
-    # === ENSURE OVERRIDE FILE EXISTS IN ALL PIPELINE PATHS ===
-    try:
-        override_data = json.dumps(upload_context, indent=2)
-        (BASE_DIR / _ctx_name).write_text(override_data, encoding="utf-8")
-        (BASE_DIR / "input").mkdir(exist_ok=True)
-        (BASE_DIR / "input" / _ctx_name).write_text(override_data, encoding="utf-8")
-        (BASE_DIR / "pipeline").mkdir(exist_ok=True)
-        (BASE_DIR / "pipeline" / _ctx_name).write_text(override_data, encoding="utf-8")
-        print("✅ Upload overrides written to all known paths")
-    except Exception as e:
-        print("⚠️ Failed to write override files:", e)
+    _ctx_data = json.dumps(upload_context, indent=2)
+    (BASE_DIR / _ctx_name).write_text(_ctx_data, encoding="utf-8")
 
 
     # Capture project_id before pipeline starts — read from dedicated file (most reliable)
@@ -1575,6 +1561,7 @@ def upload():
             _pipeline_env["DAI_USER_ID"] = _uid_str
             _work_dir = BASE_DIR / "user_data" / _uid_str / str(saved_pid) / "build"
             _work_dir.mkdir(parents=True, exist_ok=True)
+            (_work_dir / "user_upload_context.json").write_text(_ctx_data, encoding="utf-8")
             _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
         with open(log_path, "w", encoding="utf-8") as log_file:
             subprocess.run(

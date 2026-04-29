@@ -48,10 +48,14 @@ APP_DIR = Path(__file__).resolve().parent
 _DAI_UID = os.environ.get("DAI_USER_ID", "")
 _DAI_WORK_DIR = os.environ.get("DAI_WORK_DIR", "")
 
-_ctx_name = f"user_upload_context_{_DAI_UID}.json" if _DAI_UID else "user_upload_context.json"
-UPLOAD_CONTEXT_PATH = str(BASE_DIR / _ctx_name)
-if not Path(UPLOAD_CONTEXT_PATH).exists():
-    UPLOAD_CONTEXT_PATH = str(BASE_DIR / "user_upload_context.json")
+_work_ctx = Path(_DAI_WORK_DIR) / "user_upload_context.json" if _DAI_WORK_DIR else None
+if _work_ctx and _work_ctx.exists():
+    UPLOAD_CONTEXT_PATH = str(_work_ctx)
+else:
+    _ctx_name = f"user_upload_context_{_DAI_UID}.json" if _DAI_UID else "user_upload_context.json"
+    UPLOAD_CONTEXT_PATH = str(BASE_DIR / _ctx_name)
+    if not Path(UPLOAD_CONTEXT_PATH).exists():
+        UPLOAD_CONTEXT_PATH = str(BASE_DIR / "user_upload_context.json")
 
 
 def load_user_context():

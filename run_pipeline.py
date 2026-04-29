@@ -89,11 +89,15 @@ def main(input_file):
     )
 
     _ctx_uid = os.environ.get("DAI_USER_ID", "")
-    _ctx_name = f"user_upload_context_{_ctx_uid}.json" if _ctx_uid else "user_upload_context.json"
-    upload_context_path = APP_DIR / _ctx_name
-    if not upload_context_path.exists():
-        upload_context_path = APP_DIR / "user_upload_context.json"
-    approved_path = APP_DIR / "approved_brain_output.json"
+    _work_ctx = Path(_DAI_WORK_DIR) / "user_upload_context.json" if _DAI_WORK_DIR else None
+    if _work_ctx and _work_ctx.exists():
+        upload_context_path = _work_ctx
+    else:
+        _ctx_name = f"user_upload_context_{_ctx_uid}.json" if _ctx_uid else "user_upload_context.json"
+        upload_context_path = APP_DIR / _ctx_name
+        if not upload_context_path.exists():
+            upload_context_path = APP_DIR / "user_upload_context.json"
+    approved_path = Path(_work_path("approved_brain_output.json"))
 
     if upload_context_path.exists() and approved_path.exists():
         try:
