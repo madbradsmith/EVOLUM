@@ -1423,7 +1423,10 @@ def apply_upload_text_overrides(project_dir, logline_override="", synopsis_overr
 
 @app.route("/debug-log")
 def debug_log():
-    log_path = BASE_DIR / "pipeline.log"
+    uid = session.get("user_id", "")
+    log_path = BASE_DIR / f"pipeline_{uid}.log" if uid else BASE_DIR / "pipeline.log"
+    if not log_path.exists():
+        log_path = BASE_DIR / "pipeline.log"
     if not log_path.exists():
         return "No pipeline.log found.", 200, {"Content-Type": "text/plain; charset=utf-8"}
     return log_path.read_text(encoding="utf-8"), 200, {"Content-Type": "text/plain; charset=utf-8"}
@@ -1498,7 +1501,8 @@ def upload():
     poster = request.files.get("poster")
     images = request.files.getlist("images")
 
-    visuals_root = BASE_DIR / "visuals" / "user_uploaded"
+    _uid_for_vis = uid or "anon"
+    visuals_root = BASE_DIR / "visuals" / "user_uploaded" / _uid_for_vis
     poster_dir = visuals_root / "poster"
     current_dir = visuals_root / "current"
 
@@ -1531,6 +1535,7 @@ def upload():
         "deck_mode": deck_mode,
         "poster_filename": poster.filename if poster and poster.filename else "",
         "image_filenames": saved_images,
+        "visuals_root": str(visuals_root),
     }
 
     _ctx_name = f"user_upload_context_{uid}.json" if uid else "user_upload_context.json"
@@ -1563,11 +1568,14 @@ def upload():
     _uid_str = uid or ""
     try:
         set_status("ANALYZING", project_id=saved_pid, uid=_uid_str)
-        log_path = BASE_DIR / "pipeline.log"
+        log_path = BASE_DIR / f"pipeline_{_uid_str}.log" if _uid_str else BASE_DIR / "pipeline.log"
 
         _pipeline_env = os.environ.copy()
         if _uid_str:
             _pipeline_env["DAI_USER_ID"] = _uid_str
+            _work_dir = BASE_DIR / "user_data" / _uid_str / str(saved_pid) / "build"
+            _work_dir.mkdir(parents=True, exist_ok=True)
+            _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
         with open(log_path, "w", encoding="utf-8") as log_file:
             subprocess.run(
                 ["python3", str(BASE_DIR / "run_pipeline.py"), str(save_path)],
@@ -2111,12 +2119,16 @@ def regen_deck():
     if not api_key:
         return jsonify({"error": "AI not configured."}), 500
 
-    slide_plan_file = find_latest_slide_plan_file()
-    if not slide_plan_file:
+    uid = session.get("user_id", "")
+    manifest_path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
+    if not manifest_path.exists():
+        manifest_path = LATEST_DECK_MANIFEST_JSON
+    if not manifest_path.exists():
         return jsonify({"error": "No slide plan found. Generate a deck first."}), 404
 
     try:
-        slide_plan = json.loads(Path(slide_plan_file).read_text(encoding="utf-8"))
+        _manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        slide_plan = {"slides": _manifest_data} if isinstance(_manifest_data, list) else _manifest_data
     except Exception as e:
         return jsonify({"error": f"Could not read slide plan: {e}"}), 500
 
