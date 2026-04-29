@@ -21,266 +21,116 @@
     --red: #dc2626;
     --yellow: #d97706;
 }
-body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: var(--bg);
-    color: var(--ink);
-    min-height: 100vh;
-    padding: 0 0 60px;
-}
-.topbar {
-    background: var(--card);
-    border-bottom: 1px solid var(--line);
-    padding: 14px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    box-shadow: 0 1px 6px rgba(15,23,42,0.08);
-}
-.topbar-title { font-size: 19px; font-weight: 850; color: var(--ink); letter-spacing: 0.3px; }
-.topbar-sub { font-size: 12px; color: var(--soft); margin-top: 2px; font-weight: 600; }
-.topbar-links { display: flex; gap: 8px; flex-wrap: wrap; }
-.topbar-links a {
-    font-size: 12px;
-    font-weight: 750;
-    color: var(--orange);
-    text-decoration: none;
-    padding: 7px 12px;
-    border: 1px solid #fed7aa;
-    border-radius: 8px;
-    background: var(--orange-soft);
-}
-.topbar-links a.logout {
-    color: var(--ink);
-    border-color: var(--line);
-    background: #f9fafb;
-}
-.page { max-width: 1240px; margin: 0 auto; padding: 24px 18px; }
+body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:0 0 60px; }
+.topbar { background:var(--card); border-bottom:1px solid var(--line); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; gap:16px; position:sticky; top:0; z-index:20; box-shadow:0 1px 6px rgba(15,23,42,0.08); }
+.topbar-title { font-size:19px; font-weight:850; color:var(--ink); letter-spacing:0.3px; }
+.topbar-sub { font-size:12px; color:var(--soft); margin-top:2px; font-weight:600; }
+.topbar-links { display:flex; gap:8px; flex-wrap:wrap; }
+.topbar-links a { font-size:12px; font-weight:750; color:var(--orange); text-decoration:none; padding:7px 12px; border:1px solid #fed7aa; border-radius:8px; background:var(--orange-soft); }
+.topbar-links a.logout { color:var(--ink); border-color:var(--line); background:#f9fafb; }
 
-.section-label {
-    font-size: 11px;
-    font-weight: 850;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--ink);
-    margin: 24px 0 10px;
-}
-.section-label:first-child { margin-top: 0; }
+.tab-bar { background:var(--card); border-bottom:1px solid var(--line); padding:0 28px; display:flex; gap:0; position:sticky; top:56px; z-index:19; }
+.tab-btn { background:none; border:none; padding:14px 18px; font-size:13px; font-weight:750; color:var(--soft); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-1px; transition:color .15s,border-color .15s; font-family:inherit; }
+.tab-btn:hover { color:var(--orange); }
+.tab-btn.active { color:var(--orange); border-bottom-color:var(--orange); }
 
-.stat-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
-    gap: 10px;
-}
-.stat-card, .health-card, .panel-card {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 13px;
-    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
-}
-.stat-card { padding: 16px 17px; }
-.stat-label {
-    font-size: 10.5px;
-    color: var(--ink);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 8px;
-    font-weight: 850;
-}
-.stat-value { font-size: 31px; font-weight: 850; color: var(--ink); line-height: 1; }
-.stat-value.orange { color: var(--orange); }
-.stat-value.green { color: var(--green); }
-.stat-value.blue { color: var(--blue); }
-.stat-sub { font-size: 11px; color: var(--soft); margin-top: 5px; font-weight: 600; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
 
-.health-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-}
-.health-card {
-    padding: 14px 16px;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    min-height: 82px;
-}
-.health-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
-.health-dot.ok { background: var(--green); box-shadow: 0 0 7px rgba(22,163,74,0.5); }
-.health-dot.warn { background: var(--yellow); box-shadow: 0 0 7px rgba(217,119,6,0.5); }
-.health-dot.err { background: var(--red); box-shadow: 0 0 7px rgba(220,38,38,0.5); }
-.health-text { font-size: 14px; font-weight: 850; color: var(--ink); }
-.health-sub { font-size: 12px; color: var(--soft); margin-top: 3px; line-height: 1.35; font-weight: 600; }
-.disk-bar { height: 8px; background: #edf0f4; border-radius: 999px; overflow: hidden; margin-top: 10px; width: 100%; }
-.disk-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--green), var(--blue)); transition: width 0.5s ease; }
-.disk-bar-fill.warn { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
-.disk-bar-fill.danger { background: linear-gradient(90deg, var(--orange), var(--red)); }
+.page { max-width:1240px; margin:0 auto; padding:24px 18px; }
+.section-label { font-size:11px; font-weight:850; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink); margin:24px 0 10px; }
+.section-label:first-child { margin-top:0; }
 
-.quick-links {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 8px;
-}
-.quick-link {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--orange);
-    text-decoration: none;
-    font-weight: 800;
-    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
-}
-.quick-link:hover { border-color: #fed7aa; background: var(--orange-soft); }
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:10px; }
+.stat-card,.health-card,.panel-card { background:var(--card); border:1px solid var(--line); border-radius:13px; box-shadow:0 1px 4px rgba(15,23,42,0.06); }
+.stat-card { padding:16px 17px; }
+.stat-label { font-size:10.5px; color:var(--ink); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; font-weight:850; }
+.stat-value { font-size:31px; font-weight:850; color:var(--ink); line-height:1; }
+.stat-value.orange { color:var(--orange); }
+.stat-value.green { color:var(--green); }
+.stat-value.blue { color:var(--blue); }
+.stat-sub { font-size:11px; color:var(--soft); margin-top:5px; font-weight:600; }
 
-.dashboard-two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    align-items: start;
-}
-.panel-card { overflow: hidden; }
-.panel-head {
-    background: #f8fafc;
-    border-bottom: 1px solid var(--line-soft);
-    padding: 10px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-.panel-title {
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink);
-}
-.panel-count {
-    font-size: 11px;
-    font-weight: 850;
-    color: var(--orange);
-    background: var(--orange-soft);
-    border: 1px solid #fed7aa;
-    border-radius: 999px;
-    padding: 2px 8px;
-}
-.scroll-panel {
-    max-height: 245px;
-    overflow-y: auto;
-}
-.scroll-panel.short { max-height: 180px; }
+.health-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; }
+.health-card { padding:14px 16px; display:flex; align-items:flex-start; gap:12px; min-height:78px; }
+.health-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.health-dot.ok { background:var(--green); box-shadow:0 0 7px rgba(22,163,74,0.5); }
+.health-dot.warn { background:var(--yellow); box-shadow:0 0 7px rgba(217,119,6,0.5); }
+.health-dot.err { background:var(--red); box-shadow:0 0 7px rgba(220,38,38,0.5); }
+.health-text { font-size:14px; font-weight:850; color:var(--ink); }
+.health-sub { font-size:12px; color:var(--soft); margin-top:3px; line-height:1.35; font-weight:600; }
+.disk-bar { height:8px; background:#edf0f4; border-radius:999px; overflow:hidden; margin-top:10px; width:100%; }
+.disk-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--green),var(--blue)); }
+.disk-bar-fill.warn { background:linear-gradient(90deg,var(--yellow),var(--orange)); }
+.disk-bar-fill.danger { background:linear-gradient(90deg,var(--orange),var(--red)); }
 
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead { background: #f9fafb; }
-th {
-    text-align: left;
-    padding: 10px 14px;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink);
-    border-bottom: 1px solid var(--line-soft);
-}
-td {
-    padding: 10px 14px;
-    border-bottom: 1px solid #eef0f4;
-    color: #1f2937;
-    vertical-align: middle;
-}
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #fafafa; }
-.email-cell { color: var(--ink); font-weight: 750; }
-.time-cell { color: var(--soft); font-size: 11px; white-space: nowrap; font-weight: 650; }
-.empty-state { text-align: center; color: var(--soft); padding: 28px; font-size: 13px; font-weight: 650; }
+.quick-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; }
+.quick-link { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--orange); text-decoration:none; font-weight:800; box-shadow:0 1px 3px rgba(15,23,42,0.05); display:block; }
+.quick-link:hover { border-color:#fed7aa; background:var(--orange-soft); }
 
-.event-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 850;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-}
-.badge-sign_in { background: #dbeafe; color: #1d4ed8; }
-.badge-sign_out { background: #f3f4f6; color: #374151; }
-.badge-account_created { background: #dcfce7; color: #15803d; }
-.badge-deck_run { background: #fff7ed; color: #c2410c; }
-.badge-script_analysis { background: #fef3c7; color: #92400e; }
-.badge-actor_prep { background: #ede9fe; color: #6d28d9; }
-.badge-actor_booked { background: #fee2e2; color: #b91c1c; }
-.badge-feedback_message { background: #dbeafe; color: #1d4ed8; }
-.badge-contact_message { background: #dcfce7; color: #15803d; }
-.badge-default { background: #f3f4f6; color: #374151; }
+.panel-card { overflow:hidden; }
+.panel-head { background:#f8fafc; border-bottom:1px solid var(--line-soft); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.panel-title { font-size:11px; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink); }
+.panel-count { font-size:11px; font-weight:850; color:var(--orange); background:var(--orange-soft); border:1px solid #fed7aa; border-radius:999px; padding:2px 8px; }
+.scroll-panel { max-height:320px; overflow-y:auto; }
+.scroll-panel.short { max-height:220px; }
+.scroll-panel.tall { max-height:480px; }
 
-.user-actions {
-    display: flex;
-    gap: 7px;
-    flex-wrap: wrap;
-}
-.small-admin-btn {
-    background: #fff;
-    border: 1px solid var(--line);
-    color: var(--ink);
-    border-radius: 7px;
-    padding: 4px 8px;
-    font-size: 11px;
-    font-weight: 800;
-    cursor: pointer;
-}
-.small-admin-btn:hover { background: #f9fafb; }
-.small-admin-btn.orange { color: var(--orange); border-color: #fed7aa; background: var(--orange-soft); }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead { background:#f9fafb; }
+th { text-align:left; padding:10px 14px; font-size:10px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink); border-bottom:1px solid var(--line-soft); }
+td { padding:10px 14px; border-bottom:1px solid #eef0f4; color:#1f2937; vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#fafafa; }
+.email-cell { color:var(--ink); font-weight:750; }
+.time-cell { color:var(--soft); font-size:11px; white-space:nowrap; font-weight:650; }
+.empty-state { text-align:center; color:var(--soft); padding:28px; font-size:13px; font-weight:650; }
 
-.log-wrap {
-    background: #111827;
-    border: 1px solid #d1d5db;
-    border-radius: 13px;
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(15,23,42,0.08);
-}
-.log-header {
-    background: #0b1120;
-    padding: 10px 14px;
-    font-size: 10px;
-    font-weight: 900;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #f97316;
-    border-bottom: 1px solid #1f2937;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.log-body {
-    padding: 14px;
-    font-family: "SF Mono", "Fira Code", monospace;
-    font-size: 11px;
-    line-height: 1.65;
-    color: #a3e635;
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-height: 260px;
-    overflow-y: auto;
-}
-.log-empty { color: #94a3b8; padding: 22px 14px; font-size: 12px; }
+.event-badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:0.06em; }
+.badge-sign_in { background:#dbeafe; color:#1d4ed8; }
+.badge-sign_out { background:#f3f4f6; color:#374151; }
+.badge-account_created { background:#dcfce7; color:#15803d; }
+.badge-deck_run { background:#fff7ed; color:#c2410c; }
+.badge-script_analysis { background:#fef3c7; color:#92400e; }
+.badge-actor_prep { background:#ede9fe; color:#6d28d9; }
+.badge-actor_booked { background:#fee2e2; color:#b91c1c; }
+.badge-feedback_message { background:#dbeafe; color:#1d4ed8; }
+.badge-contact_message { background:#dcfce7; color:#15803d; }
+.badge-generate_start { background:#fff7ed; color:#c2410c; }
+.badge-generate_complete { background:#dcfce7; color:#15803d; }
+.badge-default { background:#f3f4f6; color:#374151; }
 
-@media (max-width: 850px) {
-    .dashboard-two-col { grid-template-columns: 1fr; }
-    .health-grid { grid-template-columns: 1fr; }
-    .topbar { flex-direction: column; align-items: flex-start; gap: 8px; }
-}
-@media (max-width: 560px) {
-    .stat-grid { grid-template-columns: repeat(2, 1fr); }
-    .page { padding: 18px 12px; }
-}
+.user-actions { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
+.small-btn { background:#fff; border:1px solid var(--line); color:var(--ink); border-radius:7px; padding:4px 9px; font-size:11px; font-weight:800; cursor:pointer; font-family:inherit; }
+.small-btn:hover { background:#f9fafb; }
+.small-btn.orange { color:var(--orange); border-color:#fed7aa; background:var(--orange-soft); }
+.small-btn.red { color:var(--red); border-color:#fca5a5; background:#fef2f2; }
+
+.reset-form { display:none; background:#f8fafc; border:1px solid var(--line-soft); border-radius:9px; padding:10px 12px; margin-top:8px; gap:8px; flex-wrap:wrap; align-items:center; }
+.reset-form.open { display:flex; }
+.reset-form input { border:1px solid var(--line); border-radius:7px; padding:5px 9px; font-size:12px; font-family:inherit; background:#fff; color:var(--ink); flex:1; min-width:140px; }
+.reset-msg { font-size:11px; font-weight:700; margin-top:6px; }
+.reset-msg.ok { color:var(--green); }
+.reset-msg.err { color:var(--red); }
+
+.msg-body { word-break:break-word; font-size:12px; color:#374151; }
+.msg-cat { display:inline-block; padding:2px 7px; border-radius:6px; font-size:10px; font-weight:850; text-transform:uppercase; background:#fff7ed; color:#c2410c; margin-bottom:4px; }
+.del-row-btn { background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; }
+.del-row-btn:hover { color:var(--red); }
+
+.log-wrap { background:#111827; border:1px solid #d1d5db; border-radius:13px; overflow:hidden; }
+.log-header { background:#0b1120; padding:10px 14px; font-size:10px; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:#f97316; border-bottom:1px solid #1f2937; display:flex; justify-content:space-between; align-items:center; }
+.log-body { padding:14px; font-family:"SF Mono","Fira Code",monospace; font-size:11px; line-height:1.65; color:#a3e635; white-space:pre-wrap; word-break:break-word; max-height:400px; overflow-y:auto; }
+.log-empty { color:#94a3b8; padding:22px 14px; font-size:12px; }
+
+.costs-placeholder { background:var(--card); border:1px solid var(--line); border-radius:13px; padding:28px; text-align:center; color:var(--soft); font-size:13px; }
+.billing-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:16px; }
+.billing-link { display:block; background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:14px 16px; text-decoration:none; color:var(--ink); font-weight:750; font-size:13px; }
+.billing-link:hover { border-color:#fed7aa; background:var(--orange-soft); }
+.billing-link .link-sub { font-size:11px; color:var(--soft); margin-top:3px; font-weight:600; }
+
+@media (max-width:850px) { .tab-bar { overflow-x:auto; gap:0; } .tab-btn { white-space:nowrap; } }
+@media (max-width:560px) { .stat-grid { grid-template-columns:repeat(2,1fr); } .page { padding:18px 12px; } }
 </style>
 </head>
 <body>
@@ -291,58 +141,25 @@ tr:hover td { background: #fafafa; }
         <div class="topbar-sub">Control room — internal only</div>
     </div>
     <div class="topbar-links">
-        <a href="/">Main Site</a>
+        <a href="/" target="_blank">Main Site</a>
         <a href="/debug-log" target="_blank">Pipeline Log</a>
-        <a href="/db-check">DB Check</a>
+        <a href="/db-check" target="_blank">DB Check</a>
         <a class="logout" href="/admin/logout">Sign Out</a>
     </div>
 </div>
 
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
+    <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+    <button class="tab-btn" onclick="switchTab('users')">Users</button>
+    <button class="tab-btn" onclick="switchTab('feedback')">Feedback</button>
+    <button class="tab-btn" onclick="switchTab('costs')">Costs</button>
+    <button class="tab-btn" onclick="switchTab('logs')">Logs</button>
+</div>
+
+<!-- ===== TAB: OVERVIEW ===== -->
+<div id="tab-overview" class="tab-content active">
 <div class="page">
-
-    <div class="section-label">Users &amp; Projects</div>
-    <div class="stat-grid">
-        <div class="stat-card">
-            <div class="stat-label">Total Users</div>
-            <div class="stat-value orange">{{ stats.users }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Projects</div>
-            <div class="stat-value blue">{{ stats.projects }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Sign-ins All Time</div>
-            <div class="stat-value">{{ stats.logins_total }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Sign-ins Today</div>
-            <div class="stat-value green">{{ stats.logins_today }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Active 30 Min</div>
-            <div class="stat-value green">{{ stats.active_sessions }}</div>
-        </div>
-    </div>
-
-    <div class="section-label">Tool Usage</div>
-    <div class="stat-grid">
-        <div class="stat-card">
-            <div class="stat-label">Deck Runs</div>
-            <div class="stat-value orange">{{ stats.deck_runs }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Script Analyses</div>
-            <div class="stat-value">{{ stats.script_analyses }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Audition Reports</div>
-            <div class="stat-value">{{ stats.actor_prep }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Booked Reports</div>
-            <div class="stat-value">{{ stats.actor_booked }}</div>
-        </div>
-    </div>
 
     <div class="section-label">Site Health</div>
     <div class="health-grid">
@@ -357,7 +174,21 @@ tr:hover td { background: #fafafa; }
             <div class="health-dot {{ 'ok' if stats.api_key_set else 'err' }}"></div>
             <div>
                 <div class="health-text">Anthropic API Key</div>
-                <div class="health-sub">{{ 'Set' if stats.api_key_set else 'Not configured' }}</div>
+                <div class="health-sub">{{ 'Configured' if stats.api_key_set else 'Missing — AI features disabled' }}</div>
+            </div>
+        </div>
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.fal_key_set else 'err' }}"></div>
+            <div>
+                <div class="health-text">FAL API Key</div>
+                <div class="health-sub">{{ 'Configured' if stats.fal_key_set else 'Missing — image generation disabled' }}</div>
+            </div>
+        </div>
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.admin_reset_key_set else 'warn' }}"></div>
+            <div>
+                <div class="health-text">Admin Reset Key</div>
+                <div class="health-sub">{{ 'Set' if stats.admin_reset_key_set else 'Not set — password reset disabled' }}</div>
             </div>
         </div>
         {% if stats.disk_total_mb %}
@@ -365,7 +196,7 @@ tr:hover td { background: #fafafa; }
             <div class="health-dot {{ 'err' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else 'ok') }}"></div>
             <div style="width:100%;">
                 <div class="health-text">Disk Usage</div>
-                <div class="health-sub">{{ stats.disk_used_mb }} MB used of {{ stats.disk_total_mb // 1024 }} GB ({{ stats.disk_pct }}%)</div>
+                <div class="health-sub">{{ stats.disk_used_mb }} MB / {{ stats.disk_total_mb // 1024 }} GB ({{ stats.disk_pct }}%)</div>
                 <div class="disk-bar">
                     <div class="disk-bar-fill {{ 'danger' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else '') }}" style="width:{{ stats.disk_pct }}%;"></div>
                 </div>
@@ -374,141 +205,106 @@ tr:hover td { background: #fafafa; }
         {% endif %}
     </div>
 
+    <div class="section-label">Snapshot</div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value orange">{{ stats.users }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Projects</div>
+            <div class="stat-value blue">{{ stats.projects }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Deck Runs</div>
+            <div class="stat-value orange">{{ stats.deck_runs }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Script Analyses</div>
+            <div class="stat-value">{{ stats.script_analyses }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Sign-ins Today</div>
+            <div class="stat-value green">{{ stats.logins_today }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active 30 Min</div>
+            <div class="stat-value green">{{ stats.active_sessions }}</div>
+        </div>
+    </div>
+
     <div class="section-label">Quick Links</div>
     <div class="quick-links">
-        <a class="quick-link" href="/status">Status JSON</a>
-        <a class="quick-link" href="/db-check">DB Check</a>
+        <a class="quick-link" href="/status" target="_blank">Status JSON</a>
+        <a class="quick-link" href="/db-check" target="_blank">DB Check</a>
+        <a class="quick-link" href="/db-init" target="_blank">Init DB</a>
         <a class="quick-link" href="/debug-log" target="_blank">Pipeline Log</a>
-        <a class="quick-link" href="/db-init">Init DB</a>
     </div>
 
-    <div class="section-label">Users</div>
-    <div class="panel-card">
-        <div class="panel-head">
-            <div class="panel-title">Beta Users</div>
-            <div class="panel-count">{{ users | length }}</div>
+</div>
+</div>
+
+<!-- ===== TAB: ANALYTICS ===== -->
+<div id="tab-analytics" class="tab-content">
+<div class="page">
+
+    <div class="section-label">User Activity</div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Sign-ins All Time</div>
+            <div class="stat-value">{{ stats.logins_total }}</div>
         </div>
-        <div class="scroll-panel">
-            {% if users %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Email</th>
-                        <th>Name</th>
-                        <th>Joined</th>
-                        <th>Controls</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for u in users %}
-                    <tr>
-                        <td style="color:#374151; font-weight:700;">{{ u.id }}</td>
-                        <td class="email-cell">{{ u.email or '—' }}</td>
-                        <td>{{ u.name or '—' }}</td>
-                        <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else '—' }}</td>
-                        <td>
-                            <div class="user-actions">
-                                <button class="small-admin-btn orange" type="button" onclick="copyUserEmail('{{ u.email or '' }}')">Copy Email</button>
-                                <button class="small-admin-btn" type="button" onclick="showResetHint('{{ u.email or '' }}')">Reset PW</button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">No users yet.</div>
-            {% endif %}
+        <div class="stat-card">
+            <div class="stat-label">Sign-ins Today</div>
+            <div class="stat-value green">{{ stats.logins_today }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Active Last 30 Min</div>
+            <div class="stat-value green">{{ stats.active_sessions }}</div>
         </div>
     </div>
 
-    <div class="section-label">Messages</div>
-    <div class="dashboard-two-col">
-        <div class="panel-card">
-            <div class="panel-head">
-                <div class="panel-title">Feedback</div>
-                <div class="panel-count">{{ messages | selectattr('event_type', 'equalto', 'feedback_message') | list | length }}</div>
-            </div>
-            <div class="scroll-panel short">
-                <table>
-                    <thead>
-                        <tr><th>From</th><th>Message</th><th>Time</th></tr>
-                    </thead>
-                    <tbody>
-                    {% set feedback_items = messages | selectattr('event_type', 'equalto', 'feedback_message') | list %}
-                    {% if feedback_items %}
-                        {% for m in feedback_items %}
-                        <tr>
-                            <td class="email-cell">{{ m.user_email or '—' }}</td>
-                            <td style="word-break:break-word;">
-                                {% if m.metadata_json %}
-                                    {% set meta = m.metadata_json if m.metadata_json is mapping else {} %}
-                                    {% if meta.get('category') %}<span style="color:#f97316; font-size:10px; font-weight:850; margin-right:6px; text-transform:uppercase;">{{ meta.category }}</span>{% endif %}
-                                    {{ meta.get('message', '—') }}
-                                {% else %}—{% endif %}
-                            </td>
-                            <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr><td colspan="3" class="empty-state">No feedback yet.</td></tr>
-                    {% endif %}
-                    </tbody>
-                </table>
-            </div>
+    <div class="section-label">Tool Funnel</div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Deck Runs</div>
+            <div class="stat-value orange">{{ stats.deck_runs }}</div>
+            <div class="stat-sub">Full pipeline builds</div>
         </div>
-
-        <div class="panel-card">
-            <div class="panel-head">
-                <div class="panel-title">Contact</div>
-                <div class="panel-count">{{ messages | selectattr('event_type', 'equalto', 'contact_message') | list | length }}</div>
-            </div>
-            <div class="scroll-panel short">
-                <table>
-                    <thead>
-                        <tr><th>From</th><th>Message</th><th>Time</th></tr>
-                    </thead>
-                    <tbody>
-                    {% set contact_items = messages | selectattr('event_type', 'equalto', 'contact_message') | list %}
-                    {% if contact_items %}
-                        {% for m in contact_items %}
-                        <tr>
-                            <td class="email-cell">{{ m.user_email or '—' }}</td>
-                            <td style="word-break:break-word;">
-                                {% if m.metadata_json %}
-                                    {% set meta = m.metadata_json if m.metadata_json is mapping else {} %}
-                                    {{ meta.get('message', '—') }}
-                                {% else %}—{% endif %}
-                            </td>
-                            <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr><td colspan="3" class="empty-state">No contact messages yet.</td></tr>
-                    {% endif %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="stat-card">
+            <div class="stat-label">Script Analyses</div>
+            <div class="stat-value">{{ stats.script_analyses }}</div>
+            <div class="stat-sub">Analyze-only passes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Audition Reports</div>
+            <div class="stat-value">{{ stats.actor_prep }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Booked Reports</div>
+            <div class="stat-value">{{ stats.actor_booked }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value blue">{{ stats.users }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Total Projects</div>
+            <div class="stat-value blue">{{ stats.projects }}</div>
         </div>
     </div>
 
-    <div class="section-label">Recent Activity</div>
+    <div class="section-label">Recent Activity Log</div>
     <div class="panel-card">
         <div class="panel-head">
             <div class="panel-title">Last 50 Events</div>
             <div class="panel-count">{{ recent_activity | length }}</div>
         </div>
-        <div class="scroll-panel">
+        <div class="scroll-panel tall">
             {% if recent_activity %}
             <table>
                 <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Event</th>
-                        <th>Route</th>
-                        <th>Time</th>
-                    </tr>
+                    <tr><th>User</th><th>Event</th><th>Route</th><th>Time</th></tr>
                 </thead>
                 <tbody>
                     {% for ev in recent_activity %}
@@ -527,6 +323,181 @@ tr:hover td { background: #fafafa; }
         </div>
     </div>
 
+</div>
+</div>
+
+<!-- ===== TAB: USERS ===== -->
+<div id="tab-users" class="tab-content">
+<div class="page">
+
+    <div class="section-label">Beta Users</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">All Users</div>
+            <div class="panel-count">{{ users | length }}</div>
+        </div>
+        <div class="scroll-panel tall">
+            {% if users %}
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Email</th><th>Name</th><th>Projects</th><th>Joined</th><th>Controls</th></tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr id="user-row-{{ u.id }}">
+                        <td style="color:#374151; font-weight:700;">{{ u.id }}</td>
+                        <td class="email-cell">{{ u.email or '—' }}</td>
+                        <td>{{ u.name or '—' }}</td>
+                        <td style="font-weight:700; color:{% if u.project_count >= 6 %}var(--red){% else %}var(--ink){% endif %};">{{ u.project_count }}</td>
+                        <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+                        <td>
+                            <div class="user-actions">
+                                <button class="small-btn orange" onclick="copyText('{{ u.email or '' }}')">Copy Email</button>
+                                <button class="small-btn" onclick="toggleResetForm({{ u.id }})">Reset PW</button>
+                                <button class="small-btn red" onclick="deleteUser({{ u.id }}, '{{ u.email or '' }}')">Delete</button>
+                            </div>
+                            <div class="reset-form" id="reset-form-{{ u.id }}">
+                                <input type="password" id="reset-pw-{{ u.id }}" placeholder="New password" autocomplete="new-password">
+                                <button class="small-btn orange" onclick="doResetPw({{ u.id }}, '{{ u.email or '' }}')">Set Password</button>
+                                <button class="small-btn" onclick="toggleResetForm({{ u.id }})">Cancel</button>
+                                <div class="reset-msg" id="reset-msg-{{ u.id }}"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No users yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+</div>
+
+<!-- ===== TAB: FEEDBACK ===== -->
+<div id="tab-feedback" class="tab-content">
+<div class="page">
+
+    <div class="section-label">Feedback</div>
+    <div class="panel-card" id="feedback-panel">
+        <div class="panel-head">
+            <div class="panel-title">Feedback Messages</div>
+            <div class="panel-count" id="feedback-count">{{ messages | selectattr('event_type', 'equalto', 'feedback_message') | list | length }}</div>
+        </div>
+        <div class="scroll-panel tall">
+            {% set feedback_items = messages | selectattr('event_type', 'equalto', 'feedback_message') | list %}
+            {% if feedback_items %}
+            <table>
+                <thead><tr><th>From</th><th>Category</th><th>Message</th><th>Time</th><th></th></tr></thead>
+                <tbody id="feedback-tbody">
+                {% for m in feedback_items %}
+                <tr id="msg-row-{{ m.id }}">
+                    <td class="email-cell" style="white-space:nowrap;">{{ m.user_email or '—' }}</td>
+                    <td>
+                        {% if m.metadata_json is mapping %}
+                            {% if m.metadata_json.get('category') %}<span class="msg-cat">{{ m.metadata_json.category }}</span>{% else %}—{% endif %}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td class="msg-body">
+                        {% if m.metadata_json is mapping %}{{ m.metadata_json.get('message','—') }}{% else %}—{% endif %}
+                    </td>
+                    <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
+                    <td><button class="del-row-btn" onclick="deleteMessage({{ m.id }}, 'feedback')" title="Delete">×</button></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state" id="feedback-empty">No feedback yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Contact</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Contact Messages</div>
+            <div class="panel-count" id="contact-count">{{ messages | selectattr('event_type', 'equalto', 'contact_message') | list | length }}</div>
+        </div>
+        <div class="scroll-panel tall">
+            {% set contact_items = messages | selectattr('event_type', 'equalto', 'contact_message') | list %}
+            {% if contact_items %}
+            <table>
+                <thead><tr><th>From</th><th>Message</th><th>Time</th><th></th></tr></thead>
+                <tbody id="contact-tbody">
+                {% for m in contact_items %}
+                <tr id="msg-row-{{ m.id }}">
+                    <td class="email-cell" style="white-space:nowrap;">{{ m.user_email or '—' }}</td>
+                    <td class="msg-body">
+                        {% if m.metadata_json is mapping %}{{ m.metadata_json.get('message','—') }}{% else %}—{% endif %}
+                    </td>
+                    <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
+                    <td><button class="del-row-btn" onclick="deleteMessage({{ m.id }}, 'contact')" title="Delete">×</button></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state" id="contact-empty">No contact messages yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+</div>
+
+<!-- ===== TAB: COSTS ===== -->
+<div id="tab-costs" class="tab-content">
+<div class="page">
+
+    <div class="section-label">API Key Status</div>
+    <div class="health-grid">
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.api_key_set else 'err' }}"></div>
+            <div>
+                <div class="health-text">Anthropic (Claude)</div>
+                <div class="health-sub">{{ 'Key set — AI generation active' if stats.api_key_set else 'Missing' }}</div>
+            </div>
+        </div>
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.fal_key_set else 'err' }}"></div>
+            <div>
+                <div class="health-text">FAL AI (Images)</div>
+                <div class="health-sub">{{ 'Key set — image generation active' if stats.fal_key_set else 'Missing' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-label">Billing Dashboards</div>
+    <div class="billing-links">
+        <a class="billing-link" href="https://console.anthropic.com/settings/billing" target="_blank">
+            Anthropic Console ↗
+            <div class="link-sub">View Claude API usage &amp; spend</div>
+        </a>
+        <a class="billing-link" href="https://fal.ai/dashboard" target="_blank">
+            FAL Dashboard ↗
+            <div class="link-sub">View image generation usage &amp; spend</div>
+        </a>
+        <a class="billing-link" href="https://dashboard.render.com" target="_blank">
+            Render Dashboard ↗
+            <div class="link-sub">Server costs &amp; deploy logs</div>
+        </a>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Cost Tracking</div>
+    <div class="costs-placeholder">
+        Detailed per-user cost tracking coming in a future release. Check the billing dashboards above for current spend.
+    </div>
+
+</div>
+</div>
+
+<!-- ===== TAB: LOGS ===== -->
+<div id="tab-logs" class="tab-content">
+<div class="page">
+
     <div class="section-label">Pipeline Log</div>
     <div class="log-wrap">
         <div class="log-header">
@@ -534,25 +505,140 @@ tr:hover td { background: #fafafa; }
             <a href="/debug-log" target="_blank" style="color:#94a3b8; font-size:10px; text-decoration:none;">Open full log ↗</a>
         </div>
         {% if log_lines %}
-        <div class="log-body">{{ log_lines | join('\n') }}</div>
+        <div class="log-body" id="logBody">{{ log_lines | join('\n') }}</div>
         {% else %}
         <div class="log-empty">No pipeline log found.</div>
         {% endif %}
     </div>
 
 </div>
+</div>
 
 <script>
-const logBody = document.querySelector('.log-body');
+// ── TAB SWITCHING ──────────────────────────────────────────
+const tabs = ['overview','analytics','users','feedback','costs','logs'];
+function switchTab(name) {
+    tabs.forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('active', t === name);
+    });
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', tabs[i] === name);
+    });
+    if (name === 'logs') {
+        const lb = document.getElementById('logBody');
+        if (lb) lb.scrollTop = lb.scrollHeight;
+    }
+}
+
+// ── USER CONTROLS ──────────────────────────────────────────
+function copyText(text) {
+    if (!text) return;
+    navigator.clipboard?.writeText(text);
+}
+
+function toggleResetForm(uid) {
+    const f = document.getElementById('reset-form-' + uid);
+    f.classList.toggle('open');
+    if (f.classList.contains('open')) document.getElementById('reset-pw-' + uid).focus();
+}
+
+async function doResetPw(uid, email) {
+    const pw = (document.getElementById('reset-pw-' + uid).value || '').trim();
+    const msgEl = document.getElementById('reset-msg-' + uid);
+    if (!pw) { msgEl.textContent = 'Enter a password.'; msgEl.className = 'reset-msg err'; return; }
+    msgEl.textContent = 'Saving…'; msgEl.className = 'reset-msg';
+    try {
+        const fd = new FormData();
+        fd.append('admin_key', '{{ request.cookies.get("admin_key", "") }}');
+        fd.append('email', email);
+        fd.append('new_password', pw);
+        const res = await fetch('/admin/reset-password', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.ok) {
+            msgEl.textContent = 'Password updated.';
+            msgEl.className = 'reset-msg ok';
+            document.getElementById('reset-pw-' + uid).value = '';
+        } else {
+            msgEl.textContent = data.error || 'Failed.';
+            msgEl.className = 'reset-msg err';
+        }
+    } catch(e) {
+        msgEl.textContent = 'Error — try again.';
+        msgEl.className = 'reset-msg err';
+    }
+}
+
+async function deleteUser(uid, email) {
+    if (!confirm('Delete user ' + email + '? This cannot be undone.')) return;
+    try {
+        const res = await fetch('/admin/delete-user/' + uid, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+            const row = document.getElementById('user-row-' + uid);
+            if (row) row.remove();
+        } else {
+            alert(data.error || 'Delete failed.');
+        }
+    } catch(e) { alert('Error — try again.'); }
+}
+
+// ── MESSAGE CONTROLS ───────────────────────────────────────
+async function deleteMessage(id, type) {
+    if (!confirm('Delete this message? This cannot be undone.')) return;
+    try {
+        const res = await fetch('/admin/delete-message/' + id, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+            const row = document.getElementById('msg-row-' + id);
+            if (row) row.remove();
+            updateMessageCount(type);
+        } else {
+            alert(data.error || 'Delete failed.');
+        }
+    } catch(e) { alert('Error — try again.'); }
+}
+
+function updateMessageCount(type) {
+    const tbodyId = type === 'feedback' ? 'feedback-tbody' : 'contact-tbody';
+    const countId = type === 'feedback' ? 'feedback-count' : 'contact-count';
+    const tbody = document.getElementById(tbodyId);
+    const countEl = document.getElementById(countId);
+    if (tbody && countEl) countEl.textContent = tbody.querySelectorAll('tr').length;
+}
+
+// ── INIT ───────────────────────────────────────────────────
+const logBody = document.getElementById('logBody');
 if (logBody) logBody.scrollTop = logBody.scrollHeight;
 
-function copyUserEmail(email){
-    if (!email) return;
-    navigator.clipboard?.writeText(email);
+// password reset uses ADMIN_RESET_KEY — inject it server-side
+const ADMIN_RESET_KEY = '{{ admin_reset_key }}';
+async function doResetPwWithKey(uid, email) {
+    const pw = (document.getElementById('reset-pw-' + uid).value || '').trim();
+    const msgEl = document.getElementById('reset-msg-' + uid);
+    if (!pw) { msgEl.textContent = 'Enter a password.'; msgEl.className = 'reset-msg err'; return; }
+    msgEl.textContent = 'Saving…'; msgEl.className = 'reset-msg';
+    try {
+        const fd = new FormData();
+        fd.append('admin_key', ADMIN_RESET_KEY);
+        fd.append('email', email);
+        fd.append('new_password', pw);
+        const res = await fetch('/admin/reset-password', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.ok) {
+            msgEl.textContent = 'Password updated.';
+            msgEl.className = 'reset-msg ok';
+            document.getElementById('reset-pw-' + uid).value = '';
+        } else {
+            msgEl.textContent = data.error || 'Failed.';
+            msgEl.className = 'reset-msg err';
+        }
+    } catch(e) {
+        msgEl.textContent = 'Error — try again.';
+        msgEl.className = 'reset-msg err';
+    }
 }
-function showResetHint(email){
-    alert("Manual reset route is active. Use /admin/reset-password for: " + email);
-}
+// Override doResetPw to use the keyed version
+window.doResetPw = doResetPwWithKey;
 </script>
 </body>
 </html>

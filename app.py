@@ -1201,12 +1201,38 @@ def admin_delete_event(event_id):
         return "", 403
     if DB_ENGINE:
         try:
-            with DB_ENGINE.connect() as conn:
+            with DB_ENGINE.begin() as conn:
                 conn.execute(text("DELETE FROM activity_events WHERE id = :id"), {"id": event_id})
-                conn.commit()
         except Exception:
             pass
     return redirect("/admin")
+
+
+@app.route("/admin/delete-message/<int:event_id>", methods=["POST"])
+def admin_delete_message(event_id):
+    if not session.get("admin_authed"):
+        return jsonify({"ok": False}), 403
+    if DB_ENGINE:
+        try:
+            with DB_ENGINE.begin() as conn:
+                conn.execute(text("DELETE FROM activity_events WHERE id = :id"), {"id": event_id})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 500
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/delete-user/<int:user_id>", methods=["POST"])
+def admin_delete_user(user_id):
+    if not session.get("admin_authed"):
+        return jsonify({"ok": False}), 403
+    if not DB_ENGINE:
+        return jsonify({"ok": False, "error": "No database"}), 500
+    try:
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("DELETE FROM beta_users WHERE id = :id"), {"id": user_id})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/admin")
@@ -1219,6 +1245,8 @@ def admin():
         "logins_total": 0, "logins_today": 0, "active_sessions": 0,
         "deck_runs": 0, "script_analyses": 0, "actor_prep": 0, "actor_booked": 0,
         "db_ok": False, "db_error": "", "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "fal_key_set": bool(os.environ.get("FAL_API_KEY")),
+        "admin_reset_key_set": bool(os.environ.get("ADMIN_RESET_KEY")),
         "disk_used_mb": 0, "disk_total_mb": 0, "disk_pct": 0,
     }
     users = []
@@ -1264,9 +1292,14 @@ def admin():
             stats["actor_booked"] = conn.execute(
                 text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_booked'")).scalar() or 0
 
-            rows = conn.execute(text(
-                "SELECT id, email, name, created_at FROM beta_users ORDER BY created_at DESC"
-            )).mappings().all()
+            rows = conn.execute(text("""
+                SELECT u.id, u.email, u.name, u.created_at,
+                       COUNT(p.id) AS project_count
+                FROM beta_users u
+                LEFT JOIN projects p ON p.owner_user_id = CAST(u.id AS TEXT)
+                GROUP BY u.id, u.email, u.name, u.created_at
+                ORDER BY u.created_at DESC
+            """)).mappings().all()
             users = [dict(r) for r in rows]
 
             rows = conn.execute(text(
@@ -1298,7 +1331,8 @@ def admin():
 
     return render_template("admin.html", stats=stats, users=users,
                            recent_activity=recent_activity, messages=messages,
-                           log_lines=log_lines)
+                           log_lines=log_lines,
+                           admin_reset_key=os.environ.get("ADMIN_RESET_KEY", ""))
 
 @app.route("/status")
 def status():
