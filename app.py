@@ -126,8 +126,10 @@ def get_user_by_email(email: str):
     return dict(row) if row else None
 
 BASE_DIR = Path(__file__).resolve().parent
+DISK_DIR = BASE_DIR / "visuals"        # persistent disk mount
+OUTPUT_DIR = DISK_DIR / "output"       # survives redeploys
+USER_DATA_DIR = DISK_DIR / "user_data" # survives redeploys
 UPLOAD_DIR = BASE_DIR / "uploads"
-OUTPUT_DIR = BASE_DIR / "output"
 def _status_file(uid: str = "") -> "Path":
     return BASE_DIR / (f"status_{uid}.txt" if uid else "status.txt")
 
@@ -136,6 +138,7 @@ def _active_project_file(uid: str = "") -> "Path":
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 DEMO_DECK = BASE_DIR / "static" / "NOT_TODAY_Pitch_Deck_FINAL.pdf"
 
@@ -1559,7 +1562,7 @@ def upload():
     _pipeline_env = os.environ.copy()
     if _uid_str:
         _pipeline_env["DAI_USER_ID"] = _uid_str
-        _work_dir = BASE_DIR / "user_data" / _uid_str / str(saved_pid) / "build"
+        _work_dir = USER_DATA_DIR / _uid_str / str(saved_pid) / "build"
         _work_dir.mkdir(parents=True, exist_ok=True)
         (_work_dir / "user_upload_context.json").write_text(_ctx_data, encoding="utf-8")
         _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
@@ -1612,7 +1615,7 @@ def upload():
 
         if saved_pid and DB_ENGINE:
             try:
-                proj_out = BASE_DIR / "user_data" / _uid_str / str(saved_pid)
+                proj_out = USER_DATA_DIR / _uid_str / str(saved_pid)
                 proj_out.mkdir(parents=True, exist_ok=True)
                 if fresh_pptx and fresh_pptx.exists():
                     shutil.copy2(fresh_pptx, proj_out / "deck.pptx")
@@ -1647,7 +1650,7 @@ def download_latest_pptx():
     uid = session.get("user_id")
     pid = session.get("active_project_id") or get_status_project_id()
     if uid and pid:
-        proj_path = BASE_DIR / "user_data" / str(uid) / str(pid) / "deck.pptx"
+        proj_path = USER_DATA_DIR / str(uid) / str(pid) / "deck.pptx"
         if proj_path.exists():
             return send_file(proj_path, as_attachment=True)
     if not LATEST_PPTX.exists():
@@ -1668,7 +1671,7 @@ def download_latest_pdf():
     uid = session.get("user_id")
     pid = session.get("active_project_id") or get_status_project_id()
     if uid and pid:
-        proj_path = BASE_DIR / "user_data" / str(uid) / str(pid) / "deck.pdf"
+        proj_path = USER_DATA_DIR / str(uid) / str(pid) / "deck.pdf"
         if proj_path.exists():
             return send_file(proj_path, as_attachment=True)
     if not LATEST_PDF.exists():
@@ -1686,7 +1689,7 @@ def upload_slide_image():
     if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
         return jsonify({"ok": False, "error": "Image files only"}), 400
     uid = session.get("user_id", "anon")
-    dest = BASE_DIR / "user_data" / str(uid) / "slide_images"
+    dest = USER_DATA_DIR / str(uid) / "slide_images"
     dest.mkdir(parents=True, exist_ok=True)
     import uuid as _uuid
     safe_name = f"{_uuid.uuid4().hex}{ext}"
@@ -1697,7 +1700,7 @@ def upload_slide_image():
 
 @app.route("/slide-image/<uid>/<filename>")
 def serve_slide_image(uid, filename):
-    path = BASE_DIR / "user_data" / str(uid) / "slide_images" / filename
+    path = USER_DATA_DIR / str(uid) / "slide_images" / filename
     if not path.exists():
         abort(404)
     return send_file(path)
@@ -2351,7 +2354,7 @@ def my_projects():
             if r.get("output_dir"):
                 has_deck = (BASE_DIR / r["output_dir"] / "deck.pptx").exists()
             if not has_deck:
-                has_deck = (BASE_DIR / "user_data" / uid / pid / "deck.pptx").exists()
+                has_deck = (USER_DATA_DIR / uid / pid / "deck.pptx").exists()
             projects.append({
                 "id": pid,
                 "title": r.get("title") or f"Project {pid}",
@@ -2386,7 +2389,7 @@ def load_project(project_id):
         if r.get("output_dir"):
             proj_dir = BASE_DIR / r["output_dir"]
         if proj_dir is None or not proj_dir.exists():
-            proj_dir = BASE_DIR / "user_data" / uid / pid
+            proj_dir = USER_DATA_DIR / uid / pid
 
         manifest_src = proj_dir / "deck_manifest.json"
         if manifest_src.exists():
@@ -2418,7 +2421,7 @@ def project_slides(project_id):
         pid = str(r["id"])
         for proj_dir in filter(None, [
             BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
-            BASE_DIR / "user_data" / uid / pid,
+            USER_DATA_DIR / uid / pid,
         ]):
             manifest = proj_dir / "deck_manifest.json"
             if manifest.exists():
@@ -2462,7 +2465,7 @@ def delete_project(project_id):
 
         for proj_dir in filter(None, [
             BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
-            BASE_DIR / "user_data" / uid / pid,
+            USER_DATA_DIR / uid / pid,
         ]):
             if proj_dir.exists():
                 shutil.rmtree(proj_dir, ignore_errors=True)

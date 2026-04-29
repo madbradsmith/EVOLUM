@@ -18,7 +18,7 @@ from reportlab.pdfgen import canvas
 # ── PATH CONSTANTS ────────────────────────────────────────────────────────────
 
 _BASE_DIR = Path(__file__).resolve().parent
-_OUTPUT_DIR = _BASE_DIR / "output"
+_OUTPUT_DIR = _BASE_DIR / "visuals" / "output"  # persistent disk mount
 _LATEST_PPTX = _OUTPUT_DIR / "latest.pptx"
 _LATEST_PDF = _OUTPUT_DIR / "latest.pdf"
 
