@@ -2440,6 +2440,13 @@ def project_slides(project_id):
                 slides = json.loads(manifest.read_text(encoding="utf-8"))
                 title = slides[0].get("title", "Project") if slides else "Project"
                 return jsonify({"slides": slides, "title": title})
+        # Fallback: use the user-level manifest (populated by /project/<id>/load)
+        user_manifest = user_manifest_path(uid)
+        if user_manifest.exists():
+            slides = json.loads(user_manifest.read_text(encoding="utf-8"))
+            if slides:
+                title = slides[0].get("title", "Project") if isinstance(slides, list) else "Project"
+                return jsonify({"slides": slides, "title": title})
         return jsonify({"error": "No manifest found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500

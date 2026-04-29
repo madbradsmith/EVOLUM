@@ -894,6 +894,22 @@ async function loadLatestRefineSlides(type){
         _syncDeckTypeTabs();
         return true;
     } catch (err) {
+        if (activeLoadedProjectId) {
+            try {
+                const manifestType = (type === "producer") ? "producer" : "full";
+                const response = await fetch(`/api/latest-manifest?type=${manifestType}`, { cache: "no-store" });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length) {
+                        refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
+                        latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
+                        currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
+                        _syncDeckTypeTabs();
+                        return true;
+                    }
+                }
+            } catch (_) {}
+        }
         refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
         latestRefineProjectTitle = "UNTITLED PROJECT";
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
@@ -1412,10 +1428,13 @@ async function submitRefineDeck() {
 
 async function submitRegenDeck() {
     syncTrackRegen();
-    let prompt = (document.getElementById("regenPromptInput")?.value || "").trim();
+    let prompt = (
+        document.getElementById("refineRegenInput")?.value ||
+        document.getElementById("regenPromptInput")?.value || ""
+    ).trim();
     if (!prompt) {
-        prompt = (window.prompt("Enter a new creative direction for the entire deck:", "") || "").trim();
-        if (!prompt) return;
+        showInfoModal("New Direction Required", "Type a new creative direction in the input field above the Regenerate Deck button, then try again.");
+        return;
     }
 
     document.getElementById("buildProgressTitle").textContent = "Regenerating Deck";
