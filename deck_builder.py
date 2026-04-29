@@ -43,8 +43,15 @@ from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
 BASE_DIR = Path(__file__).resolve().parent
-UPLOAD_CONTEXT_PATH = str(BASE_DIR / "user_upload_context.json")
 APP_DIR = Path(__file__).resolve().parent
+
+_DAI_UID = os.environ.get("DAI_USER_ID", "")
+_DAI_WORK_DIR = os.environ.get("DAI_WORK_DIR", "")
+
+_ctx_name = f"user_upload_context_{_DAI_UID}.json" if _DAI_UID else "user_upload_context.json"
+UPLOAD_CONTEXT_PATH = str(BASE_DIR / _ctx_name)
+if not Path(UPLOAD_CONTEXT_PATH).exists():
+    UPLOAD_CONTEXT_PATH = str(BASE_DIR / "user_upload_context.json")
 
 
 def load_user_context():
@@ -57,10 +64,18 @@ def load_user_context():
 user_context = load_user_context()
 user_poster = user_context.get("poster_filename", "")
 visuals_root = APP_DIR / "visuals"
-POSTER_PATH = (
-    str(APP_DIR / "visuals" / "user_uploaded" / "poster" / user_poster)
-    if user_poster else None
-)
+
+_ctx_visuals_str = user_context.get("visuals_root", "")
+USER_VISUALS_UPLOAD_ROOT = Path(_ctx_visuals_str) if _ctx_visuals_str else None
+
+if USER_VISUALS_UPLOAD_ROOT:
+    POSTER_PATH = str(USER_VISUALS_UPLOAD_ROOT / "poster" / user_poster) if user_poster else None
+else:
+    _uid_for_vis = _DAI_UID or "anon"
+    POSTER_PATH = (
+        str(APP_DIR / "visuals" / "user_uploaded" / _uid_for_vis / "poster" / user_poster)
+        if user_poster else None
+    )
 
 DEFAULT_SLIDE_PLAN = APP_DIR / "slide_plan.json"
 DEFAULT_BRAIN_OUTPUT = APP_DIR / "approved_brain_output.json"
@@ -131,13 +146,21 @@ def resolve_paths(args) -> tuple[Path, Path, Path]:
         return project_dir / "slide_plan.json", project_dir / "visuals", output_dir
 
     slide_plan = Path(args.slide_plan).expanduser().resolve() if args.slide_plan else DEFAULT_SLIDE_PLAN.resolve()
-    project_dir = slide_plan.parent
+    if _DAI_WORK_DIR:
+        work_slide_plan = Path(_DAI_WORK_DIR) / "slide_plan.json"
+        if work_slide_plan.exists():
+            slide_plan = work_slide_plan
+    project_dir = APP_DIR
     output_dir = project_dir / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
     return slide_plan, project_dir / "visuals", output_dir
 
 
 def load_brain_output(project_dir: Path) -> dict:
+    if _DAI_WORK_DIR:
+        work_candidate = Path(_DAI_WORK_DIR) / "approved_brain_output.json"
+        if work_candidate.exists():
+            return load_json(work_candidate)
     candidate = project_dir / "approved_brain_output.json"
     if candidate.exists():
         return load_json(candidate)
@@ -771,8 +794,9 @@ def find_image_for_slide(
     last_used_name: str = "",
     slide_body: str = ""
 ) -> tuple[Optional[Path], str]:
-    poster_dir = visuals_dir / "user_uploaded" / "poster"
-    current_dir = visuals_dir / "user_uploaded" / "current"
+    _upload_root = USER_VISUALS_UPLOAD_ROOT if USER_VISUALS_UPLOAD_ROOT else (visuals_dir / "user_uploaded" / (_DAI_UID or "anon"))
+    poster_dir = _upload_root / "poster"
+    current_dir = _upload_root / "current"
     exts = {".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP"}
 
     poster_files = [p for p in poster_dir.glob("*") if p.suffix in exts] if poster_dir.exists() else []
