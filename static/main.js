@@ -2245,3 +2245,118 @@ function syncTrackEnterRefine() {
 }
 
 // ===== SYNC AI ASSISTANT END ==========================
+
+// ===== CTA BANNER + PRICING MODAL =====================
+
+const _BANNER_PHRASES = [
+    "Start your 3-day free trial — only $5/month",
+    "Pitch decks, script analysis & actor tools — all in one place",
+    "Built for writers, actors & filmmakers who move fast",
+    "Cancel any time. No questions. No forms.",
+    "Join the beta today — limited access available",
+];
+let _bannerIdx = 0;
+function _rotateBannerText() {
+    const el = document.getElementById("ctaBannerText");
+    if (!el) return;
+    el.classList.add("fade");
+    setTimeout(() => {
+        _bannerIdx = (_bannerIdx + 1) % _BANNER_PHRASES.length;
+        el.textContent = _BANNER_PHRASES[_bannerIdx];
+        el.classList.remove("fade");
+    }, 380);
+}
+(function _initBanner() {
+    if (document.getElementById("ctaBannerText")) {
+        setInterval(_rotateBannerText, 4000);
+    }
+})();
+
+const _PLANS = [
+    {
+        id: "solo", name: "Solo",
+        monthly: 5, annual: 48,
+        projects: "3 projects", collaborators: "1 collaborator",
+        features: ["Pitch deck generator", "Script analyzer", "Actor prep tools", "3-day free trial"],
+        featured: false,
+    },
+    {
+        id: "writers-room", name: "Writer's Room",
+        monthly: 15, annual: 144,
+        projects: "10 projects", collaborators: "5 collaborators",
+        features: ["All Solo features", "Team workspace", "Priority builds", "Project sharing"],
+        featured: true, badge: "Most Popular",
+    },
+    {
+        id: "production", name: "Production Co.",
+        monthly: 35, annual: 336,
+        projects: "20 projects", collaborators: "5 collaborators",
+        features: ["All Writer's Room features", "Advanced analytics", "White-label exports", "Dedicated queue"],
+        featured: false,
+    },
+    {
+        id: "studio", name: "Studio",
+        monthly: 69, annual: 660,
+        projects: "50 projects", collaborators: "100 collaborators",
+        features: ["All Production features", "Custom branding", "Dedicated support", "API access"],
+        featured: false,
+    },
+];
+let _pricingBilling = "monthly";
+
+function setPricingBilling(mode) {
+    _pricingBilling = mode;
+    document.getElementById("ptogMonthly").classList.toggle("active", mode === "monthly");
+    document.getElementById("ptogAnnual").classList.toggle("active", mode === "annual");
+    _renderPricingCards();
+}
+
+function _renderPricingCards() {
+    const container = document.getElementById("pricingCards");
+    if (!container) return;
+    const annual = _pricingBilling === "annual";
+    container.innerHTML = _PLANS.map(p => {
+        const price = annual ? Math.round(p.annual / 12) : p.monthly;
+        const billedNote = annual ? `$${p.annual}/yr billed annually` : "billed monthly";
+        const featured = p.featured ? " featured" : "";
+        const badge = p.badge ? `<div class="plan-badge">${p.badge}</div>` : "";
+        const featureList = [`<div class="plan-feature">${p.projects}</div>`,
+            `<div class="plan-feature">${p.collaborators}</div>`,
+            ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
+        ].join("");
+        const btnClass = p.featured ? "plan-btn plan-btn-primary" : "plan-btn plan-btn-muted";
+        return `
+        <div class="plan-card${featured}">
+            ${badge}
+            <div class="plan-name">${p.name}</div>
+            <div class="plan-price"><span class="plan-price-cents">$</span>${price}</div>
+            <div class="plan-period">/month</div>
+            <div class="plan-billed">${annual ? billedNote : ""}</div>
+            <div class="plan-divider"></div>
+            ${featureList}
+            <div class="plan-cta">
+                <button class="${btnClass}" onclick="closePricingModal(); showAuthModal();">Get Started</button>
+            </div>
+        </div>`;
+    }).join("");
+}
+
+function openPricingModal() {
+    _pricingBilling = "monthly";
+    document.getElementById("ptogMonthly")?.classList.add("active");
+    document.getElementById("ptogAnnual")?.classList.remove("active");
+    _renderPricingCards();
+    document.getElementById("pricingModal").classList.add("open");
+    document.body.style.overflow = "hidden";
+}
+
+function closePricingModal() {
+    document.getElementById("pricingModal").classList.remove("open");
+    document.body.style.overflow = "";
+}
+
+document.getElementById("pricingModal")?.addEventListener("click", function(e) {
+    if (e.target === this) closePricingModal();
+});
+
+// ===== CTA BANNER + PRICING MODAL END =================
