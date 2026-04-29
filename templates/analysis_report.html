@@ -133,6 +133,45 @@ a { color: inherit; text-decoration: none; }
 
 .no-comps { color: #444; font-size: 13px; padding: 20px 0; }
 
+.strength-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.strength-chip {
+    flex: 1; min-width: 120px; background: #111;
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px;
+}
+.strength-chip-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #555; text-transform: uppercase; margin-bottom: 6px; }
+.strength-chip-score { font-size: 28px; font-weight: 800; color: #fff; line-height: 1; }
+.strength-chip-denom { font-size: 13px; color: #444; font-weight: 400; }
+.strength-bar { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.strength-bar-fill { height: 3px; background: linear-gradient(90deg, #ff7a00, #ffb347); border-radius: 2px; }
+
+.market-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.market-card { background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px; }
+.market-card-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #ff7a00; text-transform: uppercase; margin-bottom: 8px; }
+.market-card-value { font-size: 13px; color: #cfcfcf; line-height: 1.55; }
+
+.text-box {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 16px 18px; font-size: 14px; line-height: 1.7; color: #bbb;
+}
+
+.ai-comp-list { display: flex; flex-direction: column; gap: 10px; }
+.ai-comp-item {
+    background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+    padding: 14px 16px; display: flex; gap: 14px; align-items: flex-start;
+}
+.ai-comp-title { font-size: 13px; font-weight: 700; color: #fff; white-space: nowrap; min-width: 140px; }
+.ai-comp-meta { font-size: 11px; color: #ff7a00; margin-top: 2px; }
+.ai-comp-why { font-size: 13px; color: #888; line-height: 1.5; }
+
+.two-col { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+.risk-list { list-style: none; }
+.risk-list li { font-size: 13px; color: #cfcfcf; padding: 6px 0 6px 18px; position: relative; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.risk-list li:last-child { border-bottom: none; }
+.risk-list li::before { content: "—"; position: absolute; left: 0; color: #ff7a00; }
+.risk-list.green li::before { color: #4caf7d; }
+
 .print-hide { }
 @media print {
     .print-hide { display: none !important; }
@@ -224,6 +263,108 @@ a { color: inherit; text-decoration: none; }
     </div>
 </div>
 
+<!-- STRENGTH INDEX -->
+{% set si = report.strength_index or {} %}
+{% if si.concept or si.character or si.marketability or si.originality %}
+<div class="section">
+    <div class="section-title">Strength Index</div>
+    <div class="strength-row">
+        {% for label, key in [('Concept', 'concept'), ('Character', 'character'), ('Marketability', 'marketability'), ('Originality', 'originality')] %}
+        {% set score = si[key] if key in si else 0 %}
+        <div class="strength-chip">
+            <div class="strength-chip-label">{{ label }}</div>
+            <div class="strength-chip-score">{{ score }}<span class="strength-chip-denom">/10</span></div>
+            <div class="strength-bar"><div class="strength-bar-fill" style="width:{{ (score * 10)|int }}%"></div></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- MARKET PROJECTIONS -->
+{% set mp = report.market_projections or {} %}
+{% if mp.budget_range or mp.distribution_angle or mp.awards_potential or mp.franchise_potential %}
+<div class="section">
+    <div class="section-title">Market Positioning</div>
+    <div class="market-grid">
+        {% if mp.budget_range %}
+        <div class="market-card">
+            <div class="market-card-label">Budget Range</div>
+            <div class="market-card-value">{{ mp.budget_range }}</div>
+        </div>
+        {% endif %}
+        {% if mp.distribution_angle %}
+        <div class="market-card">
+            <div class="market-card-label">Distribution</div>
+            <div class="market-card-value">{{ mp.distribution_angle }}</div>
+        </div>
+        {% endif %}
+        {% if mp.awards_potential %}
+        <div class="market-card">
+            <div class="market-card-label">Awards Potential</div>
+            <div class="market-card-value">{{ mp.awards_potential }}</div>
+        </div>
+        {% endif %}
+        {% if mp.franchise_potential %}
+        <div class="market-card">
+            <div class="market-card-label">Franchise Potential</div>
+            <div class="market-card-value">{{ mp.franchise_potential }}</div>
+        </div>
+        {% endif %}
+        {% if mp.audience_reach %}
+        <div class="market-card">
+            <div class="market-card-label">Audience Reach</div>
+            <div class="market-card-value">{{ mp.audience_reach }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- COMMERCIAL + PACKAGING -->
+{% if report.commercial_positioning or report.packaging_potential %}
+<div class="section">
+    <div class="two-col">
+        {% if report.commercial_positioning %}
+        <div>
+            <div class="section-title">Commercial Positioning</div>
+            <div class="text-box">{{ report.commercial_positioning }}</div>
+        </div>
+        {% endif %}
+        {% if report.packaging_potential %}
+        <div>
+            <div class="section-title">Packaging Notes</div>
+            <div class="text-box">{{ report.packaging_potential }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- STRENGTHS + RISKS -->
+{% if report.strengths or report.development_risks %}
+<div class="section">
+    <div class="two-col">
+        {% if report.strengths %}
+        <div>
+            <div class="section-title">Strengths</div>
+            <ul class="risk-list green">
+                {% for item in report.strengths %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if report.development_risks %}
+        <div>
+            <div class="section-title">Development Risks</div>
+            <ul class="risk-list">
+                {% for item in report.development_risks %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
 <!-- CHARACTER BREAKDOWN -->
 {% if report.character_analysis and report.character_analysis.top_characters %}
 <div class="section">
@@ -262,9 +403,29 @@ a { color: inherit; text-decoration: none; }
 </div>
 {% endif %}
 
-<!-- COMPARABLE TITLES -->
+<!-- AI COMPARABLE FILMS -->
+{% if report.comparable_films %}
 <div class="section">
-    <div class="section-title">Comparable Titles</div>
+    <div class="section-title">Comparable Films</div>
+    <div class="ai-comp-list">
+        {% for c in report.comparable_films %}
+        <div class="ai-comp-item">
+            <div>
+                <div class="ai-comp-title">{{ c.title }}</div>
+                {% if c.budget_tier or c.box_office %}
+                <div class="ai-comp-meta">{{ c.budget_tier }}{% if c.budget_tier and c.box_office %} · {% endif %}{{ c.box_office }}</div>
+                {% endif %}
+            </div>
+            {% if c.why %}<div class="ai-comp-why">{{ c.why }}</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- COMPARABLE TITLES (TMDB) -->
+<div class="section">
+    <div class="section-title">{{ 'Similar Films in Market' if comps else 'Comparable Titles' }}</div>
     {% if comps %}
     <div class="comp-grid">
         {% for comp in comps %}

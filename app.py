@@ -1758,20 +1758,54 @@ def analyze_script_pass():
     lead_character = brain.get("protagonist") or (characters[0] if characters else "-")
     supporting_characters = characters[1:5] if len(characters) > 1 else []
 
+    _market = brain.get("market_projections") or {}
+    _strength = brain.get("strength_index") or {}
+    _comp_films = brain.get("comparable_films") or []
+
     report_output = {
         "title": safe_text(brain.get("title"), "UNTITLED PROJECT"),
         "tagline": safe_text(brain.get("tagline") or brain.get("logline")),
         "logline": safe_text(brain.get("logline")),
         "synopsis": safe_text(brain.get("synopsis")),
+        "protagonist_summary": safe_text(brain.get("protagonist_summary")),
         "lead_character": safe_text(lead_character),
         "supporting_characters": supporting_characters,
         "genre": safe_text(brain.get("world"), "Drama"),
         "tone": safe_text(brain.get("tone")),
         "theme": safe_text(brain.get("theme")),
         "world": safe_text(brain.get("world")),
+        "setting": safe_text(brain.get("setting")),
+        "time_frame": safe_text(brain.get("time_frame")),
         "core_conflict": safe_text(brain.get("core_conflict")),
         "story_engine": safe_text(brain.get("story_engine")),
         "reversal": safe_text(brain.get("reversal")),
+        "commercial_positioning": safe_text(brain.get("commercial_positioning")),
+        "packaging_potential": safe_text(brain.get("packaging_potential")),
+        "executive_summary": safe_text(brain.get("executive_summary")),
+        "strengths": brain.get("strengths") or [],
+        "development_risks": brain.get("development_risks") or brain.get("risks") or [],
+        "market_projections": {
+            "budget_range": safe_text(_market.get("budget_range") or _market.get("budget_tier") or _market.get("estimated_budget_tier")),
+            "distribution_angle": safe_text(_market.get("distribution_angle")),
+            "awards_potential": safe_text(_market.get("awards_potential") or _market.get("awards_lane")),
+            "franchise_potential": safe_text(_market.get("franchise_potential")),
+            "audience_reach": safe_text(_market.get("audience_reach")),
+        },
+        "strength_index": {
+            "concept": int(_strength.get("concept") or 0),
+            "character": int(_strength.get("character") or 0),
+            "marketability": int(_strength.get("marketability") or 0),
+            "originality": int(_strength.get("originality") or 0),
+        },
+        "comparable_films": [
+            {
+                "title": safe_text(c.get("title")),
+                "why": safe_text(c.get("why")),
+                "budget_tier": safe_text(c.get("budget_tier")),
+                "box_office": safe_text(c.get("box_office")),
+            }
+            for c in _comp_films[:6] if isinstance(c, dict) and c.get("title")
+        ],
         "story_insights": [
             f"Top characters identified: {', '.join(characters[:5])}" if characters else "Top characters identified.",
             f"Protagonist detected: {lead_character}",
