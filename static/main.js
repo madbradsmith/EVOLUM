@@ -468,11 +468,8 @@ function startBuildDirect() {
     fetch("/upload", { method: "POST", body: formData })
         .then(res => {
             if (res.status === 403) {
-                res.json().then(data => {
-                    buildInFlight = false;
-                    resetCreateProject();
-                    showInfoModal("Project Limit Reached", data.error || "You've reached the 6 project limit. Delete a project to create a new one.");
-                });
+                buildInFlight = false;
+                showProjectLimitModal();
             }
         })
         .catch(err => console.error("Upload failed:", err));
@@ -639,6 +636,11 @@ function validateUploadAndStart(){
     fetch("/upload", {
         method: "POST",
         body: formData
+    }).then(res => {
+        if (res.status === 403) {
+            buildInFlight = false;
+            showProjectLimitModal();
+        }
     }).catch(err => {
         console.error("Upload failed:", err);
     });
@@ -1953,15 +1955,6 @@ async function selectWelcomeProject(projectId) {
     }, 150);
 }
 
-async function selectWelcomeProject(projectId) {
-    closeModal('welcomeModal');
-    resetWelcomeModal();
-
-    setTimeout(async () => {
-        await loadProjectFromPanel(projectId);
-    }, 150);
-}
-
 
 async function deleteProjectFromPanel(projectId, title) {
     if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
@@ -1972,6 +1965,52 @@ async function deleteProjectFromPanel(projectId, title) {
             _cachedProjects = _cachedProjects.filter(p => p.id !== projectId);
             if (activeLoadedProjectId === projectId) activeLoadedProjectId = null;
             renderProjectsList(_cachedProjects);
+            renderLimitProjectsList(_cachedProjects);
+        }
+    } catch(e) {}
+}
+
+async function showProjectLimitModal() {
+    closeAllModals();
+    document.getElementById("projectLimitModal").classList.add("show");
+    const listEl = document.getElementById("limitProjectsList");
+    listEl.innerHTML = '<div style="color:#aaa; font-size:12px;">Loading your projects…</div>';
+    try {
+        const res = await fetch("/my-projects", { cache: "no-store" });
+        const data = await res.json();
+        _cachedProjects = data.projects || [];
+        renderLimitProjectsList(_cachedProjects);
+    } catch(e) {
+        listEl.innerHTML = '<div style="color:#aaa; font-size:12px;">Could not load projects.</div>';
+    }
+}
+
+function renderLimitProjectsList(projects) {
+    const listEl = document.getElementById("limitProjectsList");
+    if (!listEl) return;
+    if (!projects.length) {
+        listEl.innerHTML = '<div style="color:#aaa; font-size:12px;">No projects found.</div>';
+        return;
+    }
+    listEl.innerHTML = projects.map(p => `
+        <div style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:#111; border-radius:8px; border:1px solid rgba(255,255,255,0.07);">
+            <span style="flex:1; font-size:13px; color:#ddd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.title)}</span>
+            ${p.has_deck ? '<span style="font-size:10px; color:#ff7a00; flex-shrink:0;">HAS DECK</span>' : ''}
+            <button style="background:transparent; border:1px solid rgba(255,80,80,0.4); border-radius:6px; color:#ff6666; font-size:11px; padding:3px 8px; cursor:pointer; flex-shrink:0;" onclick="deleteLimitProject('${p.id}', '${escapeHtml(p.title)}')">Delete</button>
+        </div>
+    `).join('');
+}
+
+async function deleteLimitProject(projectId, title) {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+    try {
+        const res = await fetch(`/project/${projectId}/delete`, { method: "POST" });
+        const data = await res.json();
+        if (data.ok) {
+            _cachedProjects = _cachedProjects.filter(p => p.id !== projectId);
+            if (activeLoadedProjectId === projectId) activeLoadedProjectId = null;
+            renderProjectsList(_cachedProjects);
+            renderLimitProjectsList(_cachedProjects);
         }
     } catch(e) {}
 }

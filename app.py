@@ -2298,6 +2298,116 @@ def actor_prep_latest_download_pdf():
 
 # ===== ACTOR PREP ROUTES END =========================
 
+# ===== SAVED PROJECTS ROUTES START ===================
+
+@app.route("/my-projects")
+@require_login
+def my_projects():
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"projects": []})
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            rows = conn.execute(text(
+                "SELECT id, title, type, created_at, output_dir FROM projects WHERE owner_user_id = :uid ORDER BY created_at DESC"
+            ), {"uid": uid}).mappings().fetchall()
+        projects = []
+        for row in rows:
+            r = dict(row)
+            pid = str(r["id"])
+            has_deck = False
+            if r.get("output_dir"):
+                has_deck = (BASE_DIR / r["output_dir"] / "deck.pptx").exists()
+            if not has_deck:
+                has_deck = (BASE_DIR / "user_data" / uid / pid / "deck.pptx").exists()
+            projects.append({
+                "id": pid,
+                "title": r.get("title") or f"Project {pid}",
+                "type": r.get("type") or "Project",
+                "created_at": str(r.get("created_at") or ""),
+                "has_deck": has_deck,
+            })
+        return jsonify({"projects": projects})
+    except Exception as e:
+        return jsonify({"projects": [], "error": str(e)})
+
+
+@app.route("/project/<project_id>/load", methods=["POST"])
+@require_login
+def load_project(project_id):
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"ok": False, "error": "Not logged in"}), 401
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            row = conn.execute(text(
+                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid}).mappings().first()
+        if not row:
+            return jsonify({"ok": False, "error": "Project not found"}), 404
+
+        r = dict(row)
+        pid = str(r["id"])
+
+        proj_dir = None
+        if r.get("output_dir"):
+            proj_dir = BASE_DIR / r["output_dir"]
+        if proj_dir is None or not proj_dir.exists():
+            proj_dir = BASE_DIR / "user_data" / uid / pid
+
+        manifest_src = proj_dir / "deck_manifest.json"
+        if manifest_src.exists():
+            shutil.copy2(manifest_src, user_manifest_path(uid))
+
+        session["active_project_id"] = pid
+        set_status("COMPLETE", project_id=pid, uid=uid)
+
+        return jsonify({"ok": True, "project_id": pid})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/project/<project_id>/delete", methods=["POST"])
+@require_login
+def delete_project(project_id):
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"ok": False, "error": "Not logged in"}), 401
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            row = conn.execute(text(
+                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid}).mappings().first()
+        if not row:
+            return jsonify({"ok": False, "error": "Project not found"}), 404
+
+        r = dict(row)
+        pid = str(r["id"])
+
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text(
+                "DELETE FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid})
+
+        for proj_dir in filter(None, [
+            BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
+            BASE_DIR / "user_data" / uid / pid,
+        ]):
+            if proj_dir.exists():
+                shutil.rmtree(proj_dir, ignore_errors=True)
+
+        if session.get("active_project_id") == pid:
+            session.pop("active_project_id", None)
+
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+# ===== SAVED PROJECTS ROUTES END =====================
+
 def ensure_projects_table():
     if not DB_ENGINE:
         return
