@@ -2403,6 +2403,36 @@ def load_project(project_id):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+@app.route("/project/<project_id>/slides")
+@require_login
+def project_slides(project_id):
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"error": "Not logged in"}), 401
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            row = conn.execute(text(
+                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid}).mappings().first()
+        if not row:
+            return jsonify({"error": "Project not found"}), 404
+        r = dict(row)
+        pid = str(r["id"])
+        for proj_dir in filter(None, [
+            BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
+            BASE_DIR / "user_data" / uid / pid,
+        ]):
+            manifest = proj_dir / "deck_manifest.json"
+            if manifest.exists():
+                slides = json.loads(manifest.read_text(encoding="utf-8"))
+                title = slides[0].get("title", "Project") if slides else "Project"
+                return jsonify({"slides": slides, "title": title})
+        return jsonify({"error": "No manifest found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/project/<project_id>/delete", methods=["POST"])
 @require_login
 def delete_project(project_id):
@@ -2622,6 +2652,60 @@ def db_init_route():
         return jsonify({"ok": True, "message": "database initialized"})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
+
+# ===== SYNC AI ASSISTANT ROUTE START =================
+
+_SYNC_SYSTEM = (
+    "You are Sync, an AI assistant built into EVOLUM — a pitch deck generator for screenwriters and filmmakers. "
+    "Help users get the most out of the platform. Be friendly, brief (under 80 words), and practical. "
+    "EVOLUM features: upload a script → AI-generated pitch deck with images → preview slides → "
+    "refine individual slides (edit text, swap images, regenerate single images) → download PPTX/PDF. "
+    "Key tip: users can edit slide text directly in Refine view without rebuilding the whole deck. "
+    "Use Update & Rebuild to apply slide edits. Use Regenerate Deck for a full AI rewrite with a new direction. "
+    "No markdown. Respond like a helpful colleague who knows the product well."
+)
+
+@app.route("/sync/chat", methods=["POST"])
+@require_login
+def sync_chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    context = data.get("context") or {}
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"reply": "I'm offline right now — API key not configured."})
+
+    ctx_parts = []
+    if context.get("status"):
+        ctx_parts.append(f"Build status: {context['status']}")
+    if context.get("has_deck"):
+        ctx_parts.append("User has a deck built and in preview")
+    if context.get("in_refine"):
+        ctx_parts.append("User is currently in the Refine/Edit view")
+    if context.get("regen_count", 0) >= 2:
+        ctx_parts.append(f"User has hit regenerate {context['regen_count']} times this session")
+    ctx_str = ". ".join(ctx_parts) if ctx_parts else "General use"
+
+    proactive = context.get("proactive_trigger", "")
+    user_content = proactive if proactive and not message else message
+    if not user_content:
+        user_content = "Say hello and offer to help."
+
+    try:
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=200,
+            system=_SYNC_SYSTEM + f"\n\nUser context: {ctx_str}",
+            messages=[{"role": "user", "content": user_content}]
+        )
+        return jsonify({"reply": resp.content[0].text.strip()})
+    except Exception as e:
+        return jsonify({"reply": "Something went wrong — try again in a moment."})
+
+# ===== SYNC AI ASSISTANT ROUTE END ===================
 
 # ===== APP RUN START =================================
 if __name__ == "__main__":

@@ -1257,6 +1257,7 @@ function saveCurrentRefineSlide(){
 }
 
 async function openRefinementStage(){
+    syncTrackEnterRefine();
     activeCompleteView = "refine";
     const loaded = await loadLatestRefineSlides();
     if (loaded) latestSlidesLoadedForComplete = true;
@@ -1410,6 +1411,7 @@ async function submitRefineDeck() {
 }
 
 async function submitRegenDeck() {
+    syncTrackRegen();
     let prompt = (document.getElementById("regenPromptInput")?.value || "").trim();
     if (!prompt) {
         prompt = (window.prompt("Enter a new creative direction for the entire deck:", "") || "").trim();
@@ -1887,18 +1889,29 @@ async function loadProjectFromPanel(projectId) {
 
         if (data.ok) {
             activeLoadedProjectId = projectId;
+            activeCompleteView = "preview";
+            currentRefineSlide = 0;
 
             const p = _cachedProjects.find(x => x.id === projectId);
             const titleEl = document.getElementById("studioTitle");
             if (titleEl && p) titleEl.textContent = p.title;
 
+            // Enter studio mode from any page state (landing, flow, etc.)
+            exitFlowMode();
+            enterActiveBuildMode();
+
+            // Switch to complete/preview state
             document.body.classList.add("complete-mode");
+            document.getElementById("buildProgressBar").style.display = "none";
+            document.getElementById("liveProcessLog").style.display = "none";
+            document.getElementById("buildCopy").style.display = "none";
+            document.getElementById("buildMeta").style.display = "none";
             document.getElementById("completePanel").style.display = "block";
             document.getElementById("previewStage").style.display = "block";
             document.getElementById("refinementStage").style.display = "none";
 
             latestSlidesLoadedForComplete = false;
-            syncLatestSlidesForPreview();
+            await syncLatestSlidesForPreview();
             renderProjectsList(_cachedProjects);
         }
     } catch (e) {}
@@ -2038,3 +2051,176 @@ pollStatus();
     }
     document.getElementById("welcomeModal").classList.add("show");
 })();
+
+// ===== SYNC AI ASSISTANT ==============================
+
+const _syncState = {
+    open: false,
+    history: [],          // [{role, text}]
+    unread: 0,
+    regenCount: 0,
+    refineEntered: null,
+    tipsShown: new Set(),
+    busy: false,
+};
+
+const _SYNC_PROACTIVE_TIPS = [
+    {
+        id: "regen3",
+        trigger: () => _syncState.regenCount >= 3 && !_syncState.tipsShown.has("regen3"),
+        prompt: "The user has regenerated their entire deck 3 or more times in a row. Gently suggest they try editing individual slides in the Refine view instead of regenerating the full deck, since it's faster and gives more control. Keep it to 2 sentences.",
+    },
+    {
+        id: "refineIdle",
+        trigger: () => _syncState.refineEntered && (Date.now() - _syncState.refineEntered > 180000) && !_syncState.tipsShown.has("refineIdle"),
+        prompt: "The user has been in the Refine view for 3+ minutes. Remind them to hit 'Update & Rebuild' to save their edits to the actual deck file, since edits aren't saved until they rebuild. One sentence.",
+    },
+];
+
+function _syncGetContext() {
+    return {
+        status: lastStatus || "IDLE",
+        has_deck: document.body.classList.contains("complete-mode"),
+        in_refine: activeCompleteView === "refine",
+        regen_count: _syncState.regenCount,
+    };
+}
+
+function _syncShowBadge() {
+    const badge = document.getElementById("syncBadge");
+    if (badge) badge.classList.add("show");
+}
+
+function _syncClearBadge() {
+    const badge = document.getElementById("syncBadge");
+    if (badge) badge.classList.remove("show");
+    _syncState.unread = 0;
+}
+
+function _syncAppendBubble(role, text) {
+    const el = document.getElementById("syncMessages");
+    if (!el) return;
+    const bubble = document.createElement("div");
+    bubble.className = `sync-bubble ${role}`;
+    const inner = document.createElement("div");
+    inner.className = "sync-bubble-text";
+    inner.textContent = text;
+    bubble.appendChild(inner);
+    el.appendChild(bubble);
+    el.scrollTop = el.scrollHeight;
+    _syncState.history.push({ role, text });
+}
+
+function _syncShowTyping() {
+    const el = document.getElementById("syncMessages");
+    if (!el) return;
+    const t = document.createElement("div");
+    t.className = "sync-typing";
+    t.id = "syncTyping";
+    t.textContent = "Sync is thinking…";
+    el.appendChild(t);
+    el.scrollTop = el.scrollHeight;
+}
+
+function _syncRemoveTyping() {
+    const t = document.getElementById("syncTyping");
+    if (t) t.remove();
+}
+
+async function _syncFetch(message, proactiveTrigger) {
+    if (_syncState.busy) return;
+    _syncState.busy = true;
+    const btn = document.getElementById("syncSendBtn");
+    if (btn) btn.disabled = true;
+    _syncShowTyping();
+    try {
+        const body = { context: _syncGetContext() };
+        if (message) body.message = message;
+        if (proactiveTrigger) body.context.proactive_trigger = proactiveTrigger;
+        const res = await fetch("/sync/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        _syncRemoveTyping();
+        _syncAppendBubble("sync", data.reply || "…");
+    } catch (e) {
+        _syncRemoveTyping();
+        _syncAppendBubble("sync", "I'm having trouble connecting — try again in a moment.");
+    } finally {
+        _syncState.busy = false;
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function _syncCheckProactive() {
+    for (const tip of _SYNC_PROACTIVE_TIPS) {
+        if (tip.trigger()) {
+            _syncState.tipsShown.add(tip.id);
+            if (_syncState.open) {
+                await _syncFetch(null, tip.prompt);
+            } else {
+                _syncState.unread++;
+                _syncShowBadge();
+                // Queue it — show when user opens panel
+                _syncState._pendingProactive = tip.prompt;
+            }
+            break;
+        }
+    }
+}
+
+function toggleSyncPanel() {
+    _syncState.open = !_syncState.open;
+    const panel = document.getElementById("syncPanel");
+    if (!panel) return;
+    panel.classList.toggle("open", _syncState.open);
+
+    if (_syncState.open) {
+        _syncClearBadge();
+        // First open: greet
+        if (_syncState.history.length === 0) {
+            _syncFetch(null, "Greet the user warmly in 1-2 sentences. Tell them you're Sync, their EVOLUM studio guide, and you can help them get the best results. Be brief and friendly.");
+        }
+        // Pending proactive tip
+        if (_syncState._pendingProactive) {
+            const p = _syncState._pendingProactive;
+            _syncState._pendingProactive = null;
+            setTimeout(() => _syncFetch(null, p), 400);
+        }
+        const input = document.getElementById("syncInput");
+        if (input) input.focus();
+    }
+}
+
+async function sendSyncMessage() {
+    const input = document.getElementById("syncInput");
+    const msg = (input?.value || "").trim();
+    if (!msg || _syncState.busy) return;
+    input.value = "";
+    _syncAppendBubble("user", msg);
+    await _syncFetch(msg, null);
+}
+
+function syncInputKeydown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendSyncMessage();
+    }
+}
+
+// Behavior hooks — called from submitRegenDeck, submitRefineDeck, openRefinementStage
+function syncTrackRegen() {
+    _syncState.regenCount++;
+    _syncCheckProactive();
+}
+
+function syncTrackEnterRefine() {
+    if (!_syncState.refineEntered) {
+        _syncState.refineEntered = Date.now();
+        setTimeout(_syncCheckProactive, 180000); // check after 3 min
+    }
+}
+
+// ===== SYNC AI ASSISTANT END ==========================
