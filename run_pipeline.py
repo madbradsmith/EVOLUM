@@ -77,7 +77,11 @@ def main(input_file):
         start_time
     )
 
-    upload_context_path = APP_DIR / "user_upload_context.json"
+    _ctx_uid = os.environ.get("DAI_USER_ID", "")
+    _ctx_name = f"user_upload_context_{_ctx_uid}.json" if _ctx_uid else "user_upload_context.json"
+    upload_context_path = APP_DIR / _ctx_name
+    if not upload_context_path.exists():
+        upload_context_path = APP_DIR / "user_upload_context.json"
     approved_path = APP_DIR / "approved_brain_output.json"
 
     if upload_context_path.exists() and approved_path.exists():

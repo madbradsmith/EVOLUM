@@ -127,8 +127,11 @@ def get_user_by_email(email: str):
 BASE_DIR = Path(__file__).resolve().parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 OUTPUT_DIR = BASE_DIR / "output"
-STATUS_FILE = BASE_DIR / "status.txt"
-ACTIVE_PROJECT_FILE = BASE_DIR / "active_project.txt"
+def _status_file(uid: str = "") -> "Path":
+    return BASE_DIR / (f"status_{uid}.txt" if uid else "status.txt")
+
+def _active_project_file(uid: str = "") -> "Path":
+    return BASE_DIR / (f"active_project_{uid}.txt" if uid else "active_project.txt")
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -223,26 +226,29 @@ def log_usage(event, **kwargs):
     print(line, flush=True)
 
 
-def set_status(text: str, project_id: str = None):
+def set_status(text: str, project_id: str = None, uid: str = ""):
+    sf = _status_file(uid)
     if project_id:
-        STATUS_FILE.write_text(f"{text}|{project_id}", encoding="utf-8")
+        sf.write_text(f"{text}|{project_id}", encoding="utf-8")
     else:
-        current = STATUS_FILE.read_text(encoding="utf-8").strip() if STATUS_FILE.exists() else ""
+        current = sf.read_text(encoding="utf-8").strip() if sf.exists() else ""
         existing_pid = current.split("|")[1] if "|" in current else ""
-        STATUS_FILE.write_text(f"{text}|{existing_pid}" if existing_pid else text, encoding="utf-8")
+        sf.write_text(f"{text}|{existing_pid}" if existing_pid else text, encoding="utf-8")
 
 
-def get_status() -> str:
-    if not STATUS_FILE.exists():
+def get_status(uid: str = "") -> str:
+    sf = _status_file(uid)
+    if not sf.exists():
         return "IDLE"
-    raw = STATUS_FILE.read_text(encoding="utf-8").strip()
+    raw = sf.read_text(encoding="utf-8").strip()
     return (raw.split("|")[0] if "|" in raw else raw) or "IDLE"
 
 
-def get_status_project_id() -> str:
-    if not STATUS_FILE.exists():
+def get_status_project_id(uid: str = "") -> str:
+    sf = _status_file(uid)
+    if not sf.exists():
         return ""
-    raw = STATUS_FILE.read_text(encoding="utf-8").strip()
+    raw = sf.read_text(encoding="utf-8").strip()
     return raw.split("|")[1] if "|" in raw else ""
 
 
@@ -1296,9 +1302,11 @@ def admin():
 
 @app.route("/status")
 def status():
+    uid = session.get("user_id", "")
+    apf = _active_project_file(uid)
     return jsonify({
-        "status": get_status(),
-        "project_id": get_status_project_id() or session.get("active_project_id") or (ACTIVE_PROJECT_FILE.read_text(encoding="utf-8").strip() if ACTIVE_PROJECT_FILE.exists() else None)
+        "status": get_status(uid),
+        "project_id": get_status_project_id(uid) or session.get("active_project_id") or (apf.read_text(encoding="utf-8").strip() if apf.exists() else None)
     })
     
 # ===== PITCH DECK ROUTES START =======================
@@ -1415,7 +1423,7 @@ def upload():
             session["user_id"] = uid
     if existing_project_id and uid and DB_ENGINE:
         session["active_project_id"] = existing_project_id
-        set_status("UPLOADED", project_id=existing_project_id)
+        set_status("UPLOADED", project_id=existing_project_id, uid=uid)
     elif project_title and uid and DB_ENGINE:
         ensure_projects_table()
         with DB_ENGINE.begin() as conn:
@@ -1434,8 +1442,8 @@ def upload():
             })
             new_pid = str(result.scalar())
             session["active_project_id"] = new_pid
-            ACTIVE_PROJECT_FILE.write_text(new_pid, encoding="utf-8")
-            set_status("UPLOADED", project_id=new_pid)
+            _active_project_file(uid).write_text(new_pid, encoding="utf-8")
+            set_status("UPLOADED", project_id=new_pid, uid=uid)
     else:
         if not project_title and not existing_project_id:
             session.pop("active_project_id", None)
@@ -1491,7 +1499,8 @@ def upload():
         "image_filenames": saved_images,
     }
 
-    (BASE_DIR / "user_upload_context.json").write_text(
+    _ctx_name = f"user_upload_context_{uid}.json" if uid else "user_upload_context.json"
+    (BASE_DIR / _ctx_name).write_text(
         json.dumps(upload_context, indent=2),
         encoding="utf-8",
     )
@@ -1499,40 +1508,46 @@ def upload():
     # === ENSURE OVERRIDE FILE EXISTS IN ALL PIPELINE PATHS ===
     try:
         override_data = json.dumps(upload_context, indent=2)
-        (BASE_DIR / "user_upload_context.json").write_text(override_data, encoding="utf-8")
+        (BASE_DIR / _ctx_name).write_text(override_data, encoding="utf-8")
         (BASE_DIR / "input").mkdir(exist_ok=True)
-        (BASE_DIR / "input" / "user_upload_context.json").write_text(override_data, encoding="utf-8")
+        (BASE_DIR / "input" / _ctx_name).write_text(override_data, encoding="utf-8")
         (BASE_DIR / "pipeline").mkdir(exist_ok=True)
-        (BASE_DIR / "pipeline" / "user_upload_context.json").write_text(override_data, encoding="utf-8")
+        (BASE_DIR / "pipeline" / _ctx_name).write_text(override_data, encoding="utf-8")
         print("✅ Upload overrides written to all known paths")
     except Exception as e:
         print("⚠️ Failed to write override files:", e)
 
 
     # Capture project_id before pipeline starts — read from dedicated file (most reliable)
+    _apf = _active_project_file(uid or "")
     saved_pid = (
-        (ACTIVE_PROJECT_FILE.read_text(encoding="utf-8").strip() if ACTIVE_PROJECT_FILE.exists() else "")
+        (_apf.read_text(encoding="utf-8").strip() if _apf.exists() else "")
         or session.get("active_project_id")
-        or get_status_project_id()
+        or get_status_project_id(uid or "")
     )
 
+    _uid_str = uid or ""
     try:
-        set_status("ANALYZING", project_id=saved_pid)
+        set_status("ANALYZING", project_id=saved_pid, uid=_uid_str)
         log_path = BASE_DIR / "pipeline.log"
 
+        _pipeline_env = os.environ.copy()
+        if _uid_str:
+            _pipeline_env["DAI_USER_ID"] = _uid_str
         with open(log_path, "w", encoding="utf-8") as log_file:
             subprocess.run(
                 ["python3", str(BASE_DIR / "run_pipeline.py"), str(save_path)],
                 cwd=str(BASE_DIR),
+                env=_pipeline_env,
                 stdout=log_file,
                 stderr=log_file,
                 text=True,
                 check=True,
             )
 
-        set_status("BUILDING", project_id=saved_pid)
+        set_status("BUILDING", project_id=saved_pid, uid=_uid_str)
     except subprocess.CalledProcessError:
-        set_status("ERROR")
+        set_status("ERROR", uid=_uid_str)
         try:
             tail = log_path.read_text(encoding="utf-8").strip().split("\n")
             last_lines = "\n".join(tail[-40:])
@@ -1544,7 +1559,7 @@ def upload():
     fresh_pdf = newest_generated_file(".pdf")
 
     if not fresh_pptx or not fresh_pptx.exists():
-        set_status("ERROR")
+        set_status("ERROR", uid=_uid_str)
         return "No deck generated", 500
 
     publish_latest_outputs(fresh_pptx, fresh_pdf)
@@ -1558,10 +1573,10 @@ def upload():
             shutil.copy2(str(producer_files[-1]), str(producer_labeled))
 
     if not LATEST_PPTX.exists():
-        set_status("ERROR")
+        set_status("ERROR", uid=_uid_str)
         return "Latest deck publish failed", 500
 
-    set_status("COMPLETE", project_id=saved_pid)
+    set_status("COMPLETE", project_id=saved_pid, uid=_uid_str)
     elapsed = int(time.time() - started_at)
     log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
     log_activity_event("deck_run", route="/upload", user_email=session.get("user_email"))
