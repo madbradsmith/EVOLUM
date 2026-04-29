@@ -61,7 +61,7 @@ body {
     font-weight: 600;
     font-size: 20px;
     letter-spacing: 0.5px;
-    opacity: 0.85;
+    opacity: 1;
 }
 @keyframes btn-pulse {
     0%   { opacity: 1; }
@@ -386,7 +386,7 @@ input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
     text-transform: uppercase;
     color: #ff7a00;
     margin-bottom: 16px;
-    opacity: 0.85;
+    opacity: 1;
 }
 .quote-text {
     font-size: 22px;

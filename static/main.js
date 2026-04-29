@@ -2290,7 +2290,7 @@ const _PLANS = [
     {
         id: "production", name: "Production Co.",
         monthly: 35, annual: 336,
-        projects: "20 projects", collaborators: "5 collaborators",
+        projects: "20 projects", collaborators: "10 collaborators",
         features: ["All Writer's Room features", "Advanced analytics", "White-label exports", "Dedicated queue"],
         featured: false,
     },
