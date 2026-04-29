@@ -1609,6 +1609,7 @@ def upload():
             return
 
         set_status("COMPLETE", project_id=saved_pid, uid=_uid_str)
+        _cleanup_old_output_files()
         elapsed = int(time.time() - started_at)
         log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
         log_activity_event("deck_run", route="/upload", user_email=_user_email)
@@ -1635,6 +1636,16 @@ def upload():
 
     threading.Thread(target=_run_pipeline_bg, daemon=True).start()
     return ("OK", 200)
+
+
+def _cleanup_old_output_files():
+    for pattern in ("pitch_deck_v*.pptx", "pitch_deck_producer_v*.pptx"):
+        files = sorted(OUTPUT_DIR.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
+        for old in files[3:]:
+            try:
+                old.unlink()
+            except Exception:
+                pass
 
 
 # ===== DEMO ROUTES START =============================
@@ -2351,16 +2362,30 @@ def my_projects():
             r = dict(row)
             pid = str(r["id"])
             has_deck = False
+            thumbnail = ""
+            proj_dir_path = None
             if r.get("output_dir"):
-                has_deck = (BASE_DIR / r["output_dir"] / "deck.pptx").exists()
+                proj_dir_path = BASE_DIR / r["output_dir"]
+                has_deck = (proj_dir_path / "deck.pptx").exists()
             if not has_deck:
-                has_deck = (USER_DATA_DIR / uid / pid / "deck.pptx").exists()
+                proj_dir_path = USER_DATA_DIR / uid / pid
+                has_deck = (proj_dir_path / "deck.pptx").exists()
+            if proj_dir_path:
+                manifest_file = proj_dir_path / "deck_manifest.json"
+                if manifest_file.exists():
+                    try:
+                        slides = json.loads(manifest_file.read_text(encoding="utf-8"))
+                        if slides and isinstance(slides, list):
+                            thumbnail = slides[0].get("image_url") or ""
+                    except Exception:
+                        pass
             projects.append({
                 "id": pid,
                 "title": r.get("title") or f"Project {pid}",
                 "type": r.get("type") or "Project",
                 "created_at": str(r.get("created_at") or ""),
                 "has_deck": has_deck,
+                "thumbnail": thumbnail,
             })
         return jsonify({"projects": projects})
     except Exception as e:

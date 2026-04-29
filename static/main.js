@@ -1883,6 +1883,7 @@ function renderProjectsList(projects) {
     }
     panel.innerHTML = projects.map(p => `
         <div class="proj-list-item${activeLoadedProjectId === p.id ? ' active' : ''}" onclick="loadProjectFromPanel('${p.id}')">
+            ${p.thumbnail ? `<img class="proj-thumb" src="${p.thumbnail}" alt="">` : '<div class="proj-thumb-empty"></div>'}
             <span class="proj-list-title">${escapeHtml(p.title)}</span>
             ${p.has_deck ? '<span class="proj-list-badge">✓</span>' : ''}
             <button class="proj-list-del" onclick="event.stopPropagation(); deleteProjectFromPanel('${p.id}', '${escapeHtml(p.title)}')" title="Delete">×</button>
@@ -1972,6 +1973,7 @@ function renderWelcomeProjects(projects) {
 
     el.innerHTML = projects.map(p => `
         <div class="proj-list-item" onclick="selectWelcomeProject('${p.id}')">
+            ${p.thumbnail ? `<img class="proj-thumb" src="${p.thumbnail}" alt="">` : '<div class="proj-thumb-empty"></div>'}
             <span class="proj-list-title">${escapeHtml(p.title)}</span>
             ${p.has_deck ? '<span class="proj-list-badge">✓</span>' : ''}
         </div>
