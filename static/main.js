@@ -436,6 +436,7 @@ function resetCreateProject(){
 }
 
 function newDeck() {
+    closeModal('welcomeModal');
     resetCreateProject();
     showUploadAnalyzeModal();
 }
@@ -2294,7 +2295,6 @@ const _PLANS = [
 ];
 let _pricingBilling = "monthly";
 let _selectedPlan = null;
-let _pricingModalSyncShown = false;
 
 function setPricingBilling(mode) {
     _pricingBilling = mode;
@@ -2359,16 +2359,6 @@ function openPricingModal() {
     _renderPricingCards();
     document.getElementById("pricingModal").classList.add("open");
     document.body.style.overflow = "hidden";
-    if (!_pricingModalSyncShown && !_syncState.open) {
-        _pricingModalSyncShown = true;
-        setTimeout(() => {
-            if (!document.getElementById("pricingModal").classList.contains("open")) return;
-            if (!_syncState.open) toggleSyncPanel();
-            setTimeout(() => {
-                _syncAppendBubble("sync", "Not sure which plan fits? Tell me what you're working on and I'll point you in the right direction.");
-            }, _syncState.history.length === 0 ? 1800 : 300);
-        }, 1000);
-    }
 }
 
 function closePricingModal() {
