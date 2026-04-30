@@ -661,6 +661,18 @@ def load_latest_brain_output(slide_plan_file=None) -> dict:
                 continue
     return {}
 
+def _load_user_brain(uid: str) -> dict:
+    """Load brain output for a specific user — never bleeds from other users."""
+    if not uid:
+        return {}
+    path = USER_DATA_DIR / uid / "brain_output.json"
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
+
 def build_fal_image_prompt(slide_title: str, slide_body: str = "", user_prompt: str = "", brain_output: dict | None = None, variation: str = "") -> str:
     brain_output = brain_output or {}
     normalized = normalize_key(slide_title)
@@ -1838,6 +1850,18 @@ def analyze_script_pass():
     with open(brain_file, "r", encoding="utf-8") as f:
         brain = json.load(f)
 
+    # Save per-user brain output so actor tools never bleed across users
+    uid = session.get("user_id", "")
+    if uid:
+        user_dir = USER_DATA_DIR / uid
+        user_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            (user_dir / "brain_output.json").write_text(
+                json.dumps(brain, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+        except Exception:
+            pass
+
     characters = brain.get("characters") or []
     lead_character = brain.get("protagonist") or (characters[0] if characters else "-")
     supporting_characters = characters[1:5] if len(characters) > 1 else []
@@ -2377,7 +2401,8 @@ def actor_prep_pass():
 
     log_usage("actor_prep_start", role=character_name, mode=source_mode)
 
-    brain_data = load_latest_brain_output() or {}
+    uid = session.get("user_id", "")
+    brain_data = _load_user_brain(uid)
     if movie_title:
         brain_data.setdefault("title", movie_title)
     try:
@@ -2442,7 +2467,8 @@ def actor_booked_pass():
 
     log_usage("actor_booked_start", role=character_name, mode=source_mode)
 
-    brain_data = load_latest_brain_output() or {}
+    uid = session.get("user_id", "")
+    brain_data = _load_user_brain(uid)
     if movie_title:
         brain_data.setdefault("title", movie_title)
     try:
