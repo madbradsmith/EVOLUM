@@ -1794,6 +1794,21 @@ def upload():
                     _manifest_src = LATEST_DECK_MANIFEST_JSON
                 if _manifest_src.exists():
                     shutil.copy2(_manifest_src, proj_out / "deck_manifest.json")
+                # Build analysis PDF from brain output and save per-project + global
+                _brain_src = Path(_pipeline_env.get("DAI_WORK_DIR", "")) / "approved_brain_output.json"
+                if not _brain_src.exists():
+                    _brain_src = BASE_DIR / "approved_brain_output.json"
+                if _brain_src.exists():
+                    try:
+                        _brain_data = json.loads(_brain_src.read_text(encoding="utf-8"))
+                        _proj_analysis_pdf = proj_out / "analysis_report.pdf"
+                        build_simple_analysis_pdf(_brain_data, _proj_analysis_pdf)
+                        shutil.copy2(_proj_analysis_pdf, LATEST_ANALYSIS_PDF)
+                        _brain_json_dest = proj_out / "analysis_report.json"
+                        _brain_json_dest.write_text(json.dumps(_brain_data, indent=2), encoding="utf-8")
+                        shutil.copy2(_brain_json_dest, LATEST_ANALYSIS_JSON)
+                    except Exception as _e:
+                        print(f"⚠️ Analysis PDF build failed: {_e}", flush=True)
                 with DB_ENGINE.begin() as conn:
                     conn.execute(text("""
                         UPDATE projects SET output_dir = :output_dir WHERE id = :id
@@ -2127,6 +2142,19 @@ def analysis_report_latest_pdf():
     if not LATEST_ANALYSIS_PDF.exists():
         abort(404)
     return send_file(LATEST_ANALYSIS_PDF, as_attachment=False)
+
+
+@app.route("/download/latest_analysis_report.pdf")
+def download_latest_analysis_report_pdf():
+    uid = session.get("user_id", "")
+    pid = session.get("active_project_id") or get_status_project_id(uid or "")
+    if uid and pid:
+        proj_path = USER_DATA_DIR / str(uid) / str(pid) / "analysis_report.pdf"
+        if proj_path.exists():
+            return send_file(proj_path, as_attachment=True, download_name="analysis_report.pdf")
+    if not LATEST_ANALYSIS_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ANALYSIS_PDF, as_attachment=True, download_name="analysis_report.pdf")
 
 
 @app.route("/analyzer")
