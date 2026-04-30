@@ -9,7 +9,7 @@
 body {
     background: #090909; color: #d8d8d8;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    min-height: 100vh; padding: 0 0 60px;
+    min-height: 100vh; padding: 0 0 80px;
 }
 a { color: inherit; text-decoration: none; }
 .report-header {
@@ -55,12 +55,22 @@ a { color: inherit; text-decoration: none; }
     font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
     color: #f0c15d; text-transform: uppercase; margin-bottom: 14px;
 }
+.section-subtitle {
+    font-size: 12px; color: #666; margin-bottom: 18px; margin-top: -10px;
+}
 .snapshot-box {
     background: rgba(240,193,93,0.05); border: 1px solid rgba(240,193,93,0.18);
     border-left: 3px solid #f0c15d; border-radius: 10px;
     padding: 18px 20px; font-size: 15px; line-height: 1.7; color: #e0e0e0;
 }
+
+/* 2-column grid for Role Continuity Center */
+.continuity-grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 600px) { .continuity-grid { grid-template-columns: 1fr; } }
+
+/* auto-fill grid for Set Intelligence */
 .intel-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
 .intel-card {
     background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px;
 }
@@ -76,6 +86,49 @@ a { color: inherit; text-decoration: none; }
 }
 .intel-list li:last-child { border-bottom: none; }
 .intel-list li::before { content: "—"; position: absolute; left: 0; color: #f0c15d; font-size: 11px; }
+
+/* Scene Journey Map */
+.journey-group { margin-bottom: 24px; }
+.journey-header {
+    background: #141414; border: 1px solid rgba(240,193,93,0.2);
+    border-left: 3px solid #f0c15d; border-radius: 10px; padding: 14px 18px; margin-bottom: 8px;
+}
+.journey-beat-type {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+    color: #f0c15d; text-transform: uppercase; margin-bottom: 4px;
+}
+.journey-meta { font-size: 12px; color: #666; margin-bottom: 6px; }
+.journey-coaching { font-size: 13px; color: #cfcfcf; line-height: 1.5; }
+.journey-sample {
+    background: #0d0d0d; border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; padding: 12px 16px; margin-left: 20px; margin-bottom: 6px;
+}
+.journey-sample-ref {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    color: #888; text-transform: uppercase; margin-bottom: 6px;
+}
+.journey-sample-scene { font-size: 12px; color: #777; margin-bottom: 4px; }
+.journey-dialogue {
+    font-size: 13px; color: #cfcfcf; line-height: 1.5;
+    border-left: 2px solid rgba(240,193,93,0.3); padding-left: 10px; font-style: italic;
+}
+
+/* Set-Ready Checklist */
+.checklist { list-style: none; display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
+@media (max-width: 600px) { .checklist { grid-template-columns: 1fr; } }
+.checklist li {
+    background: #111; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+    padding: 12px 14px 12px 32px; font-size: 13px; color: #cfcfcf; line-height: 1.5;
+    position: relative;
+}
+.checklist li::before {
+    content: "✓"; position: absolute; left: 12px; color: #f0c15d; font-weight: 700; font-size: 12px;
+}
+
+.divider {
+    max-width: 980px; margin: 32px auto 0; padding: 0 32px;
+    border: none; border-top: 1px solid rgba(255,255,255,0.06);
+}
 </style>
 </head>
 <body>
@@ -112,6 +165,48 @@ a { color: inherit; text-decoration: none; }
 </div>
 {% endif %}
 
+<hr class="divider">
+
+<!-- Role Continuity Center (mirrors PDF page 2) -->
+<div class="section" style="padding-top:28px;">
+    <div class="section-title">Role Continuity Center</div>
+    <div class="section-subtitle">What must stay consistent across scenes, takes, and shooting days.</div>
+    <div class="continuity-grid">
+
+        {% if intel.booked_continuity %}
+        <div class="intel-card">
+            <div class="intel-card-label">Booked Continuity</div>
+            <ul class="intel-list">{% for item in intel.booked_continuity %}<li>{{ item }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
+        {% if intel.scene_priorities %}
+        <div class="intel-card">
+            <div class="intel-card-label">Scene Priorities</div>
+            <ul class="intel-list">{% for item in intel.scene_priorities %}<li>{{ item }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
+        {% if intel.emotional_triggers %}
+        <div class="intel-card">
+            <div class="intel-card-label">Emotional Triggers</div>
+            <ul class="intel-list">{% for item in intel.emotional_triggers %}<li>{{ item }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
+        {% if intel.look_presence %}
+        <div class="intel-card">
+            <div class="intel-card-label">Look / Behavior</div>
+            <ul class="intel-list">{% for item in intel.look_presence %}<li>{{ item }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<hr class="divider">
+
+<!-- Set Intelligence (casting + tactics + danger + other cards) -->
 <div class="section" style="padding-top:28px;">
     <div class="section-title">Set Intelligence</div>
     <div class="intel-grid">
@@ -130,38 +225,10 @@ a { color: inherit; text-decoration: none; }
         </div>
         {% endif %}
 
-        {% if intel.emotional_triggers %}
-        <div class="intel-card">
-            <div class="intel-card-label">Emotional Triggers</div>
-            <ul class="intel-list">{% for item in intel.emotional_triggers %}<li>{{ item }}</li>{% endfor %}</ul>
-        </div>
-        {% endif %}
-
         {% if intel.danger_zones %}
         <div class="intel-card">
             <div class="intel-card-label">Danger Zones</div>
             <ul class="intel-list">{% for item in intel.danger_zones %}<li>{{ item }}</li>{% endfor %}</ul>
-        </div>
-        {% endif %}
-
-        {% if intel.look_presence %}
-        <div class="intel-card">
-            <div class="intel-card-label">Look &amp; Presence</div>
-            <ul class="intel-list">{% for item in intel.look_presence %}<li>{{ item }}</li>{% endfor %}</ul>
-        </div>
-        {% endif %}
-
-        {% if intel.booked_continuity %}
-        <div class="intel-card">
-            <div class="intel-card-label">On-Set Continuity</div>
-            <ul class="intel-list">{% for item in intel.booked_continuity %}<li>{{ item }}</li>{% endfor %}</ul>
-        </div>
-        {% endif %}
-
-        {% if intel.scene_priorities %}
-        <div class="intel-card">
-            <div class="intel-card-label">Scene Priorities</div>
-            <ul class="intel-list">{% for item in intel.scene_priorities %}<li>{{ item }}</li>{% endfor %}</ul>
         </div>
         {% endif %}
 
@@ -172,8 +239,56 @@ a { color: inherit; text-decoration: none; }
         </div>
         {% endif %}
 
+        {% if intel.reader_chemistry %}
+        <div class="intel-card">
+            <div class="intel-card-label">Reader Chemistry</div>
+            <ul class="intel-list">{% for item in intel.reader_chemistry %}<li>{{ item }}</li>{% endfor %}</ul>
+        </div>
+        {% endif %}
+
     </div>
 </div>
+
+<!-- Scene Journey Map (mirrors PDF pages 3+) -->
+{% if report.beat_groups %}
+<hr class="divider">
+<div class="section" style="padding-top:28px;">
+    <div class="section-title">Scene Journey Map</div>
+    <div class="section-subtitle">{{ report.beat_count }} beats grouped by type — coaching note + pulled scenes per pattern.</div>
+
+    {% for group in report.beat_groups %}
+    <div class="journey-group">
+        <div class="journey-header">
+            <div class="journey-beat-type">{{ group.beat_type }}</div>
+            <div class="journey-meta">{{ group.count }} beat{{ 's' if group.count != 1 else '' }} &nbsp;·&nbsp; pages {{ group.pages | join(', ') }}</div>
+            <div class="journey-coaching">{{ group.coaching }}</div>
+        </div>
+        {% for sample in group.samples %}
+        <div class="journey-sample">
+            <div class="journey-sample-ref">↳ {{ sample.reference }}</div>
+            {% if sample.scene_heading and sample.scene_heading != 'SCENE NOT DETECTED' %}
+            <div class="journey-sample-scene">{{ sample.scene_heading }}</div>
+            {% endif %}
+            <div class="journey-dialogue">{{ sample.dialogue }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Set-Ready Checklist (mirrors PDF final page) -->
+{% if report.set_ready_checklist %}
+<hr class="divider">
+<div class="section" style="padding-top:28px;">
+    <div class="section-title">Set-Ready Checklist</div>
+    <ul class="checklist">
+        {% for item in report.set_ready_checklist %}
+        <li>{{ item }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
 
 </body>
 </html>

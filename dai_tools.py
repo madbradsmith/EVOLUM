@@ -1321,6 +1321,32 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     # Save JSON for HTML report page
     try:
         json_path = output_path.with_suffix(".json")
+        groups = group_beats_by_type(beats)
+        beat_groups_data = [
+            {
+                "beat_type": g["beat_type"],
+                "label": g["label"],
+                "coaching": g["coaching"],
+                "count": g["count"],
+                "pages": g["pages"],
+                "samples": [
+                    {
+                        "reference": s.reference,
+                        "scene_heading": s.scene_heading,
+                        "dialogue": s.dialogue[:300],
+                    }
+                    for s in g["samples"]
+                ],
+            }
+            for g in groups
+        ]
+        set_ready = _as_list(brain_data.get("set_ready_checklist"), [
+            "Know the scene pressure level before the first take.",
+            "Track what changed from the previous scene.",
+            "Protect body language and listening continuity.",
+            "Mark where status rises, slips, or resets.",
+            "Keep novelty second to continuity.",
+        ])
         json_path.write_text(json.dumps({
             "character_name": character_name,
             "title": title,
@@ -1330,6 +1356,8 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
             "beat_count": len(beats),
             "scene_count": scene_count,
             "intelligence": intelligence,
+            "beat_groups": beat_groups_data,
+            "set_ready_checklist": set_ready,
         }, indent=2), encoding="utf-8")
     except Exception:
         pass
