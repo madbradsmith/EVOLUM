@@ -1653,9 +1653,6 @@ def upload():
 
     logline = (request.form.get("logline") or "").strip()
     synopsis = (request.form.get("synopsis") or "").strip()
-    deck_mode = (request.form.get("deck_mode") or "full").strip().lower()
-    if deck_mode not in {"producer", "full"}:
-        deck_mode = "full"
     visual_style = (request.form.get("visual_style") or "live_action").strip().lower()
     if visual_style not in {"live_action", "illustrated", "animated"}:
         visual_style = "live_action"
@@ -1756,12 +1753,6 @@ def upload():
 
         publish_latest_outputs(fresh_pptx, fresh_pdf)
 
-        producer_labeled = OUTPUT_DIR / "latest_producer.pptx"
-        if not producer_labeled.exists():
-            producer_files = sorted(OUTPUT_DIR.glob("pitch_deck_producer_v*.pptx"), key=lambda p: p.stat().st_mtime)
-            if producer_files:
-                shutil.copy2(str(producer_files[-1]), str(producer_labeled))
-
         if not LATEST_PPTX.exists():
             set_status("ERROR", uid=_uid_str)
             return
@@ -1797,7 +1788,7 @@ def upload():
 
 
 def _cleanup_old_output_files():
-    for pattern in ("pitch_deck_v*.pptx", "pitch_deck_producer_v*.pptx"):
+    for pattern in ("pitch_deck_v*.pptx",):
         files = sorted(OUTPUT_DIR.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
         for old in files[3:]:
             try:
@@ -1829,7 +1820,7 @@ def download_latest_pptx():
 
 @app.route("/download/latest_producer.pptx")
 def download_latest_producer_pptx():
-    path = OUTPUT_DIR / "latest_producer.pptx"
+    path = OUTPUT_DIR / "latest.pptx"
     if not path.exists():
         abort(404)
     return send_file(path, as_attachment=True)
@@ -2165,16 +2156,11 @@ def latest_slide_plan():
 
 @app.route("/api/latest-manifest")
 def api_latest_manifest():
-    deck_type = (request.args.get("type") or "full").strip().lower()
     uid = session.get("user_id", "")
-    label = "producer" if deck_type == "producer" else ""
-    path = user_manifest_path(uid, label) if uid else (
-        OUTPUT_DIR / f"latest_deck_manifest_{label}.json" if label else LATEST_DECK_MANIFEST_JSON
-    )
+    path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
     if not path.exists() and uid:
-        fallback = OUTPUT_DIR / f"latest_deck_manifest_{label}.json" if label else LATEST_DECK_MANIFEST_JSON
-        if fallback.exists():
-            path = fallback
+        if LATEST_DECK_MANIFEST_JSON.exists():
+            path = LATEST_DECK_MANIFEST_JSON
     if not path.exists():
         return jsonify([]), 404
     try:
@@ -2316,19 +2302,9 @@ def regenerate_slide_image():
 def refine_deck():
     data = request.get_json(silent=True) or {}
     slides = data.get("slides", [])
-    deck_type = (data.get("deck_type") or "full").strip().lower()
     uid = session.get("user_id", "")
-
-    if deck_type == "producer":
-        label = "producer"
-    else:
-        label = ""
-
-    manifest_path = user_manifest_path(uid, label) if uid else (
-        OUTPUT_DIR / f"latest_deck_manifest_{label}.json" if label else LATEST_DECK_MANIFEST_JSON
-    )
-
-    result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label=label, user_id=uid)
+    manifest_path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
+    result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label="", user_id=uid)
 
     if "error" in result:
         return jsonify(result), 400 if result["error"] == "No slide data provided." else 500
@@ -2394,25 +2370,6 @@ def regen_deck():
     result = rebuild_refined_deck(full_slides, label="")
     if "error" in result:
         return jsonify(result), 500
-
-    # Update producer deck by matching stages from the rewritten full plan
-    producer_plan_file = OUTPUT_DIR / "slide_plan_producer.json"
-    if producer_plan_file.exists():
-        try:
-            producer_plan = json.loads(producer_plan_file.read_text(encoding="utf-8"))
-            stage_map = {}
-            for s in full_slides:
-                stage = s.get("stage", "")
-                if stage not in stage_map:
-                    stage_map[stage] = s
-            for ps in producer_plan.get("slides", []):
-                matched = stage_map.get(ps.get("stage", ""))
-                if matched:
-                    ps["title"] = matched.get("title", ps["title"])
-                    ps["body"] = matched.get("body", ps["body"])
-            rebuild_refined_deck(producer_plan["slides"], label="producer")
-        except Exception:
-            pass
 
     _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
     _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
@@ -2999,8 +2956,3 @@ def get_manifest():
     path = f"output/{user_id}_latest_deck_manifest.json"
     return send_file(path)
 
-@app.route('/deck-manifest-producer')
-def get_manifest_producer():
-    user_id = session.get("user_id")
-    path = f"output/{user_id}_latest_deck_manifest_producer.json"
-    return send_file(path)

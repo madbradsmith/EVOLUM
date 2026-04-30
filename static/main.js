@@ -343,10 +343,7 @@ function submitFeedback(){
     if (document.getElementById("feedbackMessage")) document.getElementById("feedbackMessage").value = "";
 }
     function downloadCurrentDeck(){
-    const url = activeDeckType === "producer"
-        ? "/download/latest_producer.pptx"
-        : "/download/latest.pptx";
-    window.location.href = url;
+    window.location.href = "/download/latest.pptx";
 }
 
 function closeAllModals(){
@@ -601,21 +598,6 @@ async function analyzeSelectedScript(){
     }
 }
 
-function setDeckMode(mode) {
-    document.getElementById("deckModeInput").value = mode;
-    const producer = document.getElementById("deckModeProducer");
-    const full = document.getElementById("deckModeFull");
-    if (!producer || !full) return;
-    const activeStyle = "border-color:rgba(255,122,0,0.6); background:rgba(255,122,0,0.06);";
-    const inactiveStyle = "";
-    if (mode === "producer") {
-        producer.style.cssText = activeStyle;
-        full.style.cssText = inactiveStyle;
-    } else {
-        full.style.cssText = activeStyle;
-        producer.style.cssText = inactiveStyle;
-    }
-}
 
 function validateUploadAndStart(){
     if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return false; }
@@ -880,26 +862,19 @@ async function syncLatestSlidesForPreview(){
     return loaded;
 }
 
-let activeDeckType = "full";
-
-async function loadLatestRefineSlides(type){
-    type = type || activeDeckType || "full";
-    activeDeckType = type;
-
+async function loadLatestRefineSlides(){
     try {
-        let slides;
-        if (activeLoadedProjectId && type === "full") {
+        if (activeLoadedProjectId) {
             const response = await fetch(`/project/${activeLoadedProjectId}/slides`, { cache: "no-store" });
             if (!response.ok) throw new Error("slides_missing");
             const data = await response.json();
             if (data.error) throw new Error(data.error);
-            slides = data.slides || [];
+            const slides = data.slides || [];
             if (!slides.length) throw new Error("manifest_empty");
             refineSlides = slides.map((slide, index) => normalizeSlideForRefine(slide, index));
             latestRefineProjectTitle = data.title || refineSlides[0]?.title || "UNTITLED PROJECT";
         } else {
-            const manifestType = type === "producer" ? "producer" : "full";
-            const response = await fetch(`/api/latest-manifest?type=${manifestType}`, { cache: "no-store" });
+            const response = await fetch(`/api/latest-manifest`, { cache: "no-store" });
             if (!response.ok) throw new Error("manifest_missing");
             const data = await response.json();
             if (!Array.isArray(data) || !data.length) throw new Error("manifest_empty");
@@ -907,21 +882,17 @@ async function loadLatestRefineSlides(type){
             latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
         }
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
-
-        _syncDeckTypeTabs();
         return true;
     } catch (err) {
         if (activeLoadedProjectId) {
             try {
-                const manifestType = (type === "producer") ? "producer" : "full";
-                const response = await fetch(`/api/latest-manifest?type=${manifestType}`, { cache: "no-store" });
+                const response = await fetch(`/api/latest-manifest`, { cache: "no-store" });
                 if (response.ok) {
                     const data = await response.json();
                     if (Array.isArray(data) && data.length) {
                         refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
                         latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
                         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
-                        _syncDeckTypeTabs();
                         return true;
                     }
                 }
@@ -932,26 +903,6 @@ async function loadLatestRefineSlides(type){
         currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
         return false;
     }
-}
-
-
-async function switchDeckType(type) {
-    if (type === activeDeckType) return;
-    activeDeckType = type;
-    currentRefineSlide = 0;
-    await loadLatestRefineSlides(type);
-    renderDeckPreview();
-    if (activeCompleteView === "refine") renderCurrentRefineSlide();
-    _syncDeckTypeTabs();
-}
-
-function _syncDeckTypeTabs() {
-    const tabFull = document.getElementById("deckTabFull");
-    const tabProducer = document.getElementById("deckTabProducer");
-    const refineBtn = document.getElementById("refineDeckBtn");
-    if (tabFull) { tabFull.className = "deck-tab " + (activeDeckType === "full" ? "active" : "inactive"); tabFull.style.cssText = ""; }
-    if (tabProducer) { tabProducer.className = "deck-tab " + (activeDeckType === "producer" ? "active" : "inactive"); tabProducer.style.cssText = ""; }
-    if (refineBtn) refineBtn.textContent = activeDeckType === "producer" ? "Refine Producer's Deck" : "Refine Full Deck";
 }
 
 function renderDeckPreview(){

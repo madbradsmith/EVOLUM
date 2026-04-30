@@ -142,20 +142,10 @@ def main(input_file):
         start_time
     )
 
-    _producer_plan_path = _work_path("slide_plan_producer.json")
-    if Path(_producer_plan_path).exists():
-        run(
-            f'python3 "{APP_DIR}/deck_builder.py" "{_producer_plan_path}" --label producer{_uid_flag}',
-            "deck_builder_producer",
-            88,
-            "Building producer's deck...",
-            start_time
-        )
-
     find_latest_pptx()
 
     write_status("complete", 100, "Complete", start_time, state="complete")
-    print("\n🎉 Pipeline complete — full deck + producer's deck built")
+    print("\n🎉 Pipeline complete — pitch deck built")
 
 
 if __name__ == "__main__":
