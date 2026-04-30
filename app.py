@@ -1494,12 +1494,18 @@ def admin():
 
 @app.route("/status")
 def status():
-    uid = session.get("user_id", "")
-    apf = _active_project_file(uid)
-    return jsonify({
-        "status": get_status(uid),
-        "project_id": get_status_project_id(uid) or session.get("active_project_id") or (apf.read_text(encoding="utf-8").strip() if apf.exists() else None)
-    })
+    try:
+        uid = session.get("user_id", "")
+        if not uid:
+            return jsonify({"status": "IDLE", "project_id": None})
+        apf = _active_project_file(uid)
+        return jsonify({
+            "status": get_status(uid),
+            "project_id": get_status_project_id(uid) or session.get("active_project_id") or (apf.read_text(encoding="utf-8").strip() if apf.exists() else None)
+        })
+    except Exception as e:
+        print(f"⚠️ /status error: {e}", flush=True)
+        return jsonify({"status": "IDLE", "project_id": None})
     
 # ===== PITCH DECK ROUTES START =======================
 
@@ -2932,6 +2938,18 @@ def sync_chat():
         return jsonify({"reply": "Something went wrong — try again in a moment."})
 
 # ===== SYNC AI ASSISTANT ROUTE END ===================
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    print(f"⚠️ Unhandled exception: {e}\n{traceback.format_exc()}", flush=True)
+    from flask import Response as _Response
+    code = getattr(e, "code", 500)
+    return _Response(
+        json.dumps({"error": "Server error", "detail": str(e)}),
+        status=code if isinstance(code, int) else 500,
+        mimetype="application/json"
+    )
 
 # ===== APP RUN START =================================
 if __name__ == "__main__":
