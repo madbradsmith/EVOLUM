@@ -202,6 +202,75 @@ def ensure_subscription_columns():
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE"))
 
 
+def ensure_referral_tables():
+    if not DB_ENGINE:
+        return
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS referral_code TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS referral_credits INTEGER DEFAULT 0"))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS referrals (
+                id SERIAL PRIMARY KEY,
+                referrer_user_id TEXT NOT NULL,
+                referred_user_id TEXT,
+                referred_email TEXT NOT NULL,
+                rewarded BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+
+
+def _make_referral_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(chars) for _ in range(8))
+
+
+def _get_or_create_referral_code(user_id: str) -> str:
+    if not DB_ENGINE or not user_id:
+        return ""
+    with DB_ENGINE.begin() as conn:
+        row = conn.execute(
+            text("SELECT referral_code FROM beta_users WHERE id = :uid"),
+            {"uid": user_id}
+        ).fetchone()
+        if row and row[0]:
+            return row[0]
+        code = _make_referral_code()
+        conn.execute(
+            text("UPDATE beta_users SET referral_code = :code WHERE id = :uid"),
+            {"code": code, "uid": user_id}
+        )
+        return code
+
+
+def process_referral(ref_code: str, new_user_id: str, new_user_email: str):
+    if not DB_ENGINE or not ref_code or not new_user_id:
+        return
+    try:
+        with DB_ENGINE.begin() as conn:
+            referrer = conn.execute(
+                text("SELECT id FROM beta_users WHERE referral_code = :code"),
+                {"code": ref_code.upper().strip()}
+            ).fetchone()
+            if not referrer:
+                return
+            referrer_id = str(referrer[0])
+            if referrer_id == new_user_id:
+                return
+            conn.execute(text("""
+                INSERT INTO referrals (referrer_user_id, referred_user_id, referred_email, rewarded)
+                VALUES (:rid, :nid, :email, TRUE)
+            """), {"rid": referrer_id, "nid": new_user_id, "email": new_user_email})
+            conn.execute(text("""
+                UPDATE beta_users SET referral_credits = COALESCE(referral_credits, 0) + 1
+                WHERE id = :rid
+            """), {"rid": referrer_id})
+        log_activity_event("referral_rewarded", user_email=new_user_email,
+                           metadata={"referrer_id": referrer_id, "ref_code": ref_code})
+    except Exception as e:
+        print(f"⚠️ process_referral failed: {e}", flush=True)
+
+
 def log_beta_access(access_code: str, status: str):
     safe_code = "".join(ch for ch in access_code if ch.isalnum() or ch in ("-", "_")).strip() or "unknown"
     code_dir = BETA_ACCESS_LOGS_DIR / safe_code
@@ -988,6 +1057,7 @@ def create_checkout_session():
     name = (request.form.get("name") or "").strip()
     email = (request.form.get("email") or "").strip().lower()
     password = (request.form.get("password") or "").strip()
+    ref_code = (request.form.get("ref_code") or "").strip().upper()
 
     if not name or not email or not password:
         return redirect("/?auth_error=" + quote("Please fill in all fields to continue."))
@@ -1009,6 +1079,8 @@ def create_checkout_session():
     session["pending_name"] = name
     session["pending_email"] = email
     session["pending_password_hash"] = generate_password_hash(password)
+    if ref_code:
+        session["pending_ref_code"] = ref_code
 
     try:
         base_url = request.host_url.rstrip("/")
@@ -1064,6 +1136,7 @@ def payment_success():
 
         db_init()
         ensure_subscription_columns()
+        ensure_referral_tables()
         existing = get_user_by_email(email)
 
         if existing:
@@ -1091,8 +1164,12 @@ def payment_success():
         session["beta_access"] = True
         session["subscription_active"] = True
 
+        pending_ref = session.pop("pending_ref_code", "") or ""
+        if pending_ref:
+            process_referral(pending_ref, user_id, email)
+
         log_activity_event("payment_success", route="/payment-success", user_email=email,
-                           metadata={"stripe_session": stripe_session_id})
+                           metadata={"stripe_session": stripe_session_id, "ref_code": pending_ref or None})
         return redirect("/studio")
 
     except Exception as e:
@@ -1105,13 +1182,15 @@ def payment_success():
 def index():
     if get_current_user_email():
         log_activity_event("page_view", route="/", user_email=get_current_user_email(), metadata={"name": get_current_user_name()})
+    ref_code = request.args.get("ref", "").strip().upper()
     return render_template(
         "index.html",
         is_render=is_render_env(),
         user_logged_in=has_beta_access(),
         user_name=get_current_user_name() or "",
         auth_error=request.args.get("auth_error", ""),
-        show_auth=bool(request.args.get("auth_error") or request.args.get("cancelled")),
+        show_auth=bool(request.args.get("auth_error") or request.args.get("cancelled") or ref_code),
+        ref_code=ref_code,
     )
 from functools import wraps
 
@@ -2011,6 +2090,37 @@ def api_latest_manifest():
         return jsonify(json.loads(path.read_text(encoding="utf-8")))
     except Exception:
         return jsonify([]), 500
+
+
+@app.route("/api/referral-info")
+@require_login
+def api_referral_info():
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"ok": False}), 400
+    try:
+        ensure_referral_tables()
+        code = _get_or_create_referral_code(uid)
+        with DB_ENGINE.begin() as conn:
+            row = conn.execute(
+                text("SELECT referral_credits FROM beta_users WHERE id = :uid"),
+                {"uid": uid}
+            ).fetchone()
+            credits = int(row[0] or 0) if row else 0
+            count = conn.execute(
+                text("SELECT COUNT(*) FROM referrals WHERE referrer_user_id = :uid"),
+                {"uid": uid}
+            ).scalar() or 0
+        base = request.host_url.rstrip("/")
+        return jsonify({
+            "ok": True,
+            "code": code,
+            "link": f"{base}/?ref={code}",
+            "count": int(count),
+            "credits": credits,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/project-file")

@@ -22,6 +22,7 @@
         <button class="top-nav-item" type="button" onclick="window.location.href='/'">Home</button>
         {% if user_logged_in %}
         <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
+        <button class="top-nav-item" type="button" onclick="openReferralModal()" style="color:#ff9944;">Refer a Friend</button>
         <a class="top-nav-item" href="/cancel" style="color:#aaa; display:block; text-decoration:none;">Cancel Subscription</a>
         <a class="top-nav-item" href="/logout" style="color:#e05555; display:block; text-decoration:none;">Sign Out</a>
         {% else %}
@@ -581,6 +582,24 @@
 .plan-btn-muted { background:rgba(255,255,255,0.07); color:#bbb; border:1px solid rgba(255,255,255,0.1); }
 .pricing-note { text-align:center; font-size:11px; color:#444; margin-top:18px; line-height:1.7; }
 .pricing-note a { color:#666; text-decoration:underline; cursor:pointer; }
+
+/* Referral modal */
+.referral-modal-box {
+    background:#111; border:1px solid rgba(255,255,255,0.1); border-radius:18px;
+    padding:32px 28px 28px; max-width:480px; width:95vw; position:relative;
+}
+.referral-stat-row { display:flex; gap:12px; margin:20px 0; }
+.referral-stat { flex:1; background:#0d0d0d; border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:14px 16px; text-align:center; }
+.referral-stat-num { font-size:28px; font-weight:800; color:#ff7a00; line-height:1; }
+.referral-stat-label { font-size:10px; color:#555; text-transform:uppercase; letter-spacing:0.1em; margin-top:4px; }
+.referral-link-row { display:flex; gap:8px; align-items:center; margin-top:14px; }
+.referral-link-input { flex:1; background:#0d0d0d; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:10px 12px; color:#cfcfcf; font-size:12px; font-family:monospace; outline:none; }
+.referral-copy-btn { background:#ff7a00; color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; transition:opacity 0.15s; flex-shrink:0; }
+.referral-copy-btn:hover { opacity:0.85; }
+.referral-how { margin-top:20px; border-top:1px solid rgba(255,255,255,0.07); padding-top:16px; }
+.referral-how-title { font-size:10px; font-weight:700; letter-spacing:0.14em; color:#555; text-transform:uppercase; margin-bottom:10px; }
+.referral-how-step { font-size:12px; color:#888; padding:5px 0 5px 18px; position:relative; line-height:1.5; }
+.referral-how-step::before { content:attr(data-n); position:absolute; left:0; color:#ff7a00; font-weight:700; font-size:11px; }
 </style>
 
 <!-- ===== AUTH MODAL ===================================== -->
@@ -731,6 +750,7 @@
                         <input type="text" name="name" placeholder="Full Name" required>
                         <input type="email" name="email" placeholder="Email Address" required>
                         <input type="password" name="password" placeholder="Password (6+ characters)" required>
+                        <input type="text" name="ref_code" id="signupRefCode" placeholder="Referral code (optional)" value="{{ ref_code or '' }}" style="margin-top:4px;">
                         <button class="primary-button" type="submit" style="width:100%; margin-top:8px; background:rgba(255,122,0,0.95); font-size:14px; padding:13px;">Continue to Payment →</button>
                     </form>
                     <div style="font-size:11px; color:#555; text-align:center; margin-top:10px;">Stripe-secured checkout. By continuing you agree to our <a href="/terms" target="_blank" style="color:#666; text-decoration:none;">Terms &amp; Conditions</a>.</div>
@@ -780,6 +800,40 @@
     </div>
 </div>
 <!-- ===== PRICING MODAL END ============================== -->
+
+<!-- ===== REFERRAL MODAL ================================= -->
+<div class="pricing-modal-overlay" id="referralModal">
+    <div class="referral-modal-box">
+        <button class="pricing-modal-close" onclick="closeReferralModal()">×</button>
+        <div class="pricing-title" style="text-align:left; font-size:18px;">Refer a Friend</div>
+        <div class="pricing-sub" style="text-align:left; margin-bottom:0;">Share your link — earn a credit for every friend who joins.</div>
+
+        <div class="referral-stat-row">
+            <div class="referral-stat">
+                <div class="referral-stat-num" id="referralCount">—</div>
+                <div class="referral-stat-label">Referrals</div>
+            </div>
+            <div class="referral-stat">
+                <div class="referral-stat-num" id="referralCredits">—</div>
+                <div class="referral-stat-label">Credits Earned</div>
+            </div>
+        </div>
+
+        <div style="font-size:11px; font-weight:700; letter-spacing:0.14em; color:#555; text-transform:uppercase; margin-bottom:8px;">Your Referral Link</div>
+        <div class="referral-link-row">
+            <input class="referral-link-input" id="referralLinkInput" type="text" readonly value="Loading…">
+            <button class="referral-copy-btn" onclick="copyReferralLink()">Copy</button>
+        </div>
+
+        <div class="referral-how">
+            <div class="referral-how-title">How it works</div>
+            <div class="referral-how-step" data-n="1">Share your link with a friend.</div>
+            <div class="referral-how-step" data-n="2">They sign up and complete their first payment.</div>
+            <div class="referral-how-step" data-n="3">You earn a credit — good toward future billing.</div>
+        </div>
+    </div>
+</div>
+<!-- ===== REFERRAL MODAL END ============================= -->
 
 <!-- ===== MODALS: ACTOR PREP FLOW START ================= -->
 

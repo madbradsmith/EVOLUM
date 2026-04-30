@@ -2360,3 +2360,48 @@ document.getElementById("pricingModal")?.addEventListener("click", function(e) {
 });
 
 // ===== CTA BANNER + PRICING MODAL END =================
+
+// ===== REFERRAL MODAL =================================
+
+async function openReferralModal() {
+    document.getElementById("referralModal").classList.add("open");
+    document.body.style.overflow = "hidden";
+    document.getElementById("referralCount").textContent = "—";
+    document.getElementById("referralCredits").textContent = "—";
+    document.getElementById("referralLinkInput").value = "Loading…";
+    try {
+        const res = await fetch("/api/referral-info");
+        const data = await res.json();
+        if (data.ok) {
+            document.getElementById("referralCount").textContent = data.count;
+            document.getElementById("referralCredits").textContent = data.credits;
+            document.getElementById("referralLinkInput").value = data.link;
+        }
+    } catch (e) {
+        document.getElementById("referralLinkInput").value = "Could not load — try again.";
+    }
+}
+
+function closeReferralModal() {
+    document.getElementById("referralModal").classList.remove("open");
+    document.body.style.overflow = "";
+}
+
+function copyReferralLink() {
+    const input = document.getElementById("referralLinkInput");
+    const val = input?.value;
+    if (!val || val === "Loading…") return;
+    navigator.clipboard.writeText(val).then(() => {
+        const btn = document.querySelector(".referral-copy-btn");
+        if (btn) { btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy"; }, 2000); }
+    }).catch(() => {
+        input.select();
+        document.execCommand("copy");
+    });
+}
+
+document.getElementById("referralModal")?.addEventListener("click", function(e) {
+    if (e.target === this) closeReferralModal();
+});
+
+// ===== REFERRAL MODAL END =============================
