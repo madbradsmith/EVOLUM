@@ -387,6 +387,14 @@
         <h3>Upload Script</h3>
         <div class="info-copy">Select your script file so we can check it for proper formatting and input integrity.</div>
         <input type="file" id="uploadAnalyzeFile" accept=".txt,text/plain,.pdf,application/pdf,.fdx,.docx,.doc">
+        <div style="margin-top:12px;">
+            <label style="font-size:11px; font-weight:700; letter-spacing:0.12em; color:#888; text-transform:uppercase; display:block; margin-bottom:6px;">Deck Visual Style</label>
+            <select id="visualStyleSelect" style="width:100%; background:#0d0d0d; border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:#cfcfcf; font-size:13px; padding:9px 12px; outline:none;">
+                <option value="live_action">Live Action — photorealistic, real people</option>
+                <option value="illustrated">Illustrated — concept art, stylized</option>
+                <option value="animated">Animated — cartoon, graphic style</option>
+            </select>
+        </div>
         <div class="upload-actions">
             <button class="primary-button" type="button" onclick="analyzeSelectedScript()">Analyze Script</button>
             <button class="primary-button" type="button" onclick="closeModal('uploadModal')">Back</button>

@@ -464,6 +464,8 @@ function startBuildDirect() {
     const stem = approvedScriptFile.name.replace(/\.[^.]+$/, "");
     const title = stem.replace(/[_\-]+/g, " ").trim();
     if (title) formData.append("project_title", title);
+    const _vs = document.getElementById("visualStyleSelect");
+    if (_vs) formData.append("visual_style", _vs.value);
 
     fetch("/upload", { method: "POST", body: formData })
         .then(res => {
@@ -1751,6 +1753,7 @@ function updateStatusUI(status){
         stopQuoteRotation();
         buildInFlight = false;
         document.body.classList.add("complete-mode");
+        syncTrackDeckDone();
         document.getElementById("buildProgressBar").style.display = "none";
         document.getElementById("liveProcessLog").style.display = "none";
         document.getElementById("buildCopy").style.display = "none";
@@ -2081,6 +2084,7 @@ const _syncState = {
     unread: 0,
     regenCount: 0,
     refineEntered: null,
+    deckCompleted: false,
     tipsShown: new Set(),
     busy: false,
 };
@@ -2095,6 +2099,16 @@ const _SYNC_PROACTIVE_TIPS = [
         id: "refineIdle",
         trigger: () => _syncState.refineEntered && (Date.now() - _syncState.refineEntered > 180000) && !_syncState.tipsShown.has("refineIdle"),
         prompt: "The user has been in the Refine view for 3+ minutes. Remind them to hit 'Update & Rebuild' to save their edits to the actual deck file, since edits aren't saved until they rebuild. One sentence.",
+    },
+    {
+        id: "deckDone",
+        trigger: () => _syncState.deckCompleted && !_syncState.tipsShown.has("deckDone"),
+        prompt: "The user just finished building their first pitch deck — congratulate them briefly and mention that EVOLUM's Writer's Room plan lets them bring in collaborators and manage up to 10 projects, in case they're working with a team. Keep it warm and under 2 sentences. Don't be pushy.",
+    },
+    {
+        id: "upgradeNudge",
+        trigger: () => _syncState.regenCount >= 2 && _syncState.deckCompleted && !_syncState.tipsShown.has("upgradeNudge"),
+        prompt: "The user has built a deck and run multiple regenerations — they're clearly invested in the tool. Casually mention that the Writer's Room plan gives them more projects and collaboration features if they're working with others. One sentence, no hard sell.",
     },
 ];
 
@@ -2235,6 +2249,13 @@ function syncInputKeydown(e) {
 function syncTrackRegen() {
     _syncState.regenCount++;
     _syncCheckProactive();
+}
+
+function syncTrackDeckDone() {
+    if (!_syncState.deckCompleted) {
+        _syncState.deckCompleted = true;
+        setTimeout(_syncCheckProactive, 3000);
+    }
 }
 
 function syncTrackEnterRefine() {

@@ -200,6 +200,7 @@ def ensure_subscription_columns():
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
 
 
 def ensure_referral_tables():
@@ -1581,6 +1582,9 @@ def upload():
     deck_mode = (request.form.get("deck_mode") or "full").strip().lower()
     if deck_mode not in {"producer", "full"}:
         deck_mode = "full"
+    visual_style = (request.form.get("visual_style") or "live_action").strip().lower()
+    if visual_style not in {"live_action", "illustrated", "animated"}:
+        visual_style = "live_action"
     poster = request.files.get("poster")
     images = request.files.getlist("images")
 
@@ -1616,6 +1620,7 @@ def upload():
         "logline": logline,
         "synopsis": synopsis,
         "deck_mode": deck_mode,
+        "visual_style": visual_style,
         "poster_filename": poster.filename if poster and poster.filename else "",
         "image_filenames": saved_images,
         "visuals_root": str(visuals_root),

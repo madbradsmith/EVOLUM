@@ -67,6 +67,7 @@ def load_user_context():
 
 user_context = load_user_context()
 user_poster = user_context.get("poster_filename", "")
+USER_VISUAL_STYLE = (user_context.get("visual_style") or "live_action").strip().lower()
 visuals_root = APP_DIR / "visuals"
 
 _ctx_visuals_str = user_context.get("visuals_root", "")
@@ -674,9 +675,16 @@ def _detect_period_style(brain_output: dict):
     return "", ""
 
 
+_VISUAL_STYLE_PREFIX = {
+    "animated": "2D animation style, cartoon illustration, vibrant colors, stylized characters, no photorealism, ",
+    "illustrated": "concept art, painterly digital illustration, cinematic artwork, stylized realism, ",
+    "live_action": "",
+}
+
 def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "") -> str:
     normalized = normalize_key(slide_title)
     concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting")
+    style_prefix = _VISUAL_STYLE_PREFIX.get(USER_VISUAL_STYLE, "")
 
     # Use the actual slide body as the core scene description when available
     _raw_scene = slide_body.replace("\n", " ").strip()[:200] if slide_body else ""
@@ -708,7 +716,7 @@ def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "
         tone_hint = f", {tone[:60]}" if tone else ""
         if period_render:
             prompt = (
-                f"{period_render}, {period_content}, "
+                f"{style_prefix}{period_render}, {period_content}, "
                 f"movie poster composition, lone hero figure, dramatic portrait lighting, "
                 f"cinematic title card framing"
                 f"{', ' + char_hint if char_hint else ''}"
@@ -717,12 +725,12 @@ def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "
             )
         else:
             prompt = (
-                f"movie poster composition, lone hero figure, dramatic portrait lighting, "
+                f"{style_prefix}movie poster composition, lone hero figure, dramatic portrait lighting, "
                 f"cinematic title card framing"
                 f"{', ' + char_hint if char_hint else ''}"
                 f"{', ' + genre_style if genre_style else ''}"
                 f"{tone_hint}, "
-                f"professional film poster, ultra-detailed, photorealistic, no text, no watermarks, 16:9 aspect ratio"
+                f"professional film poster, ultra-detailed, no text, no watermarks, 16:9 aspect ratio"
             )
         print(f"🎨 FAL prompt [{slide_title}]: {prompt}")
         return prompt
@@ -731,20 +739,19 @@ def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "
         scene_hint = f", scene depicting: {scene}" if scene else f", {concept}"
         tone_hint = f", {tone[:50]}" if tone else ""
         prompt = (
-            f"{period_render}, {period_content}{scene_hint}, "
+            f"{style_prefix}{period_render}, {period_content}{scene_hint}, "
             f"{genre_style}{tone_hint}, "
             f"highly detailed, dramatic lighting, no text, no watermarks, no logos, 16:9 aspect ratio"
         )
     else:
         scene_hint = f"scene depicting: {scene}, " if scene else f"{concept}, "
-        # Skip world if it's a format tag (e.g. "feature / crime drama") — not a visual description
         visual_world = world if world and not world.startswith("feature /") else ""
         world_hint = f", {visual_world[:80]}" if visual_world else ""
         tone_hint = f", {tone[:60]}" if tone else ""
+        photo_suffix = "professional film still, 35mm, shallow depth of field, ultra-detailed, photorealistic, " if not style_prefix else "ultra-detailed, "
         prompt = (
-            f"{scene_hint}{genre_style}{world_hint}{tone_hint}, "
-            f"professional film still, 35mm, shallow depth of field, no text, no watermarks, "
-            f"ultra-detailed, photorealistic, 16:9 aspect ratio"
+            f"{style_prefix}{scene_hint}{genre_style}{world_hint}{tone_hint}, "
+            f"{photo_suffix}no text, no watermarks, 16:9 aspect ratio"
         )
 
     print(f"🎨 FAL prompt [{slide_title}]: {prompt}")
