@@ -334,10 +334,18 @@ def detect_world(text: str) -> str:
             "courtroom", "trial", "judge", "jury", "verdict", "witness",
             "cross-examination", "uniform code", "defense counsel", "prosecution"
         ],
+        # Fantasy satire signals must be unambiguous — "king", "queen", "princess", "castle",
+        # "sword", "quest", "knight" all appear in everyday non-fantasy scripts (wedding rom-coms,
+        # dramas, etc.). Only keep terms that cannot plausibly appear in a modern realistic script.
         "feature / fantasy satire comedy": [
             "court jester", "jester", "medieval", "throne", "kingdom",
-            "dragon", "wizard", "sword", "quest", "knight", "sorcerer",
-            "king", "queen", "princess", "castle"
+            "dragon", "wizard", "sorcerer"
+        ],
+        "feature / romantic comedy": [
+            "wedding", "bridesmaid", "maid of honor", "best man", "rehearsal dinner",
+            "engagement", "bride", "groom", "wedding vows", "honeymoon",
+            "first date", "meet cute", "falling in love", "love interest",
+            "ex-boyfriend", "ex-girlfriend", "romantic dinner"
         ],
         "feature / nightlife comedy": [
             "nightclub", "dance floor", "vip table", "night out", "hookup", "promoter", "velvet rope"
@@ -364,6 +372,7 @@ def detect_world(text: str) -> str:
         "feature / legal / courtroom drama",
         "feature / fantasy satire comedy",
         "feature / nightlife comedy",
+        "feature / romantic comedy",
     }:
         return strongest_genre
 
@@ -386,6 +395,8 @@ def infer_time_frame(text: str) -> str:
         return "contained escalating legal battle"
     if world == "feature / fantasy satire comedy":
         return "contained escalating journey"
+    if world == "feature / romantic comedy":
+        return "compressed romantic countdown"
     if world == "feature / nightlife comedy":
         return "single night"
     if world == "feature / sports drama":
@@ -402,6 +413,8 @@ def infer_setting(text: str, world: str) -> str:
         return "across courtrooms, military offices, holding rooms, and institutional pressure spaces"
     if world == "feature / fantasy satire comedy":
         return "across castles, ceremonial chambers, village spaces, and a heightened kingdom full of absurd rules"
+    if world == "feature / romantic comedy":
+        return "across restaurants, hotels, wedding venues, and emotionally charged social spaces under the pressure of a ticking clock"
     if world == "feature / nightlife comedy":
         return "across clubs, streets, parties, and chaotic social spaces over one long night"
     if world == "feature / sports drama":
@@ -420,6 +433,8 @@ def infer_tone(text: str, world: str) -> str:
         return "tense, procedural, sharp, morally charged"
     if world == "feature / fantasy satire comedy":
         return "playful, witty, satirical, adventurous"
+    if world == "feature / romantic comedy":
+        return "charming, witty, romantic, emotionally sharp"
     if world == "feature / nightlife comedy":
         return "chaotic, funny, awkward, energetic"
     if world == "feature / sports drama":
@@ -451,6 +466,11 @@ def infer_story_engine(text: str, protagonist: str) -> str:
         return (
             f"{p} stumbles into a role far bigger than expected, and each attempt to survive "
             f"the absurd rules of the kingdom only pulls the chaos closer."
+        )
+    if world == "feature / romantic comedy":
+        return (
+            f"{p} pursues a goal shaped more by fear than desire, and each move meant to win "
+            f"only strips away another layer of the story {p} has been telling herself."
         )
     if world == "feature / nightlife comedy":
         return (
@@ -489,6 +509,11 @@ def infer_core_conflict(text: str, protagonist: str) -> str:
             f"{p} must navigate ridiculous power structures, inflated egos, and escalating chaos "
             f"without losing the part of themselves that makes them dangerous."
         )
+    if world == "feature / romantic comedy":
+        return (
+            f"{p} must choose between the life she has constructed and the emotional truth she has "
+            f"been avoiding—before the opportunity to choose disappears."
+        )
     if world == "feature / sports drama":
         return (
             f"{p} must navigate the collision between personal ambition, emotional pressure, "
@@ -507,6 +532,8 @@ def infer_reversal(text: str) -> str:
         return "The deeper truth is not just about the crime—it is about the system protecting itself."
     if world == "feature / sports drama":
         return "What first looks like a path to achievement reveals a deeper emotional cost."
+    if world == "feature / romantic comedy":
+        return "The person the protagonist was competing with turns out to be less of an obstacle and more of a mirror."
     return "The truth behind the situation is different from what the protagonist first assumes."
 
 
@@ -539,6 +566,11 @@ def build_logline_from_story_map(story_map: dict) -> str:
         return (
             f"What starts as a simple night out spirals into escalating social disaster as {protagonist} "
             f"tries to outrun one bad decision after another."
+        )
+    if world == "feature / romantic comedy":
+        return (
+            f"When {protagonist} realizes the life she has avoided feeling is the one she actually wants, "
+            f"she must decide whether honesty is worth the cost of everything she has built."
         )
     if world == "feature / sports drama":
         return (
@@ -931,6 +963,15 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "varied"
         headline_style = "characterful"
         composition_bias = "illustrative"
+    elif world == "feature / romantic comedy":
+        layout_style = "romantic_cinematic"
+        text_density = "medium"
+        image_priority = "high"
+        pacing = "warm"
+        visual_energy = "emotional"
+        slide_rhythm = "flowing"
+        headline_style = "characterful"
+        composition_bias = "image_forward"
     elif world == "feature / nightlife comedy":
         layout_style = "neon_social_chaos"
         text_density = "low"
@@ -1012,6 +1053,8 @@ def infer_commercial_positioning(story_map: dict) -> str:
         return "Broad-appeal fantasy satire with strong family/comedy packaging potential and visual franchise upside."
     if world == "feature / legal / courtroom drama":
         return "Prestige-leaning legal drama with serious performance, awards, and streamer positioning potential."
+    if world == "feature / romantic comedy":
+        return "Romantic comedy with strong theatrical and streaming upside—charming, emotionally real, and built around a lead performance with genuine awards-adjacent potential."
     if world == "feature / nightlife comedy":
         return "Commercial nightlife comedy built for fast pacing, ensemble energy, and social-chaos marketability."
     if world == "feature / sports drama":
@@ -1035,7 +1078,9 @@ def infer_audience_profile(story_map: dict) -> list[str]:
         profiles += ["Fantasy audiences", "Family-friendly comedy viewers", "Adventure-forward viewers"]
     if "courtroom" in world or "legal" in world:
         profiles += ["Prestige drama audiences", "Legal/procedural viewers", "Performance-driven film fans"]
-    if "comedy" in world:
+    if "romantic comedy" in world:
+        profiles += ["Romantic comedy audiences", "Date-night theatrical viewers", "Streaming audiences looking for feel-good films"]
+    elif "comedy" in world:
         profiles += ["Comedy audiences", "Streaming-first viewers"]
     if "sports" in world:
         profiles += ["Sports drama audiences", "Inspirational drama viewers"]
@@ -1082,6 +1127,8 @@ def infer_strength_index(story_map: dict) -> dict:
 def infer_packaging_potential(story_map: dict) -> str:
     world = story_map.get("world", "")
     protagonist = story_map.get("protagonist", "Lead")
+    if "romantic comedy" in world:
+        return f"Packaging works through a castable lead, a clear emotional hook, and a premise that sells itself in a sentence — all centered on {protagonist}."
     if "fantasy" in world:
         return f"Strong packaging upside through distinctive world, comedic ensemble, and a breakout lead role for {protagonist}."
     if "thriller" in world:
@@ -1108,6 +1155,8 @@ def infer_tone_comparables(story_map: dict) -> list[str]:
         return ["Collateral", "Nightcrawler", "Phone Booth"]
     if "legal / courtroom drama" in world:
         return ["A Few Good Men", "Michael Clayton", "The Firm"]
+    if "romantic comedy" in world:
+        return ["When Harry Met Sally", "Four Weddings and a Funeral", "Crazy Rich Asians"]
     if "nightlife comedy" in world:
         return ["After Hours", "Superbad", "Booksmart"]
     if "sports drama" in world:
@@ -1137,6 +1186,12 @@ def infer_comparable_films(story_map: dict) -> list[dict]:
             {"title": "A Few Good Men", "why": "Military legal drama driven by institutional power, buried truth, and a young lawyer forced to find his spine.", "budget_tier": "studio", "box_office": "$243M"},
             {"title": "Michael Clayton", "why": "Prestige legal thriller that rewards intelligence — a blueprint for morally charged drama.", "budget_tier": "mid-to-studio", "box_office": "$92M"},
             {"title": "The Firm", "why": "Commercial legal thriller with strong crossover — institutional corruption made viscerally personal.", "budget_tier": "studio", "box_office": "$270M"},
+        ]
+    if "romantic comedy" in world:
+        return [
+            {"title": "When Harry Met Sally", "why": "The gold standard for rom-com — earns its emotional payoff through years of real friendship tension and sharp dialogue.", "budget_tier": "mid", "box_office": "$93M"},
+            {"title": "Four Weddings and a Funeral", "why": "Charming ensemble rom-com that proved the genre can be genuinely witty and emotionally honest at the same time.", "budget_tier": "low-mid", "box_office": "$246M"},
+            {"title": "Crazy Rich Asians", "why": "Modern theatrical romantic comedy that proved the genre's commercial ceiling is as high as ever with the right voice and world.", "budget_tier": "mid", "box_office": "$239M"},
         ]
     if "nightlife comedy" in world:
         return [
@@ -1189,6 +1244,12 @@ def infer_market_projections(story_map: dict) -> dict:
         awards_potential = "Low-to-moderate — comedy builds cultural profile more than trophies"
         audience_reach = "Broad — family, comedy, and fantasy audiences"
         franchise_potential = "High — world and characters support sequels or series"
+    elif "romantic comedy" in world:
+        budget_tier = "mid  ($10M–$40M)"
+        distribution_angle = "Theatrical or premium streaming — charming, castable, and character-driven with strong word-of-mouth potential"
+        awards_potential = "Moderate — rom-com rarely leads awards but strong lead performance can earn recognition"
+        audience_reach = "Broad — romantic comedy core with wide crossover across demographics"
+        franchise_potential = "Low — self-contained romantic arc"
     elif "nightlife comedy" in world:
         budget_tier = "low-to-mid  ($3M–$15M)"
         distribution_angle = "Streaming-first — fast-paced social comedy with strong word-of-mouth"
@@ -1667,6 +1728,8 @@ def base_image_terms(story_map: dict) -> list[str]:
         terms.extend(["courtroom", "institution", "military", "authority", "moral_pressure"])
     elif world == "feature / fantasy satire comedy":
         terms.extend(["kingdom", "pageantry", "satire", "fantasy", "court_chaos"])
+    elif world == "feature / romantic comedy":
+        terms.extend(["romance", "connection", "warmth", "social_world", "emotional_honesty"])
     elif world == "feature / nightlife comedy":
         terms.extend(["nightlife", "social_chaos", "party", "awkwardness", "city_night"])
     elif world == "feature / sports drama":
@@ -1827,6 +1890,11 @@ def score_terms_for_slide(slide_name: str, story_map: dict) -> dict:
             "character": [("throne_room", 14), ("comic_intrigue", 12), ("royal_misrule", 10)],
             "theme": [("satirical_pageantry", 12), ("kingdom_chaos", 10), ("comic_resolution", 10)],
         },
+        "feature / romantic comedy": {
+            "base": [("romance_connection", 16), ("warm_interior", 14), ("social_setting", 10)],
+            "character": [("intimate_moment", 14), ("social_pressure", 12), ("friendship_bond", 10)],
+            "theme": [("love_realization", 12), ("emotional_honesty", 10), ("comic_warmth", 10)],
+        },
         "feature / nightlife comedy": {
             "base": [("club_exterior", 14), ("velvet_rope", 12), ("city_lights", 10)],
             "character": [("awkward_party", 14), ("social_pressure", 12), ("dancefloor", 10)],
@@ -1900,6 +1968,7 @@ def infer_folder_hints_from_terms(terms: list[str], story_map: dict, limit: int 
         "feature / contained urban thriller": ["01_cinematic_tension", "03_urban_pressure", "07_night_isolation", "21_working_class_realism"],
         "feature / legal / courtroom drama": ["09_institutional_authority", "10_courtroom_legal", "11_military_formal", "12_interrogation_pressure"],
         "feature / fantasy satire comedy": ["13_fantasy_kingdom", "14_royal_court", "15_satire_power", "18_comedy_energy"],
+        "feature / romantic comedy": ["17_romance_connection", "02_emotional_grounded", "19_friendship_loyalty", "04_status_wealth"],
         "feature / nightlife comedy": ["03_urban_pressure", "07_night_isolation", "18_comedy_energy", "19_friendship_loyalty"],
         "feature / action espionage thriller": ["16_espionage_covert", "01_cinematic_tension", "12_interrogation_pressure", "03_urban_pressure"],
         "feature / sports drama": ["21_working_class_realism", "19_friendship_loyalty", "02_emotional_grounded", "05_scale_nature"],
