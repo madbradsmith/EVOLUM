@@ -110,7 +110,7 @@
 
 {% if not user_logged_in %}
 <div class="cta-banner" id="ctaBanner">
-    <div>
+    <div class="cta-banner-content">
         <div class="cta-banner-label">Limited Beta Access</div>
         <div class="cta-banner-text" id="ctaBannerText">Start your 3-day free trial — only $5/month</div>
     </div>
@@ -512,7 +512,8 @@
     flex-wrap: nowrap;
 }
 .cta-banner-label { font-size:10px; font-weight:700; letter-spacing:0.16em; color:#ff7a00; text-transform:uppercase; margin-bottom:5px; }
-.cta-banner-text { font-size:15px; font-weight:700; color:#fff; height:22px; line-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; transition:opacity 0.35s; min-width:0; flex:1; }
+.cta-banner-content { flex:1; min-width:0; overflow:hidden; }
+.cta-banner-text { font-size:15px; font-weight:700; color:#fff; height:22px; line-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; transition:opacity 0.35s; }
 .cta-banner-text.fade { opacity:0; }
 .cta-banner-btn { background:#ff7a00; color:#fff; border:none; border-radius:8px; padding:10px 22px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; transition:opacity 0.15s; flex-shrink:0; }
 .cta-banner-btn:hover { opacity:0.85; }
