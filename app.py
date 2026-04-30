@@ -2346,22 +2346,25 @@ def regenerate_slide_image():
 
 @app.route("/refine-deck", methods=["POST"])
 def refine_deck():
-    data = request.get_json(silent=True) or {}
-    slides = data.get("slides", [])
-    uid = session.get("user_id", "")
-    manifest_path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
-    result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label="", user_id=uid)
+    try:
+        data = request.get_json(silent=True) or {}
+        slides = data.get("slides", [])
+        uid = session.get("user_id", "")
+        manifest_path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
+        result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label="", user_id=uid)
 
-    if "error" in result:
-        return jsonify(result), 400 if result["error"] == "No slide data provided." else 500
+        if "error" in result:
+            return jsonify(result), 400 if result["error"] == "No slide data provided." else 500
 
-    _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
-    _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
+        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
 
-    return jsonify({
-        "message": "Your refined deck has been rebuilt successfully.",
-        "deck": result["deck"],
-    })
+        return jsonify({
+            "message": "Your refined deck has been rebuilt successfully.",
+            "deck": result["deck"],
+        })
+    except Exception as e:
+        return jsonify({"error": f"Refine deck failed: {e}"}), 500
 
 # ===== REGEN DECK ROUTE START =========================
 @app.route("/regen-deck", methods=["POST"])
@@ -2412,14 +2415,16 @@ def regen_deck():
     except Exception as e:
         return jsonify({"error": f"AI rewrite failed: {e}"}), 500
 
-    full_slides = new_plan.get("slides", [])
-    result = rebuild_refined_deck(full_slides, label="")
-    if "error" in result:
-        return jsonify(result), 500
-
-    _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
-    _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
-    return jsonify({"ok": True})
+    try:
+        full_slides = new_plan.get("slides", [])
+        result = rebuild_refined_deck(full_slides, label="", user_id=uid)
+        if "error" in result:
+            return jsonify(result), 500
+        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": f"Deck rebuild failed: {e}"}), 500
 
 # ===== REGEN DECK ROUTE END ===========================
 
