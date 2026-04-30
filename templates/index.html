@@ -22,12 +22,13 @@
         <button class="top-nav-item" type="button" onclick="window.location.href='/'">Home</button>
         {% if user_logged_in %}
         <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
+        <button class="top-nav-item" type="button" onclick="document.getElementById('topNavMenu').classList.remove('show'); document.getElementById('welcomeModal').classList.add('show'); openWelcomeProjectsPicker();">My Projects</button>
         <button class="top-nav-item" type="button" onclick="openReferralModal()" style="color:#ff9944;">Refer a Friend</button>
         <a class="top-nav-item" href="/cancel" style="color:#aaa; display:block; text-decoration:none;">Cancel Subscription</a>
         <a class="top-nav-item" href="/logout" style="color:#e05555; display:block; text-decoration:none;">Sign Out</a>
         {% else %}
         <button class="top-nav-item" type="button" onclick="showAuthModal()">Sign In</button>
-        <button class="top-nav-item" type="button" onclick="showAuthModal()" style="color:#ff9944;">Get Access — $5/mo</button>
+        <button class="top-nav-item" type="button" onclick="openPricingModal()" style="color:#ff9944;">See Plans</button>
         {% endif %}
         <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
         <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
@@ -133,7 +134,7 @@
 </div>
 
 <!-- Generate Pitch Deck -->
-<div class="choice home-module-card" onclick="{% if user_logged_in %}showUploadAnalyzeModal(){% else %}showAuthModal(){% endif %}">
+<div class="choice home-module-card" onclick="{% if user_logged_in %}showUploadAnalyzeModal(){% else %}openPricingModal(){% endif %}">
     <div class="choice-title">Deck Generator</div>
     <img src="/static/deck_thumb.jpg" class="home-thumb-img">
     <div class="choice-copy">
@@ -529,7 +530,7 @@
     flex-wrap: wrap;
 }
 .cta-banner-label { font-size:10px; font-weight:700; letter-spacing:0.16em; color:#ff7a00; text-transform:uppercase; margin-bottom:5px; }
-.cta-banner-text { font-size:15px; font-weight:700; color:#fff; min-height:22px; transition:opacity 0.35s; }
+.cta-banner-text { font-size:15px; font-weight:700; color:#fff; height:22px; line-height:22px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; transition:opacity 0.35s; }
 .cta-banner-text.fade { opacity:0; }
 .cta-banner-btn { background:#ff7a00; color:#fff; border:none; border-radius:8px; padding:10px 22px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap; transition:opacity 0.15s; flex-shrink:0; }
 .cta-banner-btn:hover { opacity:0.85; }
@@ -550,16 +551,17 @@
 }
 .pricing-modal-close:hover { color:#fff; }
 .pricing-title { font-size:22px; font-weight:800; color:#fff; text-align:center; margin-bottom:6px; }
-.pricing-sub { font-size:13px; color:#666; text-align:center; margin-bottom:20px; }
+.pricing-sub { font-size:14px; font-weight:600; color:#aaa; text-align:center; margin-bottom:20px; }
 .pricing-toggle {
-    display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:24px;
+    display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:24px;
+    background:rgba(255,255,255,0.04); border-radius:24px; padding:5px; width:fit-content; margin-left:auto; margin-right:auto;
 }
 .ptog-btn {
-    padding:7px 20px; border-radius:20px; border:1px solid rgba(255,255,255,0.12);
-    background:transparent; color:#888; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.15s;
+    padding:8px 24px; border-radius:20px; border:none;
+    background:transparent; color:#777; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;
 }
-.ptog-btn.active { background:#ff7a00; border-color:#ff7a00; color:#fff; }
-.ptog-save { font-size:11px; font-weight:700; color:#52c97a; background:rgba(82,201,122,0.12); border:1px solid rgba(82,201,122,0.25); border-radius:20px; padding:3px 10px; }
+.ptog-btn.active { background:#ff7a00; color:#fff; box-shadow:0 2px 8px rgba(255,122,0,0.35); }
+.ptog-save { font-size:12px; font-weight:700; color:#52c97a; background:rgba(82,201,122,0.15); border:1px solid rgba(82,201,122,0.3); border-radius:20px; padding:3px 12px; margin-left:6px; }
 .pricing-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
 @media (max-width:700px) { .pricing-cards { grid-template-columns:1fr 1fr; } }
 @media (max-width:420px) { .pricing-cards { grid-template-columns:1fr; } }
@@ -578,8 +580,8 @@
 .plan-name { font-size:12px; font-weight:800; color:#ff7a00; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px; }
 .plan-price { font-size:30px; font-weight:800; color:#fff; line-height:1; }
 .plan-price-cents { font-size:16px; font-weight:700; color:#fff; vertical-align:super; }
-.plan-period { font-size:11px; color:#555; margin-bottom:4px; }
-.plan-billed { font-size:10px; color:#444; margin-bottom:12px; min-height:14px; }
+.plan-period { font-size:11px; color:#777; margin-bottom:2px; }
+.plan-billed { font-size:10px; color:#555; margin-bottom:12px; min-height:14px; }
 .plan-divider { height:1px; background:rgba(255,255,255,0.07); margin:10px 0; }
 .plan-feature { font-size:12px; color:#aaa; padding:4px 0 4px 16px; position:relative; line-height:1.4; }
 .plan-feature::before { content:"✓"; position:absolute; left:0; color:#ff7a00; font-size:10px; font-weight:700; top:5px; }
@@ -753,12 +755,14 @@
                 </div>
 
                 <div class="auth-panel active" id="authPanel_signup">
+                    <div id="authPlanBadge" style="display:none; font-size:12px; font-weight:700; color:#ff9944; background:rgba(255,122,0,0.08); border:1px solid rgba(255,122,0,0.2); border-radius:8px; padding:8px 12px; margin-bottom:12px;"></div>
                     <div style="font-size:12px; color:#888; margin-bottom:14px;">Create your account — you'll be taken to secure checkout.</div>
                     <form method="POST" action="/create-checkout-session">
                         <input type="text" name="name" placeholder="Full Name" required>
                         <input type="email" name="email" placeholder="Email Address" required>
                         <input type="password" name="password" placeholder="Password (6+ characters)" required>
                         <input type="text" name="ref_code" id="signupRefCode" placeholder="Referral code (optional)" value="{{ ref_code or '' }}" style="margin-top:4px;">
+                        <input type="hidden" name="plan_id" id="signupPlanId" value="solo">
                         <button class="primary-button" type="submit" style="width:100%; margin-top:8px; background:rgba(255,122,0,0.95); font-size:14px; padding:13px;">Continue to Payment →</button>
                     </form>
                     <div style="font-size:11px; color:#555; text-align:center; margin-top:10px;">Stripe-secured checkout. By continuing you agree to our <a href="/terms" target="_blank" style="color:#666; text-decoration:none;">Terms &amp; Conditions</a>.</div>
@@ -790,7 +794,7 @@
     <div class="pricing-modal-box">
         <button class="pricing-modal-close" onclick="closePricingModal()">×</button>
         <div class="pricing-title">Choose Your Plan</div>
-        <div class="pricing-sub">3-day free trial on all plans · Cancel any time · Annual plans can be cancelled for a prorated refund</div>
+        <div class="pricing-sub">3-day free trial on every plan · Cancel any time</div>
 
         <div class="pricing-toggle">
             <button class="ptog-btn active" id="ptogMonthly" onclick="setPricingBilling('monthly')">Monthly</button>
@@ -802,8 +806,8 @@
         </div>
 
         <div class="pricing-note">
-            All plans include a 3-day free trial. Annual plans billed upfront — cancel any time for a prorated refund of unused months.<br>
-            Questions? <a onclick="closePricingModal()">Contact us</a>.
+            All plans include a 3-day free trial. Annual plans billed upfront — cancel any time for a prorated refund of remaining months.<br>
+            Monthly plans can be cancelled at any time with no charge. Questions? <a onclick="closePricingModal(); openContactModal();" style="cursor:pointer;">Contact us</a>.
         </div>
     </div>
 </div>
@@ -1124,7 +1128,7 @@
   <script src="{{ url_for('static', filename='main.js') }}?v=20260429_chunk6"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
-    {% if show_auth %}window.addEventListener('DOMContentLoaded', () => showAuthModal());{% endif %}
+    {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal{% else %}showAuthModal{% endif %}());{% endif %}
   </script>
 </body>
 </html>

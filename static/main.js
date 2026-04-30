@@ -183,6 +183,7 @@ function updateProgressForStatus(status){
 }
 
 function startAnalyzeFlow(){
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
     analyzeFlowMode = "analyze";
     resetCreateProject();
     showUploadAnalyzeModal();
@@ -243,6 +244,8 @@ function checkTerms(e) {
 
 function showAuthModal(){
     closeAllModals();
+    const badge = document.getElementById("authPlanBadge");
+    if (badge && !_selectedPlan) badge.style.display = "none";
     const m = document.getElementById("authModal");
     if (m) m.classList.add("show");
 }
@@ -493,7 +496,7 @@ function continueToApprovedUpload(){
 }
 
 async function analyzeSelectedScript(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
     const fileInput = document.getElementById("uploadAnalyzeFile");
 
     if (!fileInput || !fileInput.files || fileInput.files.length === 0){
@@ -1471,12 +1474,13 @@ async function submitRegenDeck() {
 
 // ===== JAVASCRIPT: ACTOR PREP FLOW START ==============
 function startActorPrepFlow(){
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
     resetCreateProject();
     document.getElementById("actorPrepModal").classList.add("show");
 }
 
 async function submitActorPrep(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
     const role = (document.getElementById("actorRoleInput").value || "").trim();
     const movieTitle = (document.getElementById("actorPrepMovieTitle")?.value || "").trim();
     const fileInput = document.getElementById("actorPrepFile");
@@ -1593,12 +1597,13 @@ async function submitActorPrepPaste(){
 
 // ===== JAVASCRIPT: ACTOR BOOKED FLOW START ==============
 function startActorBookedFlow(){
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
     resetCreateProject();
     document.getElementById("actorBookedModal").classList.add("show");
 }
 
 async function submitActorBooked(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return; }
+    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
     const role = (document.getElementById("actorBookedRoleInput").value || "").trim();
     const movieTitle = (document.getElementById("actorBookedMovieTitle")?.value || "").trim();
     const fileInput = document.getElementById("actorBookedFile");
@@ -2324,6 +2329,8 @@ const _PLANS = [
     },
 ];
 let _pricingBilling = "monthly";
+let _selectedPlan = null;
+let _pricingModalSyncShown = false;
 
 function setPricingBilling(mode) {
     _pricingBilling = mode;
@@ -2345,21 +2352,38 @@ function _renderPricingCards() {
             `<div class="plan-feature">${p.collaborators}</div>`,
             ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
         ].join("");
-        const btnClass = p.featured ? "plan-btn plan-btn-primary" : "plan-btn plan-btn-muted";
         return `
-        <div class="plan-card${featured}">
+        <div class="plan-card${featured}" id="planCard_${p.id}">
             ${badge}
             <div class="plan-name">${p.name}</div>
             <div class="plan-price"><span class="plan-price-cents">$</span>${price}</div>
-            <div class="plan-period">/month</div>
-            <div class="plan-billed">${annual ? billedNote : ""}</div>
+            <div class="plan-period">per month</div>
+            <div class="plan-billed">${annual ? billedNote : "billed monthly"}</div>
             <div class="plan-divider"></div>
             ${featureList}
             <div class="plan-cta">
-                <button class="${btnClass}" onclick="closePricingModal(); showAuthModal();">Get Started</button>
+                <button class="plan-btn plan-btn-primary" onclick="selectPlan('${p.id}')">Get Started</button>
             </div>
         </div>`;
     }).join("");
+}
+
+function selectPlan(planId) {
+    const plan = _PLANS.find(p => p.id === planId);
+    _selectedPlan = plan || null;
+    const badge = document.getElementById("authPlanBadge");
+    if (badge && plan) {
+        const priceStr = _pricingBilling === "annual"
+            ? `$${Math.round(plan.annual / 12)}/mo · billed $${plan.annual}/yr`
+            : `$${plan.monthly}/month`;
+        badge.textContent = `Selected plan: ${plan.name} — ${priceStr}`;
+        badge.style.display = "block";
+    }
+    const planInput = document.getElementById("signupPlanId");
+    if (planInput && plan) planInput.value = plan.id;
+    switchAuthTab("signup", document.querySelector(".auth-tab"));
+    closePricingModal();
+    showAuthModal();
 }
 
 function openPricingModal() {
@@ -2369,6 +2393,16 @@ function openPricingModal() {
     _renderPricingCards();
     document.getElementById("pricingModal").classList.add("open");
     document.body.style.overflow = "hidden";
+    if (!_pricingModalSyncShown && !_syncState.open) {
+        _pricingModalSyncShown = true;
+        setTimeout(() => {
+            if (!document.getElementById("pricingModal").classList.contains("open")) return;
+            if (!_syncState.open) toggleSyncPanel();
+            setTimeout(() => {
+                _syncAppendBubble("sync", "Not sure which plan fits? Tell me what you're working on and I'll point you in the right direction.");
+            }, _syncState.history.length === 0 ? 1800 : 300);
+        }, 1000);
+    }
 }
 
 function closePricingModal() {
