@@ -940,10 +940,8 @@ function _syncDeckTypeTabs() {
     const tabFull = document.getElementById("deckTabFull");
     const tabProducer = document.getElementById("deckTabProducer");
     const refineBtn = document.getElementById("refineDeckBtn");
-    const activeStyle = "background:rgba(255,122,0,0.15); border-color:rgba(255,122,0,0.6); color:#ff9944;";
-    const inactiveStyle = "background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.1); color:#666;";
-    if (tabFull) tabFull.style.cssText = activeDeckType === "full" ? activeStyle : inactiveStyle;
-    if (tabProducer) tabProducer.style.cssText = activeDeckType === "producer" ? activeStyle : inactiveStyle;
+    if (tabFull) { tabFull.className = "deck-tab " + (activeDeckType === "full" ? "active" : "inactive"); tabFull.style.cssText = ""; }
+    if (tabProducer) { tabProducer.className = "deck-tab " + (activeDeckType === "producer" ? "active" : "inactive"); tabProducer.style.cssText = ""; }
     if (refineBtn) refineBtn.textContent = activeDeckType === "producer" ? "Refine Producer's Deck" : "Refine Full Deck";
 }
 
