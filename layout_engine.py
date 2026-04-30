@@ -295,13 +295,13 @@ def sanitize_slide_title(title: str) -> str:
 # =============================================================================
 
 def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[str, Any]:
-    override_candidates = [
+    # Only check work-dir-adjacent paths — never CWD fallbacks, which can pick up stale data
+    dai_work_dir = os.environ.get("DAI_WORK_DIR", "")
+    override_candidates = []
+    if dai_work_dir:
+        override_candidates.append(Path(dai_work_dir) / "user_upload_context.json")
+    override_candidates += [
         input_path.parent / "user_upload_context.json",
-        input_path.parent / "input" / "user_upload_context.json",
-        input_path.parent / "pipeline" / "user_upload_context.json",
-        Path.cwd() / "user_upload_context.json",
-        Path.cwd() / "input" / "user_upload_context.json",
-        Path.cwd() / "pipeline" / "user_upload_context.json",
     ]
 
     for candidate in override_candidates:
@@ -315,7 +315,6 @@ def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[
         submitted_logline = clean(override_payload.get("logline", ""))
         submitted_synopsis = clean(override_payload.get("synopsis", ""))
         submitted_title = clean(override_payload.get("title", ""))
-        submitted_deck_mode = (override_payload.get("deck_mode") or "").strip().lower()
 
         if submitted_title:
             data["title"] = submitted_title
@@ -326,9 +325,6 @@ def apply_user_upload_overrides(data: Dict[str, Any], input_path: Path) -> Dict[
         if submitted_synopsis:
             data["synopsis"] = submitted_synopsis
             print(f"✅ Using uploaded synopsis override: {candidate}")
-        if submitted_deck_mode in {"producer", "full"}:
-            data["deck_mode"] = submitted_deck_mode
-            print(f"✅ Deck mode: {submitted_deck_mode}")
 
         return data
 
@@ -1189,9 +1185,7 @@ def main() -> None:
     data = read_json(input_path)
     data = apply_user_upload_overrides(data, input_path)
 
-    # Always build both plans — full and producer's deck
-    full_plan = build_slide_plan({**data, "deck_mode": "full"})
-    producer_plan = build_slide_plan({**data, "deck_mode": "producer"})
+    slide_plan = build_slide_plan(data)
 
     if _dai_work_dir:
         out_dir = Path(_dai_work_dir)
@@ -1199,15 +1193,11 @@ def main() -> None:
     else:
         out_dir = DEFAULT_OUTPUT.parent
 
-    full_out = out_dir / "slide_plan.json"
-    producer_out = out_dir / "slide_plan_producer.json"
+    out_path = out_dir / "slide_plan.json"
+    out_path.write_text(json.dumps(slide_plan, indent=2), encoding="utf-8")
 
-    full_out.write_text(json.dumps(full_plan, indent=2), encoding="utf-8")
-    producer_out.write_text(json.dumps(producer_plan, indent=2), encoding="utf-8")
-
-    print("✅ Full deck plan generated")
-    print(f"✅ Full deck slides: {full_plan['slide_count']}")
-    print(f"✅ Producer deck slides: {producer_plan['slide_count']}")
+    print("✅ Slide plan generated")
+    print(f"✅ Slides: {slide_plan['slide_count']}")
 
 
 if __name__ == "__main__":
