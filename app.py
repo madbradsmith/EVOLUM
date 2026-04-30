@@ -1696,7 +1696,6 @@ def upload():
         "script_filename": Path(file.filename).name,
         "logline": logline,
         "synopsis": synopsis,
-        "deck_mode": deck_mode,
         "visual_style": visual_style,
         "poster_filename": poster.filename if poster and poster.filename else "",
         "image_filenames": saved_images,
