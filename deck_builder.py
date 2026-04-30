@@ -1047,7 +1047,11 @@ def add_full_bleed_image(slide, image_path: Optional[Path]) -> None:
                 new_h = int(new_w / img_ratio)
             img = img.resize((new_w, new_h), Image.LANCZOS)
             lc = (new_w - SLIDE_W_PX) // 2
-            tc = (new_h - SLIDE_H_PX) // 2
+            if img_ratio <= slide_ratio:
+                # Portrait/square image: bias crop toward top so faces stay in frame
+                tc = int((new_h - SLIDE_H_PX) * 0.25)
+            else:
+                tc = (new_h - SLIDE_H_PX) // 2
             img = img.crop((lc, tc, lc + SLIDE_W_PX, tc + SLIDE_H_PX))
             tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             img.save(tmp.name, format="JPEG", quality=88, optimize=True)
@@ -1258,7 +1262,16 @@ def build_slide_editorial(slide, image_path: Optional[Path], slide_title: str, b
     accent = _active_theme["accent"]
 
     if image_path and image_path.exists():
-        add_center_image(slide, image_path, scale_factor=0.52)
+        try:
+            with Image.open(image_path) as _probe:
+                _is_portrait = _probe.height > _probe.width
+        except Exception:
+            _is_portrait = False
+        if _is_portrait:
+            add_blur_background(slide, image_path)
+            add_center_image(slide, image_path, scale_factor=0.72)
+        else:
+            add_center_image(slide, image_path, scale_factor=0.52)
 
     # Title centered below image area
     tx = slide.shapes.add_textbox(Inches(1.0), Inches(4.3), Inches(11.3), Inches(0.6))
