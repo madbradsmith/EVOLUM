@@ -435,7 +435,10 @@ function resetCreateProject(){
     const refinementStage = document.getElementById("refinementStage");
     if (previewStage) previewStage.style.display = "block";
     if (refinementStage) refinementStage.style.display = "none";
+}
 
+function newDeck() {
+    resetCreateProject();
     showUploadAnalyzeModal();
 }
 
@@ -1928,6 +1931,15 @@ async function loadProjectFromPanel(projectId) {
             exitFlowMode();
             enterActiveBuildMode();
 
+            // Hide home cards so analyzerPanel has the full space
+            const homeCardGrid = document.querySelector(".home-card-grid");
+            const choicesRow = document.querySelector(".choices-row");
+            if (homeCardGrid) homeCardGrid.style.display = "none";
+            if (choicesRow) choicesRow.style.display = "none";
+
+            // Show analyzerPanel (it defaults to display:none)
+            document.getElementById("analyzerPanel").style.display = "block";
+
             // Switch to complete/preview state
             document.body.classList.add("complete-mode");
             document.getElementById("buildProgressBar").style.display = "none";
@@ -1959,11 +1971,9 @@ async function openWelcomeProjectsPicker() {
     const itemsEl = document.getElementById("welcomeProjectsItems");
     itemsEl.innerHTML = '<div style="color:#aaa; font-size:13px; padding:8px 0;">Loading...</div>';
     try {
-        if (!_cachedProjects || !_cachedProjects.length) {
-            const res = await fetch("/my-projects");
-            const data = await res.json();
-            _cachedProjects = data.projects || [];
-        }
+        const res = await fetch("/my-projects", { cache: "no-store" });
+        const data = await res.json();
+        _cachedProjects = data.projects || [];
         renderWelcomeProjects(_cachedProjects);
     } catch(e) {
         itemsEl.innerHTML = '<div style="color:#aaa; font-size:13px;">Could not load projects.</div>';

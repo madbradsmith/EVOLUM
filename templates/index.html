@@ -224,7 +224,7 @@
 
         <div class="complete-actions">
             <button class="primary-button" type="button" id="refineDeckBtn" onclick="openRefinementStage()">Refine Deck</button>
-            <button class="primary-button" type="button" onclick="resetCreateProject()">Create New Deck</button>
+            <button class="primary-button" type="button" onclick="newDeck()">Create New Deck</button>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 0;">
@@ -244,7 +244,7 @@
                 <div id="projectsList" style="display:flex; flex-direction:column; gap:4px; flex:1; overflow-y:auto; max-height:100px;">
                     <div style="color:#444; font-size:11px;">Loading...</div>
                 </div>
-                <button onclick="resetCreateProject()" style="margin-top:8px; background:transparent; border:1px dashed rgba(255,122,0,0.35); border-radius:8px; color:#ff9944; font-size:11px; padding:5px 10px; cursor:pointer; font-family:inherit; text-align:center; transition:border-color 0.15s;">+ New Deck</button>
+                <button onclick="newDeck()" style="margin-top:8px; background:transparent; border:1px dashed rgba(255,122,0,0.35); border-radius:8px; color:#ff9944; font-size:11px; padding:5px 10px; cursor:pointer; font-family:inherit; text-align:center; transition:border-color 0.15s;">+ New Deck</button>
             </div>
             {% endif %}
         </div>
