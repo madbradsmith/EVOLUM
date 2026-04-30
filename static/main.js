@@ -117,6 +117,7 @@ const fallbackSlides = [
 
 let refineSlides = JSON.parse(JSON.stringify(fallbackSlides));
 let latestRefineProjectTitle = "UNTITLED PROJECT";
+let _lastAnalyzedTitle = null;
 let currentRefineSlide = 0;
 let currentImageOptionModalIndex = 0;
 const BASE_PATH_PREFIX = window.BASE_PATH_PREFIX || "";
@@ -453,8 +454,12 @@ function openAnalyzePassModal(){
 
 function analyzeToDecFlow(){
     closeAllModals();
-    analyzeFlowMode = "upload";
-    continueToApprovedUpload();
+    if (!approvedScriptFile) {
+        // Script was lost (e.g. page reload) — fall back to upload form
+        newDeck();
+        return;
+    }
+    startBuildDirect();
 }
 
 function startBuildDirect() {
@@ -467,8 +472,9 @@ function startBuildDirect() {
 
     const formData = new FormData();
     formData.append("script", approvedScriptFile);
-    const stem = approvedScriptFile.name.replace(/\.[^.]+$/, "");
-    const title = stem.replace(/[_\-]+/g, " ").trim();
+    const titleFromBrain = _lastAnalyzedTitle;
+    const titleFromFile = approvedScriptFile.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim();
+    const title = titleFromBrain || titleFromFile;
     if (title) formData.append("project_title", title);
     const _vs = document.getElementById("visualStyleSelect");
     if (_vs) formData.append("visual_style", _vs.value);
@@ -569,6 +575,10 @@ async function analyzeSelectedScript(){
         const actionsEl = document.getElementById("buildProgressActions");
         actionsEl.style.display = "flex";
 
+        // Always store file + brain title so Create Pitch Deck can use them directly
+        approvedScriptFile = file;
+        _lastAnalyzedTitle = data.title || null;
+
         if (analyzeFlowMode === "analyze") {
             actionsEl.querySelector("button").textContent = "View Results";
             actionsEl.querySelector("button").onclick = function(){
@@ -576,7 +586,6 @@ async function analyzeSelectedScript(){
                 openAnalyzePassModal();
             };
         } else {
-            approvedScriptFile = file;
             closeBuildProgressModal();
             startBuildDirect();
         }
@@ -1498,14 +1507,13 @@ async function submitActorPrep(){
     }
 
     closeModal("actorPrepModal");
-    setProgress(0);
     document.getElementById("buildProgressTitle").textContent = "Analyzing Your Sides";
     document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is breaking down your script. This takes about 30–60 seconds.";
     document.getElementById("buildProgressStage").textContent = "Analyzing sides with Developum AI Engine…";
+    document.getElementById("buildProgressFill").style.width = "15%";
     document.getElementById("buildProgressWorking").style.display = "block";
     document.getElementById("buildProgressActions").style.display = "none";
     document.getElementById("buildProgressModal").classList.add("show");
-    startProgressCreep(88, 1.1, 600);
 
     const formData = new FormData();
     formData.append("character_name", role);
@@ -1519,7 +1527,6 @@ async function submitActorPrep(){
         });
         const data = await response.json();
 
-        stopProgressCreep();
         if (response.status === 422 && data.needs_paste){
             closeBuildProgressModal();
             document.getElementById("actorPrepPasteModal").classList.add("show");
@@ -1537,7 +1544,7 @@ async function submitActorPrep(){
             return;
         }
 
-        setProgress(100);
+        document.getElementById("buildProgressFill").style.width = "100%";
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Audition Analysis Complete";
         document.getElementById("buildProgressCopy").textContent = "Your preparation packet is ready.";
@@ -1624,14 +1631,13 @@ async function submitActorBooked(){
     }
 
     closeModal("actorBookedModal");
-    setProgress(0);
     document.getElementById("buildProgressTitle").textContent = "Analyzing Your Role";
     document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is building your character breakdown. This takes about 30–60 seconds.";
     document.getElementById("buildProgressStage").textContent = "Analyzing full script with Developum AI Engine…";
+    document.getElementById("buildProgressFill").style.width = "15%";
     document.getElementById("buildProgressWorking").style.display = "block";
     document.getElementById("buildProgressActions").style.display = "none";
     document.getElementById("buildProgressModal").classList.add("show");
-    startProgressCreep(88, 1.1, 600);
 
     const formData = new FormData();
     formData.append("character_name", role);
@@ -1645,7 +1651,6 @@ async function submitActorBooked(){
         });
         const data = await response.json();
 
-        stopProgressCreep();
         if (response.status === 422 && data.needs_paste){
             closeBuildProgressModal();
             document.getElementById("actorBookedPasteModal").classList.add("show");
@@ -1663,7 +1668,7 @@ async function submitActorBooked(){
             return;
         }
 
-        setProgress(100);
+        document.getElementById("buildProgressFill").style.width = "100%";
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Role Analysis Complete";
         document.getElementById("buildProgressCopy").textContent = "Your character breakdown is ready.";
