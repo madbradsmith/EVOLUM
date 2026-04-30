@@ -309,40 +309,50 @@ def merge_character_signals(dialogue_counts, dialogue_first, dialogue_support, a
 def detect_world(text: str) -> str:
     t = text.lower()
 
+    def _score(signals: list[str]) -> int:
+        count = 0
+        for signal in signals:
+            # Use word-boundary matching to avoid substring false positives
+            # ("fare" must not match "warfare", "driver" must not match "screwdriver")
+            pattern = r"\b" + re.escape(signal) + r"\b"
+            if re.search(pattern, t):
+                count += 1
+        return count
+
     genre_signals = {
         "feature / action espionage thriller": [
-            "spy", "agent", "terrorist", "mission", "intel", "nuclear", "harrier",
-            "explosion", "surveillance", "secret service", "undercover", "assassin",
-            "bomb", "hostage", "chase", "gunfire", "helicopter", "covert", "operative"
+            "spy", "secret agent", "terrorist", "covert mission", "intel", "nuclear",
+            "surveillance", "secret service", "undercover", "assassin",
+            "bomb", "hostage", "gunfire", "helicopter", "operative"
         ],
+        # Rideshare signals must be unambiguous — "fare" and "driver" are too generic
         "feature / contained urban thriller": [
-            "rideshare", "uber", "lyft", "fare", "pickup", "dropoff", "backseat", "driver"
+            "rideshare", "uber", "lyft", "rideshare driver", "lyft driver", "uber driver",
+            "dropoff", "backseat passenger", "passenger rating", "trip request"
         ],
         "feature / legal / courtroom drama": [
-            "courtroom", "court", "trial", "judge", "jury", "verdict", "witness",
-            "cross-examination", "navy", "marine", "uniform code", "hearing", "defense counsel"
+            "courtroom", "trial", "judge", "jury", "verdict", "witness",
+            "cross-examination", "uniform code", "defense counsel", "prosecution"
         ],
         "feature / fantasy satire comedy": [
-            "kingdom", "castle", "court jester", "jester", "king", "queen", "princess",
-            "dragon", "wizard", "sword", "medieval", "throne", "quest"
+            "court jester", "jester", "medieval", "throne", "kingdom",
+            "dragon", "wizard", "sword", "quest", "knight", "sorcerer",
+            "king", "queen", "princess", "castle"
         ],
         "feature / nightlife comedy": [
-            "club", "nightclub", "dance floor", "vip", "party", "bar", "bouncer",
-            "night out", "hookup", "promoter", "velvet rope"
+            "nightclub", "dance floor", "vip table", "night out", "hookup", "promoter", "velvet rope"
         ],
         "feature / sports drama": [
-            "basketball", "team", "coach", "court", "locker room", "season",
-            "championship", "practice", "rebels", "hornets"
+            "basketball", "locker room", "championship", "practice", "halftime",
+            "playoffs", "head coach", "game day"
         ],
         "feature / crime drama": [
-            "money", "crime", "drug", "smuggle", "cop", "police", "cartel",
-            "robbery", "detective", "murder", "heist"
+            "drug cartel", "heist", "smuggle", "robbery", "detective", "murder",
+            "crime boss", "informant", "underworld"
         ],
     }
 
-    scores = {}
-    for genre, signals in genre_signals.items():
-        scores[genre] = sum(1 for signal in signals if signal in t)
+    scores = {genre: _score(signals) for genre, signals in genre_signals.items()}
 
     strongest_genre = max(scores, key=scores.get)
     strongest_score = scores[strongest_genre]
