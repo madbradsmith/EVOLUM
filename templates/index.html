@@ -759,6 +759,7 @@
                         <input type="password" name="password" placeholder="Password (6+ characters)" required>
                         <input type="text" name="ref_code" id="signupRefCode" placeholder="Referral code (optional)" value="{{ ref_code or '' }}" style="margin-top:4px;">
                         <input type="hidden" name="plan_id" id="signupPlanId" value="solo">
+                        <input type="hidden" name="billing_period" id="signupBillingPeriod" value="monthly">
                         <button class="primary-button" type="submit" style="width:100%; margin-top:8px; background:rgba(255,122,0,0.95); font-size:14px; padding:13px;">Continue to Payment →</button>
                     </form>
                     <div style="font-size:11px; color:#888; text-align:center; margin-top:10px;">Stripe-secured checkout. By continuing you agree to our <a href="/terms" target="_blank" style="color:#aaa; text-decoration:none;">Terms &amp; Conditions</a>.</div>
@@ -814,7 +815,7 @@
     <div class="referral-modal-box">
         <button class="pricing-modal-close" onclick="closeReferralModal()">×</button>
         <div class="pricing-title" style="text-align:left; font-size:18px;">Refer a Friend</div>
-        <div class="pricing-sub" style="text-align:left; margin-bottom:0;">Share your link — earn a credit for every friend who joins.</div>
+        <div class="pricing-sub" style="text-align:left; margin-bottom:0;">Share your link — earn a free week for every friend who joins.</div>
 
         <div class="referral-stat-row">
             <div class="referral-stat">
@@ -823,7 +824,7 @@
             </div>
             <div class="referral-stat">
                 <div class="referral-stat-num" id="referralCredits">—</div>
-                <div class="referral-stat-label">Credits Earned</div>
+                <div class="referral-stat-label">Weeks Earned</div>
             </div>
         </div>
 
@@ -837,7 +838,7 @@
             <div class="referral-how-title">How it works</div>
             <div class="referral-how-step" data-n="1">Share your link with a friend.</div>
             <div class="referral-how-step" data-n="2">They sign up and complete their first payment.</div>
-            <div class="referral-how-step" data-n="3">You earn a credit — good toward future billing.</div>
+            <div class="referral-how-step" data-n="3">You earn one free week of EVOLUM — use them anytime, up to 52 weeks.</div>
         </div>
     </div>
 </div>

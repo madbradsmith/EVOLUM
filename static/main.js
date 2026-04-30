@@ -2314,28 +2314,28 @@ function _rotateBannerText() {
 const _PLANS = [
     {
         id: "solo", name: "Solo",
-        monthly: 5, annual: 48,
+        monthly: 5, annual: 42,
         projects: "3 projects", collaborators: "1 collaborator",
         features: ["Pitch deck generator", "Script analyzer", "Actor prep tools", "3-day free trial"],
         featured: false,
     },
     {
         id: "writers-room", name: "Writer's Room",
-        monthly: 15, annual: 144,
+        monthly: 15, annual: 126,
         projects: "10 projects", collaborators: "5 collaborators",
         features: ["All Solo features", "Team workspace", "Priority builds", "Project sharing"],
         featured: true, badge: "Most Popular",
     },
     {
         id: "production", name: "Production Co.",
-        monthly: 35, annual: 336,
+        monthly: 35, annual: 294,
         projects: "20 projects", collaborators: "10 collaborators",
         features: ["All Writer's Room features", "Advanced analytics", "White-label exports", "Dedicated queue"],
         featured: false,
     },
     {
         id: "studio", name: "Studio",
-        monthly: 69, annual: 660,
+        monthly: 75, annual: 630,
         projects: "50 projects", collaborators: "100 collaborators",
         features: ["All Production features", "Custom branding", "Dedicated support", "API access"],
         featured: false,
@@ -2394,6 +2394,8 @@ function selectPlan(planId) {
     }
     const planInput = document.getElementById("signupPlanId");
     if (planInput && plan) planInput.value = plan.id;
+    const billingInput = document.getElementById("signupBillingPeriod");
+    if (billingInput) billingInput.value = _pricingBilling;
     switchAuthTab("signup", document.querySelector(".auth-tab"));
     closePricingModal();
     showAuthModal();
@@ -2442,7 +2444,7 @@ async function openReferralModal() {
         const data = await res.json();
         if (data.ok) {
             document.getElementById("referralCount").textContent = data.count;
-            document.getElementById("referralCredits").textContent = data.credits;
+            document.getElementById("referralCredits").textContent = data.weeks;
             document.getElementById("referralLinkInput").value = data.link;
         }
     } catch (e) {

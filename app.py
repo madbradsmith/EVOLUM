@@ -244,30 +244,76 @@ def _get_or_create_referral_code(user_id: str) -> str:
         return code
 
 
-def process_referral(ref_code: str, new_user_id: str, new_user_email: str):
+MAX_REFERRAL_WEEKS = 52
+
+
+def _send_referral_notification(referrer_email: str, referrer_name: str, new_user_name: str, weeks_total: int):
+    """Email the referrer when someone signs up with their link."""
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    from_email = os.environ.get("FROM_EMAIL", smtp_user) or "noreply@evolum.ai"
+
+    if not (smtp_host and smtp_user and smtp_pass and referrer_email):
+        print(f"📧 Referral notification (no SMTP): {referrer_email} ← {new_user_name}", flush=True)
+        return
+
+    import smtplib
+    from email.mime.text import MIMEText
+
+    subject = f"🎉 {new_user_name} just joined EVOLUM using your link!"
+    body = (
+        f"Hi {referrer_name or 'there'},\n\n"
+        f"{new_user_name} just signed up using your referral link!\n\n"
+        f"You've earned another free week of EVOLUM. "
+        f"You now have {weeks_total} free week{'s' if weeks_total != 1 else ''} banked.\n\n"
+        f"Keep sharing — you can earn up to {MAX_REFERRAL_WEEKS} free weeks.\n\n"
+        f"— The EVOLUM Team\n"
+    )
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = from_email
+    msg["To"] = referrer_email
+
+    try:
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(from_email, [referrer_email], msg.as_string())
+        print(f"📧 Referral email sent to {referrer_email}", flush=True)
+    except Exception as e:
+        print(f"⚠️ Referral email failed: {e}", flush=True)
+
+
+def process_referral(ref_code: str, new_user_id: str, new_user_email: str, new_user_name: str = ""):
     if not DB_ENGINE or not ref_code or not new_user_id:
         return
     try:
         with DB_ENGINE.begin() as conn:
             referrer = conn.execute(
-                text("SELECT id FROM beta_users WHERE referral_code = :code"),
+                text("SELECT id, name, email, COALESCE(referral_credits, 0) FROM beta_users WHERE referral_code = :code"),
                 {"code": ref_code.upper().strip()}
             ).fetchone()
             if not referrer:
                 return
-            referrer_id = str(referrer[0])
+            referrer_id, referrer_name, referrer_email, current_weeks = str(referrer[0]), referrer[1] or "", referrer[2] or "", int(referrer[3])
             if referrer_id == new_user_id:
                 return
             conn.execute(text("""
                 INSERT INTO referrals (referrer_user_id, referred_user_id, referred_email, rewarded)
                 VALUES (:rid, :nid, :email, TRUE)
             """), {"rid": referrer_id, "nid": new_user_id, "email": new_user_email})
-            conn.execute(text("""
-                UPDATE beta_users SET referral_credits = COALESCE(referral_credits, 0) + 1
-                WHERE id = :rid
-            """), {"rid": referrer_id})
+            if current_weeks < MAX_REFERRAL_WEEKS:
+                new_weeks = min(current_weeks + 1, MAX_REFERRAL_WEEKS)
+                conn.execute(text("""
+                    UPDATE beta_users SET referral_credits = :weeks WHERE id = :rid
+                """), {"weeks": new_weeks, "rid": referrer_id})
+            else:
+                new_weeks = MAX_REFERRAL_WEEKS
         log_activity_event("referral_rewarded", user_email=new_user_email,
-                           metadata={"referrer_id": referrer_id, "ref_code": ref_code})
+                           metadata={"referrer_id": referrer_id, "ref_code": ref_code, "weeks_total": new_weeks})
+        _send_referral_notification(referrer_email, referrer_name, new_user_name or new_user_email, new_weeks)
     except Exception as e:
         print(f"⚠️ process_referral failed: {e}", flush=True)
 
@@ -1064,6 +1110,13 @@ def stripe_env_check():
         "price_id_len": len(pid),
     })
 
+_STRIPE_PLANS = {
+    "solo":         {"product": "prod_UOojwK7Z4BtANF", "monthly": 500,   "annual": 4200,  "name": "EVOLUM Solo",           "trial_days": 3},
+    "writers-room": {"product": "prod_UQbauBUNKrOhEA", "monthly": 1500,  "annual": 12600, "name": "EVOLUM Writer's Room",   "trial_days": 0},
+    "production":   {"product": "prod_UQbiF9DDgB83Ax", "monthly": 3500,  "annual": 29400, "name": "EVOLUM Production Co.",  "trial_days": 0},
+    "studio":       {"product": "prod_UQbmcaFzM9v24B", "monthly": 7500,  "annual": 63000, "name": "EVOLUM Studio",          "trial_days": 0},
+}
+
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
     import stripe as stripe_lib
@@ -1071,6 +1124,8 @@ def create_checkout_session():
     email = (request.form.get("email") or "").strip().lower()
     password = (request.form.get("password") or "").strip()
     ref_code = (request.form.get("ref_code") or "").strip().upper()
+    plan_id = (request.form.get("plan_id") or "solo").strip()
+    billing_period = (request.form.get("billing_period") or "monthly").strip()
 
     if not name or not email or not password:
         return redirect("/?auth_error=" + quote("Please fill in all fields to continue."))
@@ -1089,36 +1144,43 @@ def create_checkout_session():
     if not stripe_lib.api_key:
         return redirect("/?auth_error=" + quote("Payment system unavailable — please try again later."))
 
+    plan = _STRIPE_PLANS.get(plan_id, _STRIPE_PLANS["solo"])
+    annual = billing_period == "annual"
+    unit_amount = plan["annual"] if annual else plan["monthly"]
+    interval = "year" if annual else "month"
+    trial_days = plan["trial_days"] if not annual else 0
+
     session["pending_name"] = name
     session["pending_email"] = email
     session["pending_password_hash"] = generate_password_hash(password)
+    session["pending_plan_id"] = plan_id
     if ref_code:
         session["pending_ref_code"] = ref_code
 
     try:
         base_url = request.host_url.rstrip("/")
-        checkout = stripe_lib.checkout.Session.create(
+        checkout_kwargs = dict(
             payment_method_types=["card"],
             line_items=[{
                 "price_data": {
                     "currency": "usd",
-                    "unit_amount": 500,
-                    "recurring": {"interval": "month"},
-                    "product_data": {
-                        "name": "EVOLUM Studio",
-                        "description": "Full access to the EVOLUM beta — pitch deck builder, script analyzer, and actor tools. Cancel anytime.",
-                    },
+                    "unit_amount": unit_amount,
+                    "recurring": {"interval": interval},
+                    "product": plan["product"],
                 },
                 "quantity": 1,
             }],
             mode="subscription",
             customer_email=email,
             custom_text={
-                "submit": {"message": "You're joining the private beta. $5/month · cancel any time."},
+                "submit": {"message": f"You're joining EVOLUM. Cancel any time."},
             },
             success_url=f"{base_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{base_url}/?cancelled=1",
         )
+        if trial_days:
+            checkout_kwargs["subscription_data"] = {"trial_period_days": trial_days}
+        checkout = stripe_lib.checkout.Session.create(**checkout_kwargs)
         return redirect(checkout.url, code=303)
     except Exception as e:
         return redirect("/?auth_error=" + quote(f"Could not start checkout: {e}"))
@@ -1179,7 +1241,7 @@ def payment_success():
 
         pending_ref = session.pop("pending_ref_code", "") or ""
         if pending_ref:
-            process_referral(pending_ref, user_id, email)
+            process_referral(pending_ref, user_id, email, new_user_name=name)
 
         log_activity_event("payment_success", route="/payment-success", user_email=email,
                            metadata={"stripe_session": stripe_session_id, "ref_code": pending_ref or None})
@@ -2146,7 +2208,7 @@ def api_referral_info():
             "code": code,
             "link": f"{base}/?ref={code}",
             "count": int(count),
-            "credits": credits,
+            "weeks": credits,
         })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
