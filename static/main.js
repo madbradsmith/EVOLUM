@@ -1393,6 +1393,29 @@ async function submitRefineDeck() {
     }
 }
 
+async function _pollRegenStatus(maxMs = 150000) {
+    const interval = 2500;
+    let elapsed = 0;
+    let fill = 40;
+    const fillEl = document.getElementById("buildProgressFill");
+    while (elapsed < maxMs) {
+        await new Promise(r => setTimeout(r, interval));
+        elapsed += interval;
+        fill = Math.min(fill + 2, 92);
+        if (fillEl) fillEl.style.width = fill + "%";
+        try {
+            const sr = await fetch("/status");
+            const sd = await sr.json();
+            const st = (sd.status || "").toUpperCase();
+            if (st === "COMPLETE") return;
+            if (st === "ERROR") throw new Error("Regenerate build failed. Please try again.");
+        } catch (e) {
+            if (e.message.includes("failed") || e.message.includes("timed out")) throw e;
+        }
+    }
+    throw new Error("Regenerate timed out. Please try again.");
+}
+
 async function submitRegenDeck() {
     syncTrackRegen();
     let prompt = (
@@ -1419,8 +1442,12 @@ async function submitRegenDeck() {
             body: JSON.stringify({ prompt })
         });
         const data = await res.json();
-        if (!data.ok) {
+        if (!res.ok || data.error) {
             throw new Error(data.error || "Regenerate failed.");
+        }
+        // Backend is async — poll /status until COMPLETE or ERROR
+        if (data.polling) {
+            await _pollRegenStatus();
         }
         document.getElementById("buildProgressFill").style.width = "100%";
         closeBuildProgressModal();

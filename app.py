@@ -2391,40 +2391,47 @@ def regen_deck():
     except Exception as e:
         return jsonify({"error": f"Could not read slide plan: {e}"}), 500
 
-    try:
-        import anthropic as _anthropic
-        client = _anthropic.Anthropic(api_key=api_key)
-        prompt_text = (
-            "You are updating a pitch deck's slide content based on a new creative direction.\n\n"
-            f"Current slide plan (JSON):\n{json.dumps(slide_plan, indent=2)}\n\n"
-            f"New creative direction: \"{direction}\"\n\n"
-            "Rewrite the \"title\" and \"body\" fields for every slide to reflect this direction. "
-            "Keep the same number of slides and preserve all other fields exactly "
-            "(stage, layout, image_path, image_name, image_url, image_source, image_options, "
-            "selected_option_id, slide_count). Return ONLY valid JSON — no extra text, no markdown fences."
-        )
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": prompt_text}]
-        )
-        raw = resp.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        new_plan = json.loads(raw)
-    except Exception as e:
-        return jsonify({"error": f"AI rewrite failed: {e}"}), 500
+    # Run async — Claude API + deck rebuild can take 40-90s which kills sync workers.
+    # Return immediately and let the frontend poll /status for COMPLETE/ERROR.
+    set_status("BUILDING", uid=uid)
 
-    try:
-        full_slides = new_plan.get("slides", [])
-        result = rebuild_refined_deck(full_slides, label="", user_id=uid)
-        if "error" in result:
-            return jsonify(result), 500
-        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
-        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
-        return jsonify({"ok": True})
-    except Exception as e:
-        return jsonify({"error": f"Deck rebuild failed: {e}"}), 500
+    def _regen_bg():
+        try:
+            import anthropic as _anthropic
+            client = _anthropic.Anthropic(api_key=api_key)
+            prompt_text = (
+                "You are updating a pitch deck's slide content based on a new creative direction.\n\n"
+                f"Current slide plan (JSON):\n{json.dumps(slide_plan, indent=2)}\n\n"
+                f"New creative direction: \"{direction}\"\n\n"
+                "Rewrite the \"title\" and \"body\" fields for every slide to reflect this direction. "
+                "Keep the same number of slides and preserve all other fields exactly "
+                "(stage, layout, image_path, image_name, image_url, image_source, image_options, "
+                "selected_option_id, slide_count). Return ONLY valid JSON — no extra text, no markdown fences."
+            )
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=8000,
+                messages=[{"role": "user", "content": prompt_text}]
+            )
+            raw = resp.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            new_plan = json.loads(raw)
+
+            full_slides = new_plan.get("slides", [])
+            result = rebuild_refined_deck(full_slides, label="", user_id=uid)
+            if "error" in result:
+                set_status("ERROR", uid=uid)
+                return
+
+            _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+            _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
+            set_status("COMPLETE", uid=uid)
+        except Exception:
+            set_status("ERROR", uid=uid)
+
+    threading.Thread(target=_regen_bg, daemon=True).start()
+    return jsonify({"ok": True, "polling": True})
 
 # ===== REGEN DECK ROUTE END ===========================
 
