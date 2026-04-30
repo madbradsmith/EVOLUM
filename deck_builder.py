@@ -805,9 +805,16 @@ def find_image_for_slide(
     last_used_name: str = "",
     slide_body: str = ""
 ) -> tuple[Optional[Path], str]:
-    _upload_root = USER_VISUALS_UPLOAD_ROOT if USER_VISUALS_UPLOAD_ROOT else (visuals_dir / "user_uploaded" / (_DAI_UID or "anon"))
-    poster_dir = _upload_root / "poster"
-    current_dir = _upload_root / "current"
+    # When running inside a pipeline build use project-scoped uploads so images
+    # from a different project never bleed in via the shared current/ folder.
+    if _DAI_WORK_DIR:
+        _wd = Path(_DAI_WORK_DIR)
+        poster_dir = _wd / "poster"
+        current_dir = _wd / "uploads"
+    else:
+        _upload_root = USER_VISUALS_UPLOAD_ROOT if USER_VISUALS_UPLOAD_ROOT else (visuals_dir / "user_uploaded" / (_DAI_UID or "anon"))
+        poster_dir = _upload_root / "poster"
+        current_dir = _upload_root / "current"
     exts = {".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP"}
 
     poster_files = [p for p in poster_dir.glob("*") if p.suffix in exts] if poster_dir.exists() else []
@@ -843,18 +850,18 @@ def find_image_for_slide(
             return stock_title, "stock"
 
     key_map = {
-        "logline": ["SceneD", "Misdirect", "logline", "frame_1"],
-        "synopsis": ["SceneE", "Decision", "rear_pov", "whisper", "synopsis", "frame_2"],
-        "protagonist": ["malik", "character", "worldslide", "frame_3"],
-        "world": ["world", "city", "character_slide", "frame_4"],
-        "hook": ["look_up", "hook", "frame_5"],
-        "conflict": ["rear_pov", "conflict", "frame_6"],
-        "stakes": ["whisper", "stakes"],
-        "tone": ["rachel", "tone"],
-        "story engine": ["malik", "engine"],
-        "reversal": ["Decision", "reversal", "SceneE"],
-        "themes": ["rachel", "themes"],
-        "why this movie": ["rico", "why"],
+        "logline": ["logline", "frame_1", "opening"],
+        "synopsis": ["synopsis", "frame_2", "scene"],
+        "protagonist": ["protagonist", "character", "hero", "frame_3"],
+        "world": ["world", "city", "location", "frame_4"],
+        "hook": ["hook", "frame_5"],
+        "conflict": ["conflict", "frame_6"],
+        "stakes": ["stakes"],
+        "tone": ["tone", "mood"],
+        "story engine": ["engine"],
+        "reversal": ["reversal", "turn"],
+        "themes": ["themes", "theme"],
+        "why this movie": ["why"],
     }
 
     lookup_key = "synopsis" if normalized_title.startswith("synopsis") else normalized_title

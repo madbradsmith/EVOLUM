@@ -1726,6 +1726,19 @@ def upload():
         _work_dir.mkdir(parents=True, exist_ok=True)
         (_work_dir / "user_upload_context.json").write_text(_ctx_data, encoding="utf-8")
         _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
+        # Copy uploads into project-scoped dirs so Regenerate Deck and other
+        # projects can't cross-contaminate via the shared current_dir.
+        import shutil as _shutil
+        _wd_uploads = _work_dir / "uploads"
+        _wd_poster = _work_dir / "poster"
+        _wd_uploads.mkdir(parents=True, exist_ok=True)
+        _wd_poster.mkdir(parents=True, exist_ok=True)
+        for _f in current_dir.iterdir():
+            if _f.is_file():
+                _shutil.copy2(_f, _wd_uploads / _f.name)
+        for _f in poster_dir.iterdir():
+            if _f.is_file():
+                _shutil.copy2(_f, _wd_poster / _f.name)
 
     set_status("ANALYZING", project_id=saved_pid, uid=_uid_str)
 
