@@ -306,7 +306,50 @@ def merge_character_signals(dialogue_counts, dialogue_first, dialogue_support, a
     return ordered[:8], stats
 
 
+_VALID_GENRES = [
+    "feature / action espionage thriller",
+    "feature / contained urban thriller",
+    "feature / legal / courtroom drama",
+    "feature / fantasy satire comedy",
+    "feature / romantic comedy",
+    "feature / nightlife comedy",
+    "feature / sports drama",
+    "feature / crime drama",
+    "feature / drama",
+]
+
+
 def detect_world(text: str) -> str:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if api_key:
+        try:
+            import anthropic as _anthropic
+            sample = text[:3000]
+            genre_list = "\n".join(f"- {g}" for g in _VALID_GENRES)
+            prompt = (
+                f"Read this script excerpt and classify it into exactly one genre from this list:\n\n"
+                f"{genre_list}\n\n"
+                f"Respond with ONLY the genre label exactly as written. Nothing else.\n\n"
+                f"Script excerpt:\n{sample}"
+            )
+            client = _anthropic.Anthropic(api_key=api_key)
+            msg = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=20,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            result = msg.content[0].text.strip().lower()
+            if result in _VALID_GENRES:
+                return result
+            for g in _VALID_GENRES:
+                if g in result:
+                    return g
+        except Exception:
+            pass
+    return _keyword_detect_world(text)
+
+
+def _keyword_detect_world(text: str) -> str:
     t = text.lower()
 
     def _score(signals: list[str]) -> int:
