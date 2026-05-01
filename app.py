@@ -34,11 +34,9 @@ from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from dai_tools import (
-    build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline,
-    normalize_project_relative_path, project_file_url_for_path, normalize_manifest_image_options,
-    newest_generated_file, publish_latest_outputs, rebuild_refined_deck,
-)
-
+    build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline, 
+    normalize_manifest_image_options, newest_generated_file, publish_latest_outputs, rebuild_refined_deck,)
+    
 # ===== IMPORTS / SETUP END ===========================
 
 # ===== GLOBAL CONFIG / PATHS START ===================
@@ -401,7 +399,6 @@ def find_latest_slide_plan_file():
     search_roots = [
         BASE_DIR,
         OUTPUT_DIR,
-        BASE_DIR / "projects",
         BASE_DIR / "pipeline",
     ]
     seen = set()
@@ -2391,40 +2388,47 @@ def regen_deck():
     except Exception as e:
         return jsonify({"error": f"Could not read slide plan: {e}"}), 500
 
-    try:
-        import anthropic as _anthropic
-        client = _anthropic.Anthropic(api_key=api_key)
-        prompt_text = (
-            "You are updating a pitch deck's slide content based on a new creative direction.\n\n"
-            f"Current slide plan (JSON):\n{json.dumps(slide_plan, indent=2)}\n\n"
-            f"New creative direction: \"{direction}\"\n\n"
-            "Rewrite the \"title\" and \"body\" fields for every slide to reflect this direction. "
-            "Keep the same number of slides and preserve all other fields exactly "
-            "(stage, layout, image_path, image_name, image_url, image_source, image_options, "
-            "selected_option_id, slide_count). Return ONLY valid JSON — no extra text, no markdown fences."
-        )
-        resp = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=8000,
-            messages=[{"role": "user", "content": prompt_text}]
-        )
-        raw = resp.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
-        new_plan = json.loads(raw)
-    except Exception as e:
-        return jsonify({"error": f"AI rewrite failed: {e}"}), 500
+    # Run async — Claude API + deck rebuild can take 40-90s which kills sync workers.
+    # Return immediately and let the frontend poll /status for COMPLETE/ERROR.
+    set_status("BUILDING", uid=uid)
 
-    try:
-        full_slides = new_plan.get("slides", [])
-        result = rebuild_refined_deck(full_slides, label="", user_id=uid)
-        if "error" in result:
-            return jsonify(result), 500
-        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
-        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
-        return jsonify({"ok": True})
-    except Exception as e:
-        return jsonify({"error": f"Deck rebuild failed: {e}"}), 500
+    def _regen_bg():
+        try:
+            import anthropic as _anthropic
+            client = _anthropic.Anthropic(api_key=api_key)
+            prompt_text = (
+                "You are updating a pitch deck's slide content based on a new creative direction.\n\n"
+                f"Current slide plan (JSON):\n{json.dumps(slide_plan, indent=2)}\n\n"
+                f"New creative direction: \"{direction}\"\n\n"
+                "Rewrite the \"title\" and \"body\" fields for every slide to reflect this direction. "
+                "Keep the same number of slides and preserve all other fields exactly "
+                "(stage, layout, image_path, image_name, image_url, image_source, image_options, "
+                "selected_option_id, slide_count). Return ONLY valid JSON — no extra text, no markdown fences."
+            )
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=8000,
+                messages=[{"role": "user", "content": prompt_text}]
+            )
+            raw = resp.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            new_plan = json.loads(raw)
+
+            full_slides = new_plan.get("slides", [])
+            result = rebuild_refined_deck(full_slides, label="", user_id=uid)
+            if "error" in result:
+                set_status("ERROR", uid=uid)
+                return
+
+            _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+            _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
+            set_status("COMPLETE", uid=uid)
+        except Exception:
+            set_status("ERROR", uid=uid)
+
+    threading.Thread(target=_regen_bg, daemon=True).start()
+    return jsonify({"ok": True, "polling": True})
 
 # ===== REGEN DECK ROUTE END ===========================
 
@@ -2590,345 +2594,7 @@ def actor_prep_latest_download_pdf():
 
 # ===== SAVED PROJECTS ROUTES START ===================
 
-@app.route("/my-projects")
-@require_login
-def my_projects():
-    uid = session.get("user_id", "")
-    if not uid or not DB_ENGINE:
-        return jsonify({"projects": []})
-    ensure_projects_table()
-    try:
-        with DB_ENGINE.connect() as conn:
-            rows = conn.execute(text(
-                "SELECT id, title, type, created_at, output_dir FROM projects WHERE owner_user_id = :uid ORDER BY created_at DESC"
-            ), {"uid": uid}).mappings().fetchall()
-        projects = []
-        for row in rows:
-            r = dict(row)
-            pid = str(r["id"])
-            has_deck = False
-            thumbnail = ""
-            proj_dir_path = None
-            if r.get("output_dir"):
-                proj_dir_path = BASE_DIR / r["output_dir"]
-                has_deck = (proj_dir_path / "deck.pptx").exists()
-            if not has_deck:
-                proj_dir_path = USER_DATA_DIR / uid / pid
-                has_deck = (proj_dir_path / "deck.pptx").exists()
-            if proj_dir_path:
-                manifest_file = proj_dir_path / "deck_manifest.json"
-                if manifest_file.exists():
-                    try:
-                        slides = json.loads(manifest_file.read_text(encoding="utf-8"))
-                        if slides and isinstance(slides, list):
-                            thumbnail = slides[0].get("image_url") or ""
-                    except Exception:
-                        pass
-            projects.append({
-                "id": pid,
-                "title": r.get("title") or f"Project {pid}",
-                "type": r.get("type") or "Project",
-                "created_at": str(r.get("created_at") or ""),
-                "has_deck": has_deck,
-                "thumbnail": thumbnail,
-            })
-        return jsonify({"projects": projects})
-    except Exception as e:
-        return jsonify({"projects": [], "error": str(e)})
 
-
-@app.route("/project/<project_id>/load", methods=["POST"])
-@require_login
-def load_project(project_id):
-    uid = session.get("user_id", "")
-    if not uid or not DB_ENGINE:
-        return jsonify({"ok": False, "error": "Not logged in"}), 401
-    ensure_projects_table()
-    try:
-        with DB_ENGINE.connect() as conn:
-            row = conn.execute(text(
-                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
-            ), {"id": int(project_id), "uid": uid}).mappings().first()
-        if not row:
-            return jsonify({"ok": False, "error": "Project not found"}), 404
-
-        r = dict(row)
-        pid = str(r["id"])
-
-        proj_dir = None
-        if r.get("output_dir"):
-            proj_dir = BASE_DIR / r["output_dir"]
-        if proj_dir is None or not proj_dir.exists():
-            proj_dir = USER_DATA_DIR / uid / pid
-
-        manifest_src = proj_dir / "deck_manifest.json"
-        if manifest_src.exists():
-            shutil.copy2(manifest_src, user_manifest_path(uid))
-
-        session["active_project_id"] = pid
-        set_status("COMPLETE", project_id=pid, uid=uid)
-
-        return jsonify({"ok": True, "project_id": pid})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-
-@app.route("/project/<project_id>/slides")
-@require_login
-def project_slides(project_id):
-    uid = session.get("user_id", "")
-    if not uid or not DB_ENGINE:
-        return jsonify({"error": "Not logged in"}), 401
-    ensure_projects_table()
-    try:
-        with DB_ENGINE.connect() as conn:
-            row = conn.execute(text(
-                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
-            ), {"id": int(project_id), "uid": uid}).mappings().first()
-        if not row:
-            return jsonify({"error": "Project not found"}), 404
-        r = dict(row)
-        pid = str(r["id"])
-        for proj_dir in filter(None, [
-            BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
-            USER_DATA_DIR / uid / pid,
-        ]):
-            manifest = proj_dir / "deck_manifest.json"
-            if manifest.exists():
-                slides = json.loads(manifest.read_text(encoding="utf-8"))
-                title = slides[0].get("title", "Project") if slides else "Project"
-                return jsonify({"slides": slides, "title": title})
-        # Fallback: use the user-level manifest (populated by /project/<id>/load)
-        user_manifest = user_manifest_path(uid)
-        if user_manifest.exists():
-            slides = json.loads(user_manifest.read_text(encoding="utf-8"))
-            if slides:
-                title = slides[0].get("title", "Project") if isinstance(slides, list) else "Project"
-                return jsonify({"slides": slides, "title": title})
-        return jsonify({"error": "No manifest found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/project/<project_id>/delete", methods=["POST"])
-@require_login
-def delete_project(project_id):
-    uid = session.get("user_id", "")
-    if not uid or not DB_ENGINE:
-        return jsonify({"ok": False, "error": "Not logged in"}), 401
-    ensure_projects_table()
-    try:
-        with DB_ENGINE.connect() as conn:
-            row = conn.execute(text(
-                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
-            ), {"id": int(project_id), "uid": uid}).mappings().first()
-        if not row:
-            return jsonify({"ok": False, "error": "Project not found"}), 404
-
-        r = dict(row)
-        pid = str(r["id"])
-
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text(
-                "DELETE FROM projects WHERE id = :id AND owner_user_id = :uid"
-            ), {"id": int(project_id), "uid": uid})
-
-        for proj_dir in filter(None, [
-            BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
-            USER_DATA_DIR / uid / pid,
-        ]):
-            if proj_dir.exists():
-                shutil.rmtree(proj_dir, ignore_errors=True)
-
-        if session.get("active_project_id") == pid:
-            session.pop("active_project_id", None)
-
-        return jsonify({"ok": True})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
-
-# ===== SAVED PROJECTS ROUTES END =====================
-
-def ensure_projects_table():
-    if not DB_ENGINE:
-        return
-
-    with DB_ENGINE.begin() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS projects (
-                id SERIAL PRIMARY KEY,
-                owner_user_id TEXT NOT NULL,
-                title TEXT NOT NULL,
-                type TEXT,
-                status TEXT DEFAULT 'Active',
-                storage_used_mb INTEGER DEFAULT 0,
-                output_dir TEXT DEFAULT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-        try:
-            conn.execute(text(
-                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS output_dir TEXT DEFAULT NULL"
-            ))
-        except Exception:
-            pass
-
-def ensure_collab_tables():
-    if not DB_ENGINE:
-        return
-    with DB_ENGINE.begin() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS project_invites (
-                id SERIAL PRIMARY KEY,
-                project_id INTEGER NOT NULL,
-                token TEXT UNIQUE NOT NULL,
-                invite_code TEXT UNIQUE NOT NULL,
-                created_by TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """))
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS project_collaborators (
-                id SERIAL PRIMARY KEY,
-                project_id INTEGER NOT NULL,
-                user_id TEXT NOT NULL,
-                user_name TEXT,
-                joined_via TEXT,
-                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(project_id, user_id)
-            )
-        """))
-
-
-def _generate_invite_code() -> str:
-    chars = string.ascii_uppercase + string.digits
-    return "".join(secrets.choice(chars) for _ in range(6))
-
-
-@app.route("/project/<project_id>/create-invite", methods=["POST"])
-@require_login
-def create_project_invite(project_id):
-    ensure_projects_table()
-    ensure_collab_tables()
-    with DB_ENGINE.connect() as conn:
-        proj = conn.execute(text(
-            "SELECT id FROM projects WHERE id = :id AND owner_user_id = :uid"
-        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
-    if not proj:
-        return jsonify({"error": "Project not found"}), 404
-
-    # Return existing invite if one already exists for this project
-    with DB_ENGINE.connect() as conn:
-        existing = conn.execute(text(
-            "SELECT token, invite_code FROM project_invites WHERE project_id = :pid AND created_by = :uid"
-        ), {"pid": project_id, "uid": session.get("user_id")}).mappings().first()
-
-    if existing:
-        token, code = existing["token"], existing["invite_code"]
-    else:
-        token = secrets.token_urlsafe(16)
-        code = _generate_invite_code()
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO project_invites (project_id, token, invite_code, created_by)
-                VALUES (:pid, :token, :code, :uid)
-            """), {"pid": project_id, "token": token, "code": code, "uid": session.get("user_id")})
-
-    base = request.host_url.rstrip("/")
-    return jsonify({"token": token, "code": code, "link": f"{base}/join/{token}"})
-
-
-@app.route("/join/<token>", methods=["GET", "POST"])
-def join_project(token):
-    ensure_collab_tables()
-    with DB_ENGINE.connect() as conn:
-        invite = conn.execute(text("""
-            SELECT pi.project_id, p.title, p.type
-            FROM project_invites pi
-            JOIN projects p ON p.id = pi.project_id
-            WHERE pi.token = :token
-        """), {"token": token}).mappings().first()
-    if not invite:
-        return render_template("join.html", error="This invite link is invalid or has expired.", project=None)
-
-    # Already logged in — auto-join without showing the form
-    if session.get("user_id"):
-        user_id = session["user_id"]
-        name = session.get("user_name") or "Collaborator"
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO project_collaborators (project_id, user_id, user_name, joined_via)
-                VALUES (:pid, :uid, :name, :token)
-                ON CONFLICT (project_id, user_id) DO NOTHING
-            """), {"pid": invite["project_id"], "uid": user_id, "name": name, "token": token})
-        return redirect(f"/project/{invite['project_id']}")
-
-    if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
-        if not name:
-            return render_template("join.html", project=invite, token=token, error="Please enter your name.")
-        user_id = f"collab_{secrets.token_hex(8)}"
-        session["user_id"] = user_id
-        session["user_name"] = name
-        with DB_ENGINE.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO project_collaborators (project_id, user_id, user_name, joined_via)
-                VALUES (:pid, :uid, :name, :token)
-                ON CONFLICT (project_id, user_id) DO NOTHING
-            """), {"pid": invite["project_id"], "uid": user_id, "name": name, "token": token})
-        return redirect(f"/project/{invite['project_id']}")
-
-    return render_template("join.html", project=invite, token=token, error=None)
-
-
-@app.route("/use-invite-code", methods=["POST"])
-def use_invite_code():
-    code = (request.form.get("code") or "").strip().upper()
-    if not code:
-        return redirect("/studio")
-    ensure_collab_tables()
-    with DB_ENGINE.connect() as conn:
-        invite = conn.execute(text(
-            "SELECT token FROM project_invites WHERE invite_code = :code"
-        ), {"code": code}).mappings().first()
-    if not invite:
-        return redirect("/studio?code_error=1")
-    return redirect(f"/join/{invite['token']}")
-
-
-@app.route("/project/<project_id>/deck.<ext>")
-@require_login
-def project_deck_file(project_id, ext):
-    if ext not in ("pdf", "pptx"):
-        abort(404)
-    ensure_projects_table()
-    with DB_ENGINE.connect() as conn:
-        row = conn.execute(text("""
-            SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid
-        """), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
-    if not row or not row["output_dir"]:
-        abort(404)
-    file_path = BASE_DIR / row["output_dir"] / f"deck.{ext}"
-    if not file_path.exists():
-        abort(404)
-    return send_file(file_path, as_attachment=(ext == "pptx"))
-
-@app.route("/db-check")
-def db_check_route():
-    try:
-        ok = db_check()
-        return jsonify({"ok": ok, "database_configured": bool(DATABASE_URL)})
-    except Exception as e:
-        return jsonify({"ok": False, "database_configured": bool(DATABASE_URL), "error": str(e)}), 500
-
-
-@app.route("/db-init")
-def db_init_route():
-    try:
-        db_init()
-        return jsonify({"ok": True, "message": "database initialized"})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 # ===== SYNC AI ASSISTANT ROUTE START =================
 
