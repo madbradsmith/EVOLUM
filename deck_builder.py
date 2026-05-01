@@ -512,15 +512,39 @@ def resolve_image_options_for_slide(
         for option in raw_options:
             if not isinstance(option, dict):
                 continue
-            instruction = {
-                "image_query": option.get("image_query", ""),
-                "image_tags": option.get("image_tags", []),
-            }
             option_rank = int(option.get("rank", len(resolved_options) + 1) or (len(resolved_options) + 1))
             option_id = clean(option.get("option_id") or f"option_{option_rank}")
             option_label = clean(option.get("label") or f"Option {option_rank}")
             option_focus = clean(option.get("focus") or "alternate")
+            option_url = str(option.get("image_url") or "").strip()
 
+            # If the option already has a valid image file, carry it forward directly.
+            # This preserves FAL-generated and previously-resolved stock options across rebuilds.
+            existing_path_str = str(option.get("image_path") or "").strip()
+            if existing_path_str:
+                existing = Path(existing_path_str)
+                if not existing.is_absolute():
+                    existing = (APP_DIR / existing).resolve()
+                if existing.exists():
+                    add_option({
+                        "rank": option_rank,
+                        "option_id": option_id,
+                        "label": option_label,
+                        "focus": option_focus,
+                        "image_path": str(existing),
+                        "image_name": existing.name,
+                        "image_source": str(option.get("image_source") or "preserved"),
+                        "image_url": option_url,
+                    })
+                    if len(resolved_options) >= 4:
+                        break
+                    continue
+
+            # No existing file — try to resolve via brain tags
+            instruction = {
+                "image_query": option.get("image_query", ""),
+                "image_tags": option.get("image_tags", []),
+            }
             resolved = _select_brain_directed_stock_image(
                 stock_files,
                 instruction,
@@ -1422,6 +1446,7 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
         manifest.append({
             "slide_number": slide_number,
             "title": slide_title,
+            "subtitle": str(slide_info.get("subtitle") or "").strip(),
             "body": body,
             "layout": layout,
             "stage": stage,
