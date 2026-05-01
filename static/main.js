@@ -1384,8 +1384,8 @@ async function submitRefineDeck() {
         if (!res.ok) throw new Error(data.error || "Rebuild failed.");
         document.getElementById("buildProgressFill").style.width = "100%";
         closeBuildProgressModal();
-        latestSlidesLoadedForComplete = false;
-        await syncLatestSlidesForPreview();
+        latestSlidesLoadedForComplete = true;
+        renderDeckPreview();
         renderCurrentRefineSlide();
     } catch (e) {
         closeBuildProgressModal();
