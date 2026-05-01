@@ -1415,6 +1415,10 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             slide_title=slide_title,
         )
 
+        user_selected_option_id = str(slide_info.get("selected_option_id") or "").strip()
+        user_image_url = str(slide_info.get("image_url") or "").strip()
+        user_image_name = str(slide_info.get("image_name") or "").strip()
+
         manifest.append({
             "slide_number": slide_number,
             "title": slide_title,
@@ -1422,13 +1426,14 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             "layout": layout,
             "stage": stage,
             "image_path": "__none__" if image_source == "text_only" else (str(image_for_slide) if image_for_slide else ""),
-            "image_name": image_for_slide.name if image_for_slide else "",
+            "image_name": user_image_name or (image_for_slide.name if image_for_slide else ""),
+            "image_url": user_image_url,
             "image_source": image_source,
             "image_query": slide_info.get("image_query", ""),
             "image_tags": slide_info.get("image_tags", []),
             "image_score": slide_info.get("image_score", 0),
             "image_options": resolved_image_options,
-            "selected_option_id": resolved_image_options[0].get("option_id", "selected") if resolved_image_options else "",
+            "selected_option_id": user_selected_option_id or (resolved_image_options[0].get("option_id", "selected") if resolved_image_options else ""),
         })
 
     out_path = next_output_path(output_dir, label=label)
