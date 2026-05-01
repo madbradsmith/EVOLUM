@@ -1242,8 +1242,10 @@ function saveCurrentRefineSlide(){
 async function openRefinementStage(){
     syncTrackEnterRefine();
     activeCompleteView = "refine";
-    const loaded = await loadLatestRefineSlides();
-    if (loaded) latestSlidesLoadedForComplete = true;
+    if (!latestSlidesLoadedForComplete) {
+        const loaded = await loadLatestRefineSlides();
+        if (loaded) latestSlidesLoadedForComplete = true;
+    }
     document.getElementById("previewStage").style.display = "none";
     document.getElementById("refinementStage").style.display = "block";
     renderDeckPreview();
