@@ -1100,10 +1100,30 @@ function selectCurrentImageOption(){
     slide.image_path = option.image_path || "";
     slide.image_name = option.image_name || "";
     slide.image_source = option.image_source || "";
-    slide.image_url = option.image_url || "";
-    document.getElementById("refineSlideImage").src = previewImageSrcForSlide(slide);
+    // Ensure image_url is always set — fall back to computing from image_path if empty
+    slide.image_url = option.image_url || projectFileUrl(option.image_path || "") || "";
+
+    // Clear any per-slide custom upload so this option takes effect everywhere
+    delete slideCustomImages[currentRefineSlide];
+
+    const newSrc = previewImageSrcForSlide(slide);
+    document.getElementById("refineSlideImage").src = newSrc;
     document.getElementById("refineSlideCaption").textContent = `${option.label || "Current Pick"} • ${slide.image_name || slide.title || "image selected"}`;
     renderImageOptionStrip();
+
+    // Also directly update the preview strip card for this slide
+    const strip = document.getElementById("deckPreviewStrip");
+    if (strip) {
+        const cards = strip.querySelectorAll(".deck-preview-card");
+        const card = cards[currentRefineSlide];
+        if (card) {
+            const img = card.querySelector(".deck-preview-img-wrap img");
+            if (img) img.src = newSrc;
+            const overlay = card.querySelector(".deck-preview-overlay-title");
+            if (overlay) overlay.textContent = slide.title || `Slide ${currentRefineSlide + 1}`;
+        }
+    }
+
     renderDeckPreview();
     closeModal("imageOptionModal");
 }
