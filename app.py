@@ -34,11 +34,9 @@ from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 from werkzeug.security import generate_password_hash, check_password_hash
 from dai_tools import (
-    build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline,
-    normalize_project_relative_path, project_file_url_for_path, normalize_manifest_image_options,
-    newest_generated_file, publish_latest_outputs, rebuild_refined_deck,
-)
-
+    build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline, 
+    normalize_manifest_image_options, newest_generated_file, publish_latest_outputs, rebuild_refined_deck,)
+    
 # ===== IMPORTS / SETUP END ===========================
 
 # ===== GLOBAL CONFIG / PATHS START ===================
@@ -401,7 +399,6 @@ def find_latest_slide_plan_file():
     search_roots = [
         BASE_DIR,
         OUTPUT_DIR,
-        BASE_DIR / "projects",
         BASE_DIR / "pipeline",
     ]
     seen = set()
@@ -2596,7 +2593,6 @@ def actor_prep_latest_download_pdf():
 # ===== ACTOR PREP ROUTES END =========================
 
 # ===== SAVED PROJECTS ROUTES START ===================
-
 @app.route("/my-projects")
 @require_login
 def my_projects():
@@ -2938,6 +2934,7 @@ def db_init_route():
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 500
 
+
 # ===== SYNC AI ASSISTANT ROUTE START =================
 
 _SYNC_SYSTEM = (
@@ -3026,4 +3023,3 @@ def get_manifest():
     user_id = session.get("user_id")
     path = f"output/{user_id}_latest_deck_manifest.json"
     return send_file(path)
-

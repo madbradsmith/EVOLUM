@@ -22,6 +22,7 @@
         <button class="top-nav-item" type="button" onclick="window.location.href='/'">Home</button>
         {% if user_logged_in %}
         <button class="top-nav-item" type="button" style="color:#666; font-size:12px; cursor:default;">{{ user_name or "Account" }}</button>
+        <button class="top-nav-item" type="button" onclick="document.getElementById('topNavMenu').classList.remove('show'); document.getElementById('welcomeModal').classList.add('show'); openWelcomeProjectsPicker();">My Projects</button>
         <button class="top-nav-item" type="button" onclick="openReferralModal()" style="color:#ff9944;">Refer a Friend</button>
         <a class="top-nav-item" href="/cancel" style="color:#aaa; display:block; text-decoration:none;">Cancel Subscription</a>
         <a class="top-nav-item" href="/logout" style="color:#e05555; display:block; text-decoration:none;">Sign Out</a>
@@ -954,6 +955,13 @@
                     <div class="welcome-choice-label">New Project</div>
                     <div class="welcome-choice-sub">Start with a new script</div>
                 </div>
+                {% if user_logged_in %}
+                <div class="welcome-choice-card" onclick="openWelcomeProjectsPicker()">
+                    <div class="welcome-choice-icon">⊞</div>
+                    <div class="welcome-choice-label">My Projects</div>
+                    <div class="welcome-choice-sub">Continue a saved deck</div>
+                </div>
+                {% endif %}
             </div>
         </div>
         <div id="welcomeProjectsList" style="display:none; text-align:left;">
