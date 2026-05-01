@@ -1619,32 +1619,6 @@ def upload():
         if user:
             uid = str(user["id"])
             session["user_id"] = uid
-    if existing_project_id and uid and DB_ENGINE:
-        session["active_project_id"] = existing_project_id
-        set_status("UPLOADED", project_id=existing_project_id, uid=uid)
-    elif project_title and uid and DB_ENGINE:
-        ensure_projects_table()
-        with DB_ENGINE.begin() as conn:
-            count = conn.execute(text(
-                "SELECT COUNT(*) FROM projects WHERE owner_user_id = :uid"
-            ), {"uid": uid}).scalar()
-            if count >= 6:
-                return jsonify({"error": "Project limit reached (6 max). Delete an existing project first."}), 403
-            result = conn.execute(text("""
-                INSERT INTO projects (owner_user_id, title, type)
-                VALUES (:uid, :title, :type) RETURNING id
-            """), {
-                "uid": uid,
-                "title": project_title,
-                "type": project_type or "Project"
-            })
-            new_pid = str(result.scalar())
-            session["active_project_id"] = new_pid
-            _active_project_file(uid).write_text(new_pid, encoding="utf-8")
-            set_status("UPLOADED", project_id=new_pid, uid=uid)
-    else:
-        if not project_title and not existing_project_id:
-            session.pop("active_project_id", None)
 
     clear_latest_targets()
 
