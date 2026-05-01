@@ -2600,6 +2600,7 @@ def actor_prep_latest_download_pdf():
 @app.route("/my-projects")
 @require_login
 def my_projects():
+    return jsonify({"projects": []})
     uid = session.get("user_id", "")
     if not uid or not DB_ENGINE:
         return jsonify({"projects": []})
