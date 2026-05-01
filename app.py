@@ -2357,6 +2357,13 @@ def refine_deck():
         _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
         _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
 
+        # Keep the project deck file in sync so the download route serves the rebuilt version
+        pid = session.get("active_project_id") or get_status_project_id(uid)
+        if uid and pid and LATEST_PPTX.exists():
+            proj_deck = USER_DATA_DIR / str(uid) / str(pid) / "deck.pptx"
+            proj_deck.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(str(LATEST_PPTX), str(proj_deck))
+
         return jsonify({
             "message": "Your refined deck has been rebuilt successfully.",
             "deck": result["deck"],
