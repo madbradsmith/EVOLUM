@@ -641,7 +641,7 @@ _PERIOD_KEYWORDS = [
     (["1920", "1930", "prohibition", "jazz age", "noir", "gangster"],
      "1930s city, prohibition era, art deco interior",
      "1930s noir illustration, art deco style, high contrast dramatic painting"),
-    (["war", "wwii", "battlefield", "soldier", "trench", "military"],
+    (["war", "wwii", "battlefield", "soldier", "trench"],
      "wartime battlefield, period military uniform, gritty realism",
      "wartime painted illustration, dramatic military art, painterly realism"),
     (["ancient", "roman", "roman empire", "greek", "egypt", "pyramid", "colosseum", "gladiator", "gladiatorial", "legion", "centurion", "toga", "senate", "chariot"],
