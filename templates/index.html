@@ -447,7 +447,10 @@
 .deck-tab.active { border-color:rgba(255,122,0,0.6); background:rgba(255,122,0,0.15); color:#ff9944; }
 .deck-tab.inactive { border-color:rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#aaa; }
 .deck-tab.inactive:hover { border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); color:#ddd; }
-
+@media (max-width: 540px) {
+    #myProjectsPanel { display: none; }
+    div:has(> #regenPromptArea) { grid-template-columns: 1fr !important; }
+}
 .welcome-choice-card {
     background: #1a1a1a;
     border: 1px solid rgba(255,255,255,0.1);
@@ -1067,6 +1070,16 @@
     </div>
 </div>
 
+<div class="modal" id="projectLimitModal">
+    <div class="modal-content" style="max-width:480px;">
+        <h3 style="margin:0 0 8px; color:#ff7a00;">Project Limit Reached</h3>
+        <div class="complete-copy" style="margin-bottom:16px;">You have 6 saved projects — the maximum. Delete one to free up a slot, then try again.</div>
+        <div id="limitProjectsList" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; margin-bottom:16px;"></div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button class="secondary-button" type="button" onclick="closeModal('projectLimitModal')">Close</button>
+        </div>
+    </div>
+</div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}";</script>
   <script src="{{ url_for('static', filename='main.js') }}?v=20260429_chunk6"></script>
