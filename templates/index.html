@@ -213,15 +213,6 @@
                 </div>
             </div>
 
-            {% if user_logged_in %}
-            <div id="myProjectsPanel" style="background:#0d0d0d; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; display:flex; flex-direction:column;">
-                <div style="font-size:11px; color:#ff9944; font-weight:700; letter-spacing:0.08em; margin-bottom:8px;">MY PROJECTS</div>
-                <div id="projectsList" style="display:flex; flex-direction:column; gap:4px; flex:1; overflow-y:auto; max-height:100px;">
-                    <div style="color:#888; font-size:11px;">Loading...</div>
-                </div>
-                <button onclick="newDeck()" style="margin-top:8px; background:transparent; border:1px dashed rgba(255,122,0,0.35); border-radius:8px; color:#ff9944; font-size:11px; padding:5px 10px; cursor:pointer; font-family:inherit; text-align:center; transition:border-color 0.15s;">+ New Deck</button>
-            </div>
-            {% endif %}
         </div>
     </div>
 
@@ -456,10 +447,7 @@
 .deck-tab.active { border-color:rgba(255,122,0,0.6); background:rgba(255,122,0,0.15); color:#ff9944; }
 .deck-tab.inactive { border-color:rgba(255,255,255,0.12); background:rgba(255,255,255,0.04); color:#aaa; }
 .deck-tab.inactive:hover { border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.08); color:#ddd; }
-@media (max-width: 540px) {
-    #myProjectsPanel { display: none; }
-    div:has(> #regenPromptArea) { grid-template-columns: 1fr !important; }
-}
+
 .welcome-choice-card {
     background: #1a1a1a;
     border: 1px solid rgba(255,255,255,0.1);
@@ -956,11 +944,6 @@
                 </div>
             </div>
         </div>
-        <div id="welcomeProjectsList" style="display:none; text-align:left;">
-            <button onclick="resetWelcomeModal()" style="background:none; border:none; color:#aaa; cursor:pointer; font-size:13px; margin-bottom:16px; padding:0;">← Back</button>
-            <div style="font-weight:600; font-size:15px; margin-bottom:14px; color:#fff;">My Projects</div>
-            <div id="welcomeProjectsItems" style="max-height:260px; overflow-y:auto;"></div>
-        </div>
     </div>
 </div>
 
@@ -1084,16 +1067,6 @@
     </div>
 </div>
 
-<div class="modal" id="projectLimitModal">
-    <div class="modal-content" style="max-width:480px;">
-        <h3 style="margin:0 0 8px; color:#ff7a00;">Project Limit Reached</h3>
-        <div class="complete-copy" style="margin-bottom:16px;">You have 6 saved projects — the maximum. Delete one to free up a slot, then try again.</div>
-        <div id="limitProjectsList" style="display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; margin-bottom:16px;"></div>
-        <div style="display:flex; justify-content:flex-end; gap:8px;">
-            <button class="secondary-button" type="button" onclick="closeModal('projectLimitModal')">Close</button>
-        </div>
-    </div>
-</div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}";</script>
   <script src="{{ url_for('static', filename='main.js') }}?v=20260429_chunk6"></script>
