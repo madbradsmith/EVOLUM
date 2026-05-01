@@ -1,2248 +1,3027 @@
-let runStartedAt = null;
-let timerInterval = null;
-let lastStatus = "IDLE";
-let approvedScriptFile = null;
-let buildInFlight = false;
-let sawFreshBuildStatus = false;
-let analyzeFlowMode = null;
-const slideCustomImages = {};
+# =====================================================
+# ===== EVOLUM MASTER APP STRUCTURE (V1 BETA) =========
+# =====================================================
+# ===== Fix global file usage by TempVX ===============
+# ===== IMPORTS / SETUP START =========================
+# BETA v2_0 BUILD 1.1 — NOT STABLE -MB
 
-const QUOTES = [
-    { text: "Here's looking at you, kid.", attr: "— Casablanca", type: "SCREENPLAY" },
-    { text: "I'm gonna make him an offer he can't refuse.", attr: "— The Godfather", type: "SCREENPLAY" },
-    { text: "You can't handle the truth!", attr: "— A Few Good Men", type: "SCREENPLAY" },
-    { text: "Get busy living, or get busy dying.", attr: "— The Shawshank Redemption", type: "SCREENPLAY" },
-    { text: "The stuff that dreams are made of.", attr: "— The Maltese Falcon", type: "SCREENPLAY" },
-    { text: "Keep your friends close, but your enemies closer.", attr: "— The Godfather Part II", type: "SCREENPLAY" },
-    { text: "Every passing minute is another chance to turn it all around.", attr: "— Vanilla Sky", type: "SCREENPLAY" },
-    { text: "After all, tomorrow is another day.", attr: "— Gone with the Wind", type: "SCREENPLAY" },
-    { text: "It ain't about how hard you hit. It's about how hard you can get hit and keep moving forward.", attr: "— Rocky Balboa", type: "SCREENPLAY" },
-    { text: "They may take our lives, but they'll never take our freedom!", attr: "— Braveheart", type: "SCREENPLAY" },
-    { text: "Why so serious?", attr: "— The Dark Knight", type: "SCREENPLAY" },
-    { text: "To infinity and beyond.", attr: "— Toy Story", type: "SCREENPLAY" },
-    { text: "Nobody puts Baby in a corner.", attr: "— Dirty Dancing", type: "SCREENPLAY" },
-    { text: "You is kind, you is smart, you is important.", attr: "— The Help", type: "SCREENPLAY" },
-    { text: "I feel the need — the need for speed!", attr: "— Top Gun", type: "SCREENPLAY" },
-    { text: "Speed!", attr: "— Camera rolling", type: "ON SET" },
-    { text: "Quiet on set!", attr: "— First AD", type: "ON SET" },
-    { text: "Picture's up!", attr: "— Ready to roll", type: "ON SET" },
-    { text: "That's a wrap.", attr: "— End of shoot", type: "ON SET" },
-    { text: "We'll fix it in post.", attr: "— Universal set truth", type: "ON SET" },
-    { text: "Check the gate.", attr: "— After every take", type: "ON SET" },
-    { text: "Martini shot.", attr: "— Last shot of the day", type: "ON SET" },
-    { text: "Back to one.", attr: "— Reset", type: "ON SET" },
-    { text: "Crafty is open.", attr: "— The most important announcement", type: "ON SET" },
-    { text: "Talent on set.", attr: "— Here they come", type: "ON SET" },
-    { text: "That's a company move.", attr: "— Packing up", type: "ON SET" },
-    { text: "Lunch is up!", attr: "— The call everyone waits for", type: "ON SET" },
-];
+from flask import Flask, request, render_template, send_file, jsonify, abort, session, redirect, url_for
+from pathlib import Path
+import json
+import io
+import contextlib
+import shutil
+import subprocess
+import threading
+import os
+import importlib.util
+import time
+import re
+import urllib.request
+import urllib.error
+import hashlib
+import secrets
+import string
+from datetime import datetime
+from urllib.parse import unquote, quote
 
-let quoteInterval = null;
-let quoteIndex = Math.floor(Math.random() * QUOTES.length);
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import LETTER
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from reportlab.pdfgen import canvas
+from pptx import Presentation
+from pypdf import PdfReader
+from sqlalchemy import create_engine, text
+from werkzeug.security import generate_password_hash, check_password_hash
+from dai_tools import (
+    build_actor_prep_pdf, build_actor_booked_pdf, build_simple_analysis_pdf, run_deck_pipeline,
+    normalize_project_relative_path, project_file_url_for_path, normalize_manifest_image_options,
+    newest_generated_file, publish_latest_outputs, rebuild_refined_deck,
+)
 
-function showNextQuote(){
-    const textEl = document.getElementById("quoteText");
-    const attrEl = document.getElementById("quoteAttribution");
-    const labelEl = document.getElementById("quoteLabel");
-    if (!textEl) return;
-    textEl.style.opacity = "0";
-    attrEl.style.opacity = "0";
-    setTimeout(() => {
-        quoteIndex = (quoteIndex + 1) % QUOTES.length;
-        const q = QUOTES[quoteIndex];
-        textEl.textContent = "\u201C" + q.text + "\u201D";
-        attrEl.textContent = q.attr;
-        labelEl.textContent = q.type;
-        textEl.style.opacity = "1";
-        attrEl.style.opacity = "1";
-    }, 600);
-}
+# ===== IMPORTS / SETUP END ===========================
 
-function startQuoteRotation(){
-    showNextQuote();
-    quoteInterval = setInterval(showNextQuote, 7000);
-}
+# ===== GLOBAL CONFIG / PATHS START ===================
+app = Flask(__name__)
 
-function stopQuoteRotation(){
-    if (quoteInterval) { clearInterval(quoteInterval); quoteInterval = null; }
-}
-let progressValue = 0;
-let progressInterval = null;
-let infoModalAction = null;
-let activeCompleteView = "preview";
-let latestSlidesLoadedForComplete = false;
+_REFINE_BUILDER_MODULE = None
+_LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
+app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
 
-const fallbackSlides = [
-    {
-        type: "Title Slide",
-        title: "COURT JESTER",
-        subtitle: "Animated fantasy comedy with heart, music moments, and chaos.",
-        body: "A gifted misfit stumbles into the royal court and becomes the most dangerous fool in the kingdom.",
-        caption: "Preview of the currently selected placeholder slide.",
-        accent: "#ffb347"
-    },
-    {
-        type: "Logline",
-        title: "Logline",
-        subtitle: "The one-line pitch",
-        body: "When a sharp-tongued outsider is pulled into palace politics, he must outwit enemies, protect the kingdom, and prove that laughter can be a weapon.",
-        caption: "Placeholder logline slide preview.",
-        accent: "#ff9955"
-    },
-    {
-        type: "Synopsis",
-        title: "Synopsis",
-        subtitle: "Story overview",
-        body: "Court Jester follows a clever survivor who becomes an unexpected player inside a kingdom full of secrets, danger, and spectacle.",
-        caption: "Placeholder synopsis slide preview.",
-        accent: "#ffc266"
-    },
-    {
-        type: "Characters",
-        title: "Main Characters",
-        subtitle: "Core ensemble",
-        body: "The Jester, the Princess, the Shadow Adviser, and the King each drive a different part of the conflict.",
-        caption: "Placeholder characters slide preview.",
-        accent: "#ff9c3d"
-    },
-    {
-        type: "Why This Project",
-        title: "Why This Project",
-        subtitle: "Tone + audience + hook",
-        body: "Court Jester blends spectacle, comedy, and emotional storytelling into a world that can support franchise thinking.",
-        caption: "Placeholder closing slide preview.",
-        accent: "#ffcf70"
-    }
-];
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+DB_ENGINE = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
 
-let refineSlides = JSON.parse(JSON.stringify(fallbackSlides));
-let latestRefineProjectTitle = "UNTITLED PROJECT";
-let _lastAnalyzedTitle = null;
-let currentRefineSlide = 0;
-let currentImageOptionModalIndex = 0;
-const BASE_PATH_PREFIX = window.BASE_PATH_PREFIX || "";
+def db_check() -> bool:
+    if not DB_ENGINE:
+        return False
+    with DB_ENGINE.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    return True
 
-function enterFlowMode(){
-    document.body.classList.add("flow-mode");
-}
-function exitFlowMode(){
-    document.body.classList.remove("flow-mode");
-}
-function enterActiveBuildMode(){
-    document.body.classList.add("active-build");
-}
-function exitActiveBuildMode(){
-    document.body.classList.remove("active-build");
-    document.body.classList.remove("complete-mode");
-}
-function setProgress(value){
-    progressValue = Math.max(0, Math.min(100, value));
-    const fill = document.getElementById("progressFill");
-    if (fill) fill.style.width = progressValue + "%";
-}
+def db_init() -> None:
+    if not DB_ENGINE:
+        raise RuntimeError("DATABASE_URL is not configured")
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS beta_users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE,
+                name TEXT,
+                password_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS activity_events (
+                id SERIAL PRIMARY KEY,
+                user_email TEXT,
+                event_type TEXT NOT NULL,
+                route TEXT,
+                metadata_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS name TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS password_hash TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+        conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS user_email TEXT"))
+        conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS route TEXT"))
 
-function stopProgressCreep(){
-    if (progressInterval){
-        clearInterval(progressInterval);
-        progressInterval = null;
-    }
-}
-
-function startProgressCreep(target, step, delay){
-    stopProgressCreep();
-    progressInterval = setInterval(() => {
-        if (progressValue >= target){
-            stopProgressCreep();
-            return;
-        }
-        setProgress(progressValue + step);
-    }, delay);
-}
-
-function updateProgressForStatus(status){
-    if (status === "IDLE"){
-        stopProgressCreep();
-        setProgress(0);
-    } else if (status === "UPLOADED"){
-        setProgress(Math.max(progressValue, 12));
-        startProgressCreep(22, 1, 500);
-    } else if (status === "ANALYZING"){
-        setProgress(Math.max(progressValue, 38));
-        startProgressCreep(68, 1.2, 700);
-    } else if (status === "BUILDING"){
-        setProgress(Math.max(progressValue, 78));
-        startProgressCreep(96, 1, 500);
-    } else if (status === "DEMO_RUNNING"){
-        setProgress(Math.max(progressValue, 20));
-        startProgressCreep(60, 1, 650);
-    } else if (status === "COMPLETE"){
-        stopProgressCreep();
-        setProgress(100);
-    } else if (status === "ERROR"){
-        stopProgressCreep();
-    }
-}
-
-function startAnalyzeFlow(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
-    analyzeFlowMode = "analyze";
-    resetCreateProject();
-    showUploadAnalyzeModal();
-}
-
-function startUploadFlow(){
-    analyzeFlowMode = "upload";
-    resetCreateProject();
-    showUploadAnalyzeModal();
-}
-
-function hideWorkspacePanels(){
-    document.getElementById("analyzerPanel").style.display = "none";
-    document.getElementById("uploadState").style.display = "none";
-    document.getElementById("ideaPanel").style.display = "none";
-}
-
-function resumeUploadAfterInfo(){
-    closeModal("infoModal");
-    infoModalAction = null;
-    document.getElementById("uploadModal").classList.add("show");
-}
-
-function closeModal(id){
-    const el = document.getElementById(id);
-    if (el) el.classList.remove("show");
-}
-function showLoginState(){
-    document.getElementById("welcomeState").style.display = "none";
-    document.getElementById("loginState").style.display = "block";
-}
+def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
+    if not DB_ENGINE:
+        return
+    try:
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO activity_events (user_email, event_type, route, metadata_json)
+                VALUES (:user_email, :event_type, :route, :metadata_json)
+            """), {
+                "user_email": user_email or "",
+                "event_type": event_type,
+                "route": route or "",
+                "metadata_json": json.dumps(metadata or {}),
+            })
+    except Exception as e:
+        print(f"⚠️ Activity log write failed: {e}", flush=True)
 
 
-let selectedFeedbackType = "";
+def get_current_user_email() -> str:
+    return (session.get("user_email") or "").strip()
 
-function toggleTopNavMenu(){
-    const menu = document.getElementById("topNavMenu");
-    if (!menu) return;
-    menu.classList.toggle("show");
-}
-function navTo(url){
-    const menu = document.getElementById("topNavMenu");
-    if (menu) menu.classList.remove("show");
-    setTimeout(() => { window.location.href = url; }, 80);
-}
-function checkTerms(e) {
-    const cb = document.getElementById("agreeTerms");
-    const err = document.getElementById("termsError");
-    if (cb && !cb.checked) {
-        e.preventDefault();
-        if (err) err.style.display = "block";
-        cb.focus();
-        return false;
-    }
-    if (err) err.style.display = "none";
-    return true;
-}
+def get_current_user_name() -> str:
+    return (session.get("user_name") or "").strip()
 
-function showAuthModal(){
-    closeAllModals();
-    const badge = document.getElementById("authPlanBadge");
-    if (badge && !_selectedPlan) badge.style.display = "none";
-    const m = document.getElementById("authModal");
-    if (m) m.classList.add("show");
-}
-function requireAuth(fn){
-    if (typeof userLoggedIn !== "undefined" && userLoggedIn) { fn(); return; }
-    showAuthModal();
-}
-function switchAuthTab(tab, el){
-    document.querySelectorAll(".auth-tab").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".auth-panel").forEach(p => p.classList.remove("active"));
-    if (el) el.classList.add("active");
-    const panel = document.getElementById("authPanel_" + tab);
-    if (panel) panel.classList.add("active");
-}
-document.addEventListener("click", function(event){
-    const shell = document.querySelector(".top-nav-shell");
-    const menu = document.getElementById("topNavMenu");
-    if (!shell || !menu) return;
-    if (!shell.contains(event.target)){
-        menu.classList.remove("show");
-    }
-});
+def get_user_by_email(email: str):
+    email = (email or "").strip().lower()
+    if not email or not DB_ENGINE:
+        return None
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text("""
+            SELECT id, email, name, password_hash, created_at,
+                   stripe_customer_id, stripe_subscription_id, subscription_active
+            FROM beta_users
+            WHERE lower(email) = :email
+            LIMIT 1
+        """), {"email": email}).mappings().first()
+    return dict(row) if row else None
 
-function openFeedbackModal(){
-    const menu = document.getElementById("topNavMenu");
-    if (menu) menu.classList.remove("show");
-    document.getElementById("feedbackModal").classList.add("show");
-}
-function openContactModal(){
-    const menu = document.getElementById("topNavMenu");
-    if (menu) menu.classList.remove("show");
-    document.getElementById("contactModal").classList.add("show");
-}
-function openPrivacyModal(){
-    const menu = document.getElementById("topNavMenu");
-    if (menu) menu.classList.remove("show");
-    document.getElementById("privacyModal").classList.add("show");
-}
-async function submitContact(){
-    const name = (document.getElementById("contactName").value || "").trim();
-    const email = (document.getElementById("contactEmail").value || "").trim();
-    const message = (document.getElementById("contactMessage").value || "").trim();
-    if (!message){ showInfoModal("Contact", "Please write a message before sending."); return; }
-    try {
-        const resp = await fetch("/contact", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({name, email, message})
-        });
-        const data = await resp.json();
-        closeModal("contactModal");
-        document.getElementById("contactName").value = "";
-        document.getElementById("contactEmail").value = "";
-        document.getElementById("contactMessage").value = "";
-        showInfoModal("Message Sent", "Thanks for reaching out. We'll get back to you soon.");
-    } catch(e) {
-        showInfoModal("Contact", "Something went wrong. Please try again.");
-    }
-}
-function setFeedbackType(type, el){
-    selectedFeedbackType = type;
-    document.querySelectorAll(".feedback-chip").forEach(btn => btn.classList.remove("active"));
-    if (el) el.classList.add("active");
-}
-function submitFeedback(){
-    const name = (document.getElementById("feedbackName") || {}).value || "";
-    const email = (document.getElementById("feedbackEmail") || {}).value || "";
-    const message = (document.getElementById("feedbackMessage") || {}).value || "";
+BASE_DIR = Path(__file__).resolve().parent
+DISK_DIR = BASE_DIR / "visuals"        # persistent disk mount
+OUTPUT_DIR = DISK_DIR / "output"       # survives redeploys
+USER_DATA_DIR = DISK_DIR / "user_data" # survives redeploys
+UPLOAD_DIR = BASE_DIR / "uploads"
+def _status_file(uid: str = "") -> "Path":
+    return BASE_DIR / (f"status_{uid}.txt" if uid else "status.txt")
 
-    if (!message.trim()) {
-        alert("Please enter a message before submitting.");
-        return;
-    }
+def _active_project_file(uid: str = "") -> "Path":
+    return BASE_DIR / (f"active_project_{uid}.txt" if uid else "active_project.txt")
 
-    fetch("/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: selectedFeedbackType, name, email, message })
-    });
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+USER_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    closeModal("feedbackModal");
-    showInfoModal("Feedback Received", "Thanks — your beta feedback has been captured for review.");
+DEMO_DECK = BASE_DIR / "static" / "NOT_TODAY_Pitch_Deck_FINAL.pdf"
 
-    const logEl = document.getElementById("liveProcessLog");
-    if (logEl){
-        const payload = [selectedFeedbackType, name, message].filter(Boolean).join(" | ");
-        logEl.innerHTML += "<br><span class=\"terminal-success\">[feedback]</span> " + payload.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
-    }
+LATEST_PPTX = OUTPUT_DIR / "latest.pptx"
+LATEST_PDF = OUTPUT_DIR / "latest.pdf"
 
-    selectedFeedbackType = "";
-    document.querySelectorAll(".feedback-chip").forEach(btn => btn.classList.remove("active"));
-    if (document.getElementById("feedbackName")) document.getElementById("feedbackName").value = "";
-    if (document.getElementById("feedbackEmail")) document.getElementById("feedbackEmail").value = "";
-    if (document.getElementById("feedbackMessage")) document.getElementById("feedbackMessage").value = "";
-}
-    function downloadCurrentDeck(){
-    window.location.href = "/download/latest.pptx";
-}
+LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
+LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
+LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
+LATEST_ACTOR_PREP_JSON = OUTPUT_DIR / "latest_actor_prep_report.json"
+LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
+LATEST_ACTOR_BOOKED_JSON = OUTPUT_DIR / "latest_actor_booked_report.json"
 
-function closeAllModals(){
-    closeModal("loginModal");
-    closeModal("infoModal");
-    closeModal("uploadModal");
-    closeModal("uploadPassModal");
-    closeModal("analyzeFailModal");
-    closeModal("analyzePassModal");
-    closeModal("actorPrepModal");
-    closeModal("actorPrepPasteModal");
-    closeModal("actorPrepPassModal");
-    closeModal("actorBookedModal");
-    closeModal("actorBookedPasteModal");
-    closeModal("actorBookedCompleteModal");
-    closeModal("feedbackModal");
-}
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+_TMDB_CACHE: dict = {}
+LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
-function showInfoModal(title, copy, action = null, buttonLabel = "Continue"){
-    document.getElementById("infoTitle").textContent = title;
-    document.getElementById("infoCopy").textContent = copy;
-    infoModalAction = action;
-    const btn = document.getElementById("infoModalActionButton");
-    if (btn) btn.textContent = buttonLabel;
-    document.getElementById("infoModal").classList.add("show");
-}
 
-function handleInfoModalAction(){
-    closeModal("infoModal");
-    if (typeof infoModalAction === "function"){
-        const fn = infoModalAction;
-        infoModalAction = null;
-        fn();
-    } else {
-        infoModalAction = null;
-    }
-}
+def user_manifest_path(uid: str, label: str = "") -> "Path":
+    prefix = f"{uid}_" if uid else ""
+    name = f"{prefix}latest_deck_manifest_{label}.json" if label else f"{prefix}latest_deck_manifest.json"
+    return OUTPUT_DIR / name
 
-function showUploadState(){
-    exitActiveBuildMode();
-    enterFlowMode();
-    hideWorkspacePanels();
+ALLOWED_EXTENSIONS = {".txt", ".pdf"}
 
-    const homeCardGrid = document.querySelector(".home-card-grid");
-    const choicesRow = document.querySelector(".choices-row");
-    const uploadState = document.getElementById("uploadState");
+ACCESS_CODES = [
+    "EVOLUM-REEL-471",
+    "EVOLUM-SLATE-829",
+    "EVOLUM-GRIP-356",
+    "EVOLUM-FRAME-914",
+    "EVOLUM-LENS-273",
+    "EVOLUM-ROLL-648",
+    "EVOLUM-MARK-195",
+    "EVOLUM-CUT-537",
+    "EVOLUM-FADE-762",
+    "EVOLUM-WRAP-483",
+]
 
-    if (homeCardGrid) homeCardGrid.style.display = "none";
-    if (choicesRow) choicesRow.style.display = "none";
-    if (uploadState) uploadState.style.display = "block";
-}
+BETA_ACCESS_LOGS_DIR = BASE_DIR / "beta_access_logs"
+BETA_ACCESS_LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
-function resetCreateProject(){
-    closeAllModals();
-    stopProgressCreep();
-    setProgress(0);
-    exitActiveBuildMode();
-    exitFlowMode();
-    hideWorkspacePanels();
 
-    approvedScriptFile = null;
-    buildInFlight = false;
-    sawFreshBuildStatus = false;
-    activeCompleteView = "preview";
-    currentRefineSlide = 0;
-    latestSlidesLoadedForComplete = false;
+def is_render_env() -> bool:
+    return os.environ.get("RENDER", "").lower() == "true"
 
-    const approvedScriptBox = document.getElementById("approvedScriptBox");
-    const approvedScriptName = document.getElementById("approvedScriptName");
-    const imagesInput = document.getElementById("imagesInput");
-    const posterInput = document.getElementById("posterInput");
-    const homeCardGrid = document.querySelector(".home-card-grid");
-    const choicesRow = document.querySelector(".choices-row");
 
-    if (approvedScriptBox) approvedScriptBox.style.display = "none";
-    if (approvedScriptName) approvedScriptName.textContent = "-";
-    if (imagesInput) imagesInput.value = "";
-    if (posterInput) posterInput.value = "";
-    if (homeCardGrid) homeCardGrid.style.display = "block";
-    if (choicesRow) choicesRow.style.display = "grid";
+def has_beta_access() -> bool:
+    return (
+        session.get("beta_access") is True or
+        bool(session.get("user_email")) or
+        session.get("subscription_active") is True
+    )
 
-    document.getElementById("liveProcessLog").style.display = "block";
-    document.getElementById("buildMeta").style.display = "none";
-    document.getElementById("buildCopy").style.display = "block";
-    document.getElementById("completePanel").style.display = "none";
-    const previewStage = document.getElementById("previewStage");
-    const refinementStage = document.getElementById("refinementStage");
-    if (previewStage) previewStage.style.display = "block";
-    if (refinementStage) refinementStage.style.display = "none";
-}
 
-function newDeck() {
-    closeModal('welcomeModal');
-    resetCreateProject();
-    showUploadAnalyzeModal();
-}
+def ensure_subscription_columns():
+    if not DB_ENGINE:
+        return
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
 
-function showUploadAnalyzeModal(){
-    document.getElementById("uploadModal").classList.add("show");
-}
 
-function openAnalyzePassModal(){
-    closeAllModals();
-    document.getElementById("analyzePassModal").classList.add("show");
-}
+def ensure_referral_tables():
+    if not DB_ENGINE:
+        return
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS referral_code TEXT"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS referral_credits INTEGER DEFAULT 0"))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS referrals (
+                id SERIAL PRIMARY KEY,
+                referrer_user_id TEXT NOT NULL,
+                referred_user_id TEXT,
+                referred_email TEXT NOT NULL,
+                rewarded BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
 
-function analyzeToDecFlow(){
-    closeAllModals();
-    if (!approvedScriptFile) {
-        // Script was lost (e.g. page reload) — fall back to upload form
-        newDeck();
-        return;
-    }
-    startBuildDirect();
-}
 
-function startBuildDirect() {
-    if (!approvedScriptFile) return;
-    buildInFlight = true;
-    sawFreshBuildStatus = false;
-    resetTimer();
-    showLiveProcess();
-    setLocalStatus("UPLOADED");
+def _make_referral_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(chars) for _ in range(8))
 
-    const formData = new FormData();
-    formData.append("script", approvedScriptFile);
-    const titleFromBrain = _lastAnalyzedTitle;
-    const titleFromFile = approvedScriptFile.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim();
-    const title = titleFromBrain || titleFromFile;
-    if (title) formData.append("project_title", title);
-    const _vs = document.getElementById("visualStyleSelect");
-    if (_vs) formData.append("visual_style", _vs.value);
 
-    fetch("/upload", { method: "POST", body: formData })
-        .then(res => {
-            if (res.status === 403) {
-                buildInFlight = false;
-                showProjectLimitModal();
-            }
+def _get_or_create_referral_code(user_id: str) -> str:
+    if not DB_ENGINE or not user_id:
+        return ""
+    with DB_ENGINE.begin() as conn:
+        row = conn.execute(
+            text("SELECT referral_code FROM beta_users WHERE id = :uid"),
+            {"uid": user_id}
+        ).fetchone()
+        if row and row[0]:
+            return row[0]
+        code = _make_referral_code()
+        conn.execute(
+            text("UPDATE beta_users SET referral_code = :code WHERE id = :uid"),
+            {"code": code, "uid": user_id}
+        )
+        return code
+
+
+MAX_REFERRAL_WEEKS = 52
+
+
+def _send_referral_notification(referrer_email: str, referrer_name: str, new_user_name: str, weeks_total: int):
+    """Email the referrer when someone signs up with their link."""
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    from_email = os.environ.get("FROM_EMAIL", smtp_user) or "noreply@evolum.ai"
+
+    if not (smtp_host and smtp_user and smtp_pass and referrer_email):
+        print(f"📧 Referral notification (no SMTP): {referrer_email} ← {new_user_name}", flush=True)
+        return
+
+    import smtplib
+    from email.mime.text import MIMEText
+
+    subject = f"🎉 {new_user_name} just joined EVOLUM using your link!"
+    body = (
+        f"Hi {referrer_name or 'there'},\n\n"
+        f"{new_user_name} just signed up using your referral link!\n\n"
+        f"You've earned another free week of EVOLUM. "
+        f"You now have {weeks_total} free week{'s' if weeks_total != 1 else ''} banked.\n\n"
+        f"Keep sharing — you can earn up to {MAX_REFERRAL_WEEKS} free weeks.\n\n"
+        f"— The EVOLUM Team\n"
+    )
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = from_email
+    msg["To"] = referrer_email
+
+    try:
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(from_email, [referrer_email], msg.as_string())
+        print(f"📧 Referral email sent to {referrer_email}", flush=True)
+    except Exception as e:
+        print(f"⚠️ Referral email failed: {e}", flush=True)
+
+
+def process_referral(ref_code: str, new_user_id: str, new_user_email: str, new_user_name: str = ""):
+    if not DB_ENGINE or not ref_code or not new_user_id:
+        return
+    try:
+        with DB_ENGINE.begin() as conn:
+            referrer = conn.execute(
+                text("SELECT id, name, email, COALESCE(referral_credits, 0) FROM beta_users WHERE referral_code = :code"),
+                {"code": ref_code.upper().strip()}
+            ).fetchone()
+            if not referrer:
+                return
+            referrer_id, referrer_name, referrer_email, current_weeks = str(referrer[0]), referrer[1] or "", referrer[2] or "", int(referrer[3])
+            if referrer_id == new_user_id:
+                return
+            conn.execute(text("""
+                INSERT INTO referrals (referrer_user_id, referred_user_id, referred_email, rewarded)
+                VALUES (:rid, :nid, :email, TRUE)
+            """), {"rid": referrer_id, "nid": new_user_id, "email": new_user_email})
+            if current_weeks < MAX_REFERRAL_WEEKS:
+                new_weeks = min(current_weeks + 1, MAX_REFERRAL_WEEKS)
+                conn.execute(text("""
+                    UPDATE beta_users SET referral_credits = :weeks WHERE id = :rid
+                """), {"weeks": new_weeks, "rid": referrer_id})
+            else:
+                new_weeks = MAX_REFERRAL_WEEKS
+        log_activity_event("referral_rewarded", user_email=new_user_email,
+                           metadata={"referrer_id": referrer_id, "ref_code": ref_code, "weeks_total": new_weeks})
+        _send_referral_notification(referrer_email, referrer_name, new_user_name or new_user_email, new_weeks)
+    except Exception as e:
+        print(f"⚠️ process_referral failed: {e}", flush=True)
+
+
+def log_beta_access(access_code: str, status: str):
+    safe_code = "".join(ch for ch in access_code if ch.isalnum() or ch in ("-", "_")).strip() or "unknown"
+    code_dir = BETA_ACCESS_LOGS_DIR / safe_code
+    code_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ip_addr = request.headers.get("X-Forwarded-For", request.remote_addr or "unknown")
+    user_agent = request.headers.get("User-Agent", "unknown")
+    log_line = f"{timestamp} | {status} | code={access_code} | ip={ip_addr} | ua={user_agent}\n"
+
+    log_file = code_dir / "access_log.txt"
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(log_line)
+
+    print(log_line.strip())
+
+
+def log_usage(event, **kwargs):
+    parts = [f"{k}={v}" for k, v in kwargs.items()]
+    
+    if parts:
+        line = f"USAGE | {event} | " + " | ".join(parts)
+    else:
+        line = f"USAGE | {event}"
+    
+    print(line, flush=True)
+
+
+def set_status(text: str, project_id: str = None, uid: str = ""):
+    sf = _status_file(uid)
+    if project_id:
+        sf.write_text(f"{text}|{project_id}", encoding="utf-8")
+    else:
+        current = sf.read_text(encoding="utf-8").strip() if sf.exists() else ""
+        existing_pid = current.split("|")[1] if "|" in current else ""
+        sf.write_text(f"{text}|{existing_pid}" if existing_pid else text, encoding="utf-8")
+
+
+def get_status(uid: str = "") -> str:
+    sf = _status_file(uid)
+    if not sf.exists():
+        return "IDLE"
+    raw = sf.read_text(encoding="utf-8").strip()
+    return (raw.split("|")[0] if "|" in raw else raw) or "IDLE"
+
+
+def get_status_project_id(uid: str = "") -> str:
+    sf = _status_file(uid)
+    if not sf.exists():
+        return ""
+    raw = sf.read_text(encoding="utf-8").strip()
+    return raw.split("|")[1] if "|" in raw else ""
+
+
+def allowed_file(filename: str) -> bool:
+    return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
+
+
+def clear_latest_targets():
+    for path in (LATEST_PPTX, LATEST_PDF):
+        try:
+            if path.exists():
+                path.unlink()
+        except OSError:
+            pass
+
+
+def find_latest_slide_plan_file():
+    candidates = []
+
+    direct_candidates = [
+        BASE_DIR / "slide_plan.json",
+        OUTPUT_DIR / "slide_plan.json",
+        BASE_DIR / "pipeline" / "slide_plan.json",
+        BASE_DIR / "pipeline" / "compile" / "slide_plan.json",
+    ]
+    for path in direct_candidates:
+        if path.exists():
+            candidates.append(path)
+
+    search_roots = [
+        BASE_DIR,
+        OUTPUT_DIR,
+        BASE_DIR / "projects",
+        BASE_DIR / "pipeline",
+    ]
+    seen = set()
+    for root in search_roots:
+        if not root.exists():
+            continue
+        for path in root.rglob("slide_plan.json"):
+            if path in seen:
+                continue
+            seen.add(path)
+            candidates.append(path)
+
+    if not candidates:
+        return None
+
+    return max(candidates, key=lambda p: p.stat().st_mtime)
+
+def safe_relpath(path_obj):
+    try:
+        return str(path_obj.relative_to(BASE_DIR))
+    except Exception:
+        return str(path_obj)
+
+
+def resolve_quiet_image_for_slide(slide_title, stage, layout, slide_number):
+    visuals_root = BASE_DIR / "visuals"
+
+    if not visuals_root.exists():
+        return None
+
+    exts = ("*.jpg", "*.jpeg", "*.png", "*.webp")
+    candidates = []
+
+    for ext in exts:
+        candidates.extend(visuals_root.rglob(ext))
+
+    if not candidates:
+        return None
+
+    title_words = str(slide_title).lower().replace("(", " ").replace(")", " ").split()
+
+    for candidate in candidates:
+        name = candidate.stem.lower()
+
+        for word in title_words:
+            if len(word) >= 4 and word in name:
+                return candidate
+
+    return candidates[0]
+
+def build_refine_slide_payload(slide_plan_data: dict, slide_plan_file=None):
+    project_title = safe_text(slide_plan_data.get("title"), "UNTITLED PROJECT")
+    raw_slides = slide_plan_data.get("slides") or []
+    slide_plan_file = Path(slide_plan_file) if slide_plan_file else None
+    project_dir = find_latest_project_dir(slide_plan_file)
+
+    mapped_slides = []
+    last_used_image_name = ""
+
+    for index, slide in enumerate(raw_slides):
+        if not isinstance(slide, dict):
+            continue
+
+        stage = safe_text(slide.get("stage"), "").lower()
+        layout = safe_text(slide.get("layout"), "").lower()
+        title = safe_text(slide.get("title"), f"Slide {index + 1}")
+
+        body = safe_text(
+            slide.get("body")
+            or slide.get("content")
+            or slide.get("text")
+            or slide.get("copy"),
+            "",
+        )
+
+        slide_type = title
+
+        if stage == "title" or layout == "title":
+            slide_type = "Title Slide"
+        elif "logline" in title.lower():
+            slide_type = "Logline"
+        elif "synopsis" in title.lower():
+            slide_type = "Synopsis"
+        elif stage == "character":
+            slide_type = "Characters"
+        elif stage == "why_now":
+            slide_type = "Why This Project"
+
+        subtitle = ""
+
+        if stage == "title" or layout == "title":
+            subtitle = project_title if title.strip().lower() != project_title.strip().lower() else ""
+        elif title.lower() in {
+            "logline",
+            "synopsis",
+            "synopsis (2)",
+            "hook",
+            "conflict",
+            "stakes",
+            "world",
+            "tone",
+            "story engine",
+            "reversal",
+            "why this movie",
+            "protagonist",
+        }:
+            subtitle = title
+        elif stage:
+            subtitle = stage.replace("_", " ").title()
+        elif layout:
+            subtitle = layout.replace("_", " ").title()
+
+        caption_bits = []
+
+        if stage:
+            caption_bits.append(f"Stage: {stage.replace('_', ' ').title()}")
+
+        if layout:
+            caption_bits.append(f"Layout: {layout.replace('_', ' ').title()}")
+
+        configured_image_path = safe_text(slide.get("image_path"), "")
+        configured_image_name = safe_text(slide.get("image_name"), "")
+        configured_image_url = safe_text(slide.get("image_url"), "")
+        image_options = normalize_manifest_image_options(slide.get("image_options") or [])
+        selected_option_id = safe_text(slide.get("selected_option_id"), "")
+
+        resolved_image = None
+        if configured_image_path:
+            try:
+                configured_candidate = Path(configured_image_path)
+                if not configured_candidate.is_absolute():
+                    configured_candidate = (BASE_DIR / configured_candidate).resolve()
+                else:
+                    configured_candidate = configured_candidate.resolve()
+                if configured_candidate.exists() and configured_candidate.is_file():
+                    resolved_image = configured_candidate
+            except Exception:
+                resolved_image = None
+
+        if resolved_image is None:
+            resolved_image = resolve_quiet_image_for_slide(
+                slide_title=title,
+                stage=stage,
+                layout=layout,
+                slide_number=index + 1,
+            )
+
+        image_name = configured_image_name or (resolved_image.name if resolved_image else "")
+        image_url = configured_image_url or project_file_url_for_path(configured_image_path)
+        if not image_url and resolved_image:
+            image_url = f"/project-file?path={safe_relpath(resolved_image)}"
+
+        if image_name:
+            caption_bits.append(f"Image: {image_name}")
+
+        caption = " • ".join(caption_bits) if caption_bits else f"Generated slide {index + 1}"
+
+        mapped_slides.append({
+            "type": slide_type,
+            "title": title,
+            "subtitle": subtitle,
+            "body": body,
+            "caption": caption,
+            "accent": "#ffb347",
+            "layout": layout,
+            "stage": stage,
+            "source_index": index,
+            "image_name": image_name,
+            "image_url": image_url,
+            "image_options": image_options,
+            "selected_option_id": selected_option_id,
         })
-        .catch(err => console.error("Upload failed:", err));
-}
-
-function continueToApprovedUpload(){
-    closeAllModals();
-    showUploadState();
-
-    const scriptInput = document.getElementById("scriptInput");
-
-    if (approvedScriptFile && scriptInput) {
-        try {
-            const dt = new DataTransfer();
-            dt.items.add(approvedScriptFile);
-            scriptInput.files = dt.files;
-        } catch (e) {}
-    }
-}
-
-async function analyzeSelectedScript(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
-    const fileInput = document.getElementById("uploadAnalyzeFile");
-
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0){
-        closeModal("uploadModal");
-        document.getElementById("infoTitle").textContent = "Upload Script";
-        document.getElementById("infoCopy").textContent = "Please choose a script file before continuing.";
-        document.getElementById("infoModal").classList.add("show");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const fileName = (file.name || "").toLowerCase();
-    const passes = fileName.endsWith(".txt") || fileName.endsWith(".pdf") || fileName.endsWith(".fdx") || fileName.endsWith(".docx") || fileName.endsWith(".doc");
-
-    if (!passes){
-        closeModal("uploadModal");
-        showInfoModal("Unsupported File", "Please upload a TXT, PDF, FDX, or DOCX file.");
-        return;
-    }
-
-    closeModal("uploadModal");
-
-    // Show progress modal
-    const progressModal = document.getElementById("buildProgressModal");
-    document.getElementById("buildProgressTitle").textContent = "Analyzing Your Script";
-    document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is reading your script. This takes about 30–60 seconds.";
-    document.getElementById("buildProgressStage").textContent = "Analyzing script with Developum AI Engine…";
-    document.getElementById("buildProgressFill").style.width = "35%";
-    document.getElementById("buildProgressWorking").style.display = "block";
-    document.getElementById("buildProgressActions").style.display = "none";
-    progressModal.classList.add("show");
-
-    const formData = new FormData();
-    formData.append("script", file);
-
-    try {
-        const response = await fetch("/analyze-script-pass", {
-            method: "POST",
-            body: formData
-        });
-
-        if (!response.ok){
-            document.getElementById("buildProgressWorking").style.display = "none";
-            document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
-            document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please check your file and try again.";
-            const actionsEl = document.getElementById("buildProgressActions");
-            actionsEl.style.display = "flex";
-            actionsEl.querySelector("button").textContent = "Close";
-            actionsEl.querySelector("button").onclick = closeBuildProgressModal;
-            return;
-        }
-
-        const data = await response.json();
-        window.latestGeneratedDeck = data.deck || "";
-
-        const summaryEl = document.getElementById("analysisSummaryCopy");
-        if (summaryEl) {
-            summaryEl.textContent =
-                data.summary_note ||
-                "Your script has been analyzed and your full report is ready to view.";
-        }
-
-        document.getElementById("buildProgressFill").style.width = "100%";
-        document.getElementById("buildProgressWorking").style.display = "none";
-        document.getElementById("buildProgressTitle").textContent = "Analysis Complete";
-        document.getElementById("buildProgressCopy").textContent = "Your script has been analyzed by the Developum AI Engine.";
-        const actionsEl = document.getElementById("buildProgressActions");
-        actionsEl.style.display = "flex";
-
-        // Always store file + brain title so Create Pitch Deck can use them directly
-        approvedScriptFile = file;
-        _lastAnalyzedTitle = data.title || null;
-
-        if (analyzeFlowMode === "analyze") {
-            actionsEl.querySelector("button").textContent = "View Results";
-            actionsEl.querySelector("button").onclick = function(){
-                closeBuildProgressModal();
-                openAnalyzePassModal();
-            };
-        } else {
-            closeBuildProgressModal();
-            startBuildDirect();
-        }
-
-    } catch (err) {
-        document.getElementById("buildProgressWorking").style.display = "none";
-        document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
-        document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please try again.";
-        const actionsEl = document.getElementById("buildProgressActions");
-        actionsEl.style.display = "flex";
-        actionsEl.querySelector("button").textContent = "Close";
-        actionsEl.querySelector("button").onclick = closeBuildProgressModal;
-    }
-}
-
-
-function validateUploadAndStart(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { showAuthModal(); return false; }
-    const form = document.querySelector('#uploadState form');
-    const imagesInput = document.getElementById("imagesInput");
-
-    if (imagesInput && imagesInput.files && imagesInput.files.length > 10){
-        showInfoModal("Upload Images", "Please upload no more than 10 images.");
-        return false;
-    }
-
-    if (imagesInput && imagesInput.files){
-        for (const file of imagesInput.files){
-            if (file.size > 1024 * 1024){
-                showInfoModal("Upload Images", "Each image must be 1 MB or smaller.");
-                return false;
-            }
-        }
-    }
-
-    buildInFlight = true;
-    sawFreshBuildStatus = false;
-    resetTimer();
-    showLiveProcess();
-    setLocalStatus("UPLOADED");
-
-    const formData = new FormData(form);
-    // Auto-append project title from script filename
-    if (approvedScriptFile && !formData.get("project_title")) {
-        const stem = approvedScriptFile.name.replace(/\.[^.]+$/, "");
-        const title = stem.replace(/[_\-]+/g, " ").trim();
-        if (title) formData.append("project_title", title);
-    }
-
-    fetch("/upload", {
-        method: "POST",
-        body: formData
-    }).then(res => {
-        if (res.status === 403) {
-            buildInFlight = false;
-            showProjectLimitModal();
-        }
-    }).catch(err => {
-        console.error("Upload failed:", err);
-    });
-
-    return false;
-}
-
-function showLiveProcess(){
-    exitFlowMode();
-    enterActiveBuildMode();
-    hideWorkspacePanels();
-    stopProgressCreep();
-    setProgress(0);
-
-    const homeCardGrid = document.querySelector(".home-card-grid");
-    const choicesRow = document.querySelector(".choices-row");
-    if (homeCardGrid) homeCardGrid.style.display = "none";
-    if (choicesRow) choicesRow.style.display = "none";
-
-    document.getElementById("analyzerPanel").style.display = "block";
-    document.getElementById("buildProgressBar").style.display = "block";
-    document.getElementById("liveProcessLog").style.display = "block";
-    document.getElementById("buildCopy").style.display = "block";
-    document.getElementById("buildMeta").style.display = "flex";
-    document.getElementById("completePanel").style.display = "none";
-    document.body.classList.remove("complete-mode");
-    startQuoteRotation();
-}
-
-function escapeHtml(text){
-    return String(text)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
-}
-
-function renderLiveProcessLog(status){
-    const logEl = document.getElementById("liveProcessLog");
-    if (!logEl) return;
-
-    let lines = [];
-    if (status === "IDLE"){
-        lines = ['[system] waiting for deck generation...','','> pipeline idle','> upload a script and click Generate Deck to begin'];
-    } else if (status === "UPLOADED"){
-        lines = ['[system] build request received','','> intake: screenplay file accepted','> preparing canonical input','> initializing pipeline environment','> waiting for analysis stage...'];
-    } else if (status === "ANALYZING" || status === "running"){
-        lines = ['[system] Analyzing Screenplay...','','> converting script into engine-ready format','> cleaning screenplay content','> sending story into brain pass','> extracting characters','> identifying world and tone','> generating pitch intelligence','> analysis still running...'];
-    } else if (status === "BUILDING"){
-        lines = [
-            '[system] deck generation in progress',
-            '',
-            '> analysis approved',
-            '> creating slide plan',
-            '> selecting visual placements',
-            '> assembling presentation structure',
-            '> building PowerPoint file',
-            '> finalizing export package...',
-            '> preparing delivery...'
-        ];
-    } else if (status === "DEMO_RUNNING"){
-        lines = ['[system] demo build launched','','> loading demo screenplay','> initializing demo pipeline','> analysis queue started','> waiting for deck assembly...'];
-    } else if (status === "COMPLETE"){
-        lines = ['[system] build complete','','> screenplay processed successfully','> analysis complete','> deck assembly complete','> PowerPoint export ready','','[success] preview ready'];
-    } else if (status === "ERROR"){
-        lines = ['[system] pipeline interrupted','','> build error detected','> story analysis may be incomplete','> deck assembly may have stopped early','> check terminal / backend logs for details'];
-    } else {
-        lines = ['[system] processing...','','> pipeline active'];
-    }
-
-    const html = lines.map((line) => {
-        const safe = escapeHtml(line);
-        if (line.startsWith('[success]')) return '<span class="terminal-success">' + safe + '</span>';
-        if (line.startsWith('[system]')) return '<span class="terminal-prompt">' + safe + '</span>';
-        if (line.startsWith('>')) return '<span class="terminal-accent">' + safe + '</span>';
-        return safe;
-    }).join('<br>')
-
-    logEl.innerHTML = html;
-    logEl.scrollTop = logEl.scrollHeight;
-}
-
-function setLocalStatus(status){
-    updateStatusUI(status);
-}
-
-function formatElapsed(seconds){
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return String(mins).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
-}
-
-function startTimer(){
-    if (!runStartedAt){ runStartedAt = Date.now(); }
-    if (timerInterval){ return; }
-    timerInterval = setInterval(() => {
-        if (!runStartedAt) return;
-        const elapsedSeconds = Math.floor((Date.now() - runStartedAt) / 1000);
-        const formatted = formatElapsed(elapsedSeconds);
-        document.getElementById("inlineStatusValue").textContent = lastStatus + " • " + formatted;
-    }, 250);
-}
-
-function stopTimer(){
-    if (timerInterval){
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-}
-
-function resetTimer(){
-    runStartedAt = null;
-    stopTimer();
-    document.getElementById("inlineStatusValue").textContent = "IDLE • 00:00";
-}
-
-function makePreviewSlideDataUri(title, subtitle, accent){
-    const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="720" height="960" viewBox="0 0 720 960">
-        <defs>
-            <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#111111"/>
-                <stop offset="100%" stop-color="#1b1b1b"/>
-            </linearGradient>
-            <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stop-color="#ff7a00"/>
-                <stop offset="100%" stop-color="${accent}"/>
-            </linearGradient>
-        </defs>
-        <rect width="720" height="960" fill="url(#bg)"/>
-        <rect x="50" y="52" width="620" height="6" rx="3" fill="url(#accent)"/>
-        <rect x="50" y="120" width="620" height="310" rx="20" fill="#0f0f0f" stroke="rgba(255,255,255,0.12)"/>
-        <circle cx="360" cy="275" r="92" fill="rgba(255,122,0,0.12)"/>
-        <rect x="120" y="228" width="480" height="94" rx="16" fill="rgba(255,255,255,0.03)"/>
-        <text x="60" y="520" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#ffffff">${title}</text>
-        <text x="60" y="575" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#cfcfcf">${subtitle}</text>
-        <rect x="60" y="650" width="600" height="16" rx="8" fill="rgba(255,255,255,0.10)"/>
-        <rect x="60" y="688" width="560" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
-        <rect x="60" y="726" width="585" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
-        <rect x="60" y="764" width="520" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
-        <text x="60" y="890" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#333333">EVOLUM STUDIO</text>
-    </svg>`;
-    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-}
-
-function makeAccentForIndex(index){
-    const accents = ["#ffb347", "#ff9955", "#ffc266", "#ff9c3d", "#ffcf70"];
-    return accents[index % accents.length];
-}
-
-
-function projectFileUrl(path){
-    if (!path) return "";
-
-    const rel = String(path)
-        .replace(BASE_PATH_PREFIX || "", "")
-        .replace(/^\/?opt\/render\/project\/src\//, "")
-        .replace(/^\/+/, "");
-
-    return "/project-file?path=" + encodeURIComponent(rel);
-}
-
-
-function normalizeImageOption(option, fallbackSlide, optionIndex){
-    const normalized = option || {};
-    const imagePath = normalized.image_path || "";
-    return {
-        rank: normalized.rank || optionIndex + 1,
-        option_id: normalized.option_id || `option_${optionIndex + 1}`,
-        label: normalized.label || `Option ${optionIndex + 1}`,
-        focus: normalized.focus || "",
-        image_path: imagePath,
-        image_name: normalized.image_name || "",
-        image_source: normalized.image_source || "",
-        image_url: normalized.image_url || projectFileUrl(imagePath)
-    };
-}
-
-function normalizeSlideForRefine(slide, index){
-    const normalized = slide || {};
-    const imagePath = normalized.image_path || "";
-    const options = Array.isArray(normalized.image_options)
-        ? normalized.image_options.map((option, optionIndex) => normalizeImageOption(option, normalized, optionIndex))
-        : [];
 
     return {
-        type: normalized.type || normalized.stage || normalized.layout || `Slide ${index + 1}`,
-        title: normalized.title || `Slide ${index + 1}`,
-        subtitle: normalized.subtitle || "",
-        body: normalized.body || normalized.content || normalized.text || normalized.copy || "",
-        caption: normalized.caption || "Generated slide preview.",
-        accent: normalized.accent || makeAccentForIndex(index),
-        layout: normalized.layout || "text",
-        stage: normalized.stage || "refine",
-        image_url: normalized.image_url || projectFileUrl(imagePath),
-        image_name: normalized.image_name || "",
-        image_path: imagePath,
-        image_source: normalized.image_source || "",
-        image_options: options,
-        selected_option_id: normalized.selected_option_id || (options[0] && options[0].option_id) || "selected"
-    };
-}
-
-function previewImageSrcForSlide(slide){
-    if (slide && slide.image_url){
-        return slide.image_url;
-    }
-    if (slide && slide.image_path){
-        return projectFileUrl(slide.image_path);
-    }
-    return makePreviewSlideDataUri((slide && slide.title) || "", (slide && slide.subtitle) || "", (slide && slide.accent) || "#ffb347");
-}
-
-async function syncLatestSlidesForPreview(){
-    const loaded = await loadLatestRefineSlides();
-    if (loaded) latestSlidesLoadedForComplete = true;
-    renderDeckPreview();
-    if (activeCompleteView === "refine") {
-        renderCurrentRefineSlide();
-    }
-    return loaded;
-}
-
-async function loadLatestRefineSlides(){
-    try {
-        if (activeLoadedProjectId) {
-            const response = await fetch(`/project/${activeLoadedProjectId}/slides`, { cache: "no-store" });
-            if (!response.ok) throw new Error("slides_missing");
-            const data = await response.json();
-            if (data.error) throw new Error(data.error);
-            const slides = data.slides || [];
-            if (!slides.length) throw new Error("manifest_empty");
-            refineSlides = slides.map((slide, index) => normalizeSlideForRefine(slide, index));
-            latestRefineProjectTitle = data.title || refineSlides[0]?.title || "UNTITLED PROJECT";
-        } else {
-            const response = await fetch(`/api/latest-manifest`, { cache: "no-store" });
-            if (!response.ok) throw new Error("manifest_missing");
-            const data = await response.json();
-            if (!Array.isArray(data) || !data.length) throw new Error("manifest_empty");
-            refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
-            latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
-        }
-        currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
-        return true;
-    } catch (err) {
-        if (activeLoadedProjectId) {
-            try {
-                const response = await fetch(`/api/latest-manifest`, { cache: "no-store" });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data) && data.length) {
-                        refineSlides = data.map((slide, index) => normalizeSlideForRefine(slide, index));
-                        latestRefineProjectTitle = refineSlides[0]?.title || "UNTITLED PROJECT";
-                        currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
-                        return true;
-                    }
-                }
-            } catch (_) {}
-        }
-        refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
-        latestRefineProjectTitle = "UNTITLED PROJECT";
-        currentRefineSlide = Math.min(currentRefineSlide, Math.max(refineSlides.length - 1, 0));
-        return false;
-    }
-}
-
-function renderDeckPreview(){
-    const strip = document.getElementById("deckPreviewStrip");
-    if (!strip) return;
-
-    if (!Array.isArray(refineSlides) || !refineSlides.length){
-        strip.innerHTML = "";
-        return;
+        "title": project_title,
+        "slide_count": len(mapped_slides),
+        "slides": mapped_slides,
     }
 
-    strip.innerHTML = refineSlides.map((slide, index) => {
-        const hasRealImage = !!(slide.image_url || slide.image_path);
-        const titleText = escapeHtml(slide.title || `Slide ${index + 1}`);
-        const typeText = escapeHtml(slide.type || `Slide ${index + 1}`);
-        const accentColor = slide.accent || "#ff7a00";
 
-        let mediaHtml;
-        if (hasRealImage) {
-            mediaHtml = `<div class="deck-preview-img-wrap">
-                <img src="${previewImageSrcForSlide(slide)}" alt="Slide ${index + 1}">
-                <div class="deck-preview-overlay"><div class="deck-preview-overlay-title">${titleText}</div></div>
-            </div>`;
-        } else {
-            const bodyPreview = escapeHtml((slide.body || slide.subtitle || "").slice(0, 200));
-            mediaHtml = `<div class="deck-preview-text-slide" style="border-top:3px solid ${accentColor};">
-                <div class="deck-preview-text-title">${titleText}</div>
-                ${bodyPreview ? `<div class="deck-preview-text-body">${bodyPreview}</div>` : ""}
-            </div>`;
-        }
+def find_latest_project_dir(slide_plan_file=None):
+    if slide_plan_file and slide_plan_file.exists():
+        return slide_plan_file.parent
+    return BASE_DIR
 
-        const snippetText = hasRealImage
-            ? escapeHtml((slide.subtitle || slide.body || "").slice(0, 90))
-            : "";
 
-        return `
-            <div class="deck-preview-card" draggable="true"
-                 onclick="jumpToRefineSlide(${index})" title="${titleText} — click to edit"
-                 ondragstart="previewDragStart(event,${index})"
-                 ondragover="previewDragOver(event,${index})"
-                 ondragleave="previewDragLeave(event)"
-                 ondrop="previewDrop(event,${index})"
-                 ondragend="previewDragEnd(event)">
-                <button class="deck-preview-delete" onclick="event.stopPropagation();deletePreviewSlide(${index})" title="Delete slide">×</button>
-                ${mediaHtml}
-                <div class="deck-preview-card-title">
-                    <span class="deck-preview-num">${index + 1}</span>${typeText}
-                    ${snippetText ? `<div class="deck-preview-snippet">${snippetText}</div>` : ""}
-                </div>
-            </div>
-        `;
-    }).join("");
+def ensure_relative_to_base(path: Path) -> bool:
+    try:
+        path.resolve().relative_to(BASE_DIR.resolve())
+        return True
+    except Exception:
+        return False
+
+
+def resolve_refine_image_for_slide(project_dir, deck_title, slide, slide_number, last_used_name=""):
+    explicit_candidates = []
+    for key in ("image_path", "image", "image_file", "preview_image"):
+        value = slide.get(key)
+        if value:
+            explicit_candidates.append(Path(str(value)))
+
+    for candidate in explicit_candidates:
+        resolved = candidate if candidate.is_absolute() else (project_dir / candidate)
+        if resolved.exists() and ensure_relative_to_base(resolved):
+            return resolved.resolve()
+
+    builder = load_deck_builder_module()
+    if not builder:
+        return None
+
+    visuals_dir = project_dir / "visuals"
+    approved_brain_output_path = project_dir / "approved_brain_output.json"
+    brain_output = {}
+    if approved_brain_output_path.exists():
+        try:
+            brain_output = json.loads(approved_brain_output_path.read_text(encoding="utf-8"))
+        except Exception:
+            brain_output = {}
+    elif (BASE_DIR / "approved_brain_output.json").exists():
+        try:
+            brain_output = json.loads((BASE_DIR / "approved_brain_output.json").read_text(encoding="utf-8"))
+        except Exception:
+            brain_output = {}
+
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            image_path = builder.find_image_for_slide(
+                visuals_dir=visuals_dir,
+                deck_title=deck_title,
+                slide_title=safe_text(slide.get("title"), f"Slide {slide_number}"),
+                slide_number=slide_number,
+                brain_output=brain_output,
+                last_used_name=last_used_name,
+            )
+    except Exception as e:
+        print(f"⚠️ Refine image resolution failed for slide {slide_number}: {e}", flush=True)
+        return None
+
+    if not image_path or not Path(image_path).exists():
+        return None
+
+    image_path = Path(image_path).resolve()
+    if not ensure_relative_to_base(image_path):
+        return None
+
+    return image_path
+
+
+def build_project_file_url(image_path: Path) -> str:
+    rel = image_path.resolve().relative_to(BASE_DIR.resolve())
+    return "/project-file?path=" + quote(str(rel).replace('\\', '/'))
+
+
+FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
+
+_SLIDE_VISUAL_CONCEPTS = {
+    "logline": "cinematic establishing shot, wide angle, dramatic lighting",
+    "synopsis": "cinematic scene, atmospheric, narrative moment",
+    "synopsis 2": "cinematic scene, mid-shot, dramatic tension",
+    "synopsis 3": "cinematic scene, close-up, emotional intensity",
+    "protagonist": "cinematic portrait, single character, dramatic lighting, film still",
+    "antagonist": "cinematic portrait, menacing figure, dramatic shadows, film still",
+    "supporting characters": "cinematic ensemble shot, multiple characters, film still",
+    "world": "cinematic landscape, establishing shot, rich environment",
+    "hook": "cinematic close-up, tension, dramatic moment",
+    "conflict": "cinematic confrontation, dramatic tension, high stakes",
+    "stakes": "cinematic wide shot, weight of consequence, dramatic",
+    "tone": "cinematic mood shot, atmospheric lighting, visual tone",
+    "story engine": "cinematic action, driving force, momentum",
+    "reversal": "cinematic turning point, dramatic shift, pivotal moment",
+    "themes": "cinematic symbolic imagery, thematic visual metaphor",
+    "why this movie": "cinematic wide shot, cultural moment, compelling imagery",
+    "comparables": "cinematic collage feel, prestige film aesthetic",
+    "market projections": "cinematic wide shot, commercial appeal, high production value",
+    "closing statement": "cinematic final frame, powerful, memorable",
 }
 
-function jumpToRefineSlide(index){
-    currentRefineSlide = Math.max(0, Math.min(index, refineSlides.length - 1));
-    openRefinementStage();
+_GENRE_STYLE = {
+    "horror": "dark, unsettling, atmospheric horror, shadows, practical effects aesthetic",
+    "thriller": "tense, noir-influenced, sharp contrast, suspenseful",
+    "comedy": "warm lighting, vibrant colors, playful composition",
+    "drama": "naturalistic lighting, intimate, emotionally grounded",
+    "action": "dynamic, kinetic energy, bold framing, high contrast",
+    "sci-fi": "futuristic, cool tones, technological, epic scale",
+    "fantasy": "magical, rich colors, otherworldly, painterly lighting",
+    "romance": "warm golden tones, soft focus, intimate, emotional",
+    "documentary": "gritty realism, candid, natural light, observational",
+    "animation": "stylized, vibrant, expressive, dynamic",
 }
 
-// --- Preview panel: delete & drag-reorder ---
-let _previewDragSrc = null;
+def normalize_key(value: str) -> str:
+    cleaned = re.sub(r"[^a-z0-9]+", " ", str(value or "").lower()).strip()
+    return re.sub(r"\s+", " ", cleaned)
 
-function deletePreviewSlide(index) {
-    if (refineSlides.length <= 1) { alert("A deck needs at least one slide."); return; }
-    const label = refineSlides[index].type || refineSlides[index].title || "Slide";
-    if (!confirm(`Delete slide ${index + 1}: "${label}"?`)) return;
-    refineSlides.splice(index, 1);
-    if (currentRefineSlide >= refineSlides.length) currentRefineSlide = refineSlides.length - 1;
-    renderDeckPreview();
-    renderRefineSlideList();
-}
+def load_latest_brain_output(slide_plan_file=None) -> dict:
+    project_dir = find_latest_project_dir(slide_plan_file)
+    candidates = [project_dir / "approved_brain_output.json", BASE_DIR / "approved_brain_output.json"]
+    for candidate in candidates:
+        if candidate.exists():
+            try:
+                return json.loads(candidate.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+    return {}
 
-function previewDragStart(e, index) {
-    _previewDragSrc = index;
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", String(index));
-    setTimeout(() => { if (e.target) e.target.classList.add("dragging"); }, 0);
-}
+def _load_user_brain(uid: str) -> dict:
+    """Load brain output for a specific user — never bleeds from other users."""
+    if not uid:
+        return {}
+    path = USER_DATA_DIR / uid / "brain_output.json"
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    return {}
 
-function previewDragOver(e, index) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    if (_previewDragSrc !== null && _previewDragSrc !== index) {
-        e.currentTarget.classList.add("drag-over");
+def build_fal_image_prompt(slide_title: str, slide_body: str = "", user_prompt: str = "", brain_output: dict | None = None, variation: str = "") -> str:
+    brain_output = brain_output or {}
+    normalized = normalize_key(slide_title)
+    concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting, film still")
+    genre = str(brain_output.get("genre", "drama")).lower()
+    genre_style = next((style for g, style in _GENRE_STYLE.items() if g in genre), "cinematic, naturalistic lighting, film aesthetic")
+    tone = str(brain_output.get("tone", "")).replace("\n", " ").strip()
+    world = str(brain_output.get("world", "")).replace("\n", " ").strip()
+    body_hint = str(slide_body or "").replace("\n", " ").strip()
+    parts = [concept, genre_style]
+    if world:
+        parts.append(f"set in {world[:120]}")
+    if tone:
+        parts.append(tone[:100])
+    if body_hint:
+        parts.append(body_hint[:180])
+    if user_prompt:
+        parts.append(user_prompt[:220])
+    if variation:
+        parts.append(variation)
+    parts.extend(["professional film still", "35mm", "shallow depth of field", "no text", "no watermarks", "ultra-detailed", "photorealistic", "16:9 aspect ratio"])
+    return ", ".join([p for p in parts if p])
+
+def generate_fal_image(prompt: str, cache_path: Path) -> Path | None:
+    if not FAL_API_KEY:
+        return None
+    if cache_path.exists():
+        return cache_path
+    url = "https://fal.run/fal-ai/flux/schnell"
+    payload = json.dumps({
+        "prompt": prompt,
+        "image_size": "landscape_16_9",
+        "num_inference_steps": 4,
+        "num_images": 1,
+        "enable_safety_checker": True,
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=payload,
+        headers={
+            "Authorization": f"Key {FAL_API_KEY}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+        image_url = ((result.get("images") or [{}])[0]).get("url", "")
+        if not image_url:
+            return None
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(image_url, cache_path)
+        print(f"✨ FAL generated image for prompt: {prompt[:80]}...", flush=True)
+        return cache_path
+    except Exception as e:
+        print(f"⚠️ FAL image generation failed: {e}", flush=True)
+        return None
+
+def fal_generated_image_payload(cache_path: Path) -> dict:
+    rel = normalize_project_relative_path(str(cache_path))
+    return {
+        "image_path": rel,
+        "image_name": cache_path.name,
+        "image_source": "fal_generated",
+        "image_url": project_file_url_for_path(rel),
     }
+
+def generate_slide_option_images(slide_plan_file, slide_title: str, slide_body: str = "", user_prompt: str = "", slide_number: int = 1) -> list[dict]:
+    brain_output = load_latest_brain_output(slide_plan_file)
+    project_dir = find_latest_project_dir(slide_plan_file)
+    generated_dir = project_dir / "generated_images"
+    safe_title = re.sub(r"[^a-z0-9_]+", "_", normalize_key(slide_title) or f"slide_{slide_number}").strip("_") or f"slide_{slide_number}"
+    prompt_variations = [
+        ("wide", "wide cinematic composition, strong establishing frame"),
+        ("portrait", "character-focused frame, expressive subject emphasis"),
+        ("dramatic", "dramatic tension, premium cinematic lighting, heightened emotion"),
+        ("alt", "alternate composition, fresh visual interpretation, production design detail"),
+    ]
+    options = []
+    for idx, (label_key, variation) in enumerate(prompt_variations, start=1):
+        prompt = build_fal_image_prompt(slide_title, slide_body=slide_body, user_prompt=user_prompt, brain_output=brain_output, variation=variation)
+        prompt_hash = hashlib.md5(prompt.encode("utf-8")).hexdigest()[:10]
+        cache_path = generated_dir / f"{int(slide_number):02d}_{safe_title}_{label_key}_{prompt_hash}.jpg"
+        generated = generate_fal_image(prompt, cache_path)
+        if not generated:
+            continue
+        payload = fal_generated_image_payload(generated)
+        payload.update({
+            "rank": idx,
+            "option_id": f"fal_{label_key}_{prompt_hash}",
+            "label": f"Option {idx}",
+            "focus": variation,
+        })
+        options.append(payload)
+    return options
+
+def make_slide_payload_cache_key(slide_plan_file=None):
+    if not slide_plan_file or not slide_plan_file.exists():
+        return "missing"
+    parts = [f"slide:{slide_plan_file}:{slide_plan_file.stat().st_mtime_ns}"]
+    project_dir = find_latest_project_dir(slide_plan_file)
+    abo = project_dir / "approved_brain_output.json"
+    if not abo.exists():
+        abo = BASE_DIR / "approved_brain_output.json"
+    if abo.exists():
+        parts.append(f"abo:{abo}:{abo.stat().st_mtime_ns}")
+    builder_path = BASE_DIR / "deck_builder.py"
+    if builder_path.exists():
+        parts.append(f"builder:{builder_path}:{builder_path.stat().st_mtime_ns}")
+
+    return "|".join(parts)
+
+
+def safe_text(value, fallback="-"):
+    if value is None:
+        return fallback
+    if isinstance(value, list):
+        value = ", ".join(str(v) for v in value if str(v).strip())
+    value = str(value).strip()
+    return value or fallback
+
+
+def wrap_text(text, font_name="Helvetica", font_size=11, max_width=500):
+    words = safe_text(text, "").split()
+    if not words:
+        return []
+
+    lines = []
+    current = words[0]
+
+    for word in words[1:]:
+        trial = f"{current} {word}"
+        if stringWidth(trial, font_name, font_size) <= max_width:
+            current = trial
+        else:
+            lines.append(current)
+            current = word
+
+    lines.append(current)
+    return lines
+
+
+def draw_wrapped_text(pdf, text, x, y, max_width=500, font_name="Helvetica", font_size=11, leading=15):
+    lines = wrap_text(text, font_name=font_name, font_size=font_size, max_width=max_width)
+    pdf.setFont(font_name, font_size)
+    for line in lines:
+        pdf.drawString(x, y, line)
+        y -= leading
+    return y
+
+@app.before_request
+def require_beta_gate():
+    public_endpoints = {"index", "beta_access", "static"}
+
+    if request.endpoint in public_endpoints:
+        return None
+
+    if has_beta_access():
+        return None
+
+    if request.method == "GET":
+        try:
+            for _project_dir_name in ["project_dir", "working_dir", "output_dir", "project_path"]:
+                if _project_dir_name in locals() and locals()[_project_dir_name]: apply_upload_text_overrides(locals()[_project_dir_name], submitted_logline, submitted_synopsis)
+                break
+        except Exception:
+            pass
+            
+            return redirect(url_for("index"))
+            
+            return ("Unauthorized", 403)
+
+
+# ===== BETA ACCESS ROUTES START ======================
+@app.route("/beta-access", methods=["POST"])
+def beta_access():
+    access_code = (request.form.get("access_code") or "").strip()
+
+    if access_code in ACCESS_CODES:
+        session["beta_access"] = True
+        session["beta_code"] = access_code
+        log_beta_access(access_code, "ACCESS GRANTED")
+        log_usage("beta_access", code=access_code, success=True)
+        return redirect(url_for("index"))
+
+    log_beta_access(access_code or "blank", "ACCESS FAILED")
+    log_usage("beta_access", code=access_code or "blank", success=False)
+    return redirect("/?auth_error=" + quote("Incorrect access code. Please try again."))
+
+
+@app.route("/create-account", methods=["POST"])
+def create_account():
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    password = (request.form.get("password") or "").strip()
+    access_code = (request.form.get("access_code") or "").strip()
+
+    if not name or not email or not password or not access_code:
+        return redirect("/?auth_error=" + quote("Please complete all fields including your access code."))
+
+    if access_code not in ACCESS_CODES:
+        log_beta_access(access_code or "blank", "CREATE ACCOUNT ACCESS FAILED")
+        return redirect("/?auth_error=" + quote("That access code is not approved yet."))
+
+    try:
+        db_init()
+        existing = get_user_by_email(email)
+        if existing:
+            return redirect("/?auth_error=" + quote("That email already has an account. Please sign in."))
+
+        password_hash = generate_password_hash(password)
+        with DB_ENGINE.begin() as conn:
+            row = conn.execute(text("""
+                INSERT INTO beta_users (email, name, password_hash)
+                VALUES (:email, :name, :password_hash) RETURNING id
+            """), {"email": email, "name": name, "password_hash": password_hash}).fetchone()
+
+        session["user_id"] = str(row[0])
+        session["user_email"] = email
+        session["user_name"] = name
+        session["beta_access"] = True
+        session["beta_code"] = access_code
+
+        log_beta_access(access_code, "ACCOUNT CREATED")
+        log_activity_event("account_created", route="/create-account", user_email=email, metadata={"name": name})
+        return redirect("/?welcome=new")
+    except Exception as e:
+        return redirect("/?auth_error=" + quote(f"Account creation failed: {e}"))
+
+
+@app.route("/sign-in", methods=["POST"])
+def sign_in():
+    email = (request.form.get("email") or "").strip().lower()
+    password = (request.form.get("password") or "").strip()
+
+    if not email or not password:
+        return redirect("/?auth_error=" + quote("Please enter your email and password."))
+
+    try:
+        db_init()
+        user = get_user_by_email(email)
+        if not user or not user.get("password_hash") or not check_password_hash(user["password_hash"], password):
+            log_activity_event("sign_in_failed", route="/sign-in", user_email=email)
+            return redirect("/?auth_error=" + quote("We couldn't sign you in with those credentials."))
+
+        session["user_id"] = str(user["id"])
+        session["user_email"] = user["email"]
+        session["user_name"] = user.get("name") or ""
+        session["beta_access"] = True
+        if user.get("subscription_active"):
+            session["subscription_active"] = True
+
+        log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
+        return redirect("/?welcome=return")
+    except Exception as e:
+        return redirect("/?auth_error=" + quote(f"Sign in failed: {e}"))
+
+
+@app.route("/feedback", methods=["POST"])
+def submit_feedback():
+    data = request.get_json(silent=True) or {}
+    category = (data.get("category") or "").strip()
+    message = (data.get("message") or "").strip()
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or session.get("user_email") or "").strip()
+    if not message:
+        return jsonify({"error": "No message provided."}), 400
+    log_activity_event("feedback_message", route="/feedback",
+                       user_email=email,
+                       metadata={"name": name, "category": category, "message": message[:500]})
+    return jsonify({"ok": True})
+
+@app.route("/contact", methods=["POST"])
+def contact():
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    message = (data.get("message") or "").strip()
+    if not message:
+        return jsonify({"error": "No message provided."}), 400
+    log_activity_event("contact_message", route="/contact",
+                       user_email=email or session.get("user_email"),
+                       metadata={"name": name, "message": message[:500]})
+    return jsonify({"ok": True})
+
+
+@app.route("/logout")
+def logout():
+    email = get_current_user_email()
+    if email:
+        log_activity_event("sign_out", route="/logout", user_email=email)
+    session.clear()
+    return redirect("/?signed_out=1")
+
+
+@app.route("/terms")
+def terms():
+    return render_template("terms.html")
+
+
+@app.route("/cancel")
+def cancel_page():
+    if not session.get("user_id") and not session.get("user_email"):
+        return redirect("/")
+    user = get_user_by_email(session.get("user_email", "")) if session.get("user_email") else None
+    if not user:
+        return redirect("/")
+    import datetime
+    created_at = user.get("created_at")
+    in_window = False
+    if created_at:
+        if isinstance(created_at, str):
+            created_at = datetime.datetime.fromisoformat(created_at)
+        now = datetime.datetime.utcnow()
+        if created_at.tzinfo:
+            now = datetime.datetime.now(datetime.timezone.utc)
+        in_window = (now - created_at).total_seconds() <= 3 * 24 * 3600
+    has_sub = bool(user.get("stripe_subscription_id") and user.get("subscription_active"))
+    return render_template("cancel.html",
+        user_name=user.get("name", ""),
+        in_window=in_window,
+        has_sub=has_sub,
+    )
+
+
+@app.route("/cancel/confirm", methods=["POST"])
+def cancel_confirm():
+    if not session.get("user_id") and not session.get("user_email"):
+        return redirect("/")
+    user = get_user_by_email(session.get("user_email", "")) if session.get("user_email") else None
+    if not user:
+        return redirect("/")
+
+    import datetime, stripe as stripe_lib
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+
+    sub_id = user.get("stripe_subscription_id")
+    refund_issued = False
+    error_msg = None
+
+    if sub_id and stripe_lib.api_key:
+        try:
+            # Check if within 3-day window
+            created_at = user.get("created_at")
+            if isinstance(created_at, str):
+                created_at = datetime.datetime.fromisoformat(created_at)
+            now = datetime.datetime.utcnow()
+            if created_at and created_at.tzinfo:
+                now = datetime.datetime.now(datetime.timezone.utc)
+            in_window = created_at and (now - created_at).total_seconds() <= 3 * 24 * 3600
+
+            if in_window:
+                # Get latest invoice and refund the payment
+                sub = stripe_lib.Subscription.retrieve(sub_id, expand=["latest_invoice.payment_intent"])
+                pi = sub.latest_invoice.payment_intent if sub.latest_invoice else None
+                if pi and pi.status == "succeeded":
+                    stripe_lib.Refund.create(payment_intent=pi.id)
+                    refund_issued = True
+
+            # Cancel the subscription immediately
+            stripe_lib.Subscription.cancel(sub_id)
+        except Exception as e:
+            error_msg = str(e)
+
+    # Mark inactive in DB regardless of Stripe result
+    if DB_ENGINE:
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text(
+                "UPDATE beta_users SET subscription_active=FALSE WHERE id=:uid"
+            ), {"uid": user["id"]})
+
+    log_activity_event("cancel_subscription", route="/cancel/confirm",
+                       user_email=user.get("email", ""),
+                       metadata={"refund_issued": refund_issued, "error": error_msg})
+    session.clear()
+    return render_template("cancel_done.html", refund_issued=refund_issued)
+
+
+# ===== STRIPE PAYMENT ROUTES START ===================
+@app.route("/stripe-env-check")
+def stripe_env_check():
+    sk = os.environ.get("STRIPE_SECRET_KEY", "")
+    pid = os.environ.get("STRIPE_PRICE_ID", "")
+    return jsonify({
+        "sk_prefix": sk[:10] if sk else "MISSING",
+        "sk_len": len(sk),
+        "price_id": pid,
+        "price_id_len": len(pid),
+    })
+
+_STRIPE_PLANS = {
+    "solo":         {"product": "prod_UOojwK7Z4BtANF", "monthly": 500,   "annual": 4200,  "name": "EVOLUM Solo",           "trial_days": 3},
+    "writers-room": {"product": "prod_UQbauBUNKrOhEA", "monthly": 1500,  "annual": 12600, "name": "EVOLUM Writer's Room",   "trial_days": 0},
+    "production":   {"product": "prod_UQbiF9DDgB83Ax", "monthly": 3500,  "annual": 29400, "name": "EVOLUM Production Co.",  "trial_days": 0},
+    "studio":       {"product": "prod_UQbmcaFzM9v24B", "monthly": 7500,  "annual": 63000, "name": "EVOLUM Studio",          "trial_days": 0},
 }
 
-function previewDragLeave(e) {
-    e.currentTarget.classList.remove("drag-over");
-}
+@app.route("/create-checkout-session", methods=["POST"])
+def create_checkout_session():
+    import stripe as stripe_lib
+    name = (request.form.get("name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    password = (request.form.get("password") or "").strip()
+    ref_code = (request.form.get("ref_code") or "").strip().upper()
+    plan_id = (request.form.get("plan_id") or "solo").strip()
+    billing_period = (request.form.get("billing_period") or "monthly").strip()
 
-function previewDragEnd(e) {
-    document.querySelectorAll(".deck-preview-card").forEach(c => c.classList.remove("drag-over", "dragging"));
-    _previewDragSrc = null;
-}
+    if not name or not email or not password:
+        return redirect("/?auth_error=" + quote("Please fill in all fields to continue."))
+    if len(password) < 6:
+        return redirect("/?auth_error=" + quote("Password must be at least 6 characters."))
 
-function previewDrop(e, toIndex) {
-    e.preventDefault();
-    e.stopPropagation();
-    const from = _previewDragSrc;
-    _previewDragSrc = null;
-    if (from === null || from === toIndex) return;
-    const moved = refineSlides.splice(from, 1)[0];
-    refineSlides.splice(toIndex, 0, moved);
-    if (currentRefineSlide === from) {
-        currentRefineSlide = toIndex;
-    } else if (from < currentRefineSlide && toIndex >= currentRefineSlide) {
-        currentRefineSlide--;
-    } else if (from > currentRefineSlide && toIndex <= currentRefineSlide) {
-        currentRefineSlide++;
+    try:
+        db_init()
+        ensure_subscription_columns()
+        if get_user_by_email(email):
+            return redirect("/?auth_error=" + quote("That email already has an account. Please sign in."))
+    except Exception:
+        pass
+
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    if not stripe_lib.api_key:
+        return redirect("/?auth_error=" + quote("Payment system unavailable — please try again later."))
+
+    plan = _STRIPE_PLANS.get(plan_id, _STRIPE_PLANS["solo"])
+    annual = billing_period == "annual"
+    unit_amount = plan["annual"] if annual else plan["monthly"]
+    interval = "year" if annual else "month"
+    trial_days = plan["trial_days"] if not annual else 0
+
+    session["pending_name"] = name
+    session["pending_email"] = email
+    session["pending_password_hash"] = generate_password_hash(password)
+    session["pending_plan_id"] = plan_id
+    if ref_code:
+        session["pending_ref_code"] = ref_code
+
+    try:
+        base_url = request.host_url.rstrip("/")
+        checkout_kwargs = dict(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": unit_amount,
+                    "recurring": {"interval": interval},
+                    "product": plan["product"],
+                },
+                "quantity": 1,
+            }],
+            mode="subscription",
+            customer_email=email,
+            custom_text={
+                "submit": {"message": f"You're joining EVOLUM. Cancel any time."},
+            },
+            success_url=f"{base_url}/payment-success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/?cancelled=1",
+        )
+        if trial_days:
+            checkout_kwargs["subscription_data"] = {"trial_period_days": trial_days}
+        checkout = stripe_lib.checkout.Session.create(**checkout_kwargs)
+        return redirect(checkout.url, code=303)
+    except Exception as e:
+        return redirect("/?auth_error=" + quote(f"Could not start checkout: {e}"))
+
+
+@app.route("/payment-success")
+def payment_success():
+    import stripe as stripe_lib
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    stripe_session_id = request.args.get("session_id", "")
+
+    if not stripe_lib.api_key or not stripe_session_id:
+        return redirect("/")
+
+    try:
+        checkout = stripe_lib.checkout.Session.retrieve(stripe_session_id)
+        if checkout.payment_status not in ("paid", "no_payment_required"):
+            return redirect("/?payment_failed=1")
+
+        name = session.pop("pending_name", "") or ""
+        email = session.pop("pending_email", "") or checkout.customer_email or ""
+        password_hash = session.pop("pending_password_hash", "") or generate_password_hash(secrets.token_hex(16))
+        customer_id = checkout.customer or ""
+        subscription_id = checkout.subscription or ""
+
+        if not email:
+            return redirect("/")
+
+        db_init()
+        ensure_subscription_columns()
+        ensure_referral_tables()
+        existing = get_user_by_email(email)
+
+        if existing:
+            with DB_ENGINE.begin() as conn:
+                conn.execute(text("""
+                    UPDATE beta_users SET stripe_customer_id=:cid, stripe_subscription_id=:sid,
+                    subscription_active=TRUE WHERE lower(email)=:email
+                """), {"cid": customer_id, "sid": subscription_id, "email": email})
+            user_id = str(existing["id"])
+            name = existing.get("name") or name
+        else:
+            if not name:
+                name = email.split("@")[0].title()
+            with DB_ENGINE.begin() as conn:
+                row = conn.execute(text("""
+                    INSERT INTO beta_users (email, name, password_hash, stripe_customer_id, stripe_subscription_id, subscription_active)
+                    VALUES (:email, :name, :ph, :cid, :sid, TRUE) RETURNING id
+                """), {"email": email, "name": name, "ph": password_hash,
+                       "cid": customer_id, "sid": subscription_id}).fetchone()
+                user_id = str(row[0])
+
+        session["user_id"] = user_id
+        session["user_email"] = email
+        session["user_name"] = name
+        session["beta_access"] = True
+        session["subscription_active"] = True
+
+        pending_ref = session.pop("pending_ref_code", "") or ""
+        if pending_ref:
+            process_referral(pending_ref, user_id, email, new_user_name=name)
+
+        log_activity_event("payment_success", route="/payment-success", user_email=email,
+                           metadata={"stripe_session": stripe_session_id, "ref_code": pending_ref or None})
+        return redirect("/studio")
+
+    except Exception as e:
+        return redirect("/")
+# ===== STRIPE PAYMENT ROUTES END =====================
+
+
+# ===== CORE ROUTES START =============================
+@app.route("/")
+def index():
+    if get_current_user_email():
+        log_activity_event("page_view", route="/", user_email=get_current_user_email(), metadata={"name": get_current_user_name()})
+    ref_code = request.args.get("ref", "").strip().upper()
+    return render_template(
+        "index.html",
+        is_render=is_render_env(),
+        user_logged_in=has_beta_access(),
+        user_name=get_current_user_name() or "",
+        auth_error=request.args.get("auth_error", ""),
+        show_auth=bool(request.args.get("auth_error") or request.args.get("cancelled") or ref_code),
+        ref_code=ref_code,
+    )
+from functools import wraps
+
+def require_login(view_func):
+    @wraps(view_func)
+    def wrapper(*args, **kwargs):
+        if session.get("user_id"):
+            return view_func(*args, **kwargs)
+        if session.get("user_email") and DB_ENGINE:
+            user = get_user_by_email(session["user_email"])
+            if user:
+                session["user_id"] = str(user["id"])
+                return view_func(*args, **kwargs)
+        if session.get("beta_access") is True:
+            return view_func(*args, **kwargs)
+        return redirect("/")
+    return wrapper
+
+@app.route("/admin/reset-password", methods=["POST"])
+def admin_reset_password():
+    admin_key = (request.form.get("admin_key") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    new_password = (request.form.get("new_password") or "").strip()
+
+    expected_key = os.environ.get("ADMIN_RESET_KEY", "").strip()
+
+    if not expected_key or admin_key != expected_key:
+        return jsonify({"ok": False, "error": "Unauthorized"}), 403
+
+    if not email or not new_password:
+        return jsonify({"ok": False, "error": "Email and new password are required."}), 400
+
+    if not DB_ENGINE:
+        return jsonify({"ok": False, "error": "Database not configured."}), 500
+
+    password_hash = generate_password_hash(new_password)
+
+    with DB_ENGINE.begin() as conn:
+        result = conn.execute(text("""
+            UPDATE beta_users
+            SET password_hash = :password_hash
+            WHERE lower(email) = :email
+        """), {
+            "password_hash": password_hash,
+            "email": email
+        })
+
+    if result.rowcount == 0:
+        return jsonify({"ok": False, "error": "No user found with that email."}), 404
+
+    log_activity_event(
+        "admin_password_reset",
+        route="/admin/reset-password",
+        user_email=email
+    )
+
+    return jsonify({"ok": True, "message": "Password reset successfully."})
+
+@app.route("/login-test")
+def login_test():
+    session.permanent = False
+    session["user_id"] = "test_user_001"
+    session["user_name"] = "James Evans"
+    session["user_email"] = "test@evolumstudio.com"
+    return redirect("/studio")
+
+_ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
+
+
+@app.route("/admin/login", methods=["GET", "POST"])
+def admin_login():
+    error = None
+    if request.method == "POST":
+        pw = request.form.get("password", "")
+        if _ADMIN_PASSWORD and pw == _ADMIN_PASSWORD:
+            session["admin_authed"] = True
+            return redirect("/admin")
+        error = "Incorrect password." if _ADMIN_PASSWORD else "ADMIN_PASSWORD env var not set on this server."
+    return render_template("admin_login.html", error=error)
+
+
+@app.route("/admin/logout")
+def admin_logout():
+    session.pop("admin_authed", None)
+    return redirect("/admin/login")
+
+
+@app.route("/admin/delete-event/<int:event_id>", methods=["POST"])
+def admin_delete_event(event_id):
+    if not session.get("admin_authed"):
+        return "", 403
+    if DB_ENGINE:
+        try:
+            with DB_ENGINE.begin() as conn:
+                conn.execute(text("DELETE FROM activity_events WHERE id = :id"), {"id": event_id})
+        except Exception:
+            pass
+    return redirect("/admin")
+
+
+@app.route("/admin/delete-message/<int:event_id>", methods=["POST"])
+def admin_delete_message(event_id):
+    if not session.get("admin_authed"):
+        return jsonify({"ok": False}), 403
+    if DB_ENGINE:
+        try:
+            with DB_ENGINE.begin() as conn:
+                conn.execute(text("DELETE FROM activity_events WHERE id = :id"), {"id": event_id})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 500
+    return jsonify({"ok": True})
+
+
+@app.route("/admin/delete-user/<int:user_id>", methods=["POST"])
+def admin_delete_user(user_id):
+    if not session.get("admin_authed"):
+        return jsonify({"ok": False}), 403
+    if not DB_ENGINE:
+        return jsonify({"ok": False, "error": "No database"}), 500
+    try:
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("DELETE FROM beta_users WHERE id = :id"), {"id": user_id})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/admin")
+def admin():
+    if not session.get("admin_authed"):
+        return redirect("/admin/login")
+    import shutil
+    stats = {
+        "users": 0, "projects": 0,
+        "logins_total": 0, "logins_today": 0, "active_sessions": 0,
+        "deck_runs": 0, "script_analyses": 0, "actor_prep": 0, "actor_booked": 0,
+        "db_ok": False, "db_error": "", "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
+        "fal_key_set": bool(os.environ.get("FAL_API_KEY")),
+        "admin_reset_key_set": bool(os.environ.get("ADMIN_RESET_KEY")),
+        "disk_used_mb": 0, "disk_total_mb": 0, "disk_pct": 0,
     }
-    renderDeckPreview();
-    renderRefineSlideList();
-}
+    users = []
+    recent_activity = []
+    messages = []
 
-function renderRefineSlideList(){
-    const list = document.getElementById("slideList");
-    if (!list) return;
-    list.innerHTML = refineSlides.map((slide, index) => {
-        const active = index === currentRefineSlide ? "active" : "";
-        return `<div class="slide-pill ${active}">${index + 1}. ${slide.type}</div>`;
-    }).join("");
-}
+    try:
+        projects_dir = BASE_DIR / "sessions"
+        if projects_dir.exists():
+            used_bytes = sum(f.stat().st_size for f in projects_dir.rglob("*") if f.is_file())
+        else:
+            used_bytes = 0
+        limit_mb = 10 * 1024  # 10 GB limit
+        stats["disk_total_mb"] = limit_mb
+        stats["disk_used_mb"] = round(used_bytes / (1024 * 1024), 1)
+        stats["disk_pct"] = round(stats["disk_used_mb"] / limit_mb * 100, 1)
+    except Exception:
+        pass
+
+    if not DB_ENGINE:
+        return render_template("admin.html", stats=stats, users=users,
+                               recent_activity=recent_activity, messages=messages)
+    try:
+        with DB_ENGINE.connect() as conn:
+            stats["db_ok"] = True
+
+            stats["users"] = conn.execute(text("SELECT COUNT(*) FROM beta_users")).scalar() or 0
+            stats["projects"] = conn.execute(text("SELECT COUNT(*) FROM projects")).scalar() or 0
+
+            stats["logins_total"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in'")).scalar() or 0
+            stats["logins_today"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '24 hours'")).scalar() or 0
+            stats["active_sessions"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '30 minutes'")).scalar() or 0
+
+            stats["deck_runs"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='deck_run'")).scalar() or 0
+            stats["script_analyses"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='script_analysis'")).scalar() or 0
+            stats["actor_prep"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_prep'")).scalar() or 0
+            stats["actor_booked"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_booked'")).scalar() or 0
+
+            rows = conn.execute(text("""
+                SELECT u.id, u.email, u.name, u.created_at,
+                       COUNT(p.id) AS project_count
+                FROM beta_users u
+                LEFT JOIN projects p ON p.owner_user_id = CAST(u.id AS TEXT)
+                GROUP BY u.id, u.email, u.name, u.created_at
+                ORDER BY u.created_at DESC
+            """)).mappings().all()
+            users = [dict(r) for r in rows]
+
+            rows = conn.execute(text(
+                "SELECT id, user_email, event_type, route, created_at FROM activity_events "
+                "WHERE event_type NOT IN ('contact_message','feedback_message') "
+                "ORDER BY created_at DESC LIMIT 50"
+            )).mappings().all()
+            recent_activity = [dict(r) for r in rows]
+
+            rows = conn.execute(text(
+                "SELECT id, user_email, event_type, metadata_json, created_at FROM activity_events "
+                "WHERE event_type IN ('contact_message','feedback_message') "
+                "ORDER BY created_at DESC LIMIT 100"
+            )).mappings().all()
+            messages = [dict(r) for r in rows]
+
+    except Exception as e:
+        stats["db_ok"] = False
+        stats["db_error"] = str(e)[:120]
+
+    log_lines = []
+    try:
+        log_path = BASE_DIR / "pipeline.log"
+        if log_path.exists():
+            raw = log_path.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+            log_lines = raw[-60:]
+    except Exception:
+        pass
+
+    return render_template("admin.html", stats=stats, users=users,
+                           recent_activity=recent_activity, messages=messages,
+                           log_lines=log_lines,
+                           admin_reset_key=os.environ.get("ADMIN_RESET_KEY", ""))
+
+@app.route("/status")
+def status():
+    try:
+        uid = session.get("user_id", "")
+        if not uid:
+            return jsonify({"status": "IDLE", "project_id": None})
+        apf = _active_project_file(uid)
+        return jsonify({
+            "status": get_status(uid),
+            "project_id": get_status_project_id(uid) or session.get("active_project_id") or (apf.read_text(encoding="utf-8").strip() if apf.exists() else None)
+        })
+    except Exception as e:
+        print(f"⚠️ /status error: {e}", flush=True)
+        return jsonify({"status": "IDLE", "project_id": None})
+    
+# ===== PITCH DECK ROUTES START =======================
+
+# ===== UPLOAD OVERRIDE HELPERS START ====================
+def apply_upload_text_overrides(project_dir, logline_override="", synopsis_override=""):
+    logline_override = (logline_override or "").strip()
+    synopsis_override = (synopsis_override or "").strip()
+
+    if not logline_override and not synopsis_override:
+        return
+
+    deck_content_candidates = [
+        Path(project_dir) / "deck_content.json",
+        Path(project_dir) / "pipeline" / "compile" / "deck_content.json",
+        Path(project_dir) / "pipeline" / "compile" / "final_compiled_payload.json",
+    ]
+
+    for candidate in deck_content_candidates:
+        if not candidate.exists():
+            continue
+
+        try:
+            data = json.loads(candidate.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+
+        changed = False
+
+        # Common payload-level keys
+        if logline_override:
+            for key in ["logline", "project_logline", "one_line_pitch"]:
+                if key in data:
+                    data[key] = logline_override
+                    changed = True
+
+        if synopsis_override:
+            for key in ["synopsis", "project_synopsis", "story_overview"]:
+                if key in data:
+                    data[key] = synopsis_override
+                    changed = True
+
+        # Common slide structures
+        slide_collections = []
+        for key in ["slides", "deck_slides", "slide_plan"]:
+            value = data.get(key)
+            if isinstance(value, list):
+                slide_collections.append(value)
+
+        for slides in slide_collections:
+            for slide in slides:
+                if not isinstance(slide, dict):
+                    continue
+
+                slide_title = str(slide.get("title", "") or "").lower()
+                slide_type = str(slide.get("type", "") or "").lower()
+
+                if logline_override and ("logline" in slide_title or "logline" in slide_type):
+                    for field in ["title", "subtitle", "body", "content", "text", "copy", "description"]:
+                        if field in slide:
+                            # preserve title if it's literally "Logline"
+                            if field == "title" and str(slide.get(field, "")).strip().lower() == "logline":
+                                continue
+                            slide[field] = logline_override
+                            changed = True
+                            break
+
+                if synopsis_override and ("synopsis" in slide_title or "synopsis" in slide_type):
+                    for field in ["title", "subtitle", "body", "content", "text", "copy", "description"]:
+                        if field in slide:
+                            if field == "title" and str(slide.get(field, "")).strip().lower() == "synopsis":
+                                continue
+                            slide[field] = synopsis_override
+                            changed = True
+                            break
+
+        if changed:
+            candidate.write_text(json.dumps(data, indent=2), encoding="utf-8")
+# ===== UPLOAD OVERRIDE HELPERS END ======================
+
+@app.route("/debug-log")
+def debug_log():
+    uid = session.get("user_id", "")
+    log_path = BASE_DIR / f"pipeline_{uid}.log" if uid else BASE_DIR / "pipeline.log"
+    if not log_path.exists():
+        log_path = BASE_DIR / "pipeline.log"
+    if not log_path.exists():
+        return "No pipeline.log found.", 200, {"Content-Type": "text/plain; charset=utf-8"}
+    return log_path.read_text(encoding="utf-8"), 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 
-function renderImageOptionStrip(){
-    const strip = document.getElementById("imageOptionStrip");
-    const empty = document.getElementById("imageOptionEmpty");
-    if (!strip || !empty || !Array.isArray(refineSlides) || !refineSlides.length) return;
+@app.route("/upload", methods=["POST"])
+def upload():
+    submitted_logline = (request.form.get("logline") or "").strip()
+    submitted_synopsis = (request.form.get("synopsis") or "").strip()
+    file = request.files.get("script")
 
-    const slide = refineSlides[currentRefineSlide];
-    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
+    if not file or file.filename == "":
+        return "No file uploaded", 400
 
-    if (!options.length){
-        strip.innerHTML = "";
-        empty.style.display = "block";
-        return;
-    }
+    if not allowed_file(file.filename):
+        return "Only .txt and .pdf supported", 400
 
-    empty.style.display = "none";
-    const noImageActive = slide.image_path === "__none__" ? "active" : "";
-    strip.innerHTML = options.map((option, optionIndex) => {
-        const active = option.option_id === slide.selected_option_id ? "active" : "";
-        return `
-            <div class="image-option-thumb ${active}" onclick="openImageOptionModal(${optionIndex})">
-                <img src="${option.image_url || previewImageSrcForSlide(slide)}" alt="${option.label || 'Image option'}">
-                <div class="image-option-thumb-label">${option.label || `Option ${optionIndex + 1}`}</div>
-            </div>
-        `;
-    }).join("") + `
-        <div class="image-option-thumb no-image-tile ${noImageActive}" onclick="selectNoImage()" title="Text only — no background image">
-            <div class="no-image-icon">T</div>
-            <div class="image-option-thumb-label">No Image</div>
-        </div>
-    `;
-}
-
-function openImageOptionModal(optionIndex){
-    const slide = refineSlides[currentRefineSlide];
-    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
-    if (!options.length) return;
-    currentImageOptionModalIndex = Math.max(0, Math.min(optionIndex, options.length - 1));
-    renderImageOptionModal();
-    document.getElementById("imageOptionModal").classList.add("show");
-}
-
-function renderImageOptionModal(){
-    const slide = refineSlides[currentRefineSlide];
-    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
-    const option = options[currentImageOptionModalIndex];
-    if (!option) return;
-
-    document.getElementById("imageOptionModalTitle").textContent = option.label || "Preview Image Option";
-    document.getElementById("imageOptionModalPreview").src = option.image_url || previewImageSrcForSlide(slide);
-    document.getElementById("imageOptionModalMeta").textContent =
-        `Slide ${currentRefineSlide + 1} • ${slide.title || slide.type || "Slide"} • ${option.focus || "image option"}`;
-}
-
-function shiftImageOptionModal(direction){
-    const slide = refineSlides[currentRefineSlide];
-    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
-    if (!options.length) return;
-    currentImageOptionModalIndex = (currentImageOptionModalIndex + direction + options.length) % options.length;
-    renderImageOptionModal();
-}
-
-function selectCurrentImageOption(){
-    const slide = refineSlides[currentRefineSlide];
-    const options = Array.isArray(slide.image_options) ? slide.image_options : [];
-    const option = options[currentImageOptionModalIndex];
-    if (!option) return;
-
-    slide.selected_option_id = option.option_id || "selected";
-    slide.image_path = option.image_path || "";
-    slide.image_name = option.image_name || "";
-    slide.image_source = option.image_source || "";
-    slide.image_url = option.image_url || "";
-    document.getElementById("refineSlideImage").src = previewImageSrcForSlide(slide);
-    document.getElementById("refineSlideCaption").textContent = `${option.label || "Current Pick"} • ${slide.image_name || slide.title || "image selected"}`;
-    renderImageOptionStrip();
-    renderDeckPreview();
-    closeModal("imageOptionModal");
-}
-
-async function loadSlideImageOptions(){
-    const slide = refineSlides[currentRefineSlide];
-    const title = document.getElementById("refineTitleInput").value || slide.title || "";
-    const body = document.getElementById("refineBodyInput").value || slide.body || "";
-    const userPrompt = (document.getElementById("refineImagePrompt").value || "").trim();
-    const btn = document.getElementById("loadOptionsBtn");
-
-    btn.disabled = true;
-    btn.textContent = "Generating options…";
-
-    try {
-        const resp = await fetch("/generate-slide-options", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                slide_title: title,
-                slide_body: body,
-                user_prompt: userPrompt,
-                slide_number: currentRefineSlide + 1,
-                current_image_path: slide.image_path || "",
-                current_image_url: slide.image_url || "",
+    # Studio mode: create or reuse project record before pipeline starts
+    project_title = (request.form.get("project_title") or "").strip()
+    project_type = (request.form.get("project_type") or "").strip()
+    existing_project_id = (request.form.get("project_id") or "").strip()
+    # Auto-title from filename when none supplied
+    if not project_title and file and file.filename:
+        stem = Path(file.filename).stem
+        project_title = stem.replace("_", " ").replace("-", " ").strip().title() or "Untitled Project"
+    uid = session.get("user_id")
+    if not uid and session.get("user_email") and DB_ENGINE:
+        user = get_user_by_email(session["user_email"])
+        if user:
+            uid = str(user["id"])
+            session["user_id"] = uid
+    if existing_project_id and uid and DB_ENGINE:
+        session["active_project_id"] = existing_project_id
+        set_status("UPLOADED", project_id=existing_project_id, uid=uid)
+    elif project_title and uid and DB_ENGINE:
+        ensure_projects_table()
+        with DB_ENGINE.begin() as conn:
+            count = conn.execute(text(
+                "SELECT COUNT(*) FROM projects WHERE owner_user_id = :uid"
+            ), {"uid": uid}).scalar()
+            if count >= 6:
+                return jsonify({"error": "Project limit reached (6 max). Delete an existing project first."}), 403
+            result = conn.execute(text("""
+                INSERT INTO projects (owner_user_id, title, type)
+                VALUES (:uid, :title, :type) RETURNING id
+            """), {
+                "uid": uid,
+                "title": project_title,
+                "type": project_type or "Project"
             })
-        });
-        const data = await resp.json();
-        if (data.options && data.options.length) {
-            slide.image_options = [
-                ...(slide.image_options || []).filter(o => o.option_id === "selected"),
-                ...data.options
-            ];
-            renderImageOptionStrip();
-            showInfoModal("Image Options", `${data.options.length} new options loaded. Browse them in the image strip below.`);
-        } else {
-            showInfoModal("Image Options", data.error || "Could not generate options. Try again.");
-        }
-    } catch(e) {
-        showInfoModal("Image Options", "Something went wrong. Try again.");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "Load Image Options";
-    }
-}
+            new_pid = str(result.scalar())
+            session["active_project_id"] = new_pid
+            _active_project_file(uid).write_text(new_pid, encoding="utf-8")
+            set_status("UPLOADED", project_id=new_pid, uid=uid)
+    else:
+        if not project_title and not existing_project_id:
+            session.pop("active_project_id", None)
 
-async function regenerateSlideImage(){
-    const slide = refineSlides[currentRefineSlide];
-    const title = document.getElementById("refineTitleInput").value || slide.title || "";
-    const body = document.getElementById("refineBodyInput").value || slide.body || "";
-    const userPrompt = (document.getElementById("refineImagePrompt").value || "").trim();
-    const btn = document.getElementById("regenImageBtn");
+    clear_latest_targets()
 
-    btn.disabled = true;
-    btn.textContent = "Generating…";
+    save_path = UPLOAD_DIR / Path(file.filename).name
+    file.save(save_path)
 
-    try {
-        const resp = await fetch("/regenerate-slide-image", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                slide_title: title,
-                slide_body: body,
-                user_prompt: userPrompt,
-                slide_number: currentRefineSlide + 1,
-            })
-        });
-        const data = await resp.json();
-        if (data.image_url) {
-            slide.image_url = data.image_url;
-            slide.image_path = data.image_path || "";
-            slide.image_source = "fal_generated";
-            slide.selected_option_id = "regen";
-            document.getElementById("refineSlideImage").src = data.image_url;
-            document.getElementById("refineSlideCaption").textContent = "Regenerated image";
-            renderImageOptionStrip();
-            renderDeckPreview();
-        } else {
-            showInfoModal("Image Generation", data.error || "Generation failed. Try again.");
-        }
-    } catch(e) {
-        showInfoModal("Image Generation", "Something went wrong. Try again.");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "Regenerate Image";
-    }
-}
+    started_at = time.time()
+    log_usage("generate_start", filename=file.filename)
 
-function selectNoImage(){
-    const slide = refineSlides[currentRefineSlide];
-    slide.selected_option_id = "__none__";
-    slide.image_path = "__none__";
-    slide.image_name = "none";
-    slide.image_source = "text_only";
-    slide.image_url = "";
-    document.getElementById("refineSlideImage").src = "";
-    document.getElementById("refineSlideCaption").textContent = "Text Only — no background image";
-    renderImageOptionStrip();
-    renderDeckPreview();
-}
+    logline = (request.form.get("logline") or "").strip()
+    synopsis = (request.form.get("synopsis") or "").strip()
+    visual_style = (request.form.get("visual_style") or "live_action").strip().lower()
+    if visual_style not in {"live_action", "illustrated", "animated"}:
+        visual_style = "live_action"
+    poster = request.files.get("poster")
+    images = request.files.getlist("images")
 
-function renderCurrentRefineSlide(){
-    if (!Array.isArray(refineSlides) || !refineSlides.length){
-        return;
+    _uid_for_vis = uid or "anon"
+    visuals_root = BASE_DIR / "visuals" / "user_uploaded" / _uid_for_vis
+    poster_dir = visuals_root / "poster"
+    current_dir = visuals_root / "current"
+
+    poster_dir.mkdir(parents=True, exist_ok=True)
+    current_dir.mkdir(parents=True, exist_ok=True)
+
+    for old_file in poster_dir.iterdir():
+        if old_file.is_file():
+            old_file.unlink()
+
+    for old_file in current_dir.iterdir():
+        if old_file.is_file():
+            old_file.unlink()
+
+    if poster and poster.filename:
+        poster_path = poster_dir / Path(poster.filename).name
+        poster.save(poster_path)
+
+    saved_images = []
+    for image in images:
+        if image and image.filename:
+            image_path = current_dir / Path(image.filename).name
+            image.save(image_path)
+            saved_images.append(image_path.name)
+
+    upload_context = {
+        "script_filename": Path(file.filename).name,
+        "logline": logline,
+        "synopsis": synopsis,
+        "visual_style": visual_style,
+        "poster_filename": poster.filename if poster and poster.filename else "",
+        "image_filenames": saved_images,
+        "visuals_root": str(visuals_root),
     }
 
-    const slide = refineSlides[currentRefineSlide];
-    document.getElementById("slideCounter").textContent = `Slide ${currentRefineSlide + 1} of ${refineSlides.length}`;
-    document.getElementById("slideType").textContent = slide.type;
-    document.getElementById("refineTitleInput").value = slide.title;
-    document.getElementById("refineSubtitleInput").value = slide.subtitle;
-    document.getElementById("refineBodyInput").value = slide.body;
-    const customImg = slideCustomImages[currentRefineSlide];
-    document.getElementById("refineSlideImage").src = customImg ? customImg.url : previewImageSrcForSlide(slide);
-    document.getElementById("refineSlideCaption").textContent = slide.caption || `Preview for ${latestRefineProjectTitle}`;
-    const nameEl = document.getElementById("slideImageUploadName");
-    if (nameEl) nameEl.textContent = customImg ? "Custom image set" : "No image selected";
-    renderImageOptionStrip();
-    document.getElementById("refineBackBtn").disabled = currentRefineSlide === 0;
-    document.getElementById("refineNextBtn").disabled = currentRefineSlide === refineSlides.length - 1;
-    renderRefineSlideList();
-}
-
-function saveCurrentRefineSlide(){
-    if (!Array.isArray(refineSlides) || !refineSlides.length){
-        return;
-    }
-    const slide = refineSlides[currentRefineSlide];
-    slide.title = document.getElementById("refineTitleInput").value;
-    slide.subtitle = document.getElementById("refineSubtitleInput").value;
-    slide.body = document.getElementById("refineBodyInput").value;
-    renderCurrentRefineSlide();
-    renderDeckPreview();
-}
-
-async function openRefinementStage(){
-    syncTrackEnterRefine();
-    activeCompleteView = "refine";
-    const loaded = await loadLatestRefineSlides();
-    if (loaded) latestSlidesLoadedForComplete = true;
-    document.getElementById("previewStage").style.display = "none";
-    document.getElementById("refinementStage").style.display = "block";
-    renderDeckPreview();
-    renderCurrentRefineSlide();
-}
-
-function returnToPreviewStage(){
-    saveCurrentRefineSlide();
-    activeCompleteView = "preview";
-    document.getElementById("refinementStage").style.display = "none";
-    document.getElementById("previewStage").style.display = "block";
-    renderDeckPreview();
-}
-
-function goPrevRefineSlide(){
-    saveCurrentRefineSlide();
-    if (currentRefineSlide > 0){
-        currentRefineSlide -= 1;
-        renderCurrentRefineSlide();
-    }
-}
-
-function goNextRefineSlide(){
-    saveCurrentRefineSlide();
-    if (currentRefineSlide < refineSlides.length - 1){
-        currentRefineSlide += 1;
-        renderCurrentRefineSlide();
-    }
-}
-
-function changePlaceholderImage(){
-    showInfoModal("Change Image", "Image selection is the next pass. For now, refine text first.");
-}
-const _BUILD_QUOTES = [
-    { text: "Every great film begins with a great story — written for the screen, felt in the gut.", attr: "— Screenwriting tradition" },
-    { text: "The pitch is where the dream meets the room.", attr: "— Film development saying" },
-    { text: "Cinema is a mirror by which we often see ourselves.", attr: "— Martin Scorsese" },
-    { text: "A story is not what happened. It’s why it happened, and to whom.", attr: "— Robert McKee" },
-    { text: "The most honest form of filmmaking is to make a film for yourself.", attr: "— Peter Jackson" },
-    { text: "You can’t wait for inspiration. You have to go after it with a club.", attr: "— Jack London" },
-    { text: "Drama is life with the dull bits cut out.", attr: "— Alfred Hitchcock" },
-    { text: "The secret to a great pitch is making them feel the movie.", attr: "— Hollywood maxim" },
-    { text: "Every story worth telling is a story about change.", attr: "— Writing principle" },
-    { text: "Character is revealed through choice under pressure.", attr: "— Aristotle (via McKee)" },
-    { text: "Films can illuminate the darkness or they can be part of it.", attr: "— Roger Ebert" },
-    { text: "Make the audience want to know what happens next. That’s the whole job.", attr: "— Billy Wilder" },
-];
-let _quoteInterval = null;
-let _quoteIdx = 0;
-
-function _startBuildQuotes() {
-    const textEl = document.getElementById("buildQuoteText");
-    const attrEl = document.getElementById("buildQuoteAttr");
-    if (!textEl) return;
-    _quoteIdx = Math.floor(Math.random() * _BUILD_QUOTES.length);
-    const show = () => {
-        const q = _BUILD_QUOTES[_quoteIdx % _BUILD_QUOTES.length];
-        textEl.style.opacity = "0";
-        attrEl.style.opacity = "0";
-        setTimeout(() => {
-            textEl.textContent = "\u201c" + q.text + "\u201d";
-            attrEl.textContent = q.attr;
-            textEl.style.opacity = "1";
-            attrEl.style.opacity = "1";
-        }, 600);
-        _quoteIdx++;
-    };
-    show();
-    _quoteInterval = setInterval(show, 5000);
-}
-
-function _stopBuildQuotes() {
-    if (_quoteInterval) { clearInterval(_quoteInterval); _quoteInterval = null; }
-}
-
-function openBuildProgressModal(){
-    const modal = document.getElementById("buildProgressModal");
-    document.getElementById("buildProgressTitle").textContent = "Building Your Deck";
-    document.getElementById("buildProgressCopy").textContent = "This takes about 30–60 seconds while we generate your images.";
-    document.getElementById("buildProgressStage").textContent = "Analyzing script\u2026";
-    document.getElementById("buildProgressFill").style.width = "10%";
-    document.getElementById("buildProgressWorking").style.display = "block";
-    document.getElementById("buildProgressActions").style.display = "none";
-    modal.classList.add("show");
-    _startBuildQuotes();
-}
-
-function updateBuildProgressModal(status){
-    const modal = document.getElementById("buildProgressModal");
-    if (!modal.classList.contains("show")) return;
-    const fill = document.getElementById("buildProgressFill");
-    const stage = document.getElementById("buildProgressStage");
-    if (status === "ANALYZING"){
-        stage.textContent = "Analyzing script with Developum AI Engine\u2026";
-        fill.style.width = "35%";
-    } else if (status === "BUILDING"){
-        stage.textContent = "Generating images and building deck\u2026";
-        fill.style.width = "75%";
-    } else if (status === "COMPLETE"){
-        _stopBuildQuotes();
-        fill.style.width = "100%";
-        document.getElementById("buildProgressWorking").style.display = "none";
-        document.getElementById("buildProgressTitle").textContent = "Deck Ready";
-        document.getElementById("buildProgressCopy").textContent = "Your pitch deck has been generated.";
-        document.getElementById("buildProgressActions").style.display = "flex";
-    } else if (status === "ERROR"){
-        _stopBuildQuotes();
-        document.getElementById("buildProgressWorking").style.display = "none";
-        document.getElementById("buildProgressTitle").textContent = "Build Failed";
-        document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please try again.";
-        document.getElementById("buildProgressActions").style.display = "flex";
-        document.getElementById("buildProgressActions").querySelector("button").textContent = "Close";
-    }
-}
-
-function closeBuildProgressModal(){
-    _stopBuildQuotes();
-    document.getElementById("buildProgressModal").classList.remove("show");
-}
-
-async function submitRefineDeck() {
-    saveCurrentRefineSlide();
-    document.getElementById("buildProgressTitle").textContent = "Rebuilding Deck";
-    document.getElementById("buildProgressCopy").textContent = "Applying your edits and rebuilding the deck.";
-    document.getElementById("buildProgressStage").textContent = "Rebuilding…";
-    document.getElementById("buildProgressFill").style.width = "35%";
-    document.getElementById("buildProgressWorking").style.display = "block";
-    document.getElementById("buildProgressActions").style.display = "none";
-    document.getElementById("buildProgressModal").classList.add("show");
-
-    try {
-        const res = await fetch("/refine-deck", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ slides: refineSlides })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Rebuild failed.");
-        document.getElementById("buildProgressFill").style.width = "100%";
-        closeBuildProgressModal();
-        latestSlidesLoadedForComplete = false;
-        await syncLatestSlidesForPreview();
-        renderCurrentRefineSlide();
-    } catch (e) {
-        closeBuildProgressModal();
-        showInfoModal("Rebuild Failed", e.message || "Rebuild failed.");
-    }
-}
-
-async function _pollRegenStatus(maxMs = 150000) {
-    const interval = 2500;
-    let elapsed = 0;
-    let fill = 40;
-    const fillEl = document.getElementById("buildProgressFill");
-    while (elapsed < maxMs) {
-        await new Promise(r => setTimeout(r, interval));
-        elapsed += interval;
-        fill = Math.min(fill + 2, 92);
-        if (fillEl) fillEl.style.width = fill + "%";
-        try {
-            const sr = await fetch("/status");
-            const sd = await sr.json();
-            const st = (sd.status || "").toUpperCase();
-            if (st === "COMPLETE") return;
-            if (st === "ERROR") throw new Error("Regenerate build failed. Please try again.");
-        } catch (e) {
-            if (e.message.includes("failed") || e.message.includes("timed out")) throw e;
-        }
-    }
-    throw new Error("Regenerate timed out. Please try again.");
-}
-
-async function submitRegenDeck() {
-    syncTrackRegen();
-    let prompt = (
-        document.getElementById("refineRegenInput")?.value ||
-        document.getElementById("regenPromptInput")?.value || ""
-    ).trim();
-    if (!prompt) {
-        showInfoModal("New Direction Required", "Type a new creative direction in the input field above the Regenerate Deck button, then try again.");
-        return;
-    }
-
-    document.getElementById("buildProgressTitle").textContent = "Regenerating Deck";
-    document.getElementById("buildProgressCopy").textContent = "Please wait while your updated deck is rebuilt.";
-    document.getElementById("buildProgressStage").textContent = "Rebuilding deck…";
-    document.getElementById("buildProgressFill").style.width = "35%";
-    document.getElementById("buildProgressWorking").style.display = "block";
-    document.getElementById("buildProgressActions").style.display = "none";
-    document.getElementById("buildProgressModal").classList.add("show");
-
-    try {
-        const res = await fetch("/regen-deck", {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ prompt })
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) {
-            throw new Error(data.error || "Regenerate failed.");
-        }
-        // Backend is async — poll /status until COMPLETE or ERROR
-        if (data.polling) {
-            await _pollRegenStatus();
-        }
-        document.getElementById("buildProgressFill").style.width = "100%";
-        closeBuildProgressModal();
-        latestSlidesLoadedForComplete = false;
-        await syncLatestSlidesForPreview();
-        renderCurrentRefineSlide();
-    } catch (e) {
-        closeBuildProgressModal();
-        showInfoModal("Regenerate Deck", e.message || "Regenerate failed.");
-    }
-}
+    _ctx_name = f"user_upload_context_{uid}.json" if uid else "user_upload_context.json"
+    _ctx_data = json.dumps(upload_context, indent=2)
+    (BASE_DIR / _ctx_name).write_text(_ctx_data, encoding="utf-8")
 
 
-// ===== JAVASCRIPT: ACTOR PREP FLOW START ==============
-function startActorPrepFlow(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
-    resetCreateProject();
-    document.getElementById("actorPrepModal").classList.add("show");
-}
+    # Capture project_id before pipeline starts — read from dedicated file (most reliable)
+    _apf = _active_project_file(uid or "")
+    saved_pid = (
+        (_apf.read_text(encoding="utf-8").strip() if _apf.exists() else "")
+        or session.get("active_project_id")
+        or get_status_project_id(uid or "")
+    )
 
-async function submitActorPrep(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
-    const role = (document.getElementById("actorRoleInput").value || "").trim();
-    const movieTitle = (document.getElementById("actorPrepMovieTitle")?.value || "").trim();
-    const fileInput = document.getElementById("actorPrepFile");
-    const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
+    _uid_str = uid or ""
+    _user_email = session.get("user_email", "")
+    log_path = BASE_DIR / f"pipeline_{_uid_str}.log" if _uid_str else BASE_DIR / "pipeline.log"
 
-    if (!role){
-        showInfoModal("Actor Preparation", "Please enter the role you are preparing.");
-        return;
-    }
+    _pipeline_env = os.environ.copy()
+    if _uid_str:
+        _pipeline_env["DAI_USER_ID"] = _uid_str
+        _work_dir = USER_DATA_DIR / _uid_str / str(saved_pid) / "build"
+        _work_dir.mkdir(parents=True, exist_ok=True)
+        (_work_dir / "user_upload_context.json").write_text(_ctx_data, encoding="utf-8")
+        _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
+        # Copy uploads into project-scoped dirs so Regenerate Deck and other
+        # projects can't cross-contaminate via the shared current_dir.
+        import shutil as _shutil
+        _wd_uploads = _work_dir / "uploads"
+        _wd_poster = _work_dir / "poster"
+        _wd_uploads.mkdir(parents=True, exist_ok=True)
+        _wd_poster.mkdir(parents=True, exist_ok=True)
+        for _f in current_dir.iterdir():
+            if _f.is_file():
+                _shutil.copy2(_f, _wd_uploads / _f.name)
+        for _f in poster_dir.iterdir():
+            if _f.is_file():
+                _shutil.copy2(_f, _wd_poster / _f.name)
 
-    if (!file){
-        showInfoModal("Actor Preparation", "Please choose a script before continuing.");
-        return;
-    }
+    set_status("ANALYZING", project_id=saved_pid, uid=_uid_str)
 
-    closeModal("actorPrepModal");
-    document.getElementById("buildProgressTitle").textContent = "Analyzing Your Sides";
-    document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is breaking down your script. This takes about 30–60 seconds.";
-    document.getElementById("buildProgressStage").textContent = "Analyzing sides with Developum AI Engine…";
-    document.getElementById("buildProgressFill").style.width = "15%";
-    document.getElementById("buildProgressWorking").style.display = "block";
-    document.getElementById("buildProgressActions").style.display = "none";
-    document.getElementById("buildProgressModal").classList.add("show");
+    def _run_pipeline_bg():
+        try:
+            with open(log_path, "w", encoding="utf-8") as log_file:
+                subprocess.run(
+                    ["python3", str(BASE_DIR / "run_pipeline.py"), str(save_path)],
+                    cwd=str(BASE_DIR),
+                    env=_pipeline_env,
+                    stdout=log_file,
+                    stderr=log_file,
+                    text=True,
+                    check=True,
+                )
+            set_status("BUILDING", project_id=saved_pid, uid=_uid_str)
+        except subprocess.CalledProcessError:
+            set_status("ERROR", uid=_uid_str)
+            return
+        except Exception:
+            set_status("ERROR", uid=_uid_str)
+            return
 
-    const formData = new FormData();
-    formData.append("character_name", role);
-    if (movieTitle) formData.append("movie_title", movieTitle);
-    formData.append("script", file);
+        fresh_pptx = newest_generated_file(".pptx")
+        fresh_pdf = newest_generated_file(".pdf")
 
-    try {
-        const response = await fetch("/actor-prep-pass", {
-            method: "POST",
-            body: formData
-        });
-        const data = await response.json();
+        if not fresh_pptx or not fresh_pptx.exists():
+            set_status("ERROR", uid=_uid_str)
+            return
 
-        if (response.status === 422 && data.needs_paste){
-            closeBuildProgressModal();
-            document.getElementById("actorPrepPasteModal").classList.add("show");
-            return;
-        }
+        publish_latest_outputs(fresh_pptx, fresh_pdf)
 
-        if (!response.ok){
-            document.getElementById("buildProgressWorking").style.display = "none";
-            document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
-            document.getElementById("buildProgressCopy").textContent = data.error || "Actor preparation failed. Please try again.";
-            const actionsEl = document.getElementById("buildProgressActions");
-            actionsEl.style.display = "flex";
-            actionsEl.querySelector("button").textContent = "Close";
-            actionsEl.querySelector("button").onclick = closeBuildProgressModal;
-            return;
-        }
+        if not LATEST_PPTX.exists():
+            set_status("ERROR", uid=_uid_str)
+            return
 
-        document.getElementById("buildProgressFill").style.width = "100%";
-        document.getElementById("buildProgressWorking").style.display = "none";
-        document.getElementById("buildProgressTitle").textContent = "Audition Analysis Complete";
-        document.getElementById("buildProgressCopy").textContent = "Your preparation packet is ready.";
-        const actionsEl = document.getElementById("buildProgressActions");
-        actionsEl.style.display = "flex";
-        actionsEl.querySelector("button").textContent = "View Results";
-        actionsEl.querySelector("button").onclick = () => {
-            closeBuildProgressModal();
-            document.getElementById("actorPrepSummaryCopy").textContent = data.summary_note || "Your actor preparation packet is ready.";
-            document.getElementById("actorPrepCompleteModal").classList.add("show");
-        };
-    } catch (err) {
-        stopProgressCreep();
-        closeBuildProgressModal();
-        showInfoModal("Actor Preparation", "Actor preparation failed. Please try again.");
-    }
-}
+        set_status("COMPLETE", project_id=saved_pid, uid=_uid_str)
+        _cleanup_old_output_files()
+        elapsed = int(time.time() - started_at)
+        log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
+        log_activity_event("deck_run", route="/upload", user_email=_user_email)
 
-async function submitActorPrepPaste(){
-    const role = (document.getElementById("actorRoleInput").value || "").trim();
-    const pastedText = (document.getElementById("actorPrepPasteText").value || "").trim();
+        if saved_pid and DB_ENGINE:
+            try:
+                proj_out = USER_DATA_DIR / _uid_str / str(saved_pid)
+                proj_out.mkdir(parents=True, exist_ok=True)
+                if fresh_pptx and fresh_pptx.exists():
+                    shutil.copy2(fresh_pptx, proj_out / "deck.pptx")
+                if fresh_pdf and fresh_pdf.exists():
+                    shutil.copy2(fresh_pdf, proj_out / "deck.pdf")
+                _manifest_src = user_manifest_path(_uid_str)
+                if not _manifest_src.exists():
+                    _manifest_src = LATEST_DECK_MANIFEST_JSON
+                if _manifest_src.exists():
+                    shutil.copy2(_manifest_src, proj_out / "deck_manifest.json")
+                # Build analysis PDF from brain output and save per-project + global
+                _brain_src = Path(_pipeline_env.get("DAI_WORK_DIR", "")) / "approved_brain_output.json"
+                if not _brain_src.exists():
+                    _brain_src = BASE_DIR / "approved_brain_output.json"
+                if _brain_src.exists():
+                    try:
+                        _brain_data = json.loads(_brain_src.read_text(encoding="utf-8"))
+                        _proj_analysis_pdf = proj_out / "analysis_report.pdf"
+                        build_simple_analysis_pdf(_brain_data, _proj_analysis_pdf)
+                        shutil.copy2(_proj_analysis_pdf, LATEST_ANALYSIS_PDF)
+                        _brain_json_dest = proj_out / "analysis_report.json"
+                        _brain_json_dest.write_text(json.dumps(_brain_data, indent=2), encoding="utf-8")
+                        shutil.copy2(_brain_json_dest, LATEST_ANALYSIS_JSON)
+                    except Exception as _e:
+                        print(f"⚠️ Analysis PDF build failed: {_e}", flush=True)
+                with DB_ENGINE.begin() as conn:
+                    conn.execute(text("""
+                        UPDATE projects SET output_dir = :output_dir WHERE id = :id
+                    """), {"output_dir": f"user_data/{_uid_str}/{saved_pid}", "id": int(saved_pid)})
+            except Exception as e:
+                print(f"⚠️ Failed to save project output: {e}", flush=True)
 
-    if (!role){
-        showInfoModal("Actor Preparation", "Please enter the role you are preparing.");
-        return;
-    }
-
-    if (!pastedText){
-        showInfoModal("Actor Preparation", "Please paste the script text to continue.");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append("character_name", role);
-    formData.append("script_text", pastedText);
-
-    try {
-        const response = await fetch("/actor-prep-pass", {
-            method: "POST",
-            body: formData
-        });
-        const data = await response.json();
-
-        if (!response.ok){
-            showInfoModal("Actor Preparation", data.error || "Actor preparation failed.");
-            return;
-        }
-
-        document.getElementById("actorPrepSummaryCopy").textContent = data.summary_note || "Your actor preparation packet is ready.";
-        closeModal("actorPrepPasteModal");
-        document.getElementById("actorPrepCompleteModal").classList.add("show");
-    } catch (err) {
-        showInfoModal("Actor Preparation", "Actor preparation failed. Please try again.");
-    }
-}
-// ===== JAVASCRIPT: ACTOR PREP FLOW END ================
+    threading.Thread(target=_run_pipeline_bg, daemon=True).start()
+    return ("OK", 200)
 
 
-// ===== JAVASCRIPT: ACTOR BOOKED FLOW START ==============
-function startActorBookedFlow(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
-    resetCreateProject();
-    document.getElementById("actorBookedModal").classList.add("show");
-}
-
-async function submitActorBooked(){
-    if (typeof userLoggedIn !== "undefined" && !userLoggedIn) { openPricingModal(); return; }
-    const role = (document.getElementById("actorBookedRoleInput").value || "").trim();
-    const movieTitle = (document.getElementById("actorBookedMovieTitle")?.value || "").trim();
-    const fileInput = document.getElementById("actorBookedFile");
-    const file = fileInput && fileInput.files && fileInput.files.length ? fileInput.files[0] : null;
-
-    const roleErr = document.getElementById("actorBookedRoleError");
-    if (!role){
-        if (roleErr) { roleErr.style.display = "block"; }
-        document.getElementById("actorBookedRoleInput").focus();
-        return;
-    }
-    if (roleErr) roleErr.style.display = "none";
-
-    if (!file){
-        showInfoModal("Booked Role Analyzer", "Please choose a script before continuing.");
-        return;
-    }
-
-    closeModal("actorBookedModal");
-    document.getElementById("buildProgressTitle").textContent = "Analyzing Your Role";
-    document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is building your character breakdown. This takes about 30–60 seconds.";
-    document.getElementById("buildProgressStage").textContent = "Analyzing full script with Developum AI Engine…";
-    document.getElementById("buildProgressFill").style.width = "15%";
-    document.getElementById("buildProgressWorking").style.display = "block";
-    document.getElementById("buildProgressActions").style.display = "none";
-    document.getElementById("buildProgressModal").classList.add("show");
-
-    const formData = new FormData();
-    formData.append("character_name", role);
-    if (movieTitle) formData.append("movie_title", movieTitle);
-    formData.append("script", file);
-
-    try {
-        const response = await fetch("/actor-booked-pass", {
-            method: "POST",
-            body: formData
-        });
-        const data = await response.json();
-
-        if (response.status === 422 && data.needs_paste){
-            closeBuildProgressModal();
-            document.getElementById("actorBookedPasteModal").classList.add("show");
-            return;
-        }
-
-        if (!response.ok){
-            document.getElementById("buildProgressWorking").style.display = "none";
-            document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
-            document.getElementById("buildProgressCopy").textContent = data.error || "Booked role analysis failed. Please try again.";
-            const actionsEl = document.getElementById("buildProgressActions");
-            actionsEl.style.display = "flex";
-            actionsEl.querySelector("button").textContent = "Close";
-            actionsEl.querySelector("button").onclick = closeBuildProgressModal;
-            return;
-        }
-
-        document.getElementById("buildProgressFill").style.width = "100%";
-        document.getElementById("buildProgressWorking").style.display = "none";
-        document.getElementById("buildProgressTitle").textContent = "Role Analysis Complete";
-        document.getElementById("buildProgressCopy").textContent = "Your character breakdown is ready.";
-        const actionsEl = document.getElementById("buildProgressActions");
-        actionsEl.style.display = "flex";
-        actionsEl.querySelector("button").textContent = "View Results";
-        actionsEl.querySelector("button").onclick = () => {
-            closeBuildProgressModal();
-            document.getElementById("actorBookedSummaryCopy").textContent = data.summary_note || "Your booked role preparation packet is ready.";
-            document.getElementById("actorBookedCompleteModal").classList.add("show");
-        };
-    } catch (err) {
-        stopProgressCreep();
-        closeBuildProgressModal();
-        showInfoModal("Booked Role Analyzer", "Booked role analysis failed. Please try again.");
-    }
-}
-
-async function submitActorBookedPaste(){
-    const role = (document.getElementById("actorBookedRoleInput").value || "").trim();
-    const pastedText = (document.getElementById("actorBookedPasteText").value || "").trim();
-
-    if (!role){
-        showInfoModal("Booked Role Analyzer", "Please enter the role you booked.");
-        return;
-    }
-
-    if (!pastedText){
-        showInfoModal("Booked Role Analyzer", "Please paste the script text to continue.");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append("character_name", role);
-    formData.append("script_text", pastedText);
-
-    try {
-        const response = await fetch("/actor-booked-pass", {
-            method: "POST",
-            body: formData
-        });
-        const data = await response.json();
-
-        if (!response.ok){
-            showInfoModal("Booked Role Analyzer", data.error || "Booked role analysis failed.");
-            return;
-        }
-
-        document.getElementById("actorBookedSummaryCopy").textContent = data.summary_note || "Your booked role preparation packet is ready.";
-        closeModal("actorBookedPasteModal");
-        document.getElementById("actorBookedCompleteModal").classList.add("show");
-    } catch (err) {
-        showInfoModal("Booked Role Analyzer", "Booked role analysis failed. Please try again.");
-    }
-}
-// ===== JAVASCRIPT: ACTOR BOOKED FLOW END ================
+def _cleanup_old_output_files():
+    for pattern in ("pitch_deck_v*.pptx",):
+        files = sorted(OUTPUT_DIR.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
+        for old in files[3:]:
+            try:
+                old.unlink()
+            except Exception:
+                pass
 
 
-function updateStatusUI(status){
-    const inlineStatusEl = document.getElementById("inlineStatusValue");
-    const inlineStageEl = document.getElementById("inlineStageValue");
-    const previousStatus = lastStatus;
+# ===== DEMO ROUTES START =============================
+@app.route("/demo", methods=["POST"])
+def demo():
+    if not DEMO_DECK.exists():
+        return "Demo deck not found", 500
+    return send_file(DEMO_DECK, as_attachment=False)
 
-    lastStatus = status;
 
-    const progress = document.getElementById("progressFill");
-    if (status === "UPLOADED") progress.style.width = "20%";
-    if (status === "ANALYZING" || status === "running") progress.style.width = "50%";
-    if (status === "BUILDING") progress.style.width = "85%";
-    if (status === "COMPLETE") progress.style.width = "100%";
+@app.route("/download/latest.pptx")
+def download_latest_pptx():
+    uid = session.get("user_id")
+    pid = session.get("active_project_id") or get_status_project_id()
+    if uid and pid:
+        proj_path = USER_DATA_DIR / str(uid) / str(pid) / "deck.pptx"
+        if proj_path.exists():
+            return send_file(proj_path, as_attachment=True)
+    if not LATEST_PPTX.exists():
+        abort(404)
+    return send_file(LATEST_PPTX, as_attachment=True)
 
-    const activeStatuses = ["UPLOADED", "ANALYZING", "BUILDING", "DEMO_RUNNING"];
-    if (activeStatuses.includes(status)) startTimer();
 
-    if (status === "IDLE"){
-        resetTimer();
-        inlineStageEl.textContent = "Awaiting input...";
-        document.body.classList.remove("complete-mode");
-    } else if (status === "UPLOADED"){
-        inlineStatusEl.textContent = "UPLOADED • 00:00";
-        inlineStageEl.textContent = "Preparing engine";
-    } else if (status === "ANALYZING" || status === "running"){
-        inlineStageEl.textContent = "Analyzing script";
-        updateBuildProgressModal("ANALYZING");
-    } else if (status === "BUILDING"){
-        inlineStageEl.textContent = "Finalizing deck...";
-        updateBuildProgressModal("BUILDING");
-    } else if (status === "DEMO_RUNNING"){
-        inlineStageEl.textContent = "Preparing engine";
-    } else if (status === "COMPLETE"){
-        updateBuildProgressModal("COMPLETE");
-        stopTimer();
-        stopQuoteRotation();
-        buildInFlight = false;
-        document.body.classList.add("complete-mode");
-        syncTrackDeckDone();
-        document.getElementById("buildProgressBar").style.display = "none";
-        document.getElementById("liveProcessLog").style.display = "none";
-        document.getElementById("buildCopy").style.display = "none";
-        document.getElementById("buildMeta").style.display = "none";
-        document.getElementById("completePanel").style.display = "block";
+@app.route("/download/latest_producer.pptx")
+def download_latest_producer_pptx():
+    path = OUTPUT_DIR / "latest.pptx"
+    if not path.exists():
+        abort(404)
+    return send_file(path, as_attachment=True)
 
-        if (activeCompleteView === "refine") {
-            document.getElementById("previewStage").style.display = "none";
-            document.getElementById("refinementStage").style.display = "block";
-            if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
-                syncLatestSlidesForPreview().then(() => {
-                    renderCurrentRefineSlide();
-                });
+
+@app.route("/download/latest.pdf")
+def download_latest_pdf():
+    uid = session.get("user_id")
+    pid = session.get("active_project_id") or get_status_project_id()
+    if uid and pid:
+        proj_path = USER_DATA_DIR / str(uid) / str(pid) / "deck.pdf"
+        if proj_path.exists():
+            return send_file(proj_path, as_attachment=True)
+    if not LATEST_PDF.exists():
+        abort(404)
+    return send_file(LATEST_PDF, as_attachment=True)
+
+
+@app.route("/upload-slide-image", methods=["POST"])
+@require_login
+def upload_slide_image():
+    file = request.files.get("image")
+    if not file or not file.filename:
+        return jsonify({"ok": False, "error": "No file"}), 400
+    ext = Path(file.filename).suffix.lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
+        return jsonify({"ok": False, "error": "Image files only"}), 400
+    uid = session.get("user_id", "anon")
+    dest = USER_DATA_DIR / str(uid) / "slide_images"
+    dest.mkdir(parents=True, exist_ok=True)
+    import uuid as _uuid
+    safe_name = f"{_uuid.uuid4().hex}{ext}"
+    save_path = dest / safe_name
+    file.save(save_path)
+    return jsonify({"ok": True, "path": str(save_path), "url": f"/slide-image/{uid}/{safe_name}"})
+
+
+@app.route("/slide-image/<uid>/<filename>")
+def serve_slide_image(uid, filename):
+    path = USER_DATA_DIR / str(uid) / "slide_images" / filename
+    if not path.exists():
+        abort(404)
+    return send_file(path)
+
+
+# ===== ANALYZE ROUTES START ==========================
+@app.route("/analyze-script-pass", methods=["POST"])
+def analyze_script_pass():
+    set_status("ANALYZING")
+    file = request.files.get("script")
+
+    if not file or file.filename == "":
+        return jsonify({"error": "No file"}), 400
+
+
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Only .txt and .pdf supported"}), 400
+
+    temp_path = UPLOAD_DIR / Path(file.filename).name
+    file.save(temp_path)
+
+    started_at = time.time()
+    log_usage("analyze_start", filename=file.filename)
+
+    try:
+        subprocess.run(
+            ["python3", str(BASE_DIR / "single_brain_orchestrator_v3.py"), str(temp_path)],
+            cwd=str(BASE_DIR),
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        log_usage("analyze_complete", success=False, filename=file.filename, error="analysis_failed")
+        return jsonify({"error": "analysis failed"}), 500
+
+    brain_file = BASE_DIR / "approved_brain_output.json"
+
+    if not brain_file.exists():
+        return jsonify({"error": "No brain output"}), 500
+
+    with open(brain_file, "r", encoding="utf-8") as f:
+        brain = json.load(f)
+
+    # Save per-user brain output so actor tools never bleed across users
+    uid = session.get("user_id", "")
+    if uid:
+        user_dir = USER_DATA_DIR / uid
+        user_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            (user_dir / "brain_output.json").write_text(
+                json.dumps(brain, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+        except Exception:
+            pass
+
+    characters = brain.get("characters") or []
+    lead_character = brain.get("protagonist") or (characters[0] if characters else "-")
+    supporting_characters = characters[1:5] if len(characters) > 1 else []
+
+    _market = brain.get("market_projections") or {}
+    _strength = brain.get("strength_index") or {}
+    _comp_films = brain.get("comparable_films") or []
+
+    report_output = {
+        "title": safe_text(brain.get("title"), "UNTITLED PROJECT"),
+        "tagline": safe_text(brain.get("tagline") or brain.get("logline")),
+        "logline": safe_text(brain.get("logline")),
+        "synopsis": safe_text(brain.get("synopsis")),
+        "protagonist_summary": safe_text(brain.get("protagonist_summary")),
+        "lead_character": safe_text(lead_character),
+        "supporting_characters": supporting_characters,
+        "genre": safe_text(brain.get("world"), "Drama"),
+        "tone": safe_text(brain.get("tone")),
+        "theme": safe_text(brain.get("theme")),
+        "world": safe_text(brain.get("world")),
+        "setting": safe_text(brain.get("setting")),
+        "time_frame": safe_text(brain.get("time_frame")),
+        "core_conflict": safe_text(brain.get("core_conflict")),
+        "story_engine": safe_text(brain.get("story_engine")),
+        "reversal": safe_text(brain.get("reversal")),
+        "commercial_positioning": safe_text(brain.get("commercial_positioning")),
+        "packaging_potential": safe_text(brain.get("packaging_potential")),
+        "executive_summary": safe_text(brain.get("executive_summary")),
+        "strengths": brain.get("strengths") or [],
+        "development_risks": brain.get("development_risks") or brain.get("risks") or [],
+        "market_projections": {
+            "budget_range": safe_text(_market.get("budget_range") or _market.get("budget_tier") or _market.get("estimated_budget_tier")),
+            "distribution_angle": safe_text(_market.get("distribution_angle")),
+            "awards_potential": safe_text(_market.get("awards_potential") or _market.get("awards_lane")),
+            "franchise_potential": safe_text(_market.get("franchise_potential")),
+            "audience_reach": safe_text(_market.get("audience_reach")),
+        },
+        "strength_index": {
+            "concept": int(_strength.get("concept") or 0),
+            "character": int(_strength.get("character") or 0),
+            "marketability": int(_strength.get("marketability") or 0),
+            "originality": int(_strength.get("originality") or 0),
+        },
+        "comparable_films": [
+            {
+                "title": safe_text(c.get("title")),
+                "why": safe_text(c.get("why")),
+                "budget_tier": safe_text(c.get("budget_tier")),
+                "box_office": safe_text(c.get("box_office")),
             }
-        } else {
-            document.getElementById("previewStage").style.display = "block";
-            document.getElementById("refinementStage").style.display = "none";
-            if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
-                syncLatestSlidesForPreview();
-            }
-            if (previousStatus !== "COMPLETE") fetchMyProjects();
-        }
-    } else if (status === "ERROR"){
-        updateBuildProgressModal("ERROR");
-        stopTimer();
-        buildInFlight = false;
-        inlineStageEl.textContent = "Check terminal / backend";
-        document.body.classList.remove("complete-mode");
-        document.getElementById("liveProcessLog").style.display = "block";
-        document.getElementById("buildCopy").style.display = "block";
-        document.getElementById("buildMeta").style.display = "flex";
-        document.getElementById("completePanel").style.display = "none";
-    } else {
-        inlineStageEl.textContent = "Processing";
-        document.body.classList.remove("complete-mode");
-    }
-    updateProgressForStatus(status);
-    renderLiveProcessLog(status);
-}
-
-async function pollStatus(){
-    try {
-        const response = await fetch("/status", { cache: "no-store" });
-        if (!response.ok) return;
-        const data = await response.json();
-
-        if (data && data.status) {
-            if (buildInFlight && !sawFreshBuildStatus) {
-                if (data.status === "ANALYZING" || data.status === "BUILDING" || data.status === "running") {
-                    sawFreshBuildStatus = true;
-                } else if (data.status === "COMPLETE" || data.status === "ERROR") {
-                    // Server was single-threaded — we never saw ANALYZING/BUILDING,
-                    // but the build finished. Accept it.
-                    sawFreshBuildStatus = true;
-                } else {
-                    return;
+            for c in _comp_films[:6] if isinstance(c, dict) and c.get("title")
+        ],
+        "story_insights": [
+            f"Top characters identified: {', '.join(characters[:5])}" if characters else "Top characters identified.",
+            f"Protagonist detected: {lead_character}",
+            f"World detected: {safe_text(brain.get('world'), 'Unknown')}",
+        ],
+        "character_analysis": {
+            "top_characters": [
+                {
+                    "name": name,
+                    "dialogue_count": (brain.get("character_stats") or {}).get(name, {}).get("dialogue_count", 0),
+                    "action_count": (brain.get("character_stats") or {}).get(name, {}).get("action_count", 0),
+                    "first_seen": (brain.get("character_stats") or {}).get(name, {}).get("first_seen", 0),
                 }
-            }
-            if (!buildInFlight && data.status === "COMPLETE") return;
-            if (data.status === "COMPLETE" && data.project_id) {
-                activeLoadedProjectId = data.project_id;
-            }
-            updateStatusUI(data.status);
+                for name in characters[:5]
+            ]
+        },
+    }
+
+    summary_note = safe_text(report_output.get("summary_note"), "")
+    if summary_note in {"", "-"}:
+        title = safe_text(report_output.get("title"), "This script")
+        lead = safe_text(report_output.get("lead_character"), "the lead character")
+        genre = safe_text(report_output.get("genre"), "a cinematic story")
+        tone = safe_text(report_output.get("tone"), "grounded and emotional")
+
+        summary_note = (
+            f"{title} puts {lead} at the center of {genre.lower()}, "
+            f"with a tone that feels {tone.lower()}."
+        )
+
+    report_output["summary_note"] = summary_note
+
+    LATEST_ANALYSIS_JSON.write_text(
+        json.dumps(report_output, indent=2),
+        encoding="utf-8",
+    )
+    build_simple_analysis_pdf(report_output, LATEST_ANALYSIS_PDF)
+
+    return jsonify(
+        {
+            "summary_note": summary_note,
+            "title": report_output.get("title", "UNTITLED PROJECT"),
+            "report_json": str(LATEST_ANALYSIS_JSON.name),
+            "report_pdf": str(LATEST_ANALYSIS_PDF.name),
         }
-    } catch (e) {}
-}
-
-refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
-renderDeckPreview();
-renderCurrentRefineSlide();
-
-updateStatusUI("IDLE");
+    )
 
 
-// ===== PER-SLIDE IMAGE UPLOAD =================================
-
-async function handleSlideImageUpload(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const nameEl = document.getElementById("slideImageUploadName");
-    if (nameEl) nameEl.textContent = "Uploading...";
-
-    const formData = new FormData();
-    formData.append("image", file);
-    try {
-        const res = await fetch("/upload-slide-image", { method: "POST", body: formData });
-        const data = await res.json();
-        if (data.ok) {
-            slideCustomImages[currentRefineSlide] = { path: data.path, url: data.url };
-            if (refineSlides[currentRefineSlide]) {
-                refineSlides[currentRefineSlide].image_path = data.path;
-            }
-            const img = document.getElementById("refineSlideImage");
-            if (img) img.src = data.url;
-            if (nameEl) nameEl.textContent = file.name;
-        } else {
-            if (nameEl) nameEl.textContent = "Upload failed";
+def fetch_tmdb_comps(genre_str: str, n: int = 4) -> list:
+    if not TMDB_API_KEY or not genre_str:
+        return []
+    cache_key = genre_str.lower().strip()
+    cached = _TMDB_CACHE.get(cache_key)
+    if cached and (time.time() - cached["ts"] < 3600):
+        return cached["data"]
+    GENRE_MAP = {
+        "crime": 80, "drama": 18, "thriller": 53, "horror": 27,
+        "comedy": 35, "action": 28, "sci-fi": 878, "science fiction": 878,
+        "documentary": 99, "animation": 16, "animated": 16, "romance": 10749,
+        "adventure": 12, "mystery": 9648, "war": 10752, "western": 37,
+        "fantasy": 14, "family": 10751, "biography": 36, "history": 36,
+        "sport": 18, "sports": 18,
+    }
+    genre_lower = genre_str.lower()
+    genre_ids = list({str(gid) for kw, gid in GENRE_MAP.items() if kw in genre_lower})
+    try:
+        import urllib.request, urllib.parse
+        params = {
+            "api_key": TMDB_API_KEY,
+            "sort_by": "revenue.desc",
+            "vote_average.gte": "6.5",
+            "vote_count.gte": "500",
+            "with_original_language": "en",
         }
-    } catch(e) {
-        if (nameEl) nameEl.textContent = "Upload failed";
-    }
-    input.value = "";
-}
-// ===== PER-SLIDE IMAGE UPLOAD END ============================
+        if genre_ids:
+            params["with_genres"] = ",".join(genre_ids[:2])
+        url = "https://api.themoviedb.org/3/discover/movie?" + urllib.parse.urlencode(params)
+        with urllib.request.urlopen(url, timeout=6) as resp:
+            data = json.loads(resp.read().decode())
+        results = data.get("results", [])[:n]
+        comps = [{
+            "title": r.get("title", ""),
+            "year": (r.get("release_date") or "")[:4],
+            "overview": (r.get("overview") or "")[:180],
+            "poster_url": f"https://image.tmdb.org/t/p/w200{r['poster_path']}" if r.get("poster_path") else "",
+            "rating": round(r.get("vote_average", 0), 1),
+        } for r in results]
+        _TMDB_CACHE[cache_key] = {"data": comps, "ts": time.time()}
+        return comps
+    except Exception as e:
+        print(f"⚠️ TMDB fetch failed: {e}", flush=True)
+        return []
 
-// ===== MY PROJECTS PANEL =====================================
 
-// ===== MY PROJECTS PANEL END ==================================
+@app.route("/analysis-report")
+def analysis_report_page():
+    if not LATEST_ANALYSIS_JSON.exists():
+        return redirect("/")
+    try:
+        report = json.loads(LATEST_ANALYSIS_JSON.read_text(encoding="utf-8"))
+    except Exception:
+        return redirect("/")
+    comps = fetch_tmdb_comps(report.get("genre", "drama"))
+    return render_template("analysis_report.html", report=report, comps=comps)
 
-setInterval(pollStatus, 1200);
-pollStatus();
 
-// Post-login welcome modal
-(function () {
-    const params = new URLSearchParams(window.location.search);
-    const welcome = params.get("welcome");
-    if (!welcome) return;
-    history.replaceState({}, "", "/");
-    const heading = document.getElementById("welcomeModalHeading");
-    const sub = document.getElementById("welcomeModalSubtext");
-    const userName = (document.querySelector(".top-nav-item[style*='cursor:default']") || {}).textContent || "";
-    const firstName = userName.split(" ")[0].trim();
-    if (welcome === "new") {
-        if (heading) heading.textContent = "Welcome to EVOLUM" + (firstName && firstName !== "Account" ? ", " + firstName : "") + "!";
-        if (sub) sub.textContent = "You're in. What would you like to do first?";
-    } else {
-        if (heading) heading.textContent = "Welcome back" + (firstName && firstName !== "Account" ? ", " + firstName : "") + "!";
-        if (sub) sub.textContent = "Pick up where you left off or start something new.";
-    }
-    document.getElementById("welcomeModal").classList.add("show");
-})();
+@app.route("/actor-prep-report")
+def actor_prep_report_page():
+    if not LATEST_ACTOR_PREP_JSON.exists():
+        return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False) if LATEST_ACTOR_PREP_PDF.exists() else redirect("/")
+    try:
+        report = json.loads(LATEST_ACTOR_PREP_JSON.read_text(encoding="utf-8"))
+    except Exception:
+        return redirect("/")
+    return render_template("actor_prep_report.html", report=report)
 
-// ===== SYNC AI ASSISTANT ==============================
 
-const _syncState = {
-    open: false,
-    history: [],          // [{role, text}]
-    unread: 0,
-    regenCount: 0,
-    refineEntered: null,
-    deckCompleted: false,
-    tipsShown: new Set(),
-    busy: false,
-};
+@app.route("/actor-booked-report")
+def actor_booked_report_page():
+    if not LATEST_ACTOR_BOOKED_JSON.exists():
+        return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=False) if LATEST_ACTOR_BOOKED_PDF.exists() else redirect("/")
+    try:
+        report = json.loads(LATEST_ACTOR_BOOKED_JSON.read_text(encoding="utf-8"))
+    except Exception:
+        return redirect("/")
+    return render_template("actor_booked_report.html", report=report)
 
-const _SYNC_PROACTIVE_TIPS = [
-    {
-        id: "regen3",
-        trigger: () => _syncState.regenCount >= 3 && !_syncState.tipsShown.has("regen3"),
-        prompt: "The user has regenerated their entire deck 3 or more times in a row. Gently suggest they try editing individual slides in the Refine view instead of regenerating the full deck, since it's faster and gives more control. Keep it to 2 sentences.",
-    },
-    {
-        id: "refineIdle",
-        trigger: () => _syncState.refineEntered && (Date.now() - _syncState.refineEntered > 180000) && !_syncState.tipsShown.has("refineIdle"),
-        prompt: "The user has been in the Refine view for 3+ minutes. Remind them to hit 'Update & Rebuild' to save their edits to the actual deck file, since edits aren't saved until they rebuild. One sentence.",
-    },
-    {
-        id: "deckDone",
-        trigger: () => _syncState.deckCompleted && !_syncState.tipsShown.has("deckDone"),
-        prompt: "The user just finished building their first pitch deck — congratulate them briefly and mention that EVOLUM's Writer's Room plan lets them bring in collaborators and manage up to 10 projects, in case they're working with a team. Keep it warm and under 2 sentences. Don't be pushy.",
-    },
-    {
-        id: "upgradeNudge",
-        trigger: () => _syncState.regenCount >= 2 && _syncState.deckCompleted && !_syncState.tipsShown.has("upgradeNudge"),
-        prompt: "The user has built a deck and run multiple regenerations — they're clearly invested in the tool. Casually mention that the Writer's Room plan gives them more projects and collaboration features if they're working with others. One sentence, no hard sell.",
-    },
-];
 
-function _syncGetContext() {
-    return {
-        status: lastStatus || "IDLE",
-        has_deck: document.body.classList.contains("complete-mode"),
-        in_refine: activeCompleteView === "refine",
-        regen_count: _syncState.regenCount,
-    };
-}
+@app.route("/analysis-report/latest.json")
+def analysis_report_latest_json():
+    if not LATEST_ANALYSIS_JSON.exists():
+        return jsonify({"error": "No analysis report yet"}), 404
 
-function _syncShowBadge() {
-    const badge = document.getElementById("syncBadge");
-    if (badge) badge.classList.add("show");
-}
+    with open(LATEST_ANALYSIS_JSON, "r", encoding="utf-8") as f:
+        return jsonify(json.load(f))
 
-function _syncClearBadge() {
-    const badge = document.getElementById("syncBadge");
-    if (badge) badge.classList.remove("show");
-    _syncState.unread = 0;
-}
 
-function _syncAppendBubble(role, text) {
-    const el = document.getElementById("syncMessages");
-    if (!el) return;
-    const bubble = document.createElement("div");
-    bubble.className = `sync-bubble ${role}`;
-    const inner = document.createElement("div");
-    inner.className = "sync-bubble-text";
-    inner.textContent = text;
-    bubble.appendChild(inner);
-    el.appendChild(bubble);
-    el.scrollTop = el.scrollHeight;
-    _syncState.history.push({ role, text });
-}
+@app.route("/analysis-report/latest.pdf")
+def analysis_report_latest_pdf():
+    if not LATEST_ANALYSIS_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ANALYSIS_PDF, as_attachment=False)
 
-function _syncShowTyping() {
-    const el = document.getElementById("syncMessages");
-    if (!el) return;
-    const t = document.createElement("div");
-    t.className = "sync-typing";
-    t.id = "syncTyping";
-    t.textContent = "Sync is thinking…";
-    el.appendChild(t);
-    el.scrollTop = el.scrollHeight;
-}
 
-function _syncRemoveTyping() {
-    const t = document.getElementById("syncTyping");
-    if (t) t.remove();
-}
+@app.route("/download/latest_analysis_report.pdf")
+def download_latest_analysis_report_pdf():
+    uid = session.get("user_id", "")
+    pid = session.get("active_project_id") or get_status_project_id(uid or "")
+    if uid and pid:
+        proj_path = USER_DATA_DIR / str(uid) / str(pid) / "analysis_report.pdf"
+        if proj_path.exists():
+            return send_file(proj_path, as_attachment=True, download_name="analysis_report.pdf")
+    if not LATEST_ANALYSIS_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ANALYSIS_PDF, as_attachment=True, download_name="analysis_report.pdf")
 
-async function _syncFetch(message, proactiveTrigger) {
-    if (_syncState.busy) return;
-    _syncState.busy = true;
-    const btn = document.getElementById("syncSendBtn");
-    if (btn) btn.disabled = true;
-    _syncShowTyping();
-    try {
-        const body = { context: _syncGetContext() };
-        if (message) body.message = message;
-        if (proactiveTrigger) body.context.proactive_trigger = proactiveTrigger;
-        const res = await fetch("/sync/chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        _syncRemoveTyping();
-        _syncAppendBubble("sync", data.reply || "…");
-    } catch (e) {
-        _syncRemoveTyping();
-        _syncAppendBubble("sync", "I'm having trouble connecting — try again in a moment.");
-    } finally {
-        _syncState.busy = false;
-        if (btn) btn.disabled = false;
-    }
-}
 
-async function _syncCheckProactive() {
-    for (const tip of _SYNC_PROACTIVE_TIPS) {
-        if (tip.trigger()) {
-            _syncState.tipsShown.add(tip.id);
-            if (_syncState.open) {
-                await _syncFetch(null, tip.prompt);
-            } else {
-                _syncState.unread++;
-                _syncShowBadge();
-                // Queue it — show when user opens panel
-                _syncState._pendingProactive = tip.prompt;
-            }
-            break;
-        }
-    }
-}
+@app.route("/analyzer")
+def analyzer():
+    analyzer_file = BASE_DIR / "builder" / "deck_builder_output.json"
 
-function toggleSyncPanel() {
-    _syncState.open = !_syncState.open;
-    const panel = document.getElementById("syncPanel");
-    if (!panel) return;
-    panel.classList.toggle("open", _syncState.open);
+    if not analyzer_file.exists():
+        return jsonify({"error": "No analyzer output yet"}), 404
 
-    if (_syncState.open) {
-        _syncClearBadge();
-        // First open: greet
-        if (_syncState.history.length === 0) {
-            _syncFetch(null, "Greet the user warmly in 1-2 sentences. Tell them you're Sync, their EVOLUM studio guide, and you can help them get the best results. Be brief and friendly.");
-        }
-        // Pending proactive tip
-        if (_syncState._pendingProactive) {
-            const p = _syncState._pendingProactive;
-            _syncState._pendingProactive = null;
-            setTimeout(() => _syncFetch(null, p), 400);
-        }
-        const input = document.getElementById("syncInput");
-        if (input) input.focus();
-    }
-}
+    with open(analyzer_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-async function sendSyncMessage() {
-    const input = document.getElementById("syncInput");
-    const msg = (input?.value || "").trim();
-    if (!msg || _syncState.busy) return;
-    input.value = "";
-    _syncAppendBubble("user", msg);
-    await _syncFetch(msg, null);
-}
+    return jsonify(data)
 
-function syncInputKeydown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendSyncMessage();
-    }
-}
 
-// Behavior hooks — called from submitRegenDeck, submitRefineDeck, openRefinementStage
-function syncTrackRegen() {
-    _syncState.regenCount++;
-    _syncCheckProactive();
-}
 
-function syncTrackDeckDone() {
-    if (!_syncState.deckCompleted) {
-        _syncState.deckCompleted = true;
-        setTimeout(_syncCheckProactive, 3000);
-    }
-}
+# ===== REFINE DECK ROUTES START =======================
+@app.route("/latest-slide-plan")
+def latest_slide_plan():
+    slide_plan_file = find_latest_slide_plan_file()
 
-function syncTrackEnterRefine() {
-    if (!_syncState.refineEntered) {
-        _syncState.refineEntered = Date.now();
-        setTimeout(_syncCheckProactive, 180000); // check after 3 min
-    }
-}
+    if not slide_plan_file or not slide_plan_file.exists():
+        return jsonify({
+            "error": "No generated slide plan found yet.",
+            "slides": [],
+            "slide_count": 0,
+        }), 404
 
-// ===== SYNC AI ASSISTANT END ==========================
+    try:
+        with open(slide_plan_file, "r", encoding="utf-8") as f:
+            slide_plan_data = json.load(f)
+    except Exception as e:
+        return jsonify({"error": f"Could not read latest slide plan: {e}"}), 500
 
-// ===== CTA BANNER + PRICING MODAL =====================
+    cache_key = make_slide_payload_cache_key(slide_plan_file)
+    if _LATEST_SLIDE_PAYLOAD_CACHE.get("key") == cache_key and _LATEST_SLIDE_PAYLOAD_CACHE.get("payload") is not None:
+        payload = dict(_LATEST_SLIDE_PAYLOAD_CACHE["payload"])
+    else:
+        payload = build_refine_slide_payload(slide_plan_data, slide_plan_file=slide_plan_file)
+        payload["source_file"] = str(slide_plan_file.relative_to(BASE_DIR)) if slide_plan_file.is_relative_to(BASE_DIR) else str(slide_plan_file)
+        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = cache_key
+        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = dict(payload)
+    return jsonify(payload)
+            
 
-const _BANNER_PHRASES = [
-    "Start your 3-day free trial — only $5/month",
-    "Pitch decks, script analysis & actor tools — all in one place",
-    "Built for writers, actors & filmmakers who move fast",
-    "Cancel any time. No questions. No forms.",
-    "Join the beta today — limited access available",
-];
-let _bannerIdx = 0;
-function _rotateBannerText() {
-    const el = document.getElementById("ctaBannerText");
-    if (!el) return;
-    el.classList.add("fade");
-    setTimeout(() => {
-        _bannerIdx = (_bannerIdx + 1) % _BANNER_PHRASES.length;
-        el.textContent = _BANNER_PHRASES[_bannerIdx];
-        el.classList.remove("fade");
-    }, 380);
-}
-(function _initBanner() {
-    if (document.getElementById("ctaBannerText")) {
-        setInterval(_rotateBannerText, 4000);
-    }
-})();
+@app.route("/api/latest-manifest")
+def api_latest_manifest():
+    uid = session.get("user_id", "")
+    path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
+    if not path.exists() and uid:
+        if LATEST_DECK_MANIFEST_JSON.exists():
+            path = LATEST_DECK_MANIFEST_JSON
+    if not path.exists():
+        return jsonify([]), 404
+    try:
+        return jsonify(json.loads(path.read_text(encoding="utf-8")))
+    except Exception:
+        return jsonify([]), 500
 
-const _PLANS = [
-    {
-        id: "solo", name: "Solo",
-        monthly: 5, annual: 42,
-        projects: "3 projects", collaborators: "1 collaborator",
-        features: ["Pitch deck generator", "Script analyzer", "Actor prep tools", "3-day free trial"],
-        featured: false,
-    },
-    {
-        id: "writers-room", name: "Writer's Room",
-        monthly: 15, annual: 126,
-        projects: "10 projects", collaborators: "5 collaborators",
-        features: ["All Solo features", "Team workspace", "Priority builds", "Project sharing"],
-        featured: true, badge: "Most Popular",
-    },
-    {
-        id: "production", name: "Production Co.",
-        monthly: 35, annual: 294,
-        projects: "20 projects", collaborators: "10 collaborators",
-        features: ["All Writer's Room features", "Advanced analytics", "White-label exports", "Dedicated queue"],
-        featured: false,
-    },
-    {
-        id: "studio", name: "Studio",
-        monthly: 75, annual: 630,
-        projects: "50 projects", collaborators: "100 collaborators",
-        features: ["All Production features", "Custom branding", "Dedicated support", "API access"],
-        featured: false,
-    },
-];
-let _pricingBilling = "monthly";
-let _selectedPlan = null;
 
-function setPricingBilling(mode) {
-    _pricingBilling = mode;
-    document.getElementById("ptogMonthly").classList.toggle("active", mode === "monthly");
-    document.getElementById("ptogAnnual").classList.toggle("active", mode === "annual");
-    _renderPricingCards();
-}
+@app.route("/api/referral-info")
+@require_login
+def api_referral_info():
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"ok": False}), 400
+    try:
+        ensure_referral_tables()
+        code = _get_or_create_referral_code(uid)
+        with DB_ENGINE.begin() as conn:
+            row = conn.execute(
+                text("SELECT referral_credits FROM beta_users WHERE id = :uid"),
+                {"uid": uid}
+            ).fetchone()
+            credits = int(row[0] or 0) if row else 0
+            count = conn.execute(
+                text("SELECT COUNT(*) FROM referrals WHERE referrer_user_id = :uid"),
+                {"uid": uid}
+            ).scalar() or 0
+        base = request.host_url.rstrip("/")
+        return jsonify({
+            "ok": True,
+            "code": code,
+            "link": f"{base}/?ref={code}",
+            "count": int(count),
+            "weeks": credits,
+        })
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
-function _renderPricingCards() {
-    const container = document.getElementById("pricingCards");
-    if (!container) return;
-    const annual = _pricingBilling === "annual";
-    container.innerHTML = _PLANS.map(p => {
-        const price = annual ? Math.round(p.annual / 12) : p.monthly;
-        const billedNote = annual ? `$${p.annual}/yr billed annually` : "billed monthly";
-        const featured = p.featured ? " featured" : "";
-        const badge = p.badge ? `<div class="plan-badge">${p.badge}</div>` : "";
-        const featureList = [`<div class="plan-feature">${p.projects}</div>`,
-            `<div class="plan-feature">${p.collaborators}</div>`,
-            ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
-        ].join("");
-        return `
-        <div class="plan-card${featured}" id="planCard_${p.id}">
-            ${badge}
-            <div class="plan-name">${p.name}</div>
-            <div class="plan-price"><span class="plan-price-cents">$</span>${price}</div>
-            <div class="plan-period">per month</div>
-            <div class="plan-billed">${annual ? billedNote : "billed monthly"}</div>
-            <div class="plan-divider"></div>
-            ${featureList}
-            <div class="plan-cta">
-                <button class="plan-btn plan-btn-primary" onclick="selectPlan('${p.id}')">Get Started</button>
-            </div>
-        </div>`;
-    }).join("");
-}
 
-function selectPlan(planId) {
-    const plan = _PLANS.find(p => p.id === planId);
-    _selectedPlan = plan || null;
-    const badge = document.getElementById("authPlanBadge");
-    if (badge && plan) {
-        const priceStr = _pricingBilling === "annual"
-            ? `$${Math.round(plan.annual / 12)}/mo · billed $${plan.annual}/yr`
-            : `$${plan.monthly}/month`;
-        badge.textContent = `Selected plan: ${plan.name} — ${priceStr}`;
-        badge.style.display = "block";
-    }
-    const planInput = document.getElementById("signupPlanId");
-    if (planInput && plan) planInput.value = plan.id;
-    const billingInput = document.getElementById("signupBillingPeriod");
-    if (billingInput) billingInput.value = _pricingBilling;
-    switchAuthTab("signup", document.querySelector(".auth-tab"));
-    closePricingModal();
-    showAuthModal();
-}
+@app.route("/project-file")
+def project_file():
+    raw_path = unquote((request.args.get("path") or "").strip())
+    if not raw_path:
+        abort(404)
 
-function openPricingModal() {
-    _pricingBilling = "monthly";
-    document.getElementById("ptogMonthly")?.classList.add("active");
-    document.getElementById("ptogAnnual")?.classList.remove("active");
-    _renderPricingCards();
-    document.getElementById("pricingModal").classList.add("open");
-    document.body.style.overflow = "hidden";
-}
+    cleaned = str(raw_path).replace("\\", "/").strip()
+    candidates = []
 
-function closePricingModal() {
-    document.getElementById("pricingModal").classList.remove("open");
-    document.body.style.overflow = "";
-}
+    rel = normalize_project_relative_path(cleaned)
+    if rel:
+        candidates.append((BASE_DIR / rel).resolve())
 
-document.getElementById("pricingModal")?.addEventListener("click", function(e) {
-    if (e.target === this) closePricingModal();
-});
+    try:
+        p = Path(cleaned)
+        if p.is_absolute():
+            candidates.append(p.resolve())
+    except Exception:
+        pass
 
-// ===== CTA BANNER + PRICING MODAL END =================
+    if cleaned.startswith("opt/render/project/src/"):
+        candidates.append(Path("/" + cleaned).resolve())
+    elif cleaned.startswith("/opt/render/project/src/"):
+        candidates.append(Path(cleaned).resolve())
 
-// ===== REFERRAL MODAL =================================
+    seen = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        if ensure_relative_to_base(candidate) and candidate.exists() and candidate.is_file():
+            return send_file(candidate, as_attachment=False, conditional=True)
 
-async function openReferralModal() {
-    document.getElementById("referralModal").classList.add("open");
-    document.body.style.overflow = "hidden";
-    document.getElementById("referralCount").textContent = "—";
-    document.getElementById("referralCredits").textContent = "—";
-    document.getElementById("referralLinkInput").value = "Loading…";
-    try {
-        const res = await fetch("/api/referral-info");
-        const data = await res.json();
-        if (data.ok) {
-            document.getElementById("referralCount").textContent = data.count;
-            document.getElementById("referralCredits").textContent = data.weeks;
-            document.getElementById("referralLinkInput").value = data.link;
-        }
-    } catch (e) {
-        document.getElementById("referralLinkInput").value = "Could not load — try again.";
-    }
-}
+    abort(404)
 
-function closeReferralModal() {
-    document.getElementById("referralModal").classList.remove("open");
-    document.body.style.overflow = "";
-}
+@app.route("/generate-slide-options", methods=["POST"])
+def generate_slide_options():
+    try:
+        if not FAL_API_KEY:
+            return jsonify({"error": "FAL_API_KEY is not configured."}), 500
+        data = request.get_json(silent=True) or {}
+        slide_title = safe_text(data.get("slide_title"), "Slide")
+        slide_body = safe_text(data.get("slide_body"), "")
+        user_prompt = safe_text(data.get("user_prompt"), "")
+        slide_number = int(data.get("slide_number") or 1)
 
-function copyReferralLink() {
-    const input = document.getElementById("referralLinkInput");
-    const val = input?.value;
-    if (!val || val === "Loading…") return;
-    navigator.clipboard.writeText(val).then(() => {
-        const btn = document.querySelector(".referral-copy-btn");
-        if (btn) { btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy"; }, 2000); }
-    }).catch(() => {
-        input.select();
-        document.execCommand("copy");
-    });
-}
+        slide_plan_file = find_latest_slide_plan_file()
+        if not slide_plan_file or not slide_plan_file.exists():
+            return jsonify({"error": "No slide plan found."}), 404
 
-document.getElementById("referralModal")?.addEventListener("click", function(e) {
-    if (e.target === this) closeReferralModal();
-});
+        options = generate_slide_option_images(
+            slide_plan_file=slide_plan_file,
+            slide_title=slide_title,
+            slide_body=slide_body,
+            user_prompt=user_prompt,
+            slide_number=slide_number,
+        )
+        if not options:
+            return jsonify({"error": "Could not generate options. Try again."}), 500
+        return jsonify({"options": options})
+    except Exception as e:
+        return jsonify({"error": f"Could not load new images: {e}"}), 500
 
-// ===== REFERRAL MODAL END =============================
+@app.route("/regenerate-slide-image", methods=["POST"])
+def regenerate_slide_image():
+    try:
+        if not FAL_API_KEY:
+            return jsonify({"error": "FAL_API_KEY is not configured."}), 500
+        data = request.get_json(silent=True) or {}
+        slide_title = safe_text(data.get("slide_title"), "Slide")
+        slide_body = safe_text(data.get("slide_body"), "")
+        user_prompt = safe_text(data.get("user_prompt"), "")
+        slide_number = int(data.get("slide_number") or 1)
+
+        slide_plan_file = find_latest_slide_plan_file()
+        if not slide_plan_file or not slide_plan_file.exists():
+            return jsonify({"error": "No slide plan found."}), 404
+
+        options = generate_slide_option_images(
+            slide_plan_file=slide_plan_file,
+            slide_title=slide_title,
+            slide_body=slide_body,
+            user_prompt=user_prompt,
+            slide_number=slide_number,
+        )
+        if not options:
+            return jsonify({"error": "Generation failed. Try again."}), 500
+        best = options[0]
+        return jsonify({
+            "image_url": best.get("image_url", ""),
+            "image_path": best.get("image_path", ""),
+            "image_name": best.get("image_name", ""),
+            "image_source": best.get("image_source", "fal_generated"),
+        })
+    except Exception as e:
+        return jsonify({"error": f"Could not regenerate slide image: {e}"}), 500
+
+@app.route("/refine-deck", methods=["POST"])
+def refine_deck():
+    try:
+        data = request.get_json(silent=True) or {}
+        slides = data.get("slides", [])
+        uid = session.get("user_id", "")
+        manifest_path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
+        result = rebuild_refined_deck(slides, latest_manifest_path=manifest_path, label="", user_id=uid)
+
+        if "error" in result:
+            return jsonify(result), 400 if result["error"] == "No slide data provided." else 500
+
+        _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+        _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
+
+        return jsonify({
+            "message": "Your refined deck has been rebuilt successfully.",
+            "deck": result["deck"],
+        })
+    except Exception as e:
+        return jsonify({"error": f"Refine deck failed: {e}"}), 500
+
+# ===== REGEN DECK ROUTE START =========================
+@app.route("/regen-deck", methods=["POST"])
+def regen_deck():
+    data = request.get_json(silent=True) or {}
+    direction = (data.get("prompt") or "").strip()
+    if not direction:
+        return jsonify({"error": "No direction provided."}), 400
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"error": "AI not configured."}), 500
+
+    uid = session.get("user_id", "")
+    manifest_path = user_manifest_path(uid) if uid else LATEST_DECK_MANIFEST_JSON
+    if not manifest_path.exists():
+        manifest_path = LATEST_DECK_MANIFEST_JSON
+    if not manifest_path.exists():
+        return jsonify({"error": "No slide plan found. Generate a deck first."}), 404
+
+    try:
+        _manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
+        slide_plan = {"slides": _manifest_data} if isinstance(_manifest_data, list) else _manifest_data
+    except Exception as e:
+        return jsonify({"error": f"Could not read slide plan: {e}"}), 500
+
+    # Run async — Claude API + deck rebuild can take 40-90s which kills sync workers.
+    # Return immediately and let the frontend poll /status for COMPLETE/ERROR.
+    set_status("BUILDING", uid=uid)
+
+    def _regen_bg():
+        try:
+            import anthropic as _anthropic
+            client = _anthropic.Anthropic(api_key=api_key)
+            prompt_text = (
+                "You are updating a pitch deck's slide content based on a new creative direction.\n\n"
+                f"Current slide plan (JSON):\n{json.dumps(slide_plan, indent=2)}\n\n"
+                f"New creative direction: \"{direction}\"\n\n"
+                "Rewrite the \"title\" and \"body\" fields for every slide to reflect this direction. "
+                "Keep the same number of slides and preserve all other fields exactly "
+                "(stage, layout, image_path, image_name, image_url, image_source, image_options, "
+                "selected_option_id, slide_count). Return ONLY valid JSON — no extra text, no markdown fences."
+            )
+            resp = client.messages.create(
+                model="claude-sonnet-4-6",
+                max_tokens=8000,
+                messages=[{"role": "user", "content": prompt_text}]
+            )
+            raw = resp.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+            new_plan = json.loads(raw)
+
+            full_slides = new_plan.get("slides", [])
+            result = rebuild_refined_deck(full_slides, label="", user_id=uid)
+            if "error" in result:
+                set_status("ERROR", uid=uid)
+                return
+
+            _LATEST_SLIDE_PAYLOAD_CACHE["key"] = None
+            _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
+            set_status("COMPLETE", uid=uid)
+        except Exception:
+            set_status("ERROR", uid=uid)
+
+    threading.Thread(target=_regen_bg, daemon=True).start()
+    return jsonify({"ok": True, "polling": True})
+
+# ===== REGEN DECK ROUTE END ===========================
+
+# ===== ACTOR PREP ROUTES START =======================
+@app.route("/actor-prep-pass", methods=["POST"])
+def actor_prep_pass():
+    character_name = (request.form.get("character_name") or "").strip()
+    movie_title = (request.form.get("movie_title") or "").strip()
+    pasted_text = (request.form.get("script_text") or "").strip()
+    file = request.files.get("script")
+
+    if not character_name:
+        return jsonify({"error": "Please enter the role you are preparing."}), 400
+
+    script_text = ""
+    source_mode = "paste"
+
+    if file and file.filename:
+        source_mode = "upload"
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
+
+        if not script_text.strip() and not pasted_text:
+            return jsonify({
+                "error": "The formatted script could not be read cleanly.",
+                "needs_paste": True,
+                "message": "Please paste the script text to continue."
+            }), 422
+
+    if pasted_text:
+        script_text = pasted_text
+        source_mode = "paste"
+
+    if not script_text.strip():
+        return jsonify({"error": "No script text was provided."}), 400
+
+    log_usage("actor_prep_start", role=character_name, mode=source_mode)
+
+    uid = session.get("user_id", "")
+    brain_data = _load_user_brain(uid)
+    if movie_title:
+        brain_data.setdefault("title", movie_title)
+    try:
+        build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF, brain_data=brain_data)
+    except Exception as e:
+        log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
+        return jsonify({"error": f"Actor preparation failed: {e}"}), 500
+
+    if not LATEST_ACTOR_PREP_PDF.exists():
+        log_usage("actor_prep_complete", success=False, role=character_name, error="actor_pdf_missing")
+        return jsonify({"error": "Actor prep PDF was not created."}), 500
+
+    log_usage("actor_prep_complete", success=True, role=character_name)
+
+    return jsonify({
+        "summary_note": f"Your actor preparation packet for {character_name} is ready.",
+        "report_pdf": str(LATEST_ACTOR_PREP_PDF.name),
+    })
+
+
+
+
+@app.route("/actor-booked-pass", methods=["POST"])
+def actor_booked_pass():
+    character_name = (request.form.get("character_name") or "").strip()
+    movie_title = (request.form.get("movie_title") or "").strip()
+    pasted_text = (request.form.get("script_text") or "").strip()
+    file = request.files.get("script")
+
+    if not character_name:
+        return jsonify({"error": "Please enter the role you are preparing."}), 400
+
+    script_text = ""
+    source_mode = "paste"
+
+    if file and file.filename:
+        source_mode = "upload"
+        filename = file.filename.lower()
+
+        if filename.endswith(".txt"):
+            script_text = file.read().decode("utf-8", errors="ignore")
+        elif filename.endswith(".pdf"):
+            try:
+                reader = PdfReader(file)
+                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+            except Exception:
+                script_text = ""
+
+        if not script_text.strip() and not pasted_text:
+            return jsonify({
+                "error": "The formatted script could not be read cleanly.",
+                "needs_paste": True,
+                "message": "Please paste the script text to continue."
+            }), 422
+
+    if pasted_text:
+        script_text = pasted_text
+        source_mode = "paste"
+
+    if not script_text.strip():
+        return jsonify({"error": "No script text was provided."}), 400
+
+    log_usage("actor_booked_start", role=character_name, mode=source_mode)
+
+    uid = session.get("user_id", "")
+    brain_data = _load_user_brain(uid)
+    if movie_title:
+        brain_data.setdefault("title", movie_title)
+    try:
+        build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF, brain_data=brain_data)
+    except Exception as e:
+        log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
+        return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
+
+    if not LATEST_ACTOR_BOOKED_PDF.exists():
+        log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_pdf_missing")
+        return jsonify({"error": "Booked role PDF was not created."}), 500
+
+    log_usage("actor_booked_complete", success=True, role=character_name)
+
+    return jsonify({
+        "summary_note": f"Your booked role analysis for {character_name} is ready.",
+        "report_pdf": str(LATEST_ACTOR_BOOKED_PDF.name),
+    })
+
+
+@app.route("/output/latest_actor_booked_report.pdf")
+def actor_booked_latest_pdf():
+    if not LATEST_ACTOR_BOOKED_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=False)
+
+
+@app.route("/download/latest_actor_booked_report.pdf")
+def actor_booked_latest_download_pdf():
+    if not LATEST_ACTOR_BOOKED_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=True)
+
+
+@app.route("/output/latest_actor_prep_report.pdf")
+def actor_prep_latest_pdf():
+    if not LATEST_ACTOR_PREP_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False)
+
+
+@app.route("/download/latest_actor_prep_report.pdf")
+def actor_prep_latest_download_pdf():
+    if not LATEST_ACTOR_PREP_PDF.exists():
+        abort(404)
+    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=True)
+
+# ===== ACTOR PREP ROUTES END =========================
+
+# ===== SAVED PROJECTS ROUTES START ===================
+
+@app.route("/my-projects")
+@require_login
+def my_projects():
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"projects": []})
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            rows = conn.execute(text(
+                "SELECT id, title, type, created_at, output_dir FROM projects WHERE owner_user_id = :uid ORDER BY created_at DESC"
+            ), {"uid": uid}).mappings().fetchall()
+        projects = []
+        for row in rows:
+            r = dict(row)
+            pid = str(r["id"])
+            has_deck = False
+            thumbnail = ""
+            proj_dir_path = None
+            if r.get("output_dir"):
+                proj_dir_path = BASE_DIR / r["output_dir"]
+                has_deck = (proj_dir_path / "deck.pptx").exists()
+            if not has_deck:
+                proj_dir_path = USER_DATA_DIR / uid / pid
+                has_deck = (proj_dir_path / "deck.pptx").exists()
+            if proj_dir_path:
+                manifest_file = proj_dir_path / "deck_manifest.json"
+                if manifest_file.exists():
+                    try:
+                        slides = json.loads(manifest_file.read_text(encoding="utf-8"))
+                        if slides and isinstance(slides, list):
+                            thumbnail = slides[0].get("image_url") or ""
+                    except Exception:
+                        pass
+            projects.append({
+                "id": pid,
+                "title": r.get("title") or f"Project {pid}",
+                "type": r.get("type") or "Project",
+                "created_at": str(r.get("created_at") or ""),
+                "has_deck": has_deck,
+                "thumbnail": thumbnail,
+            })
+        return jsonify({"projects": projects})
+    except Exception as e:
+        return jsonify({"projects": [], "error": str(e)})
+
+
+@app.route("/project/<project_id>/load", methods=["POST"])
+@require_login
+def load_project(project_id):
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"ok": False, "error": "Not logged in"}), 401
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            row = conn.execute(text(
+                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid}).mappings().first()
+        if not row:
+            return jsonify({"ok": False, "error": "Project not found"}), 404
+
+        r = dict(row)
+        pid = str(r["id"])
+
+        proj_dir = None
+        if r.get("output_dir"):
+            proj_dir = BASE_DIR / r["output_dir"]
+        if proj_dir is None or not proj_dir.exists():
+            proj_dir = USER_DATA_DIR / uid / pid
+
+        manifest_src = proj_dir / "deck_manifest.json"
+        if manifest_src.exists():
+            shutil.copy2(manifest_src, user_manifest_path(uid))
+
+        session["active_project_id"] = pid
+        set_status("COMPLETE", project_id=pid, uid=uid)
+
+        return jsonify({"ok": True, "project_id": pid})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/project/<project_id>/slides")
+@require_login
+def project_slides(project_id):
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"error": "Not logged in"}), 401
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            row = conn.execute(text(
+                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid}).mappings().first()
+        if not row:
+            return jsonify({"error": "Project not found"}), 404
+        r = dict(row)
+        pid = str(r["id"])
+        for proj_dir in filter(None, [
+            BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
+            USER_DATA_DIR / uid / pid,
+        ]):
+            manifest = proj_dir / "deck_manifest.json"
+            if manifest.exists():
+                slides = json.loads(manifest.read_text(encoding="utf-8"))
+                title = slides[0].get("title", "Project") if slides else "Project"
+                return jsonify({"slides": slides, "title": title})
+        # Fallback: use the user-level manifest (populated by /project/<id>/load)
+        user_manifest = user_manifest_path(uid)
+        if user_manifest.exists():
+            slides = json.loads(user_manifest.read_text(encoding="utf-8"))
+            if slides:
+                title = slides[0].get("title", "Project") if isinstance(slides, list) else "Project"
+                return jsonify({"slides": slides, "title": title})
+        return jsonify({"error": "No manifest found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/project/<project_id>/delete", methods=["POST"])
+@require_login
+def delete_project(project_id):
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return jsonify({"ok": False, "error": "Not logged in"}), 401
+    ensure_projects_table()
+    try:
+        with DB_ENGINE.connect() as conn:
+            row = conn.execute(text(
+                "SELECT id, output_dir FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid}).mappings().first()
+        if not row:
+            return jsonify({"ok": False, "error": "Project not found"}), 404
+
+        r = dict(row)
+        pid = str(r["id"])
+
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text(
+                "DELETE FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid})
+
+        for proj_dir in filter(None, [
+            BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
+            USER_DATA_DIR / uid / pid,
+        ]):
+            if proj_dir.exists():
+                shutil.rmtree(proj_dir, ignore_errors=True)
+
+        if session.get("active_project_id") == pid:
+            session.pop("active_project_id", None)
+
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+# ===== SAVED PROJECTS ROUTES END =====================
+
+def ensure_projects_table():
+    if not DB_ENGINE:
+        return
+
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id SERIAL PRIMARY KEY,
+                owner_user_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                type TEXT,
+                status TEXT DEFAULT 'Active',
+                storage_used_mb INTEGER DEFAULT 0,
+                output_dir TEXT DEFAULT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        try:
+            conn.execute(text(
+                "ALTER TABLE projects ADD COLUMN IF NOT EXISTS output_dir TEXT DEFAULT NULL"
+            ))
+        except Exception:
+            pass
+
+def ensure_collab_tables():
+    if not DB_ENGINE:
+        return
+    with DB_ENGINE.begin() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS project_invites (
+                id SERIAL PRIMARY KEY,
+                project_id INTEGER NOT NULL,
+                token TEXT UNIQUE NOT NULL,
+                invite_code TEXT UNIQUE NOT NULL,
+                created_by TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS project_collaborators (
+                id SERIAL PRIMARY KEY,
+                project_id INTEGER NOT NULL,
+                user_id TEXT NOT NULL,
+                user_name TEXT,
+                joined_via TEXT,
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(project_id, user_id)
+            )
+        """))
+
+
+def _generate_invite_code() -> str:
+    chars = string.ascii_uppercase + string.digits
+    return "".join(secrets.choice(chars) for _ in range(6))
+
+
+@app.route("/project/<project_id>/create-invite", methods=["POST"])
+@require_login
+def create_project_invite(project_id):
+    ensure_projects_table()
+    ensure_collab_tables()
+    with DB_ENGINE.connect() as conn:
+        proj = conn.execute(text(
+            "SELECT id FROM projects WHERE id = :id AND owner_user_id = :uid"
+        ), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
+    if not proj:
+        return jsonify({"error": "Project not found"}), 404
+
+    # Return existing invite if one already exists for this project
+    with DB_ENGINE.connect() as conn:
+        existing = conn.execute(text(
+            "SELECT token, invite_code FROM project_invites WHERE project_id = :pid AND created_by = :uid"
+        ), {"pid": project_id, "uid": session.get("user_id")}).mappings().first()
+
+    if existing:
+        token, code = existing["token"], existing["invite_code"]
+    else:
+        token = secrets.token_urlsafe(16)
+        code = _generate_invite_code()
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO project_invites (project_id, token, invite_code, created_by)
+                VALUES (:pid, :token, :code, :uid)
+            """), {"pid": project_id, "token": token, "code": code, "uid": session.get("user_id")})
+
+    base = request.host_url.rstrip("/")
+    return jsonify({"token": token, "code": code, "link": f"{base}/join/{token}"})
+
+
+@app.route("/join/<token>", methods=["GET", "POST"])
+def join_project(token):
+    ensure_collab_tables()
+    with DB_ENGINE.connect() as conn:
+        invite = conn.execute(text("""
+            SELECT pi.project_id, p.title, p.type
+            FROM project_invites pi
+            JOIN projects p ON p.id = pi.project_id
+            WHERE pi.token = :token
+        """), {"token": token}).mappings().first()
+    if not invite:
+        return render_template("join.html", error="This invite link is invalid or has expired.", project=None)
+
+    # Already logged in — auto-join without showing the form
+    if session.get("user_id"):
+        user_id = session["user_id"]
+        name = session.get("user_name") or "Collaborator"
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO project_collaborators (project_id, user_id, user_name, joined_via)
+                VALUES (:pid, :uid, :name, :token)
+                ON CONFLICT (project_id, user_id) DO NOTHING
+            """), {"pid": invite["project_id"], "uid": user_id, "name": name, "token": token})
+        return redirect(f"/project/{invite['project_id']}")
+
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        if not name:
+            return render_template("join.html", project=invite, token=token, error="Please enter your name.")
+        user_id = f"collab_{secrets.token_hex(8)}"
+        session["user_id"] = user_id
+        session["user_name"] = name
+        with DB_ENGINE.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO project_collaborators (project_id, user_id, user_name, joined_via)
+                VALUES (:pid, :uid, :name, :token)
+                ON CONFLICT (project_id, user_id) DO NOTHING
+            """), {"pid": invite["project_id"], "uid": user_id, "name": name, "token": token})
+        return redirect(f"/project/{invite['project_id']}")
+
+    return render_template("join.html", project=invite, token=token, error=None)
+
+
+@app.route("/use-invite-code", methods=["POST"])
+def use_invite_code():
+    code = (request.form.get("code") or "").strip().upper()
+    if not code:
+        return redirect("/studio")
+    ensure_collab_tables()
+    with DB_ENGINE.connect() as conn:
+        invite = conn.execute(text(
+            "SELECT token FROM project_invites WHERE invite_code = :code"
+        ), {"code": code}).mappings().first()
+    if not invite:
+        return redirect("/studio?code_error=1")
+    return redirect(f"/join/{invite['token']}")
+
+
+@app.route("/project/<project_id>/deck.<ext>")
+@require_login
+def project_deck_file(project_id, ext):
+    if ext not in ("pdf", "pptx"):
+        abort(404)
+    ensure_projects_table()
+    with DB_ENGINE.connect() as conn:
+        row = conn.execute(text("""
+            SELECT output_dir FROM projects WHERE id = :id AND owner_user_id = :uid
+        """), {"id": project_id, "uid": session.get("user_id")}).mappings().first()
+    if not row or not row["output_dir"]:
+        abort(404)
+    file_path = BASE_DIR / row["output_dir"] / f"deck.{ext}"
+    if not file_path.exists():
+        abort(404)
+    return send_file(file_path, as_attachment=(ext == "pptx"))
+
+@app.route("/db-check")
+def db_check_route():
+    try:
+        ok = db_check()
+        return jsonify({"ok": ok, "database_configured": bool(DATABASE_URL)})
+    except Exception as e:
+        return jsonify({"ok": False, "database_configured": bool(DATABASE_URL), "error": str(e)}), 500
+
+
+@app.route("/db-init")
+def db_init_route():
+    try:
+        db_init()
+        return jsonify({"ok": True, "message": "database initialized"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+# ===== SYNC AI ASSISTANT ROUTE START =================
+
+_SYNC_SYSTEM = (
+    "You are Sync, an AI assistant built into EVOLUM — a pitch deck generator for screenwriters and filmmakers. "
+    "Help users get the most out of the platform. Be friendly, brief (under 80 words), and practical. "
+    "EVOLUM features: upload a script → AI-generated pitch deck with images → preview slides → "
+    "refine individual slides (edit text, swap images, regenerate single images) → download PPTX/PDF. "
+    "Key tip: users can edit slide text directly in Refine view without rebuilding the whole deck. "
+    "Use Update & Rebuild to apply slide edits. Use Regenerate Deck for a full AI rewrite with a new direction. "
+    "No markdown. Respond like a helpful colleague who knows the product well."
+)
+
+@app.route("/sync/chat", methods=["POST"])
+@require_login
+def sync_chat():
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    context = data.get("context") or {}
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({"reply": "I'm offline right now — API key not configured."})
+
+    ctx_parts = []
+    if context.get("status"):
+        ctx_parts.append(f"Build status: {context['status']}")
+    if context.get("has_deck"):
+        ctx_parts.append("User has a deck built and in preview")
+    if context.get("in_refine"):
+        ctx_parts.append("User is currently in the Refine/Edit view")
+    if context.get("regen_count", 0) >= 2:
+        ctx_parts.append(f"User has hit regenerate {context['regen_count']} times this session")
+    ctx_str = ". ".join(ctx_parts) if ctx_parts else "General use"
+
+    proactive = context.get("proactive_trigger", "")
+    user_content = proactive if proactive and not message else message
+    if not user_content:
+        user_content = "Say hello and offer to help."
+
+    try:
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=200,
+            system=_SYNC_SYSTEM + f"\n\nUser context: {ctx_str}",
+            messages=[{"role": "user", "content": user_content}]
+        )
+        return jsonify({"reply": resp.content[0].text.strip()})
+    except Exception as e:
+        return jsonify({"reply": "Something went wrong — try again in a moment."})
+
+# ===== SYNC AI ASSISTANT ROUTE END ===================
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    print(f"⚠️ Unhandled exception: {e}\n{traceback.format_exc()}", flush=True)
+    from flask import Response as _Response
+    code = getattr(e, "code", 500)
+    return _Response(
+        json.dumps({"error": "Server error", "detail": str(e)}),
+        status=code if isinstance(code, int) else 500,
+        mimetype="application/json"
+    )
+
+# ===== APP RUN START =================================
+if __name__ == "__main__":
+    try:
+        if DB_ENGINE:
+            db_init()
+            print("✅ Database ready", flush=True)
+        else:
+            print("⚠️ DATABASE_URL not configured; database features disabled", flush=True)
+    except Exception as e:
+        print(f"⚠️ Database init skipped: {e}", flush=True)
+    port = int(os.environ.get("PORT", 7000))
+    app.run(host="0.0.0.0", port=port, threaded=True)
+
+
+# ===== APP RUN END ===================================
+
+
+@app.route('/deck-manifest')
+def get_manifest():
+    user_id = session.get("user_id")
+    path = f"output/{user_id}_latest_deck_manifest.json"
+    return send_file(path)
