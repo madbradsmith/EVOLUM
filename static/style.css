@@ -1421,18 +1421,20 @@ body {
 }
 
 /* Right panel action groups */
-.refine-action-group {
+/* Three equal buttons under the refine slide image */
+.refine-left-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
     margin-top: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
 }
-.refine-full-btn {
+.refine-left-btn {
     width: 100%;
     min-width: 0;
     margin: 0;
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 9px 6px;
+    font-size: 12px;
+    box-sizing: border-box;
 }
 .refine-btn-row {
     display: grid;
@@ -1440,22 +1442,32 @@ body {
     gap: 8px;
 }
 .refine-btn-row .primary-button,
-.refine-btn-row .secondary-button {
+.refine-btn-row .secondary-button,
+.refine-regen-btn {
     width: 100%;
     min-width: 0;
     margin: 0;
     padding: 10px 8px;
     font-size: 12px;
+    box-sizing: border-box;
 }
-.refine-deck-section {
+.refine-regen-section {
     margin-top: 16px;
     padding-top: 14px;
     border-top: 1px solid rgba(255,255,255,0.08);
 }
-.refine-deck-section .regen-prompt-input {
+.refine-regen-label {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 8px;
+}
+.refine-regen-section .regen-prompt-input {
     width: 100%;
     max-width: none;
-    margin: 0 0 0 0;
+    margin: 0;
     display: block;
     box-sizing: border-box;
 }

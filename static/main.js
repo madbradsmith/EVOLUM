@@ -1059,7 +1059,7 @@ function renderDeckPreview(){
 
         return `
             <div class="deck-preview-card" draggable="true"
-                 onclick="selectPreviewSlide(${index})" title="${titleText} — click to preview"
+                 onclick="jumpToRefineSlide(${index})" title="${titleText} — click to edit"
                  ondragstart="previewDragStart(event,${index})"
                  ondragover="previewDragOver(event,${index})"
                  ondragleave="previewDragLeave(event)"

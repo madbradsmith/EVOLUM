@@ -240,7 +240,7 @@
 
         <div class="refine-layout">
 
-            <!-- LEFT: bigger preview panel -->
+            <!-- LEFT: slide preview + controls -->
             <div class="preview-panel">
                 <div class="panel-title">Slide Preview</div>
                 <div class="slide-preview-wrap">
@@ -255,10 +255,20 @@
                     <div class="image-option-strip" id="imageOptionStrip"></div>
                     <div class="image-option-empty" id="imageOptionEmpty" style="display:none;">No alternate images are available for this slide yet.</div>
                 </div>
+
+                <!-- Three action buttons under the slide image -->
+                <input type="file" id="slideImageUpload" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleSlideImageUpload(this)">
+                <div class="refine-left-btns">
+                    <button class="secondary-button refine-left-btn" type="button" onclick="returnToPreviewStage()">&#8592; Preview</button>
+                    <button class="primary-button refine-left-btn" type="button" onclick="submitRefineDeck()">Update &amp; Rebuild</button>
+                    <button class="secondary-button refine-left-btn" type="button" onclick="document.getElementById('slideImageUpload').click()">Upload Image</button>
+                </div>
+                <span id="slideImageUploadName" style="font-size:11px; color:#888; display:block; text-align:center; margin-top:4px;"></span>
+
                 <div class="slide-list" id="slideList"></div>
             </div>
 
-            <!-- RIGHT: compact edit panel -->
+            <!-- RIGHT: edit fields + regenerate actions -->
             <div class="edit-panel">
                 <div class="panel-title">Edit Slide Content</div>
 
@@ -282,31 +292,16 @@
                     <input type="text" id="refineImagePrompt" placeholder="e.g. night scene, wide epic shot…">
                 </div>
 
-                <div class="field-group">
-                    <label class="label">Upload Image <span class="label-optional">(optional)</span></label>
-                    <input type="file" id="slideImageUpload" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleSlideImageUpload(this)">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <button class="secondary-button" type="button" style="font-size:12px; padding:7px 12px;" onclick="document.getElementById('slideImageUpload').click()">Choose Image</button>
-                        <span id="slideImageUploadName" style="font-size:11px; color:#888;">No image selected</span>
-                    </div>
-                </div>
-
-                <div class="refine-action-group">
-                    <button class="primary-button refine-full-btn" type="button" onclick="submitRefineDeck()">Update &amp; Rebuild</button>
+                <div class="refine-regen-section">
+                    <div class="refine-regen-label">Regenerate</div>
                     <div class="refine-btn-row">
-                        <button class="secondary-button" type="button" id="regenImageBtn" onclick="regenerateSlideImage()">Regenerate Image</button>
-                        <button class="secondary-button" type="button" id="loadOptionsBtn" onclick="loadSlideImageOptions()">Load Image Options</button>
+                        <button class="secondary-button refine-regen-btn" type="button" id="regenImageBtn" onclick="regenerateSlideImage()">Regenerate Image</button>
+                        <button class="secondary-button refine-regen-btn" type="button" id="loadOptionsBtn" onclick="loadSlideImageOptions()">Image Options</button>
                     </div>
-                </div>
-
-                <div class="refine-deck-section">
                     <input type="text" id="refineRegenInput" class="regen-prompt-input"
-                        placeholder="New direction for full deck…"
-                        onkeydown="if(event.key==='Enter') submitRegenDeck()">
-                    <div class="refine-btn-row" style="margin-top:8px;">
-                        <button class="secondary-button" type="button" onclick="returnToPreviewStage()">Back to Preview</button>
-                        <button class="primary-button" type="button" onclick="submitRegenDeck()">Regenerate Deck</button>
-                    </div>
+                        placeholder="New direction for the full deck…"
+                        onkeydown="if(event.key==='Enter') submitRegenDeck()" style="margin-top:10px;">
+                    <button class="primary-button" type="button" onclick="submitRegenDeck()" style="width:100%; margin-top:6px; box-sizing:border-box;">Regenerate Deck</button>
                 </div>
 
             </div>
