@@ -1268,6 +1268,7 @@ async function openRefinementStage(){
     }
     document.getElementById("previewStage").style.display = "none";
     document.getElementById("refinementStage").style.display = "block";
+    _setSyncFabVisible(true);
     renderDeckPreview();
     renderCurrentRefineSlide();
 }
@@ -1277,6 +1278,7 @@ function returnToPreviewStage(){
     activeCompleteView = "preview";
     document.getElementById("refinementStage").style.display = "none";
     document.getElementById("previewStage").style.display = "block";
+    _setSyncFabVisible(false);
     renderDeckPreview();
 }
 
@@ -1775,6 +1777,7 @@ function updateStatusUI(status){
         if (activeCompleteView === "refine") {
             document.getElementById("previewStage").style.display = "none";
             document.getElementById("refinementStage").style.display = "block";
+            _setSyncFabVisible(true);
             if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
                 syncLatestSlidesForPreview().then(() => {
                     renderCurrentRefineSlide();
@@ -1783,10 +1786,10 @@ function updateStatusUI(status){
         } else {
             document.getElementById("previewStage").style.display = "block";
             document.getElementById("refinementStage").style.display = "none";
+            _setSyncFabVisible(false);
             if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
                 syncLatestSlidesForPreview();
             }
-            if (previousStatus !== "COMPLETE") fetchMyProjects();
         }
     } else if (status === "ERROR"){
         updateBuildProgressModal("ERROR");
@@ -1953,10 +1956,10 @@ async function loadProjectFromPanel(projectId) {
             document.getElementById("completePanel").style.display = "block";
             document.getElementById("previewStage").style.display = "block";
             document.getElementById("refinementStage").style.display = "none";
+            _setSyncFabVisible(false);
 
             latestSlidesLoadedForComplete = false;
             await syncLatestSlidesForPreview();
-            renderProjectsList(_cachedProjects);
         }
     } catch (e) {}
 }
@@ -2223,6 +2226,11 @@ async function _syncCheckProactive() {
             break;
         }
     }
+}
+
+function _setSyncFabVisible(visible) {
+    const fab = document.getElementById("syncFab");
+    if (fab) fab.style.display = visible ? "flex" : "none";
 }
 
 function toggleSyncPanel() {
