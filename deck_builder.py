@@ -155,7 +155,7 @@ def resolve_paths(args) -> tuple[Path, Path, Path]:
         work_slide_plan = Path(_DAI_WORK_DIR) / "slide_plan.json"
         if work_slide_plan.exists():
             slide_plan = work_slide_plan
-    project_dir = APP_DIR
+    project_dir = APP_DIR / "visuals" / "output" / "project"
     output_dir = APP_DIR / "visuals" / "output"  # persistent disk mount
     output_dir.mkdir(parents=True, exist_ok=True)
     return slide_plan, project_dir / "visuals", output_dir
