@@ -129,6 +129,14 @@ tr:hover td { background:#fafafa; }
 .billing-link:hover { border-color:#fed7aa; background:var(--orange-soft); }
 .billing-link .link-sub { font-size:11px; color:var(--soft); margin-top:3px; font-weight:600; }
 
+.plan-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:0.06em; }
+.plan-solo { background:#f3f4f6; color:#374151; }
+.plan-pro { background:#dbeafe; color:#1d4ed8; }
+.plan-studio { background:#fef3c7; color:#92400e; }
+.plan-studio_plus,.plan-studio\+ { background:#ede9fe; color:#6d28d9; }
+
+.stat-value.red { color:var(--red); }
+
 @media (max-width:850px) { .tab-bar { overflow-x:auto; gap:0; } .tab-btn { white-space:nowrap; } }
 @media (max-width:560px) { .stat-grid { grid-template-columns:repeat(2,1fr); } .page { padding:18px 12px; } }
 </style>
@@ -323,6 +331,34 @@ tr:hover td { background:#fafafa; }
         </div>
     </div>
 
+    <div class="section-label">Geographic Breakdown</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Users by Country (from sign-ins)</div>
+            <div class="panel-count">{{ geo_breakdown | length }}</div>
+        </div>
+        <div class="scroll-panel">
+            {% if geo_breakdown %}
+            <table>
+                <thead>
+                    <tr><th>Country</th><th>Code</th><th>Sign-ins</th></tr>
+                </thead>
+                <tbody>
+                    {% for g in geo_breakdown %}
+                    <tr>
+                        <td style="font-weight:600;">{{ g.country or '—' }}</td>
+                        <td style="color:var(--soft); font-size:12px;">{{ g.country_code or '' }}</td>
+                        <td style="font-weight:700; color:var(--orange);">{{ g.logins }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No geographic data yet — will populate on next sign-in after deployment.</div>
+            {% endif %}
+        </div>
+    </div>
+
 </div>
 </div>
 
@@ -340,15 +376,20 @@ tr:hover td { background:#fafafa; }
             {% if users %}
             <table>
                 <thead>
-                    <tr><th>#</th><th>Email</th><th>Name</th><th>Projects</th><th>Joined</th><th>Controls</th></tr>
+                    <tr><th>#</th><th>Email</th><th>Name</th><th>Plan</th><th>Projects</th><th>Deck Runs</th><th>Est. Cost</th><th>Last Login</th><th>Joined</th><th>Controls</th></tr>
                 </thead>
                 <tbody>
                     {% for u in users %}
+                    {% set plan = u.plan or 'solo' %}
                     <tr id="user-row-{{ u.id }}">
                         <td style="color:#374151; font-weight:700;">{{ u.id }}</td>
                         <td class="email-cell">{{ u.email or '—' }}</td>
                         <td>{{ u.name or '—' }}</td>
+                        <td><span class="plan-badge plan-{{ plan }}">{{ plan }}</span></td>
                         <td style="font-weight:700; color:{% if u.project_count >= 6 %}var(--red){% else %}var(--ink){% endif %};">{{ u.project_count }}</td>
+                        <td style="font-weight:700;">{{ u.deck_run_count or 0 }}</td>
+                        <td style="font-weight:700; color:{% if (u.est_cost or 0) > 1 %}var(--red){% elif (u.est_cost or 0) > 0.25 %}var(--orange){% else %}var(--ink){% endif %};">${{ '%.2f'|format(u.est_cost or 0) }}</td>
+                        <td class="time-cell">{{ u.last_login.strftime('%m-%d %H:%M') if u.last_login else '—' }}</td>
                         <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
                         <td>
                             <div class="user-actions">
@@ -452,43 +493,103 @@ tr:hover td { background:#fafafa; }
 <div id="tab-costs" class="tab-content">
 <div class="page">
 
-    <div class="section-label">API Key Status</div>
+    <div class="section-label">Platform Spend (Tracked Decks)</div>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Spend (All Time)</div>
+            <div class="stat-value red">${{ '%.2f'|format(stats.total_platform_cost or 0) }}</div>
+            <div class="stat-sub">Claude + FAL combined</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Avg Cost / Deck</div>
+            <div class="stat-value orange">${{ '%.3f'|format(stats.avg_cost_per_deck or 0) }}</div>
+            <div class="stat-sub">From tracked runs</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Claude (Brain) Spend</div>
+            <div class="stat-value">${{ '%.2f'|format(stats.total_brain_cost or 0) }}</div>
+            <div class="stat-sub">Sonnet 4.6 API calls</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">FAL (Images) Spend</div>
+            <div class="stat-value">${{ '%.2f'|format(stats.total_fal_cost or 0) }}</div>
+            <div class="stat-sub">Flux Schnell generations</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Images Generated</div>
+            <div class="stat-value blue">{{ stats.total_images_generated or 0 }}</div>
+            <div class="stat-sub">FAL API calls total</div>
+        </div>
+    </div>
+
+    <div class="section-label">Live API Balances</div>
     <div class="health-grid">
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if fal_balance.available else 'warn' }}"></div>
+            <div>
+                <div class="health-text">FAL AI Credits</div>
+                {% if fal_balance.available %}
+                <div class="health-sub" style="color:var(--orange); font-weight:700;">
+                    ${{ '%.4f'|format(fal_balance.balance or 0) }} remaining
+                </div>
+                {% else %}
+                <div class="health-sub">{{ fal_balance.reason or 'Unavailable' }} — <a href="https://fal.ai/dashboard" target="_blank" style="color:#94a3b8;">check dashboard ↗</a></div>
+                {% endif %}
+            </div>
+        </div>
         <div class="health-card">
             <div class="health-dot {{ 'ok' if stats.api_key_set else 'err' }}"></div>
             <div>
                 <div class="health-text">Anthropic (Claude)</div>
-                <div class="health-sub">{{ 'Key set — AI generation active' if stats.api_key_set else 'Missing' }}</div>
+                <div class="health-sub">Balance not available via API — <a href="https://console.anthropic.com/settings/billing" target="_blank" style="color:#94a3b8;">check console ↗</a></div>
             </div>
         </div>
         <div class="health-card">
-            <div class="health-dot {{ 'ok' if stats.fal_key_set else 'err' }}"></div>
+            <div class="health-dot ok"></div>
             <div>
-                <div class="health-text">FAL AI (Images)</div>
-                <div class="health-sub">{{ 'Key set — image generation active' if stats.fal_key_set else 'Missing' }}</div>
+                <div class="health-text">Render Server</div>
+                <div class="health-sub"><a href="https://dashboard.render.com" target="_blank" style="color:#94a3b8;">View server costs ↗</a></div>
             </div>
         </div>
     </div>
 
-    <div class="section-label">Billing Dashboards</div>
-    <div class="billing-links">
-        <a class="billing-link" href="https://console.anthropic.com/settings/billing" target="_blank">
-            Anthropic Console ↗
-            <div class="link-sub">View Claude API usage &amp; spend</div>
-        </a>
-        <a class="billing-link" href="https://fal.ai/dashboard" target="_blank">
-            FAL Dashboard ↗
-            <div class="link-sub">View image generation usage &amp; spend</div>
-        </a>
-        <a class="billing-link" href="https://dashboard.render.com" target="_blank">
-            Render Dashboard ↗
-            <div class="link-sub">Server costs &amp; deploy logs</div>
-        </a>
+    <div class="section-label">Per-User Cost Breakdown</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Top Users by Spend</div>
+            <div class="panel-count">{{ user_cost_rows | length }}</div>
+        </div>
+        <div class="scroll-panel tall">
+            {% if user_cost_rows %}
+            <table>
+                <thead>
+                    <tr><th>Email</th><th>Plan</th><th>Deck Runs</th><th>Images</th><th>Est. Spend</th><th>Avg / Deck</th></tr>
+                </thead>
+                <tbody>
+                    {% for r in user_cost_rows %}
+                    {% set avg = (r.total_cost / r.deck_runs) if r.deck_runs else 0 %}
+                    <tr>
+                        <td class="email-cell">{{ r.user_email or '—' }}</td>
+                        <td><span class="plan-badge plan-{{ r.plan or 'solo' }}">{{ r.plan or 'solo' }}</span></td>
+                        <td style="font-weight:700;">{{ r.deck_runs }}</td>
+                        <td>{{ r.total_images or 0 }}</td>
+                        <td style="font-weight:700; color:{% if (r.total_cost or 0) > 1 %}var(--red){% elif (r.total_cost or 0) > 0.25 %}var(--orange){% else %}var(--ink){% endif %};">${{ '%.3f'|format(r.total_cost or 0) }}</td>
+                        <td style="color:var(--soft);">${{ '%.3f'|format(avg) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No cost data yet — tracking starts on the next deck run.</div>
+            {% endif %}
+        </div>
     </div>
 
-    <div class="section-label" style="margin-top:20px;">Cost Tracking</div>
-    <div class="costs-placeholder">
-        Detailed per-user cost tracking coming in a future release. Check the billing dashboards above for current spend.
+    <div class="section-label" style="margin-top:8px;">Pricing Reference</div>
+    <div class="costs-placeholder" style="font-size:12px; line-height:1.8;">
+        <strong>Claude Sonnet 4.6:</strong> $3.00/1M input · $15.00/1M output · $0.30/1M cache read · $3.75/1M cache write<br>
+        <strong>FAL Flux Schnell:</strong> ~$0.003/image<br>
+        <strong>Note:</strong> Cost tracking begins with new deck runs after this update is deployed.
     </div>
 
 </div>
@@ -498,17 +599,25 @@ tr:hover td { background:#fafafa; }
 <div id="tab-logs" class="tab-content">
 <div class="page">
 
-    <div class="section-label">Pipeline Log</div>
+    <div class="section-label">App Log</div>
     <div class="log-wrap">
         <div class="log-header">
-            <span>pipeline.log — last 60 lines</span>
-            <a href="/debug-log" target="_blank" style="color:#94a3b8; font-size:10px; text-decoration:none;">Open full log ↗</a>
+            <span>app.log — last 100 lines (warnings &amp; errors)</span>
+            <a href="/admin/download-log" style="color:#f97316; font-size:11px; font-weight:700; text-decoration:none; border:1px solid rgba(249,115,22,0.35); padding:2px 8px; border-radius:4px;">Download ↓</a>
         </div>
         {% if log_lines %}
         <div class="log-body" id="logBody">{{ log_lines | join('\n') }}</div>
         {% else %}
-        <div class="log-empty">No pipeline log found.</div>
+        <div class="log-empty">No log entries yet — errors and warnings will appear here when they occur.</div>
         {% endif %}
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Server Logs</div>
+    <div class="billing-links">
+        <a class="billing-link" href="https://dashboard.render.com" target="_blank">
+            Render Logs ↗
+            <div class="link-sub">Full stdout/stderr from the live server</div>
+        </a>
     </div>
 
 </div>

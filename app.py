@@ -22,6 +22,7 @@ import urllib.error
 import hashlib
 import secrets
 import string
+import logging
 from datetime import datetime
 from urllib.parse import unquote, quote
 
@@ -126,6 +127,13 @@ def get_user_by_email(email: str):
 
 BASE_DIR = Path(__file__).resolve().parent
 DISK_DIR = BASE_DIR / "visuals"        # persistent disk mount
+
+# File logging — errors and key events captured to app.log for admin review
+_log_handler = logging.FileHandler(BASE_DIR / "app.log", encoding="utf-8")
+_log_handler.setLevel(logging.WARNING)
+_log_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+logging.getLogger().addHandler(_log_handler)
+_app_logger = logging.getLogger("evolum")
 OUTPUT_DIR = DISK_DIR / "output"       # survives redeploys
 USER_DATA_DIR = DISK_DIR / "user_data" # survives redeploys
 UPLOAD_DIR = BASE_DIR / "uploads"
@@ -970,7 +978,16 @@ def sign_in():
         if user.get("subscription_active"):
             session["subscription_active"] = True
 
-        log_activity_event("sign_in", route="/sign-in", user_email=user["email"])
+        _signin_meta = {"ip": request.remote_addr or ""}
+        try:
+            _geo_resp = urllib.request.urlopen(f"http://ip-api.com/json/{request.remote_addr}?fields=country,countryCode,city", timeout=2)
+            _geo = json.loads(_geo_resp.read().decode())
+            _signin_meta["country"] = _geo.get("country", "")
+            _signin_meta["country_code"] = _geo.get("countryCode", "")
+            _signin_meta["city"] = _geo.get("city", "")
+        except Exception:
+            pass
+        log_activity_event("sign_in", route="/sign-in", user_email=user["email"], metadata=_signin_meta)
         return redirect("/?welcome=return")
     except Exception as e:
         return redirect("/?auth_error=" + quote(f"Sign in failed: {e}"))
@@ -1391,6 +1408,24 @@ def admin_delete_user(user_id):
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
+def _fetch_fal_balance() -> dict:
+    fal_key = os.environ.get("FAL_API_KEY", "")
+    if not fal_key:
+        return {"available": False, "reason": "no_key"}
+    try:
+        req = urllib.request.Request(
+            "https://rest.fal.ai/billing/balance",
+            headers={"Authorization": f"Key {fal_key}", "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+        return {"available": True, "balance": data.get("balance"), "raw": data}
+    except urllib.error.HTTPError as e:
+        return {"available": False, "reason": f"http_{e.code}"}
+    except Exception as e:
+        return {"available": False, "reason": str(e)[:60]}
+
+
 @app.route("/admin")
 def admin():
     if not session.get("admin_authed"):
@@ -1422,9 +1457,13 @@ def admin():
     except Exception:
         pass
 
+    fal_balance = _fetch_fal_balance()
+    stats["fal_balance"] = fal_balance
+
     if not DB_ENGINE:
         return render_template("admin.html", stats=stats, users=users,
-                               recent_activity=recent_activity, messages=messages)
+                               recent_activity=recent_activity, messages=messages,
+                               fal_balance=fal_balance, geo_breakdown=[], user_cost_rows=[])
     try:
         with DB_ENGINE.connect() as conn:
             stats["db_ok"] = True
@@ -1448,12 +1487,45 @@ def admin():
             stats["actor_booked"] = conn.execute(
                 text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_booked'")).scalar() or 0
 
+            # Total platform cost from tracked deck runs
+            cost_agg = conn.execute(text("""
+                SELECT
+                    COUNT(*) AS deck_count,
+                    SUM(CAST(metadata_json::json->>'total_cost_usd' AS FLOAT)) AS total_cost,
+                    SUM(CAST(metadata_json::json->>'brain_cost_usd' AS FLOAT)) AS brain_cost,
+                    SUM(CAST(metadata_json::json->>'fal_cost_usd' AS FLOAT)) AS fal_cost,
+                    SUM(CAST(metadata_json::json->>'fal_images' AS INT)) AS total_images
+                FROM activity_events
+                WHERE event_type='deck_run'
+                  AND metadata_json IS NOT NULL
+                  AND metadata_json::json->>'total_cost_usd' IS NOT NULL
+            """)).mappings().first()
+            if cost_agg:
+                stats["total_platform_cost"] = round(cost_agg["total_cost"] or 0, 2)
+                stats["total_brain_cost"] = round(cost_agg["brain_cost"] or 0, 2)
+                stats["total_fal_cost"] = round(cost_agg["fal_cost"] or 0, 2)
+                stats["total_images_generated"] = int(cost_agg["total_images"] or 0)
+                tracked_runs = int(cost_agg["deck_count"] or 0)
+                stats["avg_cost_per_deck"] = round(stats["total_platform_cost"] / tracked_runs, 3) if tracked_runs else 0
+            else:
+                stats.update({"total_platform_cost": 0, "total_brain_cost": 0, "total_fal_cost": 0,
+                               "total_images_generated": 0, "avg_cost_per_deck": 0})
+
+            # Users enriched with plan, last login, deck count, estimated cost
             rows = conn.execute(text("""
                 SELECT u.id, u.email, u.name, u.created_at,
-                       COUNT(p.id) AS project_count
+                       COALESCE(u.plan, 'solo') AS plan,
+                       COUNT(DISTINCT p.id) AS project_count,
+                       MAX(s.created_at) AS last_login,
+                       COUNT(DISTINCT dr.id) AS deck_run_count,
+                       SUM(CAST(NULLIF(dr.metadata_json::json->>'total_cost_usd', '') AS FLOAT)) AS est_cost
                 FROM beta_users u
                 LEFT JOIN projects p ON p.owner_user_id = CAST(u.id AS TEXT)
-                GROUP BY u.id, u.email, u.name, u.created_at
+                LEFT JOIN activity_events s ON s.user_email = u.email AND s.event_type = 'sign_in'
+                LEFT JOIN activity_events dr ON dr.user_email = u.email AND dr.event_type = 'deck_run'
+                    AND dr.metadata_json IS NOT NULL
+                    AND dr.metadata_json::json->>'total_cost_usd' IS NOT NULL
+                GROUP BY u.id, u.email, u.name, u.created_at, u.plan
                 ORDER BY u.created_at DESC
             """)).mappings().all()
             users = [dict(r) for r in rows]
@@ -1472,22 +1544,63 @@ def admin():
             )).mappings().all()
             messages = [dict(r) for r in rows]
 
+            # Geographic breakdown from sign_in events
+            geo_rows = conn.execute(text("""
+                SELECT
+                    metadata_json::json->>'country' AS country,
+                    metadata_json::json->>'country_code' AS country_code,
+                    COUNT(*) AS logins
+                FROM activity_events
+                WHERE event_type='sign_in'
+                  AND metadata_json IS NOT NULL
+                  AND metadata_json::json->>'country' IS NOT NULL
+                  AND metadata_json::json->>'country' != ''
+                GROUP BY country, country_code
+                ORDER BY logins DESC
+                LIMIT 20
+            """)).mappings().all()
+            geo_breakdown = [dict(r) for r in geo_rows]
+
+            # Per-user cost ranking (top 20 by cost, for cost analysis)
+            ucost_rows = conn.execute(text("""
+                SELECT
+                    dr.user_email,
+                    COALESCE(u.plan, 'solo') AS plan,
+                    COUNT(dr.id) AS deck_runs,
+                    SUM(CAST(NULLIF(dr.metadata_json::json->>'total_cost_usd', '') AS FLOAT)) AS total_cost,
+                    SUM(CAST(NULLIF(dr.metadata_json::json->>'fal_images', '') AS INT)) AS total_images
+                FROM activity_events dr
+                LEFT JOIN beta_users u ON u.email = dr.user_email
+                WHERE dr.event_type='deck_run'
+                  AND dr.metadata_json IS NOT NULL
+                  AND dr.metadata_json::json->>'total_cost_usd' IS NOT NULL
+                GROUP BY dr.user_email, u.plan
+                ORDER BY total_cost DESC NULLS LAST
+                LIMIT 20
+            """)).mappings().all()
+            user_cost_rows = [dict(r) for r in ucost_rows]
+
     except Exception as e:
         stats["db_ok"] = False
         stats["db_error"] = str(e)[:120]
+        geo_breakdown = []
+        user_cost_rows = []
 
     log_lines = []
     try:
-        log_path = BASE_DIR / "pipeline.log"
+        log_path = BASE_DIR / "app.log"
+        if not log_path.exists():
+            log_path = BASE_DIR / "pipeline.log"
         if log_path.exists():
             raw = log_path.read_text(encoding="utf-8", errors="replace").strip().splitlines()
-            log_lines = raw[-60:]
+            log_lines = raw[-100:]
     except Exception:
         pass
 
     return render_template("admin.html", stats=stats, users=users,
                            recent_activity=recent_activity, messages=messages,
-                           log_lines=log_lines,
+                           log_lines=log_lines, fal_balance=fal_balance,
+                           geo_breakdown=geo_breakdown, user_cost_rows=user_cost_rows,
                            admin_reset_key=os.environ.get("ADMIN_RESET_KEY", ""))
 
 @app.route("/status")
@@ -1516,7 +1629,19 @@ def status():
     except Exception as e:
         print(f"⚠️ /status error: {e}", flush=True)
         return jsonify({"status": "IDLE", "project_id": None})
-    
+
+
+@app.route("/admin/download-log")
+def admin_download_log():
+    if not session.get("admin_authed"):
+        abort(403)
+    log_path = BASE_DIR / "app.log"
+    if not log_path.exists():
+        log_path = BASE_DIR / "pipeline.log"
+    if not log_path.exists():
+        abort(404)
+    return send_file(log_path, as_attachment=True, download_name="evolum_app.log", mimetype="text/plain")
+
 # ===== PITCH DECK ROUTES START =======================
 
 # ===== UPLOAD OVERRIDE HELPERS START ====================
@@ -1791,7 +1916,36 @@ def upload():
         _cleanup_old_output_files()
         elapsed = int(time.time() - started_at)
         log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
-        log_activity_event("deck_run", route="/upload", user_email=_user_email)
+        _deck_cost_meta = {"elapsed_s": elapsed, "filename": str(file.filename)}
+        try:
+            _tok_file = Path(_pipeline_env.get("DAI_WORK_DIR", "")) / "pipeline_tokens.json"
+            if not _tok_file.exists():
+                _tok_file = BASE_DIR / "pipeline_tokens.json"
+            if _tok_file.exists():
+                _tok = json.loads(_tok_file.read_text(encoding="utf-8"))
+                _b = _tok.get("brain", {})
+                inp = _b.get("input_tokens", 0) or 0
+                out = _b.get("output_tokens", 0) or 0
+                cr = _b.get("cache_read_input_tokens", 0) or 0
+                cc = _b.get("cache_creation_input_tokens", 0) or 0
+                # Sonnet 4.6 pricing per 1M tokens
+                brain_cost = (inp * 3.0 + out * 15.0 + cr * 0.30 + cc * 3.75) / 1_000_000
+                fal_count = _tok.get("fal_images", 0) or 0
+                fal_cost = fal_count * 0.003
+                _deck_cost_meta.update({
+                    "brain_input_tokens": inp,
+                    "brain_output_tokens": out,
+                    "brain_cache_read_tokens": cr,
+                    "brain_cache_creation_tokens": cc,
+                    "brain_cost_usd": round(brain_cost, 4),
+                    "fal_images": fal_count,
+                    "fal_cost_usd": round(fal_cost, 4),
+                    "total_cost_usd": round(brain_cost + fal_cost, 4),
+                })
+                _tok_file.unlink(missing_ok=True)
+        except Exception:
+            pass
+        log_activity_event("deck_run", route="/upload", user_email=_user_email, metadata=_deck_cost_meta)
 
         if saved_pid and DB_ENGINE:
             try:

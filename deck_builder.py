@@ -47,7 +47,22 @@ APP_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = Path(__file__).resolve().parent
 
 _DAI_UID = os.environ.get("DAI_USER_ID", "")
+_fal_image_count = 0
 _DAI_WORK_DIR = os.environ.get("DAI_WORK_DIR", "")
+
+
+def _write_deck_builder_tokens() -> None:
+    _f = Path(_DAI_WORK_DIR) / "pipeline_tokens.json" if _DAI_WORK_DIR else BASE_DIR / "pipeline_tokens.json"
+    try:
+        existing = json.loads(_f.read_text(encoding="utf-8")) if _f.exists() else {}
+    except Exception:
+        existing = {}
+    existing["fal_images"] = _fal_image_count
+    try:
+        _f.write_text(json.dumps(existing), encoding="utf-8")
+    except Exception:
+        pass
+
 
 _work_ctx = Path(_DAI_WORK_DIR) / "user_upload_context.json" if _DAI_WORK_DIR else None
 if _work_ctx and _work_ctx.exists():
@@ -551,6 +566,7 @@ def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "
 
 
 def generate_fal_image(prompt: str, cache_path: Path) -> Optional[Path]:
+    global _fal_image_count
     if not FAL_API_KEY:
         return None
     if cache_path.exists():
@@ -581,6 +597,7 @@ def generate_fal_image(prompt: str, cache_path: Path) -> Optional[Path]:
         image_url = result["images"][0]["url"]
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         urllib.request.urlretrieve(image_url, cache_path)
+        _fal_image_count += 1
         print(f"✨ FAL generated image for prompt: {prompt[:60]}...")
         return cache_path
     except Exception as e:
@@ -1365,6 +1382,7 @@ def build_presentation(
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"📦 Deck manifest created: {manifest_path}")
     print(f"✅ Pitch deck created: {out_path}")
+    _write_deck_builder_tokens()
     return out_path
 
 

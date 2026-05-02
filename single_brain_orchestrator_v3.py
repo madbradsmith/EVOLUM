@@ -382,6 +382,26 @@ CRITICAL RULES:
 }"""
 
 
+def _write_brain_tokens(usage) -> None:
+    _work = os.environ.get("DAI_WORK_DIR", "")
+    _f = Path(_work) / "pipeline_tokens.json" if _work else APP_DIR / "pipeline_tokens.json"
+    try:
+        existing = json.loads(_f.read_text(encoding="utf-8")) if _f.exists() else {}
+    except Exception:
+        existing = {}
+    existing["brain"] = {
+        "input_tokens": getattr(usage, "input_tokens", 0) or 0,
+        "output_tokens": getattr(usage, "output_tokens", 0) or 0,
+        "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0) or 0,
+        "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0) or 0,
+        "model": "claude-sonnet-4-6",
+    }
+    try:
+        _f.write_text(json.dumps(existing), encoding="utf-8")
+    except Exception:
+        pass
+
+
 def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
     """Single Claude Sonnet call — generates all story fields from the actual screenplay."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -416,6 +436,7 @@ def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
         if raw.startswith("```"):
             raw = re.sub(r"^```[a-z]*\n?", "", raw)
             raw = re.sub(r"\n?```$", "", raw.rstrip())
+        _write_brain_tokens(message.usage)
         return json.loads(raw)
     except Exception as e:
         print(f"⚠️  Claude analysis failed: {e}")
