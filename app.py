@@ -2094,36 +2094,29 @@ def fetch_tmdb_comps(genre_str: str, n: int = 4) -> list:
 
 @app.route("/analysis-report")
 def analysis_report_page():
-    if not LATEST_ANALYSIS_JSON.exists():
+    uid = session.get("user_id", "")
+    pid = session.get("active_project_id") or get_status_project_id(uid or "")
+    if uid and pid:
+        proj_path = USER_DATA_DIR / str(uid) / str(pid) / "analysis_report.pdf"
+        if proj_path.exists():
+            return send_file(proj_path, as_attachment=False)
+    if not LATEST_ANALYSIS_PDF.exists():
         return redirect("/")
-    try:
-        report = json.loads(LATEST_ANALYSIS_JSON.read_text(encoding="utf-8"))
-    except Exception:
-        return redirect("/")
-    comps = fetch_tmdb_comps(report.get("genre", "drama"))
-    return render_template("analysis_report.html", report=report, comps=comps)
+    return send_file(LATEST_ANALYSIS_PDF, as_attachment=False)
 
 
 @app.route("/actor-prep-report")
 def actor_prep_report_page():
-    if not LATEST_ACTOR_PREP_JSON.exists():
-        return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False) if LATEST_ACTOR_PREP_PDF.exists() else redirect("/")
-    try:
-        report = json.loads(LATEST_ACTOR_PREP_JSON.read_text(encoding="utf-8"))
-    except Exception:
+    if not LATEST_ACTOR_PREP_PDF.exists():
         return redirect("/")
-    return render_template("actor_prep_report.html", report=report)
+    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False)
 
 
 @app.route("/actor-booked-report")
 def actor_booked_report_page():
-    if not LATEST_ACTOR_BOOKED_JSON.exists():
-        return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=False) if LATEST_ACTOR_BOOKED_PDF.exists() else redirect("/")
-    try:
-        report = json.loads(LATEST_ACTOR_BOOKED_JSON.read_text(encoding="utf-8"))
-    except Exception:
+    if not LATEST_ACTOR_BOOKED_PDF.exists():
         return redirect("/")
-    return render_template("actor_booked_report.html", report=report)
+    return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=False)
 
 
 @app.route("/analysis-report/latest.json")
