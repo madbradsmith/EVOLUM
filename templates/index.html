@@ -718,8 +718,7 @@
             <!-- LEFT: SHOWCASE -->
             <div class="auth-showcase">
                 <div style="margin-bottom:16px;">
-                    <div style="font-size:11px; font-weight:700; letter-spacing:0.16em; color:#ff7a00; text-transform:uppercase; margin-bottom:12px;">EVOLUM Beta — $5/month</div>
-                    <div style="font-size:30px; font-weight:800; color:#fff; line-height:1.2; margin-bottom:16px;">Everything. All of it.<br>For five bucks.</div>
+                    <div style="font-size:30px; font-weight:800; color:#fff; line-height:1.2; margin-bottom:16px;">Everything. All of it.<br>Starting at $10/month.</div>
                     <div style="background:rgba(82,201,122,0.1); border:1px solid rgba(82,201,122,0.25); border-radius:10px; padding:12px 14px; margin-bottom:4px;">
                         <div style="font-size:14px; font-weight:700; color:#52c97a; margin-bottom:4px;">Zero risk. Seriously.</div>
                         <div style="font-size:12px; color:#aaa; line-height:1.6;">Not the right fit? Contact us within 3 days and we'll refund every cent. No forms. No questions. Just ask.</div>
@@ -760,8 +759,12 @@
                 </div>
 
                 <div class="auth-panel active" id="authPanel_signup">
-                    <div id="authPlanBadge" style="display:none; font-size:12px; font-weight:700; color:#ff9944; background:rgba(255,122,0,0.08); border:1px solid rgba(255,122,0,0.2); border-radius:8px; padding:8px 12px; margin-bottom:12px;"></div>
-                    <div style="font-size:12px; color:#888; margin-bottom:14px;">Create your account — you'll be taken to secure checkout.</div>
+                    <div id="authPlanBadge" style="display:none; margin-bottom:16px; padding:14px 16px; background:rgba(255,122,0,0.12); border:2px solid rgba(255,122,0,0.45); border-radius:10px;">
+                        <div style="font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#ff9944; margin-bottom:4px;">Your selected plan</div>
+                        <div id="authPlanBadgeName" style="font-size:22px; font-weight:800; color:#fff; line-height:1.2;"></div>
+                        <div id="authPlanBadgePrice" style="font-size:14px; color:#ffb870; margin-top:2px;"></div>
+                    </div>
+                    <div id="authNoPlanNote" style="font-size:12px; color:#888; margin-bottom:14px;">Create your account — you'll be taken to secure checkout.</div>
                     <form method="POST" action="/create-checkout-session">
                         <input type="text" name="name" placeholder="Full Name" required>
                         <input type="email" name="email" placeholder="Email Address" required>

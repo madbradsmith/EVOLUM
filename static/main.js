@@ -2546,7 +2546,12 @@ function selectPlan(planId) {
         const priceStr = _pricingBilling === "annual"
             ? `$${Math.round(plan.annual / 12)}/mo · billed $${plan.annual}/yr`
             : `$${plan.monthly}/month`;
-        badge.textContent = `Selected plan: ${plan.name} — ${priceStr}`;
+        const nameEl = document.getElementById("authPlanBadgeName");
+        const priceEl = document.getElementById("authPlanBadgePrice");
+        const noteEl = document.getElementById("authNoPlanNote");
+        if (nameEl) nameEl.textContent = plan.name;
+        if (priceEl) priceEl.textContent = priceStr;
+        if (noteEl) noteEl.style.display = "none";
         badge.style.display = "block";
     }
     const planInput = document.getElementById("signupPlanId");
