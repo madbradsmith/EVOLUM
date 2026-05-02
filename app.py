@@ -1126,10 +1126,10 @@ def stripe_env_check():
     })
 
 _STRIPE_PLANS = {
-    "solo":         {"product": "prod_UOojwK7Z4BtANF", "monthly": 500,   "annual": 4200,  "name": "EVOLUM Solo",           "trial_days": 3},
-    "writers-room": {"product": "prod_UQbauBUNKrOhEA", "monthly": 1500,  "annual": 12600, "name": "EVOLUM Writer's Room",   "trial_days": 0},
-    "production":   {"product": "prod_UQbiF9DDgB83Ax", "monthly": 3500,  "annual": 29400, "name": "EVOLUM Production Co.",  "trial_days": 0},
-    "studio":       {"product": "prod_UQbmcaFzM9v24B", "monthly": 7500,  "annual": 63000, "name": "EVOLUM Studio",          "trial_days": 0},
+    "solo":         {"product": "prod_UOojwK7Z4BtANF", "monthly": 1000,  "annual": 10000, "name": "EVOLUM Solo",           "trial_days": 3},
+    "writers-room": {"product": "prod_UQbauBUNKrOhEA", "monthly": 2500,  "annual": 25000, "name": "EVOLUM Writer's Room",   "trial_days": 0},
+    "production":   {"product": "prod_UQbiF9DDgB83Ax", "monthly": 7500,  "annual": 75000, "name": "EVOLUM Production Co.",  "trial_days": 0},
+    "studio":       {"product": "prod_UQbmcaFzM9v24B", "monthly": 15000, "annual": 150000,"name": "EVOLUM Studio",          "trial_days": 0},
 }
 
 @app.route("/create-checkout-session", methods=["POST"])
@@ -1867,6 +1867,14 @@ def upload():
     _user_email = session.get("user_email", "")
     log_path = BASE_DIR / f"pipeline_{_uid_str}.log" if _uid_str else BASE_DIR / "pipeline.log"
 
+    # Script hash caching — skip Claude brain call if same screenplay seen before
+    _script_hash = None
+    try:
+        _script_bytes = save_path.read_bytes()
+        _script_hash = hashlib.sha256(_script_bytes).hexdigest()
+    except Exception:
+        pass
+
     _pipeline_env = os.environ.copy()
     if _uid_str:
         _pipeline_env["DAI_USER_ID"] = _uid_str
@@ -1874,6 +1882,22 @@ def upload():
         _work_dir.mkdir(parents=True, exist_ok=True)
         (_work_dir / "user_upload_context.json").write_text(_ctx_data, encoding="utf-8")
         _pipeline_env["DAI_WORK_DIR"] = str(_work_dir)
+
+        # Check brain cache — stored per user keyed by script hash
+        if _script_hash:
+            _brain_cache_dir = USER_DATA_DIR / _uid_str / "brain_cache"
+            _brain_cache_dir.mkdir(parents=True, exist_ok=True)
+            _cached_brain = _brain_cache_dir / f"{_script_hash}.json"
+            if _cached_brain.exists():
+                try:
+                    import shutil as _sc
+                    _sc.copy2(_cached_brain, _work_dir / "approved_brain_output.json")
+                    (_work_dir / "brain_cache_hit.txt").write_text(_script_hash, encoding="utf-8")
+                    print(f"🧠 Brain cache HIT for hash {_script_hash[:12]} — skipping Claude call", flush=True)
+                except Exception:
+                    pass
+            _pipeline_env["DAI_BRAIN_CACHE_DIR"] = str(_brain_cache_dir)
+            _pipeline_env["DAI_SCRIPT_HASH"] = _script_hash
         # Copy uploads into project-scoped dirs so Regenerate Deck and other
         # projects can't cross-contaminate via the shared current_dir.
         import shutil as _shutil

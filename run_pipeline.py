@@ -80,13 +80,31 @@ def main(input_file):
         start_time
     )
 
-    run(
-        f'python3 "{APP_DIR}/single_brain_orchestrator_v3.py" "{_work_path("input.txt")}"',
-        "brain",
-        35,
-        "Generating story analysis...",
-        start_time
-    )
+    _cache_hit_file = Path(_DAI_WORK_DIR) / "brain_cache_hit.txt" if _DAI_WORK_DIR else None
+    _brain_cache_dir = os.environ.get("DAI_BRAIN_CACHE_DIR", "")
+    _script_hash = os.environ.get("DAI_SCRIPT_HASH", "")
+
+    if _cache_hit_file and _cache_hit_file.exists():
+        write_status("brain", 35, "Story analysis loaded from cache...", start_time, state="running")
+        print("🧠 Brain cache HIT — skipping Claude call")
+    else:
+        run(
+            f'python3 "{APP_DIR}/single_brain_orchestrator_v3.py" "{_work_path("input.txt")}"',
+            "brain",
+            35,
+            "Generating story analysis...",
+            start_time
+        )
+        # Save brain output to cache for future runs of this script
+        if _brain_cache_dir and _script_hash:
+            try:
+                _brain_out = Path(_work_path("approved_brain_output.json"))
+                if _brain_out.exists():
+                    import shutil as _sc
+                    _sc.copy2(_brain_out, Path(_brain_cache_dir) / f"{_script_hash}.json")
+                    print(f"🧠 Brain output cached for hash {_script_hash[:12]}")
+            except Exception as e:
+                print(f"⚠️ Brain cache save failed: {e}")
 
     _ctx_uid = os.environ.get("DAI_USER_ID", "")
     _work_ctx = Path(_DAI_WORK_DIR) / "user_upload_context.json" if _DAI_WORK_DIR else None
