@@ -307,80 +307,78 @@ def _world_category(world: str) -> str:
     return "drama"
 
 
-_ANALYSIS_SYSTEM = """You are a professional Hollywood screenplay analyst. Read the full screenplay and return a comprehensive story map as a single raw JSON object.
+_ANALYSIS_SYSTEM = """You are a Hollywood screenplay analyst. Read the screenplay and return a story map as a single raw JSON object.
 
-CRITICAL: Return ONLY the JSON — no markdown, no code fences, no explanation, nothing before or after the JSON.
-
-Required fields (every field is mandatory, all must reflect THIS specific screenplay):
+CRITICAL RULES:
+- Return ONLY the JSON — no markdown, no code fences, no extra text.
+- Every string value must be CONCISE — under 20 words unless explicitly noted.
+- Lists must have at most the number of items shown in the example.
+- The entire JSON response must fit in 3500 tokens. Be tight.
 
 {
-  "title": "correct title as it appears in the screenplay",
-  "world": "specific genre and world descriptor for THIS script — not from a fixed list. Examples: 'warm law-school romantic comedy', 'slow-burn Appalachian crime drama', 'sharp satirical fantasy set in a medieval court'",
-  "tone": "comma-separated tone words specific to this script — what it actually feels like",
-  "setting": "where this story actually takes place, specific to this script",
-  "time_frame": "the time span of this story",
-  "logline": "one sentence under 50 words: protagonist + pressure + stakes",
-  "tagline": "punchy marketing hook under 12 words",
-  "synopsis": "two paragraphs 150-200 words total: what happens and what is at stake",
-  "theme": "one sentence under 20 words: what the story is REALLY about",
-  "story_engine": "what drives THIS specific story forward — not a genre template",
-  "core_conflict": "the central tension of this specific story",
-  "reversal": "the key narrative reversal or revelation in this script",
-  "protagonist": "the actual protagonist name exactly as written in the script",
-  "protagonist_summary": "one sentence under 25 words: who they are and what drives them",
-  "characters": ["top 5-6 character names exactly as written in the script"],
+  "title": "title as written in the screenplay",
+  "world": "specific genre + world in 6-10 words (e.g. 'warm law-school romantic comedy', 'slow-burn Appalachian crime thriller')",
+  "tone": "3-5 tone words, comma-separated",
+  "setting": "where this story takes place, 10 words max",
+  "time_frame": "time span of the story, 6 words max",
+  "logline": "protagonist + pressure + stakes, under 40 words",
+  "tagline": "marketing hook, under 10 words",
+  "synopsis": "what happens and what is at stake — 80-100 words total",
+  "theme": "what the story is really about, under 15 words",
+  "story_engine": "what drives THIS story forward, 10 words max",
+  "core_conflict": "the central tension, 10 words max",
+  "reversal": "the key reversal or revelation, 12 words max",
+  "protagonist": "protagonist name exactly as in the script",
+  "protagonist_summary": "who they are and what drives them, under 20 words",
+  "characters": ["top 5 character names exactly as written"],
   "character_arcs": {
     "CHARACTER_NAME": {
-      "beginning_state": "who/where they are at the start",
-      "midpoint_shift": "what changes or breaks for them at the midpoint",
-      "end_state": "who/where they are at the end",
-      "transformation": "what fundamentally changed in them"
+      "beginning_state": "8 words max",
+      "end_state": "8 words max",
+      "transformation": "10 words max"
     }
   },
   "relationship_leverage_map": [
-    {"character": "name", "dynamic": "specific relationship to protagonist", "function": "what this relationship does for the story"}
+    {"character": "name", "dynamic": "6 words", "function": "8 words"}
   ],
   "act_breakdown": {
-    "act_1": {"summary": "what happens", "key_beats": ["beat 1", "beat 2"], "turning_point": "what launches act 2"},
-    "act_2": {"summary": "what happens", "key_beats": ["beat 1", "beat 2"], "turning_point": "what launches act 3"},
-    "act_3": {"summary": "what happens", "key_beats": ["beat 1", "beat 2"], "turning_point": "how it resolves"}
+    "act_1": {"summary": "15 words max", "key_beats": ["6 words", "6 words"], "turning_point": "8 words"},
+    "act_2": {"summary": "15 words max", "key_beats": ["6 words", "6 words"], "turning_point": "8 words"},
+    "act_3": {"summary": "15 words max", "key_beats": ["6 words", "6 words"], "turning_point": "8 words"}
   },
-  "executive_summary": "2-3 sentences positioning this for a producer — commercial hook, genre, talent appeal",
-  "commercial_positioning": "how this script sells in today's market — streaming, theatrical, budget tier",
-  "packaging_potential": "what casting or attachment makes this work",
-  "character_leverage": "why the characters create commercial and awards appeal",
+  "executive_summary": "producer-facing pitch, 2 sentences max",
+  "commercial_positioning": "how this sells today, 15 words max",
+  "packaging_potential": "what casting makes this work, 12 words max",
+  "character_leverage": "commercial and awards appeal, 12 words max",
   "comparable_films": [
-    {"title": "Film Title", "why": "under 20 words why it comps", "budget_tier": "low/mid/studio", "box_office": "$XM"}
+    {"title": "Film Title", "why": "10 words", "budget_tier": "low/mid/studio", "box_office": "$XM"},
+    {"title": "Film Title", "why": "10 words", "budget_tier": "low/mid/studio", "box_office": "$XM"},
+    {"title": "Film Title", "why": "10 words", "budget_tier": "low/mid/studio", "box_office": "$XM"}
   ],
-  "tone_comparables": ["Film Title 1", "Film Title 2", "Film Title 3"],
-  "audience_profile": ["specific audience segment 1", "segment 2", "segment 3"],
+  "tone_comparables": ["Film 1", "Film 2", "Film 3"],
+  "audience_profile": ["segment 1", "segment 2", "segment 3"],
   "market_projections": {
-    "budget_range": "estimated budget range",
-    "distribution_angle": "streaming-first / theatrical / limited theatrical",
-    "awards_potential": "honest assessment",
-    "audience_reach": "who actually sees this",
-    "franchise_potential": "sequel/spinoff potential"
+    "budget_range": "dollar range",
+    "distribution_angle": "streaming-first / theatrical / limited",
+    "awards_potential": "honest 6-word assessment",
+    "audience_reach": "who sees this, 8 words",
+    "franchise_potential": "yes/no + 6 words"
   },
-  "strength_index": {
-    "concept": 8,
-    "character": 9,
-    "marketability": 7,
-    "originality": 8
-  },
-  "strengths": ["3-5 genuine strengths of this specific script"],
-  "development_risks": ["3-5 real weaknesses or risks — be honest"],
-  "actor_objective": "what the lead actor needs to accomplish in this role",
-  "role_arc_map": ["stage 1 specific to this protagonist", "stage 2", "stage 3", "stage 4", "stage 5"],
-  "pressure_ladder": ["escalating pressure point 1 specific to this story", "point 2", "point 3", "point 4", "point 5"],
-  "emotional_continuity": ["note about maintaining emotional truth across scenes in this script"],
-  "playable_tactics": ["tactic available to the protagonist in this role"],
-  "emotional_triggers": ["what triggers emotional shifts for this character"],
-  "audition_danger_zones": ["pitfall for actors auditioning this specific role"],
-  "reader_chemistry_tips": ["how to connect with THIS material"],
-  "memorization_beats": ["key moment to nail in this script"],
-  "costume_behavior_clues": ["physical/costume signal specific to this character"],
-  "set_ready_checklist": ["preparation item specific to this role"],
-  "visual_keywords": ["5-8 keywords describing the visual world of this story for image searches"]
+  "strength_index": {"concept": 8, "character": 9, "marketability": 7, "originality": 8},
+  "strengths": ["strength 1, 8 words", "strength 2, 8 words", "strength 3, 8 words"],
+  "development_risks": ["risk 1, 8 words", "risk 2, 8 words", "risk 3, 8 words"],
+  "actor_objective": "what the lead must accomplish, 12 words",
+  "role_arc_map": ["stage 1", "stage 2", "stage 3", "stage 4", "stage 5"],
+  "pressure_ladder": ["beat 1", "beat 2", "beat 3", "beat 4", "beat 5"],
+  "emotional_continuity": ["note 1, 10 words", "note 2, 10 words"],
+  "playable_tactics": ["tactic 1", "tactic 2", "tactic 3", "tactic 4"],
+  "emotional_triggers": ["trigger 1", "trigger 2", "trigger 3"],
+  "audition_danger_zones": ["pitfall 1, 8 words", "pitfall 2, 8 words"],
+  "reader_chemistry_tips": ["tip 1, 10 words", "tip 2, 10 words"],
+  "memorization_beats": ["beat 1, 8 words", "beat 2, 8 words"],
+  "costume_behavior_clues": ["clue 1, 8 words", "clue 2, 8 words"],
+  "set_ready_checklist": ["item 1, 8 words", "item 2, 8 words", "item 3, 8 words"],
+  "visual_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6"]
 }"""
 
 
@@ -407,7 +405,7 @@ def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
         client = anthropic.Anthropic(api_key=api_key)
         message = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=8192,
+            max_tokens=4096,
             system=[{"type": "text", "text": _ANALYSIS_SYSTEM, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_msg}],
         )
