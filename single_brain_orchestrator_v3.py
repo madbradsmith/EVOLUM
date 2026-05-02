@@ -1,6 +1,5 @@
-# SINGLE BRAIN ORCHESTRATOR — COMBINED STORY MAP VERSION + IMAGE PLAN
-# Full replacement for: /home/madbrad/app/single_brain_orchestrator_v3.py
-# V6_PROMETHEUS — image options + folder aware routing
+# SINGLE BRAIN ORCHESTRATOR — AI-NATIVE VERSION
+# Character stat counting is mechanical. All story analysis via Claude Sonnet.
 
 import sys
 import json
@@ -53,7 +52,6 @@ PRONOUN_WORDS = {
 SHOT_PREFIXES = {"CU", "ECU", "WS", "MS", "MLS", "MCU", "POV", "OS", "O.S.", "V.O.", "VO", "ANGLE", "ON", "UNDER", "OVER", "MEDIUM", "CLOSE", "WIDE"}
 
 
-
 def normalize(line: str) -> str:
     return re.sub(r"\s+", " ", line).strip()
 
@@ -67,7 +65,7 @@ def slugify(text: str) -> str:
 
 def extract_title(text: str) -> str:
     for line in text.splitlines():
-        clean = normalize(line).replace("\ufeff", "")
+        clean = normalize(line).replace("﻿", "")
         if clean:
             return clean
     return "Untitled"
@@ -88,57 +86,40 @@ def clean_name(name: str) -> str:
 def is_caps_candidate(line: str) -> bool:
     if not line or line != line.upper():
         return False
-
     line = normalize(line)
-
     if len(line) < 2 or len(line) > 40:
         return False
-
     if any(ch.isdigit() for ch in line):
         return False
-
     if "+" in line:
         return False
-
     if line.count("(") > 1 or line.count(")") > 1:
         return False
-
     return bool(re.fullmatch(r"[A-Z .'/\-():!?&]+", line))
 
 
 def is_valid_character_name(name: str) -> bool:
     if not name:
         return False
-
     name = clean_name(name).strip()
-
     if not name:
         return False
-
     if any(ch.isdigit() for ch in name):
         return False
-
     if "+" in name:
         return False
-
     if len(name) < 2:
         return False
-
     if name in NON_CHARACTER_PHRASES:
         return False
-
     if name in GENERIC_ROLE_WORDS or name in PRONOUN_WORDS:
         return False
-
     if len(name.split()) > 3:
         return False
-
     if len(re.findall(r"[A-Z]", name)) < 2:
         return False
-
     if re.search(r"[^A-Z '\-.]", name):
         return False
-
     return True
 
 
@@ -219,7 +200,6 @@ def extract_action_names(text: str):
         line = normalize(raw)
         if not is_likely_action_line(line):
             continue
-
         names = re.findall(r"\b([A-Z][a-z]{2,})\b", line)
         for name in names:
             upper = name.upper()
@@ -230,7 +210,6 @@ def extract_action_names(text: str):
             action_counts[upper] = action_counts.get(upper, 0) + 1
             if upper not in action_first_seen:
                 action_first_seen[upper] = i
-
         full_names = re.findall(r"\b([A-Z][a-z]{2,}\s+[A-Z][a-z]{2,})\b", line)
         for full in full_names:
             upper = full.upper()
@@ -239,7 +218,6 @@ def extract_action_names(text: str):
             action_counts[upper] = action_counts.get(upper, 0) + 1
             if upper not in action_first_seen:
                 action_first_seen[upper] = i
-
     return action_counts, action_first_seen
 
 
@@ -255,21 +233,16 @@ def merge_character_signals(dialogue_counts, dialogue_first, dialogue_support, a
         score += d * 2
         score += dialogue_support.get(name, 0) * 3
         score += a * 4
-
         if first < 80:
             score += 4
         elif first < 160:
             score += 2
-
         if d > 0 and a > 0:
             score += 4
-
         if a >= 3:
             score += 5
-
         if d == 1 and a == 0:
             score -= 2
-
         scored.append((name, score, d, a, first))
 
     scored.sort(key=lambda x: (-x[1], x[4], x[0]))
@@ -280,7 +253,6 @@ def merge_character_signals(dialogue_counts, dialogue_first, dialogue_support, a
         if name in seen:
             continue
         tokens = name.split()
-
         drop = False
         if len(tokens) == 1:
             for other, _, od, oa, _ in scored:
@@ -290,7 +262,6 @@ def merge_character_signals(dialogue_counts, dialogue_first, dialogue_support, a
                 if len(other_tokens) > 1 and tokens[0] in other_tokens and (od + oa) >= (d + a):
                     drop = True
                     break
-
         if not drop:
             seen.add(name)
             ordered.append(name)
@@ -306,461 +277,263 @@ def merge_character_signals(dialogue_counts, dialogue_first, dialogue_support, a
     return ordered[:8], stats
 
 
-_VALID_GENRES = [
-    "feature / action espionage thriller",
-    "feature / contained urban thriller",
-    "feature / legal / courtroom drama",
-    "feature / fantasy satire comedy",
-    "feature / romantic comedy",
-    "feature / nightlife comedy",
-    "feature / sports drama",
-    "feature / crime drama",
-    "feature / drama",
-]
+# ─── AI-NATIVE STORY ANALYSIS ────────────────────────────────────────────────
 
-_GENRE_DESCRIPTIONS = {
-    "feature / action espionage thriller": "spy agencies, covert ops, assassination plots, terrorism, surveillance, secret missions",
-    "feature / contained urban thriller": "rideshare or cab driver trapped with a dangerous passenger, urban single-night chase or standoff",
-    "feature / legal / courtroom drama": "courtroom trial, military tribunal, judge and jury, attorneys building a legal case, cross-examination",
-    "feature / fantasy satire comedy": "medieval kingdom, court jester, wizard, dragon, satire of royalty and fantasy tropes",
-    "feature / romantic comedy": "love story, romance, dating, heartbreak and reunion, campus or workplace romance, sorority life, law school romance, a protagonist fighting for love or reinvention",
-    "feature / nightlife comedy": "nightclub, bar crawl, hookup culture, EDM/DJ/promoter, VIP tables, one wild night out with friends",
-    "feature / sports drama": "team sport, championship season, coach and athletes, training, locker room, game-day pressure",
-    "feature / crime drama": "heist, drug trade, organized crime, murder investigation, gangsters, crime boss",
-    "feature / drama": "character study, family conflict, personal struggle, grief, identity — no strong genre markers",
-}
+def _world_category(world: str) -> str:
+    """Map Claude's free-form world description to a visual/layout category."""
+    w = world.lower()
+    if any(t in w for t in ["espionage", "spy", "covert", "assassin", "secret agent", "operative"]):
+        return "action_espionage"
+    if any(t in w for t in ["rideshare", "cab driver", "contained urban", "urban thriller"]):
+        return "contained_urban"
+    if any(t in w for t in ["courtroom", "trial", "tribunal", "military court"]):
+        return "legal_courtroom"
+    if any(t in w for t in ["legal", "law school"]) and any(t in w for t in ["comedy", "romance", "romantic"]):
+        return "romantic_comedy"
+    if any(t in w for t in ["legal", "law"]):
+        return "legal_courtroom"
+    if any(t in w for t in ["fantasy", "medieval", "kingdom", "wizard", "dragon", "satire"]):
+        return "fantasy_satire"
+    if any(t in w for t in ["romantic comedy", "rom-com", "romance", "love story", "sorority"]):
+        return "romantic_comedy"
+    if any(t in w for t in ["nightlife", "club scene", "party"]):
+        return "nightlife_comedy"
+    if any(t in w for t in ["sports", "basketball", "football", "soccer", "athlete", "coach"]):
+        return "sports_drama"
+    if any(t in w for t in ["crime", "heist", "gangster", "cartel", "mob", "drug"]):
+        return "crime_drama"
+    if any(t in w for t in ["thriller", "suspense"]):
+        return "thriller"
+    return "drama"
 
 
-def detect_world(text: str) -> str:
+_ANALYSIS_SYSTEM = """You are a professional Hollywood screenplay analyst. Read the full screenplay and return a comprehensive story map as a single raw JSON object.
+
+CRITICAL: Return ONLY the JSON — no markdown, no code fences, no explanation, nothing before or after the JSON.
+
+Required fields (every field is mandatory, all must reflect THIS specific screenplay):
+
+{
+  "title": "correct title as it appears in the screenplay",
+  "world": "specific genre and world descriptor for THIS script — not from a fixed list. Examples: 'warm law-school romantic comedy', 'slow-burn Appalachian crime drama', 'sharp satirical fantasy set in a medieval court'",
+  "tone": "comma-separated tone words specific to this script — what it actually feels like",
+  "setting": "where this story actually takes place, specific to this script",
+  "time_frame": "the time span of this story",
+  "logline": "one sentence under 50 words: protagonist + pressure + stakes",
+  "tagline": "punchy marketing hook under 12 words",
+  "synopsis": "two paragraphs 150-200 words total: what happens and what is at stake",
+  "theme": "one sentence under 20 words: what the story is REALLY about",
+  "story_engine": "what drives THIS specific story forward — not a genre template",
+  "core_conflict": "the central tension of this specific story",
+  "reversal": "the key narrative reversal or revelation in this script",
+  "protagonist": "the actual protagonist name exactly as written in the script",
+  "protagonist_summary": "one sentence under 25 words: who they are and what drives them",
+  "characters": ["top 5-6 character names exactly as written in the script"],
+  "character_arcs": {
+    "CHARACTER_NAME": {
+      "beginning_state": "who/where they are at the start",
+      "midpoint_shift": "what changes or breaks for them at the midpoint",
+      "end_state": "who/where they are at the end",
+      "transformation": "what fundamentally changed in them"
+    }
+  },
+  "relationship_leverage_map": [
+    {"character": "name", "dynamic": "specific relationship to protagonist", "function": "what this relationship does for the story"}
+  ],
+  "act_breakdown": {
+    "act_1": {"summary": "what happens", "key_beats": ["beat 1", "beat 2"], "turning_point": "what launches act 2"},
+    "act_2": {"summary": "what happens", "key_beats": ["beat 1", "beat 2"], "turning_point": "what launches act 3"},
+    "act_3": {"summary": "what happens", "key_beats": ["beat 1", "beat 2"], "turning_point": "how it resolves"}
+  },
+  "executive_summary": "2-3 sentences positioning this for a producer — commercial hook, genre, talent appeal",
+  "commercial_positioning": "how this script sells in today's market — streaming, theatrical, budget tier",
+  "packaging_potential": "what casting or attachment makes this work",
+  "character_leverage": "why the characters create commercial and awards appeal",
+  "comparable_films": [
+    {"title": "Film Title", "why": "under 20 words why it comps", "budget_tier": "low/mid/studio", "box_office": "$XM"}
+  ],
+  "tone_comparables": ["Film Title 1", "Film Title 2", "Film Title 3"],
+  "audience_profile": ["specific audience segment 1", "segment 2", "segment 3"],
+  "market_projections": {
+    "budget_range": "estimated budget range",
+    "distribution_angle": "streaming-first / theatrical / limited theatrical",
+    "awards_potential": "honest assessment",
+    "audience_reach": "who actually sees this",
+    "franchise_potential": "sequel/spinoff potential"
+  },
+  "strength_index": {
+    "concept": 8,
+    "character": 9,
+    "marketability": 7,
+    "originality": 8
+  },
+  "strengths": ["3-5 genuine strengths of this specific script"],
+  "development_risks": ["3-5 real weaknesses or risks — be honest"],
+  "actor_objective": "what the lead actor needs to accomplish in this role",
+  "role_arc_map": ["stage 1 specific to this protagonist", "stage 2", "stage 3", "stage 4", "stage 5"],
+  "pressure_ladder": ["escalating pressure point 1 specific to this story", "point 2", "point 3", "point 4", "point 5"],
+  "emotional_continuity": ["note about maintaining emotional truth across scenes in this script"],
+  "playable_tactics": ["tactic available to the protagonist in this role"],
+  "emotional_triggers": ["what triggers emotional shifts for this character"],
+  "audition_danger_zones": ["pitfall for actors auditioning this specific role"],
+  "reader_chemistry_tips": ["how to connect with THIS material"],
+  "memorization_beats": ["key moment to nail in this script"],
+  "costume_behavior_clues": ["physical/costume signal specific to this character"],
+  "set_ready_checklist": ["preparation item specific to this role"],
+  "visual_keywords": ["5-8 keywords describing the visual world of this story for image searches"]
+}"""
+
+
+def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
+    """Single Claude Sonnet call — generates all story fields from the actual screenplay."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if api_key:
-        try:
-            import anthropic as _anthropic
-            genre_list = "\n".join(
-                f"- {g}: {_GENRE_DESCRIPTIONS.get(g, '')}" for g in _VALID_GENRES
-            )
-            prompt = (
-                f"Read this screenplay and classify it into exactly one genre from this list:\n\n"
-                f"{genre_list}\n\n"
-                f"Respond with ONLY the genre label exactly as written (e.g. 'feature / romantic comedy'). Nothing else.\n\n"
-                f"Screenplay:\n{text}"
-            )
-            client = _anthropic.Anthropic(api_key=api_key)
-            msg = client.messages.create(
-                model="claude-haiku-4-5-20251001",
-                max_tokens=20,
-                messages=[{"role": "user", "content": prompt}]
-            )
-            result = msg.content[0].text.strip().lower()
-            if result in _VALID_GENRES:
-                return result
-            for g in _VALID_GENRES:
-                if g in result:
-                    return g
-        except Exception:
-            pass
-    return _keyword_detect_world(text)
+    if not api_key:
+        return _fallback_story_map(title, list(char_stats.keys()))
+    try:
+        import anthropic
+    except ImportError:
+        return _fallback_story_map(title, list(char_stats.keys()))
+
+    char_hint = ", ".join(list(char_stats.keys())[:12])
+    user_msg = (
+        f"Title (from first line): {title}\n"
+        f"Mechanically-detected character candidates (hints only — correct as needed): {char_hint}\n\n"
+        f"FULL SCREENPLAY:\n{text}"
+    )
+
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=4096,
+            system=[{"type": "text", "text": _ANALYSIS_SYSTEM, "cache_control": {"type": "ephemeral"}}],
+            messages=[{"role": "user", "content": user_msg}],
+        )
+        raw = next((b.text for b in message.content if hasattr(b, "text")), "")
+        if not raw:
+            return _fallback_story_map(title, list(char_stats.keys()))
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = re.sub(r"^```[a-z]*\n?", "", raw)
+            raw = re.sub(r"\n?```$", "", raw.rstrip())
+        return json.loads(raw)
+    except Exception as e:
+        print(f"⚠️  Claude analysis failed: {e}")
+        return _fallback_story_map(title, list(char_stats.keys()))
 
 
-def _keyword_detect_world(text: str) -> str:
-    t = text.lower()
-
-    def _score(signals: list[str]) -> int:
-        count = 0
-        for signal in signals:
-            # Use word-boundary matching to avoid substring false positives
-            # ("fare" must not match "warfare", "driver" must not match "screwdriver")
-            pattern = r"\b" + re.escape(signal) + r"\b"
-            if re.search(pattern, t):
-                count += 1
-        return count
-
-    genre_signals = {
-        "feature / action espionage thriller": [
-            "spy", "secret agent", "terrorist", "covert mission", "intel", "nuclear",
-            "surveillance", "secret service", "undercover", "assassin",
-            "bomb", "hostage", "gunfire", "helicopter", "operative"
-        ],
-        # Rideshare signals must be unambiguous — "fare" and "driver" are too generic
-        "feature / contained urban thriller": [
-            "rideshare", "uber", "lyft", "rideshare driver", "lyft driver", "uber driver",
-            "dropoff", "backseat passenger", "passenger rating", "trip request"
-        ],
-        "feature / legal / courtroom drama": [
-            "courtroom", "trial", "judge", "jury", "verdict", "witness",
-            "cross-examination", "uniform code", "defense counsel", "prosecution"
-        ],
-        # Fantasy satire signals must be unambiguous — "king", "queen", "princess", "castle",
-        # "sword", "quest", "knight" all appear in everyday non-fantasy scripts (wedding rom-coms,
-        # dramas, etc.). Only keep terms that cannot plausibly appear in a modern realistic script.
-        "feature / fantasy satire comedy": [
-            "court jester", "jester", "medieval", "throne", "kingdom",
-            "dragon", "wizard", "sorcerer"
-        ],
-        "feature / romantic comedy": [
-            "wedding", "bridesmaid", "maid of honor", "best man", "rehearsal dinner",
-            "engagement", "bride", "groom", "wedding vows", "honeymoon",
-            "first date", "meet cute", "falling in love", "love interest",
-            "ex-boyfriend", "ex-girlfriend", "romantic dinner"
-        ],
-        "feature / nightlife comedy": [
-            "nightclub", "dance floor", "vip table", "night out", "hookup", "promoter", "velvet rope"
-        ],
-        "feature / sports drama": [
-            "basketball", "locker room", "championship", "practice", "halftime",
-            "playoffs", "head coach", "game day"
-        ],
-        "feature / crime drama": [
-            "drug cartel", "heist", "smuggle", "robbery", "detective", "murder",
-            "crime boss", "informant", "underworld"
-        ],
+def _fallback_story_map(title: str, characters: list) -> dict:
+    """Minimal fallback when Claude API is unavailable."""
+    protagonist = characters[0].title() if characters else "Protagonist"
+    chars = [c.title() for c in characters[:6]]
+    return {
+        "title": title,
+        "world": "feature / drama",
+        "tone": "grounded, dramatic",
+        "setting": "a contained dramatic environment",
+        "time_frame": "contained timeframe",
+        "logline": f"{protagonist} is forced into an impossible situation with no easy way out.",
+        "tagline": "Some things can't be undone.",
+        "synopsis": f"{title} follows {protagonist} through a story of pressure, consequence, and change.",
+        "theme": "Identity is tested when pressure reveals what we're really made of.",
+        "story_engine": f"{protagonist} is forced into a situation they cannot escape.",
+        "core_conflict": f"{protagonist} must make an impossible choice.",
+        "reversal": "The truth behind the situation is different from what was first assumed.",
+        "protagonist": protagonist,
+        "protagonist_summary": f"{protagonist} carries the weight of this story.",
+        "protagonist_profile": {"name": protagonist, "summary": f"{protagonist} carries the weight of this story."},
+        "characters": chars,
+        "character_arcs": {},
+        "relationship_leverage_map": [],
+        "act_breakdown": {
+            "act_1": {"summary": "Setup", "key_beats": [], "turning_point": ""},
+            "act_2": {"summary": "Confrontation", "key_beats": [], "turning_point": ""},
+            "act_3": {"summary": "Resolution", "key_beats": [], "turning_point": ""},
+        },
+        "executive_summary": f"{title} is a drama built around {protagonist}.",
+        "commercial_positioning": "Character-driven story with clear pitch angles.",
+        "packaging_potential": "Depends on a strong central performance.",
+        "character_leverage": "The protagonist's journey drives commercial appeal.",
+        "comparable_films": [],
+        "tone_comparables": [],
+        "audience_profile": ["General film audiences", "Character-driven story viewers"],
+        "market_projections": {
+            "budget_range": "",
+            "distribution_angle": "",
+            "awards_potential": "",
+            "audience_reach": "",
+            "franchise_potential": "",
+        },
+        "strength_index": {"concept": 7, "character": 7, "marketability": 6, "originality": 7},
+        "strengths": [],
+        "development_risks": [],
+        "character_stats": {c: {"dialogue_count": 0, "action_count": 0, "first_seen": 99999} for c in chars},
+        "actor_objective": f"Move the scene forward with clear intention while protecting what {protagonist} most wants.",
+        "role_arc_map": ["setup", "pressure", "adaptation", "reversal", "resolution"],
+        "pressure_ladder": ["low pressure", "rising tension", "complication", "peak pressure", "release"],
+        "emotional_continuity": ["Track where confidence cracks.", "Let pressure affect pace before volume."],
+        "playable_tactics": ["Deflect", "Pressure", "Reframe", "Hold", "Pivot"],
+        "emotional_triggers": ["Rejection", "Pressure", "Exposure", "Uncertainty"],
+        "audition_danger_zones": ["Overplaying intention", "Pushing emotion too early", "Ignoring listening beats"],
+        "reader_chemistry_tips": ["Pick fixed eyelines.", "Let interruptions feel live.", "Stay responsive to pace shifts."],
+        "memorization_beats": ["Opening beat", "First pressure turn", "Status shift", "Control reset", "Exit beat"],
+        "costume_behavior_clues": ["Costume supports role clarity.", "Behavior aligns with status and pressure level."],
+        "set_ready_checklist": ["Know the objective.", "Understand the relationship stakes.", "Prepare the physical life of the character."],
+        "visual_keywords": ["cinematic", "dramatic", "grounded", "pressure", "environment"],
     }
 
-    scores = {genre: _score(signals) for genre, signals in genre_signals.items()}
 
-    strongest_genre = max(scores, key=scores.get)
-    strongest_score = scores[strongest_genre]
-
-    if strongest_score >= 2:
-        return strongest_genre
-    if strongest_score == 1 and strongest_genre in {
-        "feature / action espionage thriller",
-        "feature / legal / courtroom drama",
-        "feature / fantasy satire comedy",
-        "feature / nightlife comedy",
-        "feature / romantic comedy",
-    }:
-        return strongest_genre
-
-    return "feature / drama"
-
-
-def infer_time_frame(text: str) -> str:
-    world = detect_world(text)
-    t = text.lower()
-
-    if any(phrase in t for phrase in ["single night", "one night", "through the night", "overnight"]):
-        return "single night"
-    if any(phrase in t for phrase in ["single day", "one day", "same day"]):
-        return "single day"
-    if world == "feature / action espionage thriller":
-        return "compressed high-stakes timeframe"
-    if world == "feature / contained urban thriller":
-        return "single night"
-    if world == "feature / legal / courtroom drama":
-        return "contained escalating legal battle"
-    if world == "feature / fantasy satire comedy":
-        return "contained escalating journey"
-    if world == "feature / romantic comedy":
-        return "compressed romantic countdown"
-    if world == "feature / nightlife comedy":
-        return "single night"
-    if world == "feature / sports drama":
-        return "contained competitive season"
-    return "contained timeframe"
-
-
-def infer_setting(text: str, world: str) -> str:
-    if world == "feature / action espionage thriller":
-        return "across domestic spaces, covert locations, and escalating action set pieces"
-    if world == "feature / contained urban thriller":
-        return "inside a rideshare car and across a city at night"
-    if world == "feature / legal / courtroom drama":
-        return "across courtrooms, military offices, holding rooms, and institutional pressure spaces"
-    if world == "feature / fantasy satire comedy":
-        return "across castles, ceremonial chambers, village spaces, and a heightened kingdom full of absurd rules"
-    if world == "feature / romantic comedy":
-        return "across restaurants, hotels, wedding venues, and emotionally charged social spaces under the pressure of a ticking clock"
-    if world == "feature / nightlife comedy":
-        return "across clubs, streets, parties, and chaotic social spaces over one long night"
-    if world == "feature / sports drama":
-        return "across locker rooms, courts, homes, and emotionally charged spaces around the game"
-    if world == "feature / crime drama":
-        return "across dangerous interiors, streets, and pressure-filled underworld spaces"
-    return "a contained dramatic environment"
-
-
-def infer_tone(text: str, world: str) -> str:
-    if world == "feature / action espionage thriller":
-        return "propulsive, high-stakes, witty, cinematic"
-    if world == "feature / contained urban thriller":
-        return "tense, paranoid, urban, nocturnal"
-    if world == "feature / legal / courtroom drama":
-        return "tense, procedural, sharp, morally charged"
-    if world == "feature / fantasy satire comedy":
-        return "playful, witty, satirical, adventurous"
-    if world == "feature / romantic comedy":
-        return "charming, witty, romantic, emotionally sharp"
-    if world == "feature / nightlife comedy":
-        return "chaotic, funny, awkward, energetic"
-    if world == "feature / sports drama":
-        return "grounded, competitive, emotional, aspirational"
-    if world == "feature / crime drama":
-        return "tense, grounded, dangerous, dramatic"
-    return "grounded, dramatic, character-driven"
-
-
-def infer_story_engine(text: str, protagonist: str) -> str:
-    world = detect_world(text)
-    p = protagonist.title()
-    if world == "feature / action espionage thriller":
-        return (
-            f"{p} is forced to balance a hidden life of danger with the illusion of normalcy, "
-            f"until escalating threats pull both worlds into collision."
-        )
-    if world == "feature / contained urban thriller":
-        return (
-            f"{p} misreads a tense night of pickups and escalating stops as criminal activity, "
-            f"and his growing suspicion begins to shape the danger around him."
-        )
-    if world == "feature / legal / courtroom drama":
-        return (
-            f"{p} is pulled into a high-pressure military case where loyalty, institutional power, "
-            f"and buried truth collide, forcing him to decide what kind of lawyer—and man—he really is."
-        )
-    if world == "feature / fantasy satire comedy":
-        return (
-            f"{p} stumbles into a role far bigger than expected, and each attempt to survive "
-            f"the absurd rules of the kingdom only pulls the chaos closer."
-        )
-    if world == "feature / romantic comedy":
-        return (
-            f"{p} pursues a goal shaped more by fear than desire, and each move meant to win "
-            f"only strips away another layer of the story {p} has been telling herself."
-        )
-    if world == "feature / nightlife comedy":
-        return (
-            f"{p} tries to keep one wild night under control, but every bad decision "
-            f"turns the evening into a bigger social disaster."
-        )
-    if world == "feature / sports drama":
-        return (
-            f"{p} is forced to carry ambition, pressure, and expectation at the same time, "
-            f"with every arena of life pushing harder against who they are trying to become."
-        )
-    return (
-        f"{p} is pulled into a tense situation and forced to interpret incomplete information under pressure."
+def build_story_map(text: str) -> dict:
+    # Step 1: Mechanical extraction — character stat counting only
+    title = extract_title(text)
+    dialogue_counts, dialogue_first, dialogue_support = analyze_dialogue_characters(text)
+    action_counts, action_first = extract_action_names(text)
+    characters_ranked, character_stats = merge_character_signals(
+        dialogue_counts, dialogue_first, dialogue_support, action_counts, action_first
     )
 
+    # Step 2: Claude reads the full screenplay and generates everything
+    print("🧠 Sending screenplay to Claude for analysis...")
+    story_map = analyze_script_with_claude(text, title, character_stats)
 
-def infer_core_conflict(text: str, protagonist: str) -> str:
-    world = detect_world(text)
-    p = protagonist.title()
-    if world == "feature / action espionage thriller":
-        return (
-            f"{p} must protect family, identity, and mission at once as secrets and escalating danger threaten to expose everything."
-        )
-    if world == "feature / contained urban thriller":
-        return (
-            f"{p}'s fear and suspicion distort how he reads his passengers, "
-            f"pushing him toward choices that could escalate the night beyond control."
-        )
-    if world == "feature / legal / courtroom drama":
-        return (
-            f"{p} must cut through loyalty, fear, and institutional pressure to uncover the truth "
-            f"before the system closes ranks and buries it for good."
-        )
-    if world == "feature / fantasy satire comedy":
-        return (
-            f"{p} must navigate ridiculous power structures, inflated egos, and escalating chaos "
-            f"without losing the part of themselves that makes them dangerous."
-        )
-    if world == "feature / romantic comedy":
-        return (
-            f"{p} must choose between the life she has constructed and the emotional truth she has "
-            f"been avoiding—before the opportunity to choose disappears."
-        )
-    if world == "feature / sports drama":
-        return (
-            f"{p} must navigate the collision between personal ambition, emotional pressure, "
-            f"and the expectations surrounding performance."
-        )
-    return f"{p} must navigate mounting pressure without fully understanding the situation."
+    # Step 3: Merge mechanical stats into Claude's character list
+    claude_characters = story_map.get("characters") or characters_ranked[:6]
+    merged_stats = {}
+    for c in claude_characters:
+        upper_c = c.upper()
+        if upper_c in character_stats:
+            merged_stats[c] = character_stats[upper_c]
+        else:
+            matched = next(
+                (k for k in character_stats if k in upper_c or upper_c in k), None
+            )
+            merged_stats[c] = character_stats.get(
+                matched, {"dialogue_count": 0, "action_count": 0, "first_seen": 99999}
+            )
+    story_map["character_stats"] = merged_stats
 
+    # Ensure protagonist_profile exists
+    protagonist = story_map.get("protagonist", "")
+    if protagonist and "protagonist_profile" not in story_map:
+        story_map["protagonist_profile"] = {
+            "name": protagonist,
+            "summary": story_map.get("protagonist_summary", ""),
+        }
 
-def infer_reversal(text: str) -> str:
-    world = detect_world(text)
-    if world == "feature / action espionage thriller":
-        return "The hidden life meant to protect the protagonist's family becomes the very thing that puts them in danger."
-    if world == "feature / contained urban thriller":
-        return "The passengers are not what the protagonist believes they are."
-    if world == "feature / legal / courtroom drama":
-        return "The deeper truth is not just about the crime—it is about the system protecting itself."
-    if world == "feature / sports drama":
-        return "What first looks like a path to achievement reveals a deeper emotional cost."
-    if world == "feature / romantic comedy":
-        return "The person the protagonist was competing with turns out to be less of an obstacle and more of a mirror."
-    return "The truth behind the situation is different from what the protagonist first assumes."
+    # Layout fields computed from Claude's world + tone strings
+    story_map["presentation_modes"] = infer_presentation_scores(story_map)
+    story_map["presentation_controls"] = infer_presentation_controls(story_map)
+    story_map["layout_strategy"] = infer_layout_strategy(story_map)
+    story_map["slide_blueprint"] = infer_slide_blueprint(story_map)
+    story_map["document_layouts"] = infer_document_layouts(story_map)
+
+    return story_map
 
 
-def build_logline_from_story_map(story_map: dict) -> str:
-    world = story_map["world"]
-    protagonist = story_map["protagonist"].title()
-
-    if world == "feature / action espionage thriller":
-        return (
-            f"When a covert operative's double life begins collapsing under escalating danger, "
-            f"{protagonist} must protect family and mission before both are destroyed."
-        )
-    if world == "feature / contained urban thriller":
-        return (
-            "During a tense night of pickups and drop-offs, a rideshare driver becomes convinced "
-            "his passengers are planning something criminal—but as the night unfolds, his growing "
-            "suspicion may be the very thing putting everything at risk."
-        )
-    if world == "feature / legal / courtroom drama":
-        return (
-            f"When a military hazing case lands on his desk, {protagonist} must push past ego, "
-            f"fear, and institutional pressure to uncover a truth powerful men will do anything to protect."
-        )
-    if world == "feature / fantasy satire comedy":
-        return (
-            f"When court chaos thrusts {protagonist} into the center of a kingdom on the verge of collapse, "
-            f"wit may be the only weapon sharp enough to survive."
-        )
-    if world == "feature / nightlife comedy":
-        return (
-            f"What starts as a simple night out spirals into escalating social disaster as {protagonist} "
-            f"tries to outrun one bad decision after another."
-        )
-    if world == "feature / romantic comedy":
-        return (
-            f"When {protagonist} realizes the life she has avoided feeling is the one she actually wants, "
-            f"she must decide whether honesty is worth the cost of everything she has built."
-        )
-    if world == "feature / sports drama":
-        return (
-            f"When pressure, legacy, and competition collide, {protagonist} must fight to hold together identity, "
-            f"ambition, and responsibility before everything slips out of reach."
-        )
-
-    return (
-        f"When {protagonist} is pulled into a tense situation he does not fully understand, "
-        f"he must navigate mounting pressure before everything collapses."
-    )
-
-
-def build_synopsis_from_story_map(story_map: dict) -> str:
-    world = story_map["world"]
-    protagonist = story_map["protagonist"].title()
-    chars = [c.title() for c in story_map["characters"][1:4]]
-    support_text = f" Along the way, {', '.join(chars)} complicate and deepen the stakes." if chars else ""
-
-    if world == "feature / action espionage thriller":
-        return (
-            f"{protagonist} has spent years balancing danger, secrecy, and domestic routine without allowing those worlds to collide. "
-            f"What begins as controlled compartmentalization gives way to escalating threats, hidden agendas, and dangerous revelations "
-            f"that begin pulling every part of life into crisis.{support_text}\n\n"
-            f"As pressure mounts, the cost of secrecy becomes personal. Every mission, lie, and split-second choice sharpens the danger, "
-            f"forcing {protagonist} toward a defining confrontation where family, identity, and survival are all on the line."
-        )
-
-    if world == "feature / contained urban thriller":
-        return (
-            "Over the course of a single night, a rideshare driver picks up a series of passengers whose behavior "
-            "begins to raise suspicion. As each stop adds new tension and unanswered questions, he becomes increasingly "
-            "convinced that he is caught in something criminal. His fear begins to shape how he interprets every glance, "
-            "every conversation, and every decision he makes behind the wheel. With the pressure mounting and nowhere to "
-            "escape, his growing paranoia pushes him toward choices that could escalate the situation beyond control. But "
-            "as the night unfolds, the truth behind his passengers may be far different than what he believes—forcing him "
-            "to confront the consequences of acting on assumptions in a situation he never fully understood."
-        )
-
-    if world == "feature / legal / courtroom drama":
-        return (
-            f"{protagonist} is an ambitious Navy lawyer more comfortable coasting on charm than carrying the full weight of responsibility. "
-            f"When a hazing death at Guantanamo Bay lands in his lap, what first appears to be a straightforward plea deal begins opening into "
-            f"something far more dangerous. As the case deepens, institutional pressure, buried loyalties, and military hierarchy begin closing in.{support_text}\n\n"
-            f"Forced to confront both the system around him and the parts of himself he has long avoided, {protagonist} must decide whether to "
-            f"protect his career or risk everything to expose the truth. What begins as defense becomes a defining test of courage, integrity, and identity."
-        )
-
-    if world == "feature / fantasy satire comedy":
-        return (
-            f"{protagonist} is pulled into a kingdom where image matters more than wisdom and survival depends on reading absurd power dynamics correctly. "
-            f"What first feels playful and ridiculous begins revealing deeper agendas, fragile egos, and a system far shakier than it looks.{support_text}\n\n"
-            f"As the chaos escalates, wit becomes both shield and weapon. {protagonist} must learn how to survive the spectacle without being swallowed by it."
-        )
-
-    if world == "feature / nightlife comedy":
-        return (
-            f"{protagonist} moves through one long night chasing validation, excitement, and some version of control that never quite arrives. "
-            f"What starts as a simple social outing spirals into escalating embarrassment, misfires, and comic self-destruction.{support_text}\n\n"
-            f"Each attempt to recover only creates new complications, forcing {protagonist} to confront the difference between what they want and what they actually need."
-        )
-
-    if world == "feature / sports drama":
-        support_text = ""
-        if chars:
-            support_text = f" Along the way, {', '.join(chars)} help shape the pressure closing in around them."
-        return (
-            f"{protagonist} sits at the center of a rising storm where family pressure, personal legacy, and high-stakes "
-            f"competition begin colliding at the worst possible time. What starts as a familiar pursuit of success quickly "
-            f"tightens into something more demanding, forcing them to navigate shifting expectations, emotional weight, "
-            f"and the realities of performance under pressure.{support_text}\n\n"
-            f"As the stakes escalate, the pressure becomes deeply personal. Every decision carries consequence, and the cost "
-            f"of failure sharpens into something unavoidable. {protagonist} is driven toward a defining moment that reveals "
-            f"who they are when expectation, identity, and ambition all demand an answer."
-        )
-
-    return (
-        f"As pressure mounts around {protagonist}, incomplete information and rising tension force increasingly risky choices. "
-        f"What first appears to be one kind of threat gradually reveals itself to be something more complicated, pushing the "
-        f"story toward a reversal that challenges the protagonist's assumptions."
-    )
-
-
-
-
-
-
-def infer_protagonist_summary(story_map: dict) -> str:
-    protagonist = (story_map.get("protagonist") or "Protagonist").title()
-    world = story_map.get("world", "")
-    tone = story_map.get("tone", "")
-
-    if world == "feature / action espionage thriller":
-        return f"{protagonist} is a capable operative forced to balance covert pressure, personal risk, and escalating danger without losing control."
-    if world == "feature / contained urban thriller":
-        return f"{protagonist} is a pressure-cooked lead whose fear and exhaustion distort the night, pushing ordinary decisions toward dangerous consequences."
-    if world == "feature / legal / courtroom drama":
-        return f"{protagonist} is a sharp but pressured legal lead forced to confront institutional power, buried truth, and the cost of standing their ground."
-    if world == "feature / fantasy satire comedy":
-        return f"{protagonist} is a clever outsider navigating absurd power structures with wit, survival instinct, and growing political awareness."
-    if world == "feature / nightlife comedy":
-        return f"{protagonist} is a socially volatile lead chasing validation through one chaotic night that keeps exposing their blind spots."
-    if world == "feature / sports drama":
-        return f"{protagonist} is a driven competitor carrying personal and external pressure into a defining test of identity, discipline, and resolve."
-    return f"{protagonist} is the central engine of the story, carrying the emotional pressure, conflict, and forward momentum of the project."
-
-
-def infer_theme(story_map: dict) -> str:
-    world = story_map.get("world", "")
-    conflict = (story_map.get("core_conflict") or "").lower()
-    reversal = (story_map.get("reversal") or "").lower()
-
-    if world == "feature / action espionage thriller":
-        return "Secrecy, loyalty, and identity collide as private cost catches up with professional control."
-    if world == "feature / contained urban thriller":
-        return "Fear, pressure, and assumption distort perception, turning survival into a test of judgment and trust."
-    if world == "feature / legal / courtroom drama":
-        return "Truth versus institutional protection, and the personal cost of choosing integrity under pressure."
-    if world == "feature / fantasy satire comedy":
-        return "Image, power, and absurdity reveal how fragile authority becomes when spectacle replaces wisdom."
-    if world == "feature / nightlife comedy":
-        return "Validation, embarrassment, and self-delusion collide as one bad night exposes what the protagonist refuses to face."
-    if world == "feature / sports drama":
-        return "Identity, expectation, and discipline collide as performance pressure forces emotional truth into the open."
-
-    if "identity" in conflict or "identity" in reversal:
-        return "Identity is tested under pressure as the protagonist is forced to confront the gap between appearance and truth."
-    if "truth" in conflict or "truth" in reversal:
-        return "Truth grows more costly the longer pressure rewards denial, silence, or self-protection."
-    return "Pressure reveals character, and the story tests what remains when certainty gives way to consequence."
-
+# ─── LAYOUT / PRESENTATION ───────────────────────────────────────────────────
 
 def infer_document_layouts(story_map: dict) -> dict:
-    world = story_map.get("world", "")
+    cat = _world_category(story_map.get("world", ""))
     primary_mode = ((story_map.get("presentation_modes") or {}).get("primary_mode") or "character_heart")
     strategy = story_map.get("layout_strategy") or {}
 
@@ -770,19 +543,19 @@ def infer_document_layouts(story_map: dict) -> dict:
     booked_style = "deep_role_dossier"
     chart_style = "gold_on_dark"
 
-    if world == "feature / legal / courtroom drama" or primary_mode == "prestige_authority":
+    if cat == "legal_courtroom" or primary_mode == "prestige_authority":
         analysis_style = "prestige_report"
         actor_style = "institutional_character_brief"
         audition_style = "measured_authority_sides"
         booked_style = "prestige_role_bible"
         chart_style = "formal_gold_grid"
-    elif world == "feature / contained urban thriller" or primary_mode == "tension_pressure":
+    elif cat in ("contained_urban", "thriller", "action_espionage") or primary_mode == "tension_pressure":
         analysis_style = "thriller_intelligence_report"
         actor_style = "pressure_character_brief"
         audition_style = "urgent_sides_brief"
         booked_style = "contained_thriller_role_map"
         chart_style = "signal_on_dark"
-    elif world == "feature / fantasy satire comedy" or primary_mode == "spectacle_play":
+    elif cat == "fantasy_satire" or primary_mode == "spectacle_play":
         analysis_style = "storybook_analysis_report"
         actor_style = "playful_character_brief"
         audition_style = "characterful_sides_brief"
@@ -821,6 +594,7 @@ def infer_document_layouts(story_map: dict) -> dict:
             "callout_style": chart_style,
         },
     }
+
 
 def infer_presentation_scores(story_map: dict) -> dict:
     world = (story_map.get("world") or "").lower()
@@ -872,28 +646,30 @@ def infer_presentation_scores(story_map: dict) -> dict:
         if term in text_blob:
             scores["spectacle_play"] += 7
 
-    # World-specific weighting
-    if "legal / courtroom drama" in world:
+    cat = _world_category(world)
+    if cat == "legal_courtroom":
         scores["prestige_authority"] += 30
         scores["tension_pressure"] += 10
-    elif "action espionage thriller" in world:
+    elif cat == "action_espionage":
         scores["tension_pressure"] += 28
         scores["spectacle_play"] += 8
-    elif "contained urban thriller" in world:
+    elif cat == "contained_urban":
         scores["tension_pressure"] += 28
         scores["character_heart"] += 6
-    elif "fantasy satire comedy" in world:
+    elif cat == "fantasy_satire":
         scores["spectacle_play"] += 30
         scores["character_heart"] += 8
-    elif "nightlife comedy" in world:
+    elif cat == "nightlife_comedy":
         scores["spectacle_play"] += 24
         scores["character_heart"] += 8
-    elif "sports drama" in world:
+    elif cat == "sports_drama":
         scores["character_heart"] += 18
         scores["prestige_authority"] += 6
         scores["tension_pressure"] += 8
+    elif cat == "romantic_comedy":
+        scores["character_heart"] += 22
+        scores["spectacle_play"] += 8
 
-    # Tone-specific weighting
     if any(t in tone for t in ["playful", "witty", "satirical", "heightened", "chaotic"]):
         scores["spectacle_play"] += 16
     if any(t in tone for t in ["tense", "sharp", "paranoid", "volatile", "claustrophobic"]):
@@ -903,13 +679,9 @@ def infer_presentation_scores(story_map: dict) -> dict:
     if any(t in tone for t in ["emotional", "warm", "human", "grounded"]):
         scores["character_heart"] += 14
 
-    # Balance and clamp
     ordered = sorted(scores.items(), key=lambda kv: (-kv[1], kv[0]))
     primary_mode = ordered[0][0]
     secondary_mode = ordered[1][0]
-
-    if primary_mode == secondary_mode:
-        secondary_mode = ordered[1][0]
 
     return {
         "presentation_scores": scores,
@@ -931,35 +703,14 @@ def infer_presentation_controls(story_map: dict) -> dict:
     }
 
     if primary == "prestige_authority":
-        controls.update({
-            "layout_energy": "measured",
-            "discipline_level": "high",
-            "image_dominance": "medium",
-            "rhythm_bias": "disciplined",
-        })
+        controls.update({"layout_energy": "measured", "discipline_level": "high", "image_dominance": "medium", "rhythm_bias": "disciplined"})
     elif primary == "tension_pressure":
-        controls.update({
-            "layout_energy": "high",
-            "discipline_level": "medium_high",
-            "image_dominance": "high",
-            "rhythm_bias": "tight",
-        })
+        controls.update({"layout_energy": "high", "discipline_level": "medium_high", "image_dominance": "high", "rhythm_bias": "tight"})
     elif primary == "character_heart":
-        controls.update({
-            "layout_energy": "medium",
-            "discipline_level": "medium",
-            "image_dominance": "medium",
-            "rhythm_bias": "intimate",
-        })
+        controls.update({"layout_energy": "medium", "discipline_level": "medium", "image_dominance": "medium", "rhythm_bias": "intimate"})
     elif primary == "spectacle_play":
-        controls.update({
-            "layout_energy": "high",
-            "discipline_level": "medium_low",
-            "image_dominance": "high",
-            "rhythm_bias": "elastic",
-        })
+        controls.update({"layout_energy": "high", "discipline_level": "medium_low", "image_dominance": "high", "rhythm_bias": "elastic"})
 
-    # Secondary mode refinement
     if secondary == "character_heart" and controls["discipline_level"] in {"medium_high", "high"}:
         controls["discipline_level"] = "medium"
     if secondary == "prestige_authority" and primary == "spectacle_play":
@@ -969,10 +720,11 @@ def infer_presentation_controls(story_map: dict) -> dict:
 
     return controls
 
+
 def infer_layout_strategy(story_map: dict) -> dict:
-    world = story_map["world"]
-    tone = story_map["tone"].lower()
-    synopsis = story_map.get("synopsis", "").lower()
+    cat = _world_category(story_map.get("world", ""))
+    tone = (story_map.get("tone") or "").lower()
+    synopsis = (story_map.get("synopsis") or "").lower()
 
     layout_style = "cinematic_grounded"
     text_density = "medium"
@@ -983,7 +735,7 @@ def infer_layout_strategy(story_map: dict) -> dict:
     headline_style = "statement"
     composition_bias = "image_forward"
 
-    if world == "feature / action espionage thriller":
+    if cat == "action_espionage":
         layout_style = "cinematic_high_tension"
         text_density = "low"
         image_priority = "very_high"
@@ -992,7 +744,7 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "punchy"
         headline_style = "hook"
         composition_bias = "full_bleed"
-    elif world == "feature / contained urban thriller":
+    elif cat == "contained_urban":
         layout_style = "contained_nocturnal"
         text_density = "low"
         image_priority = "very_high"
@@ -1001,7 +753,7 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "minimal"
         headline_style = "hook"
         composition_bias = "full_bleed"
-    elif world == "feature / legal / courtroom drama":
+    elif cat == "legal_courtroom":
         layout_style = "institutional_cinematic"
         text_density = "medium"
         image_priority = "high"
@@ -1010,7 +762,7 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "balanced"
         headline_style = "argument"
         composition_bias = "split_text_image"
-    elif world == "feature / fantasy satire comedy":
+    elif cat == "fantasy_satire":
         layout_style = "storybook_satirical"
         text_density = "medium"
         image_priority = "high"
@@ -1019,7 +771,7 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "varied"
         headline_style = "characterful"
         composition_bias = "illustrative"
-    elif world == "feature / romantic comedy":
+    elif cat == "romantic_comedy":
         layout_style = "romantic_cinematic"
         text_density = "medium"
         image_priority = "high"
@@ -1028,7 +780,7 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "flowing"
         headline_style = "characterful"
         composition_bias = "image_forward"
-    elif world == "feature / nightlife comedy":
+    elif cat == "nightlife_comedy":
         layout_style = "neon_social_chaos"
         text_density = "low"
         image_priority = "very_high"
@@ -1037,7 +789,7 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "punchy"
         headline_style = "hook"
         composition_bias = "full_bleed"
-    elif world == "feature / sports drama":
+    elif cat == "sports_drama":
         layout_style = "athletic_prestige"
         text_density = "medium"
         image_priority = "high"
@@ -1046,6 +798,24 @@ def infer_layout_strategy(story_map: dict) -> dict:
         slide_rhythm = "balanced"
         headline_style = "statement"
         composition_bias = "hero_image"
+    elif cat == "crime_drama":
+        layout_style = "urban_crime_cinematic"
+        text_density = "medium"
+        image_priority = "high"
+        pacing = "measured"
+        visual_energy = "tense"
+        slide_rhythm = "balanced"
+        headline_style = "hook"
+        composition_bias = "full_bleed"
+    elif cat == "thriller":
+        layout_style = "cinematic_suspense"
+        text_density = "low"
+        image_priority = "very_high"
+        pacing = "tight"
+        visual_energy = "volatile"
+        slide_rhythm = "punchy"
+        headline_style = "hook"
+        composition_bias = "full_bleed"
 
     if "morally charged" in tone or "procedural" in tone:
         text_density = "medium_high"
@@ -1056,7 +826,6 @@ def infer_layout_strategy(story_map: dict) -> dict:
         pacing = "fast"
     if "nocturnal" in tone or "paranoid" in tone:
         composition_bias = "full_bleed"
-
     if len(synopsis.split()) > 85 and text_density == "low":
         text_density = "medium"
 
@@ -1073,734 +842,68 @@ def infer_layout_strategy(story_map: dict) -> dict:
 
 
 def infer_slide_blueprint(story_map: dict) -> dict:
-    world = story_map["world"]
-    strategy = story_map["layout_strategy"]
+    cat = _world_category(story_map.get("world", ""))
+    strategy = story_map.get("layout_strategy") or {}
 
     slide_count = 12
-    if strategy["image_priority"] == "very_high":
+    if strategy.get("image_priority") == "very_high":
         slide_count = 14
-    if world == "feature / legal / courtroom drama":
+    if cat == "legal_courtroom":
         slide_count = 13
-    if world == "feature / fantasy satire comedy":
+    if cat == "fantasy_satire":
         slide_count = 14
 
     opening_style = "title_then_hook"
-    if strategy["headline_style"] == "argument":
+    headline_style = strategy.get("headline_style", "statement")
+    if headline_style == "argument":
         opening_style = "title_then_premise"
-    if strategy["headline_style"] == "characterful":
+    if headline_style == "characterful":
         opening_style = "title_then_world"
 
     return {
         "recommended_slide_count": slide_count,
         "opening_style": opening_style,
-        "mid_deck_focus": strategy["composition_bias"],
-        "closing_style": "statement" if world != "feature / nightlife comedy" else "punchline_with_heart",
+        "mid_deck_focus": strategy.get("composition_bias", "image_forward"),
+        "closing_style": "punchline_with_heart" if cat == "nightlife_comedy" else "statement",
     }
 
 
-
-
-def infer_commercial_positioning(story_map: dict) -> str:
-    world = story_map.get("world", "")
-    primary_mode = ((story_map.get("presentation_modes") or {}).get("primary_mode") or "")
-    if world == "feature / contained urban thriller":
-        return "Contained commercial thriller with strong low-to-mid budget pitch value and trailer-ready tension."
-    if world == "feature / fantasy satire comedy":
-        return "Broad-appeal fantasy satire with strong family/comedy packaging potential and visual franchise upside."
-    if world == "feature / legal / courtroom drama":
-        return "Prestige-leaning legal drama with serious performance, awards, and streamer positioning potential."
-    if world == "feature / romantic comedy":
-        return "Romantic comedy with strong theatrical and streaming upside—charming, emotionally real, and built around a lead performance with genuine awards-adjacent potential."
-    if world == "feature / nightlife comedy":
-        return "Commercial nightlife comedy built for fast pacing, ensemble energy, and social-chaos marketability."
-    if world == "feature / sports drama":
-        return "Emotionally accessible sports drama with inspirational crossover and talent-driven packaging appeal."
-    if primary_mode == "tension_pressure":
-        return "Commercial tension-driven project with contained scale and strong word-of-mouth premise value."
-    if primary_mode == "prestige_authority":
-        return "Prestige-forward dramatic package with strong performer appeal and premium streamer potential."
-    if primary_mode == "spectacle_play":
-        return "Visual, accessible concept with strong packaging upside for broad audiences."
-    return "Commercially viable story package with clear pitch angles across concept, character, and tone."
-
-
-def infer_audience_profile(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    tone = story_map.get("tone", "")
-    profiles = []
-    if "thriller" in world:
-        profiles += ["Thriller audiences", "Urban suspense viewers", "Contained-premise fans"]
-    if "fantasy" in world or "adventure" in tone:
-        profiles += ["Fantasy audiences", "Family-friendly comedy viewers", "Adventure-forward viewers"]
-    if "courtroom" in world or "legal" in world:
-        profiles += ["Prestige drama audiences", "Legal/procedural viewers", "Performance-driven film fans"]
-    if "romantic comedy" in world:
-        profiles += ["Romantic comedy audiences", "Date-night theatrical viewers", "Streaming audiences looking for feel-good films"]
-    elif "comedy" in world:
-        profiles += ["Comedy audiences", "Streaming-first viewers"]
-    if "sports" in world:
-        profiles += ["Sports drama audiences", "Inspirational drama viewers"]
-    if not profiles:
-        profiles = ["General film audiences", "Character-driven story viewers", "Streaming platform audiences"]
-    seen = []
-    for p in profiles:
-        if p not in seen:
-            seen.append(p)
-    return seen[:5]
-
-
-def infer_strength_index(story_map: dict) -> dict:
-    world = story_map.get("world", "")
-    characters = story_map.get("characters", [])
-    tone = story_map.get("tone", "")
-    concept = 7
-    character = 7
-    marketability = 7
-    originality = 7
-    if "thriller" in world:
-        concept += 2
-        marketability += 2
-    if "fantasy" in world or "satire" in world:
-        originality += 2
-        concept += 1
-    if "courtroom" in world or "legal" in world:
-        character += 1
-        marketability += 1
-    if len(characters) >= 4:
-        character += 1
-    if "playful" in tone or "witty" in tone:
-        originality += 1
-    if "contained" in world:
-        marketability += 1
-    return {
-        "concept": max(1, min(10, concept)),
-        "character": max(1, min(10, character)),
-        "marketability": max(1, min(10, marketability)),
-        "originality": max(1, min(10, originality)),
-    }
-
-
-def infer_packaging_potential(story_map: dict) -> str:
-    world = story_map.get("world", "")
-    protagonist = story_map.get("protagonist", "Lead")
-    if "romantic comedy" in world:
-        return f"Packaging works through a castable lead, a clear emotional hook, and a premise that sells itself in a sentence — all centered on {protagonist}."
-    if "fantasy" in world:
-        return f"Strong packaging upside through distinctive world, comedic ensemble, and a breakout lead role for {protagonist}."
-    if "thriller" in world:
-        return f"Packaging works best around a strong lead performance, contained tension, and a marketable trailer hook anchored by {protagonist}."
-    if "courtroom" in world or "legal" in world:
-        return f"Packaging works through prestige casting, performance credibility, and premium streamer positioning around {protagonist}."
-    return f"Packaging potential is strongest when the project is sold through lead identity, tone clarity, and a concise market hook built around {protagonist}."
-
-
-def infer_character_leverage(story_map: dict) -> str:
-    protagonist = story_map.get("protagonist", "Lead")
-    characters = [c for c in story_map.get("characters", []) if c != protagonist]
-    if characters:
-        return f"{protagonist} is the primary leverage point, with support strength coming from {', '.join(characters[:3])} as contrast, pressure, or energy multipliers."
-    return f"{protagonist} is the clear leverage point and should carry the package, marketing, and audience entry path."
-
-
-def infer_tone_comparables(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    tone = story_map.get("tone", "")
-    if "fantasy satire comedy" in world:
-        return ["The Princess Bride", "Shrek", "Galavant"]
-    if "contained urban thriller" in world:
-        return ["Collateral", "Nightcrawler", "Phone Booth"]
-    if "legal / courtroom drama" in world:
-        return ["A Few Good Men", "Michael Clayton", "The Firm"]
-    if "romantic comedy" in world:
-        return ["When Harry Met Sally", "Four Weddings and a Funeral", "Crazy Rich Asians"]
-    if "nightlife comedy" in world:
-        return ["After Hours", "Superbad", "Booksmart"]
-    if "sports drama" in world:
-        return ["Creed", "Remember the Titans", "Friday Night Lights"]
-    if "playful" in tone:
-        return ["Knives Out", "Jojo Rabbit", "The Grand Budapest Hotel"]
-    return ["Prisoners", "Little Miss Sunshine", "Argo"]
-
-
-def infer_comparable_films(story_map: dict) -> list[dict]:
-    world = story_map.get("world", "")
-    tone = story_map.get("tone", "")
-    if "fantasy satire comedy" in world:
-        return [
-            {"title": "The Princess Bride", "why": "Satirical fairy-tale with sharp wit — earns its heart by never playing it straight.", "budget_tier": "mid", "box_office": "$30M"},
-            {"title": "Shrek", "why": "Irreverent genre deconstruction balancing broad comedy with genuine emotional stakes.", "budget_tier": "studio", "box_office": "$484M"},
-            {"title": "The Grand Budapest Hotel", "why": "Heightened world and absurdist power structures turned into prestige cinema.", "budget_tier": "mid", "box_office": "$175M"},
-        ]
-    if "contained urban thriller" in world:
-        return [
-            {"title": "Collateral", "why": "Single-night pressure-cooker with a trapped lead whose choices escalate uncontrollably.", "budget_tier": "mid-to-studio", "box_office": "$218M"},
-            {"title": "Nightcrawler", "why": "Morally complex urban thriller built entirely around a performance and a contained premise.", "budget_tier": "low-mid", "box_office": "$32M"},
-            {"title": "Phone Booth", "why": "Ultra-contained single-location thriller — premise and performance carry the entire feature.", "budget_tier": "low", "box_office": "$98M"},
-        ]
-    if "legal / courtroom drama" in world:
-        return [
-            {"title": "A Few Good Men", "why": "Military legal drama driven by institutional power, buried truth, and a young lawyer forced to find his spine.", "budget_tier": "studio", "box_office": "$243M"},
-            {"title": "Michael Clayton", "why": "Prestige legal thriller that rewards intelligence — a blueprint for morally charged drama.", "budget_tier": "mid-to-studio", "box_office": "$92M"},
-            {"title": "The Firm", "why": "Commercial legal thriller with strong crossover — institutional corruption made viscerally personal.", "budget_tier": "studio", "box_office": "$270M"},
-        ]
-    if "romantic comedy" in world:
-        return [
-            {"title": "When Harry Met Sally", "why": "The gold standard for rom-com — earns its emotional payoff through years of real friendship tension and sharp dialogue.", "budget_tier": "mid", "box_office": "$93M"},
-            {"title": "Four Weddings and a Funeral", "why": "Charming ensemble rom-com that proved the genre can be genuinely witty and emotionally honest at the same time.", "budget_tier": "low-mid", "box_office": "$246M"},
-            {"title": "Crazy Rich Asians", "why": "Modern theatrical romantic comedy that proved the genre's commercial ceiling is as high as ever with the right voice and world.", "budget_tier": "mid", "box_office": "$239M"},
-        ]
-    if "nightlife comedy" in world:
-        return [
-            {"title": "After Hours", "why": "Single-night escalating social disaster — dark, funny, and relentless.", "budget_tier": "low", "box_office": "$10M"},
-            {"title": "Superbad", "why": "Chaotic one-night comedy driven by embarrassment, friendship, and the gap between intention and reality.", "budget_tier": "low-mid", "box_office": "$170M"},
-            {"title": "Booksmart", "why": "Tight, energetic single-night comedy with genuine character depth beneath the chaos.", "budget_tier": "low-mid", "box_office": "$25M"},
-        ]
-    if "sports drama" in world:
-        return [
-            {"title": "Creed", "why": "Sports drama that earns its emotion through identity and character, not just competition.", "budget_tier": "mid", "box_office": "$173M"},
-            {"title": "Remember the Titans", "why": "Inspirational team-driven drama with broad crossover and emotional accessibility.", "budget_tier": "mid", "box_office": "$115M"},
-            {"title": "Friday Night Lights", "why": "Grounded and pressured — a sports film that feels like lived experience.", "budget_tier": "mid", "box_office": "$61M"},
-        ]
-    if "playful" in tone:
-        return [
-            {"title": "Knives Out", "why": "Smart, playful, and commercially successful — proves tone and premise can anchor a prestige theatrical.", "budget_tier": "mid", "box_office": "$311M"},
-            {"title": "The Grand Budapest Hotel", "why": "Singular comedic voice achieving both awards traction and commercial reach.", "budget_tier": "mid", "box_office": "$175M"},
-            {"title": "Jojo Rabbit", "why": "Tonally risky — humor as a delivery system for emotional truth.", "budget_tier": "low-mid", "box_office": "$90M"},
-        ]
-    return [
-        {"title": "Prisoners", "why": "Grounded, morally complex thriller with strong performance appeal and awards-worthy tension.", "budget_tier": "mid", "box_office": "$122M"},
-        {"title": "Little Miss Sunshine", "why": "Contained ensemble drama with commercial breakthrough potential from a clear voice.", "budget_tier": "low-mid", "box_office": "$100M"},
-        {"title": "Argo", "why": "Prestige thriller with broad crossover — tension, performance, and a hook that travels.", "budget_tier": "mid-to-studio", "box_office": "$232M"},
-    ]
-
-
-def infer_market_projections(story_map: dict) -> dict:
-    world = story_map.get("world", "")
-    if "action espionage" in world:
-        budget_tier = "mid-to-studio  ($15M–$50M)"
-        distribution_angle = "Theatrical or premium streaming — trailer-ready with broad commercial ceiling"
-        awards_potential = "Moderate — genre action with crossover performance upside"
-        audience_reach = "Wide — thriller audiences, action fans, crossover streaming"
-        franchise_potential = "Strong — operative world supports recurring stories"
-    elif "contained urban thriller" in world:
-        budget_tier = "low-to-mid  ($2M–$12M)"
-        distribution_angle = "Streaming-first or limited theatrical — strong word-of-mouth ceiling"
-        awards_potential = "Moderate — single-performance showcase in a tight package"
-        audience_reach = "Targeted — thriller and urban suspense audiences"
-        franchise_potential = "Low — contained, complete story"
-    elif "legal / courtroom drama" in world:
-        budget_tier = "mid  ($8M–$25M)"
-        distribution_angle = "Prestige theatrical or premium streamer — performance-driven awards play"
-        awards_potential = "High — strong script, moral pressure, institutional conflict"
-        audience_reach = "Core prestige + broad crossover via streaming"
-        franchise_potential = "Low — standalone dramatic arc"
-    elif "fantasy satire comedy" in world:
-        budget_tier = "mid  ($10M–$30M)"
-        distribution_angle = "Theatrical or streaming — visual world with franchise upside"
-        awards_potential = "Low-to-moderate — comedy builds cultural profile more than trophies"
-        audience_reach = "Broad — family, comedy, and fantasy audiences"
-        franchise_potential = "High — world and characters support sequels or series"
-    elif "romantic comedy" in world:
-        budget_tier = "mid  ($10M–$40M)"
-        distribution_angle = "Theatrical or premium streaming — charming, castable, and character-driven with strong word-of-mouth potential"
-        awards_potential = "Moderate — rom-com rarely leads awards but strong lead performance can earn recognition"
-        audience_reach = "Broad — romantic comedy core with wide crossover across demographics"
-        franchise_potential = "Low — self-contained romantic arc"
-    elif "nightlife comedy" in world:
-        budget_tier = "low-to-mid  ($3M–$15M)"
-        distribution_angle = "Streaming-first — fast-paced social comedy with strong word-of-mouth"
-        awards_potential = "Low — genre comedy rarely awards-tracked"
-        audience_reach = "Young adult + streaming audiences"
-        franchise_potential = "Low — self-contained night"
-    elif "sports drama" in world:
-        budget_tier = "mid  ($8M–$20M)"
-        distribution_angle = "Theatrical or streaming — inspirational crossover with broad demographic appeal"
-        awards_potential = "Moderate — strong performance arc with emotional resonance"
-        audience_reach = "Wide — sports fans, inspirational drama viewers, broad crossover"
-        franchise_potential = "Moderate — character can carry a sequel if the world is built"
-    else:
-        budget_tier = "low-to-mid  ($3M–$15M)"
-        distribution_angle = "Streaming-first with potential limited theatrical"
-        awards_potential = "Moderate — dependent on execution and performance"
-        audience_reach = "Core dramatic + streaming audiences"
-        franchise_potential = "Low — story-dependent"
-
-    return {
-        "estimated_budget_tier": budget_tier,
-        "distribution_angle": distribution_angle,
-        "awards_potential": awards_potential,
-        "audience_reach": audience_reach,
-        "franchise_potential": franchise_potential,
-        "sales_hook": story_map.get("commercial_positioning", "A commercially viable story package with clear pitch angles."),
-    }
-
-
-def infer_executive_summary(story_map: dict) -> str:
-    title = story_map.get("title", "This project")
-    protagonist = story_map.get("protagonist", "the lead")
-    world = story_map.get("world", "feature drama")
-    tone = story_map.get("tone", "")
-    conflict = story_map.get("core_conflict", "")
-    return f"{title} is a {world} built around {protagonist}, with a tone that plays {tone}. The commercial hook comes from a clear central engine: {conflict}"
-
-
-def infer_actor_objective(story_map: dict) -> str:
-    protagonist = story_map.get("protagonist", "the character")
-    world = story_map.get("world", "")
-    if "thriller" in world:
-        return "Stay in control long enough to survive the pressure without revealing fear too early."
-    if "fantasy" in world:
-        return "Hold ground inside absurd power dynamics while using wit and instinct to stay one step ahead."
-    if "legal" in world or "courtroom" in world:
-        return "Press for truth and leverage without losing authority, credibility, or emotional precision."
-    return f"Move the scene forward with clear intention while protecting what {protagonist} most wants from exposure or collapse."
-
-
-def infer_playable_tactics(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    tactics = ["Deflect", "Pressure", "Reframe", "Hold control"]
-    if "fantasy" in world or "comedy" in world:
-        tactics = ["Charm", "Deflect", "Pressure", "Observe", "Pivot"]
-    if "thriller" in world:
-        tactics = ["Probe", "Control", "Withhold", "Redirect", "Corner"]
-    if "legal" in world:
-        tactics = ["Corner", "Press", "Frame", "Challenge", "Hold authority"]
-    return tactics[:5]
-
-
-def infer_emotional_triggers(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    if "fantasy" in world:
-        return ["Humiliation", "Status shifts", "Public spectacle", "Unexpected danger"]
-    if "thriller" in world:
-        return ["Suspicion", "Loss of control", "Time pressure", "Misread intentions"]
-    if "legal" in world:
-        return ["Institutional pressure", "Exposure of truth", "Loss of credibility", "Moral confrontation"]
-    return ["Rejection", "Pressure", "Exposure", "Uncertainty"]
-
-
-def infer_audition_danger_zones(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    zones = ["Overplaying intention", "Pushing emotion too early", "Ignoring listening beats"]
-    if "comedy" in world or "fantasy" in world:
-        zones.append("Playing the joke instead of the objective")
-    if "thriller" in world:
-        zones.append("Telegraphing fear instead of letting pressure build")
-    if "legal" in world:
-        zones.append("Mistaking authority for volume")
-    return zones[:5]
-
-
-def infer_reader_chemistry_tips(story_map: dict) -> list[str]:
-    return [
-        "Pick fixed eyelines for each off-camera character.",
-        "Let interruptions feel live rather than pre-timed.",
-        "Use the reader to sharpen pressure changes, not flatten them.",
-        "Stay responsive to pace shifts instead of locking one rhythm."
-    ]
-
-
-def infer_memorization_beats(story_map: dict) -> list[str]:
-    return [
-        "Opening power move",
-        "First pressure turn",
-        "Status shift or reveal",
-        "Control reset",
-        "Exit beat / last impression"
-    ]
-
-
-def infer_role_arc_map(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    if "fantasy" in world:
-        return ["outsider observation", "strategic adaptation", "increased political awareness", "active role in chaos", "earned authority"]
-    if "thriller" in world:
-        return ["uncertainty", "pressure escalation", "misread danger", "forced decision", "clarity through consequence"]
-    if "legal" in world:
-        return ["controlled distance", "institutional pressure", "moral confrontation", "truth pursuit", "earned conviction"]
-    return ["setup", "pressure", "adaptation", "reversal", "resolution"]
-
-
-def infer_pressure_ladder(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    if "thriller" in world:
-        return ["unease", "suspicion", "containment pressure", "escalation", "breaking point"]
-    if "fantasy" in world:
-        return ["social absurdity", "status pressure", "court risk", "public chaos", "high-stakes confrontation"]
-    if "legal" in world:
-        return ["professional tension", "institutional resistance", "truth pressure", "public exposure", "high-cost choice"]
-    return ["low pressure", "rising tension", "complication", "peak pressure", "release"]
-
-
-def infer_emotional_continuity(story_map: dict) -> list[str]:
-    return [
-        "Track where confidence cracks, even if behavior stays controlled.",
-        "Let pressure affect pace before it affects volume.",
-        "Carry unresolved tension into the next scene rather than resetting to neutral.",
-        "Protect consistency of listening behavior across takes and scenes."
-    ]
-
-
-def infer_costume_behavior_clues(story_map: dict) -> list[str]:
-    world = story_map.get("world", "")
-    if "fantasy" in world:
-        return ["Carry status in posture before dialogue.", "Let movement reflect court awareness and survival instinct."]
-    if "thriller" in world:
-        return ["Wardrobe should support fatigue, caution, or pressure.", "Behavior should stay alert even in stillness."]
-    if "legal" in world:
-        return ["Clothing and posture should signal discipline.", "Small behavioral control beats matter more than broad gestures."]
-    return ["Costume should support role clarity.", "Behavior should align with status, confidence, and pressure level."]
-
-
-def infer_relationship_leverage_map(story_map: dict) -> list[dict]:
-    protagonist = story_map.get("protagonist", "")
-    chars = [c for c in story_map.get("characters", []) if c != protagonist][:4]
-    maps = []
-    for c in chars:
-        maps.append({
-            "character": c,
-            "dynamic": "pressure / contrast / leverage",
-            "function": "tests the protagonist through information, status, or escalation"
-        })
-    return maps
-
-
-def infer_set_ready_checklist(story_map: dict) -> list[str]:
-    return [
-        "Know the scene's pressure level before you play it.",
-        "Track what your character wants from each interaction.",
-        "Mark where status rises, slips, or resets.",
-        "Keep body language and listening behavior consistent across takes.",
-        "Protect continuity more than novelty."
-    ]
-
-def _tmdb_lookup(title: str, token: str) -> dict:
-    import urllib.request
-    import urllib.parse
-    try:
-        query = urllib.parse.quote(title)
-        search_url = f"https://api.themoviedb.org/3/search/movie?query={query}&language=en-US&page=1"
-        req = urllib.request.Request(search_url, headers={"Authorization": f"Bearer {token}"})
-        with urllib.request.urlopen(req, timeout=6) as resp:
-            results = json.loads(resp.read()).get("results", [])
-        if not results:
-            return {}
-        movie_id = results[0]["id"]
-
-        detail_url = f"https://api.themoviedb.org/3/movie/{movie_id}?language=en-US"
-        req2 = urllib.request.Request(detail_url, headers={"Authorization": f"Bearer {token}"})
-        with urllib.request.urlopen(req2, timeout=6) as resp2:
-            details = json.loads(resp2.read())
-
-        budget_raw = details.get("budget", 0) or 0
-        revenue_raw = details.get("revenue", 0) or 0
-        release = details.get("release_date", "") or ""
-        year = release[:4] if release else ""
-
-        def fmt(n):
-            if n >= 1_000_000:
-                return f"${n / 1_000_000:.0f}M"
-            return f"${n:,}" if n > 0 else ""
-
-        if budget_raw >= 100_000_000:
-            budget_tier = "studio"
-        elif budget_raw >= 25_000_000:
-            budget_tier = "mid-to-studio"
-        elif budget_raw >= 10_000_000:
-            budget_tier = "mid"
-        elif budget_raw >= 3_000_000:
-            budget_tier = "low-mid"
-        elif budget_raw > 0:
-            budget_tier = "low"
-        else:
-            budget_tier = ""
-
-        return {
-            "box_office": fmt(revenue_raw),
-            "budget": fmt(budget_raw),
-            "budget_tier": budget_tier,
-            "year": year,
-        }
-    except Exception:
-        return {}
-
-
-def fetch_comparable_films(story_map: dict) -> list[dict]:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    tmdb_token = os.environ.get("TMDB_API_TOKEN")
-    if not api_key:
-        return []
-    try:
-        import anthropic
-    except ImportError:
-        return []
-
-    world = story_map.get("world", "")
-    tone = story_map.get("tone", "")
-    logline = story_map.get("logline", "")
-    synopsis = story_map.get("synopsis", "")
-
-    system = (
-        "You are a Hollywood development executive and film analyst. "
-        "Given a screenplay's story data, identify exactly 3 real comparable films (comps). "
-        "Choose films that genuinely match in tone, genre, budget tier, and commercial positioning. "
-        "For each comp, write a 'why' explanation under 20 words. "
-        "Return ONLY a raw JSON array of exactly 3 objects with keys: title, why. "
-        "Use real film titles only. No markdown. No explanation. No code fences."
-    )
-    user_prompt = (
-        f"Genre/World: {world}\n"
-        f"Tone: {tone}\n"
-        f"Logline: {logline}\n"
-        f"Synopsis: {synopsis}\n\n"
-        "Return 3 comparable films as a JSON array."
-    )
-
-    try:
-        client = anthropic.Anthropic(api_key=api_key)
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=300,
-            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-        raw = next((b.text for b in message.content if hasattr(b, "text")), "")
-        if not raw:
-            return []
-        films = json.loads(raw.strip())
-        if not isinstance(films, list):
-            return []
-    except Exception:
-        return []
-
-    enriched = []
-    for film in films[:3]:
-        if not isinstance(film, dict) or not film.get("title"):
-            continue
-        entry = {
-            "title": film.get("title", ""),
-            "why": film.get("why", ""),
-            "budget_tier": "",
-            "box_office": "",
-            "year": "",
-        }
-        if tmdb_token:
-            try:
-                tmdb = _tmdb_lookup(film["title"], tmdb_token)
-                entry["budget_tier"] = tmdb.get("budget_tier", "")
-                entry["box_office"] = tmdb.get("box_office", "")
-                entry["year"] = tmdb.get("year", "")
-            except Exception:
-                pass
-        enriched.append(entry)
-    return enriched
-
-
-def enhance_with_api(story_map: dict, script_text: str) -> dict:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        return {}
-    try:
-        import anthropic
-    except ImportError:
-        return {}
-
-    protagonist = story_map.get("protagonist", "Protagonist").title()
-    world = story_map.get("world", "")
-    tone = story_map.get("tone", "")
-    characters = [c.title() for c in story_map.get("characters", [])[:5]]
-    core_conflict = story_map.get("core_conflict", "")
-    reversal = story_map.get("reversal", "")
-    script_excerpt = script_text
-
-    system = (
-        "You are a professional Hollywood screenplay analyst and pitch writer. "
-        "Given a screenplay excerpt and story data, write five things for a pitch package:\n"
-        "1. logline — one sentence under 50 words: protagonist + pressure + stakes\n"
-        "2. tagline — punchy marketing one-liner under 12 words: the core tension or promise, title-card style\n"
-        "3. synopsis — two paragraphs, 150-200 words total: what happens, what is at stake\n"
-        "4. theme — one sentence under 20 words: what the story is really about\n"
-        "5. protagonist_summary — one sentence under 25 words: who they are and what they carry\n\n"
-        "Return ONLY a raw JSON object with keys: logline, tagline, synopsis, theme, protagonist_summary. "
-        "No markdown. No explanation. No code fences."
-    )
-
-    user_prompt = (
-        f"Title: {story_map.get('title', 'Untitled')}\n"
-        f"Genre/World: {world}\n"
-        f"Tone: {tone}\n"
-        f"Protagonist: {protagonist}\n"
-        f"Key Characters: {', '.join(characters)}\n"
-        f"Core Conflict: {core_conflict}\n"
-        f"Reversal: {reversal}\n\n"
-        f"FULL SCRIPT:\n{script_excerpt}"
-    )
-
-    try:
-        client = anthropic.Anthropic(api_key=api_key)
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=700,
-            system=[{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}],
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-        raw = next((b.text for b in message.content if hasattr(b, "text")), "")
-        if not raw:
-            return {}
-        result = json.loads(raw.strip())
-        return {k: v for k, v in result.items() if k in ("logline", "tagline", "synopsis", "theme", "protagonist_summary")}
-    except Exception:
-        return {}
-
-
-def build_story_map(text: str) -> dict:
-    title = extract_title(text)
-    dialogue_counts, dialogue_first, dialogue_support = analyze_dialogue_characters(text)
-    action_counts, action_first = extract_action_names(text)
-    characters, character_stats = merge_character_signals(
-        dialogue_counts, dialogue_first, dialogue_support, action_counts, action_first
-    )
-
-    protagonist = pick_protagonist(characters, character_stats)
-    world = detect_world(text)
-    time_frame = infer_time_frame(text)
-    setting = infer_setting(text, world)
-    tone = infer_tone(text, world)
-    story_engine = infer_story_engine(text, protagonist)
-    core_conflict = infer_core_conflict(text, protagonist)
-    reversal = infer_reversal(text)
-
-    story_map = {
-        "title": title,
-        "characters": characters[:5],
-        "character_stats": character_stats,
-        "protagonist": protagonist,
-        "world": world,
-        "time_frame": time_frame,
-        "setting": setting,
-        "tone": tone,
-        "story_engine": story_engine,
-        "core_conflict": core_conflict,
-        "reversal": reversal,
-    }
-
-    story_map["protagonist_summary"] = infer_protagonist_summary(story_map)
-    story_map["theme"] = infer_theme(story_map)
-    story_map["protagonist_profile"] = {
-        "name": protagonist,
-        "summary": story_map["protagonist_summary"],
-    }
-    story_map["logline"] = build_logline_from_story_map(story_map)
-    story_map["synopsis"] = build_synopsis_from_story_map(story_map)
-
-    # Engine-only tagline fallback — first clause of logline (up to comma/dash/semicolon)
-    raw_logline = story_map.get("logline", "")
-    import re as _re
-    _first_clause = _re.split(r"[,;—–]", raw_logline)[0].strip() if raw_logline else ""
-    story_map["tagline"] = _first_clause[:80] if _first_clause else story_map.get("story_engine", "")[:80]
-
-    api_enhancements = enhance_with_api(story_map, text)
-    if api_enhancements:
-        story_map.update(api_enhancements)
-        if "protagonist_summary" in api_enhancements:
-            story_map["protagonist_profile"]["summary"] = api_enhancements["protagonist_summary"]
-
-    story_map["presentation_modes"] = infer_presentation_scores(story_map)
-    story_map["presentation_controls"] = infer_presentation_controls(story_map)
-    story_map["layout_strategy"] = infer_layout_strategy(story_map)
-    story_map["slide_blueprint"] = infer_slide_blueprint(story_map)
-    story_map["document_layouts"] = infer_document_layouts(story_map)
-    story_map["commercial_positioning"] = infer_commercial_positioning(story_map)
-    story_map["audience_profile"] = infer_audience_profile(story_map)
-    story_map["strength_index"] = infer_strength_index(story_map)
-    story_map["packaging_potential"] = infer_packaging_potential(story_map)
-    story_map["character_leverage"] = infer_character_leverage(story_map)
-    story_map["tone_comparables"] = infer_tone_comparables(story_map)
-    story_map["comparable_films"] = infer_comparable_films(story_map)
-    story_map["market_projections"] = infer_market_projections(story_map)
-    story_map["executive_summary"] = infer_executive_summary(story_map)
-
-    api_comparables = fetch_comparable_films(story_map)
-    if api_comparables:
-        story_map["comparable_films"] = api_comparables
-        story_map["tone_comparables"] = [f["title"] for f in api_comparables]
-
-    story_map["actor_objective"] = infer_actor_objective(story_map)
-    story_map["playable_tactics"] = infer_playable_tactics(story_map)
-    story_map["emotional_triggers"] = infer_emotional_triggers(story_map)
-    story_map["audition_danger_zones"] = infer_audition_danger_zones(story_map)
-    story_map["reader_chemistry_tips"] = infer_reader_chemistry_tips(story_map)
-    story_map["memorization_beats"] = infer_memorization_beats(story_map)
-
-    story_map["role_arc_map"] = infer_role_arc_map(story_map)
-    story_map["pressure_ladder"] = infer_pressure_ladder(story_map)
-    story_map["emotional_continuity"] = infer_emotional_continuity(story_map)
-    story_map["costume_behavior_clues"] = infer_costume_behavior_clues(story_map)
-    story_map["relationship_leverage_map"] = infer_relationship_leverage_map(story_map)
-    story_map["set_ready_checklist"] = infer_set_ready_checklist(story_map)
-
-    return story_map
-
-
-def pick_protagonist(chars, stats) -> str:
-    if not chars:
-        return "Protagonist"
-
-    ranked = []
-    for name in chars:
-        s = stats.get(name, {})
-        d = s.get("dialogue_count", 0)
-        a = s.get("action_count", 0)
-        first = s.get("first_seen", 99999)
-
-        score = 0
-        score += a * 5
-        score += d * 2
-
-        if first < 50:
-            score += 5
-        elif first < 120:
-            score += 2
-
-        if a >= 3:
-            score += 4
-
-        ranked.append((name, score, first))
-
-    ranked.sort(key=lambda x: (-x[1], x[2], x[0]))
-    return ranked[0][0]
-
+# ─── IMAGE TERM FUNCTIONS ────────────────────────────────────────────────────
 
 def base_image_terms(story_map: dict) -> list[str]:
-    world = story_map["world"]
+    cat = _world_category(story_map.get("world", ""))
+    visual_keywords = story_map.get("visual_keywords") or []
     terms = []
 
-    if world == "feature / action espionage thriller":
+    if cat == "action_espionage":
         terms.extend(["covert", "surveillance", "domestic_tension", "high_stakes", "cinematic"])
-    elif world == "feature / contained urban thriller":
+    elif cat == "contained_urban":
         terms.extend(["urban", "night", "car", "tension", "isolation"])
-    elif world == "feature / legal / courtroom drama":
-        terms.extend(["courtroom", "institution", "military", "authority", "moral_pressure"])
-    elif world == "feature / fantasy satire comedy":
+    elif cat == "legal_courtroom":
+        terms.extend(["courtroom", "institution", "authority", "moral_pressure"])
+    elif cat == "fantasy_satire":
         terms.extend(["kingdom", "pageantry", "satire", "fantasy", "court_chaos"])
-    elif world == "feature / romantic comedy":
+    elif cat == "romantic_comedy":
         terms.extend(["romance", "connection", "warmth", "social_world", "emotional_honesty"])
-    elif world == "feature / nightlife comedy":
+    elif cat == "nightlife_comedy":
         terms.extend(["nightlife", "social_chaos", "party", "awkwardness", "city_night"])
-    elif world == "feature / sports drama":
+    elif cat == "sports_drama":
         terms.extend(["sports", "court", "locker_room", "pressure", "competition"])
-    elif world == "feature / crime drama":
+    elif cat == "crime_drama":
         terms.extend(["urban", "danger", "night", "street", "pressure"])
+    elif cat == "thriller":
+        terms.extend(["tension", "shadow", "isolation", "urban", "pressure"])
     else:
         terms.extend(["grounded", "dramatic", "environment"])
 
+    terms.extend([k for k in visual_keywords[:4] if k not in terms])
     return terms
 
 
 def slide_visual_terms(slide_name: str, story_map: dict) -> list[str]:
-    world = story_map["world"]
-    protagonist = slugify(story_map["protagonist"])
-    tone_terms = [slugify(t) for t in story_map["tone"].split(",") if t.strip()]
+    cat = _world_category(story_map.get("world", ""))
+    protagonist = slugify(story_map.get("protagonist", ""))
+    tone_terms = [slugify(t) for t in (story_map.get("tone") or "").split(",") if t.strip()]
     base_terms = base_image_terms(story_map)
 
     mapping = {
@@ -1826,51 +929,61 @@ def slide_visual_terms(slide_name: str, story_map: dict) -> list[str]:
         "Closing Statement": ["emotional_finality", "impact", "resonance"],
     }
 
+    cat_slide_terms = {
+        "action_espionage": {
+            "world_base": ["surveillance", "night_operation", "hidden_identity"],
+            "character": ["split_life", "domestic_cover", "covert_pressure"],
+            "theme": ["explosive_reveal", "family_risk", "high_stakes"],
+        },
+        "contained_urban": {
+            "world_base": ["streetlights", "car_interior", "night"],
+            "character": ["windshield", "rearview", "implied_presence"],
+            "theme": ["pressure", "isolation", "urban"],
+        },
+        "legal_courtroom": {
+            "world_base": ["courtroom_wide", "military_formality", "institutional_space"],
+            "character": ["witness_stand", "interrogation_room", "command_pressure"],
+            "theme": ["truth_under_oath", "moral_weight", "verdict_energy"],
+        },
+        "fantasy_satire": {
+            "world_base": ["castle_wide", "ceremonial_absurdity", "storybook_scale"],
+            "character": ["throne_room", "comic_intrigue", "royal_misrule"],
+            "theme": ["satirical_pageantry", "kingdom_chaos", "comic_resolution"],
+        },
+        "romantic_comedy": {
+            "world_base": ["warm_interior", "social_setting", "romance_connection"],
+            "character": ["intimate_moment", "social_pressure", "friendship_bond"],
+            "theme": ["love_realization", "emotional_honesty", "comic_warmth"],
+        },
+        "nightlife_comedy": {
+            "world_base": ["club_exterior", "velvet_rope", "city_lights"],
+            "character": ["dancefloor", "awkward_party", "social_pressure"],
+            "theme": ["afterparty_fallout", "neon_regret", "comic_release"],
+        },
+        "sports_drama": {
+            "world_base": ["empty_court", "arena", "night"],
+            "character": ["locker_room", "hallway", "quiet_pressure"],
+            "theme": ["scoreboard", "gym", "after_hours"],
+        },
+        "crime_drama": {
+            "world_base": ["street_night", "urban_grit", "danger_interior"],
+            "character": ["confrontation", "underworld_space", "tension"],
+            "theme": ["consequence", "moral_cost", "street_truth"],
+        },
+    }
+
     terms = []
     terms.extend(base_terms)
     terms.extend(tone_terms[:3])
     terms.extend(mapping.get(slide_name, ["cinematic", "environment"]))
 
-    if world == "feature / action espionage thriller":
-        if slide_name in {"Title", "Logline", "World"}:
-            terms.extend(["surveillance", "night_operation", "hidden_identity"])
-        elif slide_name in {"Protagonist", "Conflict Engine", "Stakes"}:
-            terms.extend(["split_life", "domestic_cover", "covert_pressure"])
-        elif slide_name in {"Theme", "Closing Statement"}:
-            terms.extend(["explosive_reveal", "family_risk", "high_stakes"])
-    elif world == "feature / contained urban thriller":
-        if slide_name in {"Title", "Logline", "World"}:
-            terms.extend(["streetlights", "car_interior", "night"])
-        elif slide_name in {"Protagonist", "Conflict Engine", "Stakes"}:
-            terms.extend(["windshield", "rearview", "implied_presence"])
-    elif world == "feature / legal / courtroom drama":
-        if slide_name in {"Title", "Logline", "World"}:
-            terms.extend(["courtroom_wide", "military_formality", "institutional_space"])
-        elif slide_name in {"Protagonist", "Conflict Engine", "Stakes"}:
-            terms.extend(["witness_stand", "interrogation_room", "command_pressure"])
-        elif slide_name in {"Theme", "Closing Statement"}:
-            terms.extend(["truth_under_oath", "moral_weight", "verdict_energy"])
-    elif world == "feature / fantasy satire comedy":
-        if slide_name in {"Title", "Logline", "World"}:
-            terms.extend(["castle_wide", "ceremonial_absurdity", "storybook_scale"])
-        elif slide_name in {"Protagonist", "Conflict Engine", "Stakes"}:
-            terms.extend(["throne_room", "comic_intrigue", "royal_misrule"])
-        elif slide_name in {"Theme", "Closing Statement"}:
-            terms.extend(["satirical_pageantry", "kingdom_chaos", "comic_resolution"])
-    elif world == "feature / nightlife comedy":
-        if slide_name in {"Title", "Logline", "World"}:
-            terms.extend(["club_exterior", "velvet_rope", "city_lights"])
-        elif slide_name in {"Protagonist", "Conflict Engine", "Stakes"}:
-            terms.extend(["dancefloor", "awkward_party", "social_pressure"])
-        elif slide_name in {"Theme", "Closing Statement"}:
-            terms.extend(["afterparty_fallout", "neon_regret", "comic_release"])
-    elif world == "feature / sports drama":
-        if slide_name in {"Title", "Logline", "World"}:
-            terms.extend(["empty_court", "arena", "night"])
-        elif slide_name in {"Protagonist", "Stakes", "Conflict Engine"}:
-            terms.extend(["locker_room", "hallway", "quiet_pressure"])
-        elif slide_name in {"Theme", "Closing Statement"}:
-            terms.extend(["scoreboard", "gym", "after_hours"])
+    cat_terms = cat_slide_terms.get(cat, {})
+    if slide_name in {"Title", "Logline", "World"}:
+        terms.extend(cat_terms.get("world_base", []))
+    elif slide_name in {"Protagonist", "Antagonist", "Supporting Characters", "Conflict Engine", "Stakes"}:
+        terms.extend(cat_terms.get("character", []))
+    elif slide_name in {"Theme", "Closing Statement"}:
+        terms.extend(cat_terms.get("theme", []))
 
     seen = set()
     ordered = []
@@ -1883,10 +996,8 @@ def slide_visual_terms(slide_name: str, story_map: dict) -> list[str]:
     return ordered
 
 
-
-
 def score_terms_for_slide(slide_name: str, story_map: dict) -> dict:
-    world = story_map.get("world", "")
+    cat = _world_category(story_map.get("world", ""))
     primary_mode = story_map.get("presentation_modes", {}).get("primary_mode", "")
     secondary_mode = story_map.get("presentation_modes", {}).get("secondary_mode", "")
     protagonist = slugify(story_map.get("protagonist", ""))
@@ -1897,7 +1008,6 @@ def score_terms_for_slide(slide_name: str, story_map: dict) -> dict:
             return
         weights[term] = weights.get(term, 0) + points
 
-    # Global slide-name weighting
     slide_weights = {
         "Title": [("establishing", 18), ("cinematic", 16), ("world", 14)],
         "Logline": [("mood", 15), ("wide", 14), ("establishing", 12)],
@@ -1923,42 +1033,46 @@ def score_terms_for_slide(slide_name: str, story_map: dict) -> dict:
     for term, pts in slide_weights.get(slide_name, []):
         bump(term, pts)
 
-    # World-specific weighting
-    world_map = {
-        "feature / action espionage thriller": {
+    cat_world_map = {
+        "action_espionage": {
             "base": [("surveillance", 14), ("night_operation", 12), ("hidden_identity", 10)],
             "character": [("split_life", 14), ("covert_pressure", 12), ("domestic_cover", 10)],
             "theme": [("family_risk", 12), ("explosive_reveal", 10), ("high_stakes", 10)],
         },
-        "feature / contained urban thriller": {
+        "contained_urban": {
             "base": [("streetlights", 16), ("car_interior", 14), ("night", 12)],
             "character": [("rearview", 14), ("windshield", 12), ("implied_presence", 10)],
             "theme": [("pressure", 10), ("isolation", 10), ("urban", 8)],
         },
-        "feature / legal / courtroom drama": {
+        "legal_courtroom": {
             "base": [("courtroom_wide", 16), ("institutional_space", 14), ("military_formality", 10)],
             "character": [("witness_stand", 14), ("command_pressure", 12), ("interrogation_room", 10)],
             "theme": [("truth_under_oath", 12), ("moral_weight", 10), ("verdict_energy", 10)],
         },
-        "feature / fantasy satire comedy": {
+        "fantasy_satire": {
             "base": [("castle_wide", 16), ("storybook_scale", 14), ("ceremonial_absurdity", 10)],
             "character": [("throne_room", 14), ("comic_intrigue", 12), ("royal_misrule", 10)],
             "theme": [("satirical_pageantry", 12), ("kingdom_chaos", 10), ("comic_resolution", 10)],
         },
-        "feature / romantic comedy": {
+        "romantic_comedy": {
             "base": [("romance_connection", 16), ("warm_interior", 14), ("social_setting", 10)],
             "character": [("intimate_moment", 14), ("social_pressure", 12), ("friendship_bond", 10)],
             "theme": [("love_realization", 12), ("emotional_honesty", 10), ("comic_warmth", 10)],
         },
-        "feature / nightlife comedy": {
+        "nightlife_comedy": {
             "base": [("club_exterior", 14), ("velvet_rope", 12), ("city_lights", 10)],
             "character": [("awkward_party", 14), ("social_pressure", 12), ("dancefloor", 10)],
             "theme": [("afterparty_fallout", 12), ("neon_regret", 10), ("comic_release", 10)],
         },
-        "feature / sports drama": {
+        "sports_drama": {
             "base": [("arena", 14), ("empty_court", 12), ("night", 8)],
             "character": [("locker_room", 14), ("quiet_pressure", 12), ("hallway", 10)],
             "theme": [("scoreboard", 12), ("after_hours", 10), ("gym", 8)],
+        },
+        "crime_drama": {
+            "base": [("street_night", 14), ("urban_grit", 12), ("danger_interior", 10)],
+            "character": [("confrontation", 14), ("tension", 12), ("underworld", 10)],
+            "theme": [("consequence", 12), ("moral_cost", 10), ("street_truth", 8)],
         },
     }
 
@@ -1968,10 +1082,9 @@ def score_terms_for_slide(slide_name: str, story_map: dict) -> dict:
     elif slide_name in {"Theme", "Tone", "Why This Film", "Closing Statement"}:
         category = "theme"
 
-    for term, pts in world_map.get(world, {}).get(category, []):
+    for term, pts in cat_world_map.get(cat, {}).get(category, []):
         bump(term, pts)
 
-    # Presentation mode nudges
     mode_weights = {
         "prestige_authority": [("premium", 12), ("authority", 10), ("disciplined", 8)],
         "tension_pressure": [("tension", 12), ("pressure", 10), ("isolation", 8)],
@@ -1996,45 +1109,28 @@ def infer_file_strategy(slide_name: str, story_map: dict) -> dict:
         return {"subject_preference": "mood_symbolic", "framing": "flexible", "people_density": "low", "swap_ready": True}
     return {"subject_preference": composition, "framing": "flexible", "people_density": "medium", "swap_ready": True}
 
+
 def build_image_plan(story_map: dict) -> list[dict]:
     slide_names = [
-        "Title",
-        "Logline",
-        "Synopsis",
-        "Protagonist",
-        "Antagonist",
-        "Supporting Characters",
-        "Theme",
-        "Tone",
-        "World",
-        "Conflict Engine",
-        "Stakes",
-        "Why This Film",
-        "Audience",
-        "Visual Style",
-        "Comparables",
-        "Market Position",
-        "Director Vision",
-        "Casting Ideas",
-        "Production Scope",
+        "Title", "Logline", "Synopsis", "Protagonist", "Antagonist",
+        "Supporting Characters", "Theme", "Tone", "World", "Conflict Engine",
+        "Stakes", "Why This Film", "Audience", "Visual Style", "Comparables",
+        "Market Position", "Director Vision", "Casting Ideas", "Production Scope",
         "Closing Statement",
     ]
-
     plan = []
     for idx, slide_name in enumerate(slide_names, start=1):
         terms = slide_visual_terms(slide_name, story_map)
-        ranked_options = build_ranked_image_options(slide_name, story_map, max_options=5)
-        primary = ranked_options[0]
         plan.append({
             "slide_number": idx,
             "slide_title": slide_name,
-            "image_query": primary["image_query"],
-            "image_tags": primary["image_tags"],
-            "image_score": primary["score"],
-            "preferred_folders": primary.get("folder_hints", []),
-            "visual_family": primary.get("visual_family"),
+            "image_query": " ".join(terms[:4]),
+            "image_tags": terms,
+            "image_score": 1.0,
+            "preferred_folders": [],
+            "visual_family": None,
             "file_strategy": infer_file_strategy(slide_name, story_map),
-            "image_options": ranked_options,
+            "image_options": [],
         })
     return plan
 
@@ -2055,14 +1151,11 @@ def main():
         text = input_path.read_text(errors="ignore")
     story_map = build_story_map(text)
 
-    print(f"🔥 TOP CHARACTER CANDIDATES: {story_map['characters']}")
-    print(f"🧩 CHARACTER STATS: {json.dumps({k: story_map['character_stats'][k] for k in story_map['characters']}, indent=2)}")
     print(f"🎬 Title: {story_map['title']}")
     print(f"🔥 Characters: {story_map['characters']}")
     print(f"🎯 Protagonist: {story_map['protagonist']}")
     print(f"🌍 World: {story_map['world']}")
     print(f"🎭 Tone: {story_map['tone']}")
-    print(f"🎯 Protagonist Summary: {story_map['protagonist_summary']}")
     print(f"🪞 Theme: {story_map['theme']}")
     print(f"🧠 Story Engine: {story_map['story_engine']}")
     print(f"⚔️ Core Conflict: {story_map['core_conflict']}")
@@ -2070,10 +1163,7 @@ def main():
     print(f"🧾 Logline: {story_map['logline']}")
     print(f"📚 Synopsis: {story_map['synopsis']}")
     print(f"🎛️ Presentation Modes: {json.dumps(story_map['presentation_modes'], indent=2)}")
-    print(f"🎚️ Presentation Controls: {json.dumps(story_map['presentation_controls'], indent=2)}")
     print(f"🧱 Layout Strategy: {json.dumps(story_map['layout_strategy'], indent=2)}")
-    print(f"📰 Document Layouts: {json.dumps(story_map['document_layouts'], indent=2)}")
-    print(f"🗂️ Slide Blueprint: {json.dumps(story_map['slide_blueprint'], indent=2)}")
 
     _dai_work_dir = os.environ.get("DAI_WORK_DIR", "")
     out_path = Path(_dai_work_dir) / "approved_brain_output.json" if _dai_work_dir else OUT
