@@ -1726,7 +1726,6 @@ def build_story_map(text: str) -> dict:
     story_map["relationship_leverage_map"] = infer_relationship_leverage_map(story_map)
     story_map["set_ready_checklist"] = infer_set_ready_checklist(story_map)
 
-    story_map["image_plan"] = build_image_plan(story_map)
     return story_map
 
 
@@ -1983,82 +1982,6 @@ def infer_file_strategy(slide_name: str, story_map: dict) -> dict:
     if slide_name in {"Tone", "Theme", "Why This Film", "Audience", "Comparables"}:
         return {"subject_preference": "mood_symbolic", "framing": "flexible", "people_density": "low", "swap_ready": True}
     return {"subject_preference": composition, "framing": "flexible", "people_density": "medium", "swap_ready": True}
-
-def build_ranked_image_options(slide_name: str, story_map: dict, max_options: int = 5) -> list[dict]:
-    base_terms = slide_visual_terms(slide_name, story_map)
-    score_map = score_terms_for_slide(slide_name, story_map)
-    protagonist = slugify(story_map.get("protagonist", ""))
-
-    option_blueprints = [
-        {
-            "option_id": "primary",
-            "label": "Primary Pick",
-            "focus": "balanced",
-            "extra_terms": [],
-            "boost_terms": ["cinematic", "world", "mood", protagonist],
-        },
-        {
-            "option_id": "tone_alt",
-            "label": "Tone Alt",
-            "focus": "tone",
-            "extra_terms": ["lighting", "texture", "mood"],
-            "boost_terms": ["mood", "lighting", "texture"],
-        },
-        {
-            "option_id": "world_alt",
-            "label": "World Alt",
-            "focus": "world",
-            "extra_terms": ["environment", "place", "lived_in"],
-            "boost_terms": ["environment", "place", "world"],
-        },
-        {
-            "option_id": "character_alt",
-            "label": "Character Alt",
-            "focus": "character",
-            "extra_terms": [protagonist, "presence", "implied_presence"],
-            "boost_terms": [protagonist, "presence", "human_energy", "isolation"],
-        },
-        {
-            "option_id": "statement_alt",
-            "label": "Statement Alt",
-            "focus": "statement",
-            "extra_terms": ["symbolic", "impact", "resonance"],
-            "boost_terms": ["symbolic", "impact", "resonance", "statement"],
-        },
-    ]
-
-    options = []
-    for rank, blueprint in enumerate(option_blueprints[:max_options], start=1):
-        terms = []
-        seen = set()
-        for t in base_terms + [term for term in blueprint["extra_terms"] if term]:
-            if t and t not in seen:
-                seen.add(t)
-                terms.append(t)
-
-        score = 100 - ((rank - 1) * 8)
-        for term in terms:
-            score += score_map.get(term, 0)
-        for term in blueprint["boost_terms"]:
-            score += score_map.get(term, 0) // 2
-
-        folder_hints = infer_folder_hints_from_terms(terms, story_map, limit=4)
-        options.append({
-            "rank": rank,
-            "score": score,
-            "option_id": blueprint["option_id"],
-            "label": blueprint["label"],
-            "focus": blueprint["focus"],
-            "image_query": " ".join(terms),
-            "image_tags": terms,
-            "folder_hints": folder_hints,
-            "visual_family": folder_hints[0]["folder"] if folder_hints else None,
-        })
-
-    options.sort(key=lambda item: (-item["score"], item["rank"]))
-    for idx, option in enumerate(options, start=1):
-        option["rank"] = idx
-    return options
 
 def build_image_plan(story_map: dict) -> list[dict]:
     slide_names = [
