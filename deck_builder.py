@@ -175,42 +175,6 @@ def load_brain_output(project_dir: Path) -> dict:
     return {}
 
 
-_stock_image_files_cache: dict[str, list[Path]] = {}
-
-def _stock_image_files(visuals_dir: Path, exts: set[str]) -> list[Path]:
-    cache_key = str(visuals_dir)
-    if cache_key in _stock_image_files_cache:
-        return _stock_image_files_cache[cache_key]
-
-    if not visuals_dir.exists():
-        return []
-
-    import re
-
-    numbered_top_dirs = []
-
-    for child in visuals_dir.iterdir():
-        if child.is_dir() and re.match(r"^\d{2}_", child.name):
-            numbered_top_dirs.append(child)
-
-    numbered_top_dirs.sort(key=lambda p: p.name.lower())
-
-    files = []
-    for top_dir in numbered_top_dirs:
-        for p in top_dir.rglob("*"):
-            if p.is_file() and p.suffix.lower() in exts:
-                files.append(p)
-
-    _stock_image_files_cache[cache_key] = files
-    return files
-
-_stock_rotation_counters: dict[str, int] = {}
-_user_rotation_counters: dict[str, int] = {}
-_brain_stock_rotation_counters: dict[str, int] = {}
-_brain_folder_usage_counts: dict[str, int] = {}
-_image_usage_counts: dict[str, int] = {}
-
-
 def _image_usage_key(path: Path) -> str:
     try:
         return str(path.relative_to(APP_DIR / "visuals")).lower()
@@ -262,14 +226,6 @@ def _pick_candidate_with_repeat_control(candidates: list[Path], start_idx: int, 
     return None, start_idx
 
 
-def reset_image_selection_state() -> None:
-    _stock_rotation_counters.clear()
-    _user_rotation_counters.clear()
-    _brain_stock_rotation_counters.clear()
-    _brain_folder_usage_counts.clear()
-    _image_usage_counts.clear()
-
-
 def _top_visual_folder(path: Path) -> str:
     try:
         rel_parts = path.relative_to(APP_DIR / "visuals").parts
@@ -289,76 +245,6 @@ def _select_user_image(current_files: list[Path], lookup_key: str, last_used_nam
     start_idx = _user_rotation_counters.get(lookup_key, 0)
     candidate, next_idx = _pick_candidate_with_repeat_control(candidates, start_idx, last_used_name)
     _user_rotation_counters[lookup_key] = next_idx
-    return candidate
-
-
-def _stock_candidates_for_key(stock_files: list[Path], lookup_key: str) -> list[Path]:
-    folder_map = {
-        "__title__": ["01_cinematic_tension", "03_urban_pressure", "07_night_isolation"],
-        "logline": ["03_urban_pressure", "07_night_isolation", "01_cinematic_tension"],
-        "synopsis": ["02_emotional_grounded", "03_urban_pressure", "07_night_isolation"],
-        "protagonist": ["02_emotional_grounded", "06_controlled_clean", "03_urban_pressure"],
-        "antagonist": ["03_urban_pressure", "01_cinematic_tension", "07_night_isolation"],
-        "supporting characters": ["02_emotional_grounded", "03_urban_pressure", "06_controlled_clean"],
-        "theme": ["02_emotional_grounded", "06_controlled_clean", "08_daylight_release"],
-        "tone": ["01_cinematic_tension", "07_night_isolation", "02_emotional_grounded"],
-        "world": ["03_urban_pressure", "08_daylight_release", "07_night_isolation"],
-        "conflict engine": ["03_urban_pressure", "07_night_isolation", "01_cinematic_tension"],
-        "stakes": ["07_night_isolation", "03_urban_pressure", "01_cinematic_tension"],
-        "why this film": ["01_cinematic_tension", "03_urban_pressure", "06_controlled_clean"],
-        "audience": ["02_emotional_grounded", "06_controlled_clean", "08_daylight_release"],
-        "visual style": ["01_cinematic_tension", "07_night_isolation", "02_emotional_grounded"],
-        "comparables": ["01_cinematic_tension", "06_controlled_clean", "03_urban_pressure"],
-        "market position": ["06_controlled_clean", "01_cinematic_tension", "03_urban_pressure"],
-        "market projections": ["06_controlled_clean", "01_cinematic_tension", "09_institutional_authority"],
-        "director vision": ["01_cinematic_tension", "02_emotional_grounded", "03_urban_pressure"],
-        "casting ideas": ["02_emotional_grounded", "06_controlled_clean", "03_urban_pressure"],
-        "production scope": ["06_controlled_clean", "08_daylight_release", "02_emotional_grounded"],
-        "closing statement": ["01_cinematic_tension", "07_night_isolation", "02_emotional_grounded"],
-
-        # legacy keys
-        "hook": ["07_night_isolation", "03_urban_pressure", "01_cinematic_tension"],
-        "conflict": ["03_urban_pressure", "07_night_isolation", "01_cinematic_tension"],
-        "story engine": ["03_urban_pressure", "07_night_isolation", "06_controlled_clean"],
-        "reversal": ["01_cinematic_tension", "07_night_isolation", "03_urban_pressure"],
-        "themes": ["02_emotional_grounded", "06_controlled_clean", "08_daylight_release"],
-        "why this movie": ["01_cinematic_tension", "03_urban_pressure", "06_controlled_clean"],
-    }
-
-    mapped_folders = folder_map.get(lookup_key, folder_map["synopsis"])
-    by_folder: dict[str, list[Path]] = {folder: [] for folder in mapped_folders}
-
-    for p in stock_files:
-        try:
-            rel_parts = p.relative_to(visuals_root).parts if str(visuals_root) in str(p) else p.parts
-            top = rel_parts[0] if rel_parts else ""
-            if top in by_folder:
-                by_folder[top].append(p)
-        except Exception:
-            continue
-
-    candidates: list[Path] = []
-    for folder in mapped_folders:
-        folder_files = sorted(by_folder.get(folder, []), key=lambda x: x.name.lower())
-        candidates.extend(folder_files)
-
-    return candidates
-
-
-def _select_stock_image(stock_files: list[Path], lookup_key: str, last_used_name: str = "") -> Optional[Path]:
-    candidates = _stock_candidates_for_key(stock_files, lookup_key)
-    if not candidates:
-        return None
-
-    candidates = sorted(candidates, key=lambda p: (
-        _image_use_count(p),
-        p.name.lower(),
-    ))
-
-    key = lookup_key
-    start_idx = _stock_rotation_counters.get(key, 0)
-    candidate, next_idx = _pick_candidate_with_repeat_control(candidates, start_idx, last_used_name)
-    _stock_rotation_counters[key] = next_idx
     return candidate
 
 
@@ -415,69 +301,6 @@ def _score_stock_file_against_tags(path: Path, tags: list[str]) -> int:
     return score
 
 
-def _select_brain_directed_stock_image(
-    stock_files: list[Path],
-    image_instruction: Optional[dict],
-    slide_title: str,
-    last_used_name: str = ""
-) -> Optional[Path]:
-    if not image_instruction:
-        return None
-
-    tags = image_instruction.get("image_tags") or []
-    query = image_instruction.get("image_query", "")
-
-    if isinstance(query, str) and query.strip():
-        tags = list(tags) + query.split()
-
-    normalized_tags = []
-    seen = set()
-    for tag in tags:
-        tag_norm = normalize_key(str(tag))
-        if tag_norm and tag_norm not in seen:
-            seen.add(tag_norm)
-            normalized_tags.append(tag_norm)
-
-    if not normalized_tags:
-        return None
-
-    scored: list[tuple[int, Path]] = []
-    for p, combined in _get_precomputed(stock_files):
-        score = _score_combined(combined, normalized_tags)
-        if score > 0:
-            scored.append((score, p))
-
-    if not scored:
-        return None
-
-    # Keep only close-score candidates so we preserve relevance,
-    # then prefer folders that have been used less in this build.
-    best_raw_score = max(score for score, _ in scored)
-    score_window = 6
-    close_scored = [(score, p) for score, p in scored if score >= best_raw_score - score_window]
-
-    close_scored.sort(
-        key=lambda item: (
-            _image_use_count(item[1]),
-            _brain_folder_usage_counts.get(_top_visual_folder(item[1]), 0),
-            -item[0],
-            item[1].name.lower(),
-        )
-    )
-    candidates = [p for _, p in close_scored]
-
-    rotation_key = f"brain::{normalize_key(slide_title)}"
-    start_idx = _brain_stock_rotation_counters.get(rotation_key, 0)
-    candidate, next_idx = _pick_candidate_with_repeat_control(candidates, start_idx, last_used_name)
-    if not candidate:
-        return None
-
-    _brain_stock_rotation_counters[rotation_key] = next_idx
-    folder_key = _top_visual_folder(candidate)
-    _brain_folder_usage_counts[folder_key] = _brain_folder_usage_counts.get(folder_key, 0) + 1
-    return candidate
-
-
 def resolve_image_options_for_slide(
     visuals_dir: Path,
     slide_info: dict,
@@ -486,7 +309,6 @@ def resolve_image_options_for_slide(
     slide_title: str,
 ) -> list[dict]:
     exts = {".png", ".jpg", ".jpeg", ".webp", ".PNG", ".JPG", ".JPEG", ".WEBP"}
-    stock_files = _stock_image_files(visuals_dir, exts)
     raw_options = slide_info.get("image_options") or []
     resolved_options: list[dict] = []
     seen_paths: set[str] = set()
@@ -540,70 +362,6 @@ def resolve_image_options_for_slide(
                     if len(resolved_options) >= 4:
                         break
                     continue
-
-            # No existing file — try to resolve via brain tags
-            instruction = {
-                "image_query": option.get("image_query", ""),
-                "image_tags": option.get("image_tags", []),
-            }
-            resolved = _select_brain_directed_stock_image(
-                stock_files,
-                instruction,
-                f"{slide_title}_{option_id}",
-                last_used_name="",
-            )
-            if not resolved:
-                continue
-
-            add_option({
-                "rank": option_rank,
-                "option_id": option_id,
-                "label": option_label,
-                "focus": option_focus,
-                "image_path": str(resolved),
-                "image_name": resolved.name,
-                "image_source": "brain_stock_option",
-            })
-
-            if len(resolved_options) >= 4:
-                break
-
-    # Fill remaining slots with images from unused folders for variety
-    if len(resolved_options) < 4 and stock_files:
-        used_paths = {o["image_path"] for o in resolved_options}
-        used_folders = {str(Path(p).parent) for p in used_paths}
-
-        by_folder: dict[str, list[Path]] = {}
-        for f in stock_files:
-            folder = str(f.parent)
-            by_folder.setdefault(folder, []).append(f)
-
-        fill_rank = len(resolved_options) + 1
-        for folder, files in sorted(by_folder.items()):
-            if len(resolved_options) >= 4:
-                break
-            if folder in used_folders:
-                continue
-            candidate = next((f for f in files if str(f) not in used_paths), None)
-            if not candidate:
-                continue
-            used_paths.add(str(candidate))
-            used_folders.add(folder)
-            add_option({
-                "rank": fill_rank,
-                "option_id": f"fill_{fill_rank}",
-                "label": f"Alt {fill_rank - 1}",
-                "focus": "alternate",
-                "image_path": str(candidate),
-                "image_name": candidate.name,
-                "image_source": "folder_fill",
-            })
-            fill_rank += 1
-
-    for idx, option in enumerate(resolved_options, start=1):
-        option["rank"] = idx
-
-    return resolved_options[:5]
 
 
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
@@ -844,7 +602,6 @@ def find_image_for_slide(
 
     poster_files = [p for p in poster_dir.glob("*") if p.suffix in exts] if poster_dir.exists() else []
     current_files = [p for p in current_dir.glob("*") if p.suffix in exts] if current_dir.exists() else []
-    stock_files = _stock_image_files(visuals_dir, exts)
 
     normalized_title = normalize_key(slide_title)
     image_instruction = _brain_image_instruction(brain_output or {}, slide_title, slide_number)
@@ -863,16 +620,6 @@ def find_image_for_slide(
         for p in poster_files:
             print(f"🖼️ Using POSTER for '{deck_title}': {p}")
             return p, "poster"
-
-        brain_title = _select_brain_directed_stock_image(stock_files, image_instruction, slide_title, last_used_name)
-        if brain_title:
-            print(f"🖼️ Using BRAIN STOCK image for title '{deck_title}': {brain_title}")
-            return brain_title, "brain_stock"
-
-        stock_title = _select_stock_image(stock_files, "__title__", last_used_name)
-        if stock_title:
-            print(f"🖼️ Using STOCK image for title '{deck_title}': {stock_title}")
-            return stock_title, "stock"
 
     key_map = {
         "logline": ["logline", "frame_1", "opening"],
@@ -920,38 +667,13 @@ def find_image_for_slide(
         if generated:
             return generated, "fal_generated"
 
-    brain_stock = _select_brain_directed_stock_image(stock_files, image_instruction, slide_title, last_used_name)
-    if brain_stock:
-        print(f"🖼️ Using BRAIN STOCK image for '{slide_title}': {brain_stock}")
-        return brain_stock, "brain_stock"
 
-    stock_match = _select_stock_image(stock_files, lookup_key, last_used_name)
-    if stock_match:
-        print(f"🖼️ Using STOCK image for '{slide_title}': {stock_match}")
-        return stock_match, "stock"
 
     return None, "none"
 
 
 # Pre-computed (path, combined_search_text) pairs — keyed by id of the cached file list
 _stock_precomputed_cache: dict[int, list[tuple]] = {}
-
-
-def _get_precomputed(stock_files: list[Path]) -> list[tuple]:
-    """Return (path, combined_normalized_text) for every file — computed once per list object."""
-    cache_key = id(stock_files)
-    if cache_key not in _stock_precomputed_cache:
-        visuals_base = APP_DIR / "visuals"
-        result = []
-        for p in stock_files:
-            try:
-                rel_text = normalize_key(str(p.relative_to(visuals_base)))
-            except Exception:
-                rel_text = normalize_key(str(p))
-            combined = f"{rel_text} {normalize_key(p.stem)}"
-            result.append((p, combined))
-        _stock_precomputed_cache[cache_key] = result
-    return _stock_precomputed_cache[cache_key]
 
 
 def _score_combined(combined: str, normalized_tags: list[str]) -> int:
@@ -1343,7 +1065,6 @@ def build_presentation(
     uid: str = "" 
 ) -> Path:
     global _active_theme
-    reset_image_selection_state()
     plan = load_json(slide_plan_path)
     brain_output = load_brain_output(output_dir)
 
@@ -1477,6 +1198,7 @@ def build_presentation(
     print(f"📦 Deck manifest created: {manifest_path}")
     print(f"✅ Pitch deck created: {out_path}")
     return out_path
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
