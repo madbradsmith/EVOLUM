@@ -318,18 +318,37 @@ _VALID_GENRES = [
     "feature / drama",
 ]
 
+_GENRE_DESCRIPTIONS = {
+    "feature / action espionage thriller": "spy agencies, covert ops, assassination plots, terrorism, surveillance, secret missions",
+    "feature / contained urban thriller": "rideshare or cab driver trapped with a dangerous passenger, urban single-night chase or standoff",
+    "feature / legal / courtroom drama": "courtroom trial, military tribunal, judge and jury, attorneys building a legal case, cross-examination",
+    "feature / fantasy satire comedy": "medieval kingdom, court jester, wizard, dragon, satire of royalty and fantasy tropes",
+    "feature / romantic comedy": "love story, romance, dating, heartbreak and reunion, campus or workplace romance, sorority life, law school romance, a protagonist fighting for love or reinvention",
+    "feature / nightlife comedy": "nightclub, bar crawl, hookup culture, EDM/DJ/promoter, VIP tables, one wild night out with friends",
+    "feature / sports drama": "team sport, championship season, coach and athletes, training, locker room, game-day pressure",
+    "feature / crime drama": "heist, drug trade, organized crime, murder investigation, gangsters, crime boss",
+    "feature / drama": "character study, family conflict, personal struggle, grief, identity — no strong genre markers",
+}
+
 
 def detect_world(text: str) -> str:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if api_key:
         try:
             import anthropic as _anthropic
-            sample = text[:3000]
-            genre_list = "\n".join(f"- {g}" for g in _VALID_GENRES)
+            # Sample opening + midpoint for better genre signal
+            if len(text) > 6000:
+                mid = len(text) // 2
+                sample = text[:2000] + "\n[...]\n" + text[mid:mid + 2000]
+            else:
+                sample = text[:4000]
+            genre_list = "\n".join(
+                f"- {g}: {_GENRE_DESCRIPTIONS.get(g, '')}" for g in _VALID_GENRES
+            )
             prompt = (
                 f"Read this script excerpt and classify it into exactly one genre from this list:\n\n"
                 f"{genre_list}\n\n"
-                f"Respond with ONLY the genre label exactly as written. Nothing else.\n\n"
+                f"Respond with ONLY the genre label exactly as written (e.g. 'feature / romantic comedy'). Nothing else.\n\n"
                 f"Script excerpt:\n{sample}"
             )
             client = _anthropic.Anthropic(api_key=api_key)
