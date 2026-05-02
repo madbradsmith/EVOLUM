@@ -1900,6 +1900,15 @@ def serve_slide_image(uid, filename):
 # ===== ANALYZE ROUTES START ==========================
 @app.route("/analyze-script-pass", methods=["POST"])
 def analyze_script_pass():
+    import traceback as _tb
+    try:
+        return _analyze_script_pass_inner()
+    except Exception as _e:
+        print(f"❌ analyze_script_pass UNHANDLED: {_e}", flush=True)
+        _tb.print_exc()
+        return jsonify({"error": f"server error: {type(_e).__name__}"}), 500
+
+def _analyze_script_pass_inner():
     set_status("ANALYZING")
     file = request.files.get("script")
 
