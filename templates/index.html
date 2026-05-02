@@ -196,7 +196,7 @@
             <!-- Big slide viewer with arrows -->
             <div class="preview-main-nav">
                 <button class="slide-nav-arrow" id="previewBackBtn" type="button" onclick="goPrevPreviewSlide()" title="Previous slide">&#8592;</button>
-                <div class="preview-main-img-wrap">
+                <div class="preview-main-img-wrap" onclick="jumpToRefineSlide(_previewIdx)" title="Click to edit this slide" style="cursor:pointer;">
                     <img id="previewMainImage" class="preview-main-img" src="" alt="Slide preview">
                 </div>
                 <button class="slide-nav-arrow" id="previewNextBtn" type="button" onclick="goNextPreviewSlide()" title="Next slide">&#8594;</button>
