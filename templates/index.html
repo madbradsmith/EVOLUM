@@ -209,16 +209,9 @@
             <div class="preview-action-row">
                 <div class="preview-action-title" id="studioTitle">Your deck is ready.</div>
                 <div class="preview-btn-group">
-                    <a href="/download/latest.pptx" id="previewDownloadLink" class="primary-button" style="text-decoration:none; text-align:center;">&#11015; Download PPTX</a>
-                    <button class="primary-button" type="button" id="refineDeckBtn" onclick="openRefinementStage()">Refine Deck</button>
-                    <button class="secondary-button" type="button" onclick="newDeck()">New Deck</button>
-                </div>
-
-                <div class="preview-regen-row">
-                    <input type="text" id="regenPromptInput" class="regen-prompt-input"
-                        placeholder="New direction for regen — e.g. make it darker, lean into the horror tone…"
-                        onkeydown="if(event.key==='Enter') submitRegenDeck()">
-                    <button class="primary-button" type="button" onclick="submitRegenDeck()">Regenerate</button>
+                    <a href="/download/latest.pptx" id="previewDownloadLink" class="primary-button preview-action-btn" style="text-decoration:none; text-align:center;">&#11015; Download Deck</a>
+                    <button class="primary-button preview-action-btn" type="button" id="refineDeckBtn" onclick="openRefinementStage()">Refine Deck</button>
+                    <button class="primary-button preview-action-btn" type="button" onclick="newDeck()">New Deck</button>
                 </div>
 
                 <div id="inlineSyncEntry" onclick="toggleSyncPanel()" role="button" tabindex="0"

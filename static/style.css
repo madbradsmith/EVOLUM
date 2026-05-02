@@ -660,7 +660,7 @@ body.active-build.complete-mode .workspace-title {
 }
 /* Compact filmstrip thumbnails */
 .preview-thumb-strip {
-    max-height: 90px;
+    max-height: 110px;
     margin: 0;
     padding: 4px 2px 6px;
 }
@@ -672,13 +672,27 @@ body.active-build.complete-mode .workspace-title {
 }
 .preview-thumb-strip .deck-preview-card img,
 .preview-thumb-strip .deck-preview-text-slide { height: 60px; }
-.preview-thumb-strip .deck-preview-card-title,
+.preview-thumb-strip .deck-preview-card-title {
+    display: block;
+    font-size: 9px;
+    color: #bbb;
+    margin-top: 4px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 2px;
+}
+.preview-thumb-strip .deck-preview-num { display: none; }
 .preview-thumb-strip .deck-preview-snippet,
 .preview-thumb-strip .deck-preview-delete,
 .preview-thumb-strip .deck-preview-overlay { display: none; }
 .preview-thumb-strip .deck-preview-card.preview-active {
     border-color: rgba(255,122,0,0.85);
     background: rgba(255,122,0,0.08);
+}
+.preview-thumb-strip .deck-preview-card.preview-active .deck-preview-card-title {
+    color: #ff9944;
 }
 /* Action area below filmstrip */
 .preview-action-row { display: flex; flex-direction: column; gap: 10px; }
@@ -691,18 +705,15 @@ body.active-build.complete-mode .workspace-title {
 .preview-btn-group {
     display: flex;
     gap: 10px;
-    flex-wrap: wrap;
     justify-content: center;
 }
-.preview-btn-group .primary-button,
-.preview-btn-group .secondary-button { margin-bottom: 0; }
-.preview-regen-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+.preview-action-btn {
+    flex: 1;
+    max-width: 200px;
+    margin-bottom: 0;
+    text-align: center;
+    box-sizing: border-box;
 }
-.preview-regen-row input { flex: 1; margin: 0; }
-.preview-regen-row .primary-button { margin-bottom: 0; white-space: nowrap; }
 .preview-sync-entry {
     background: #0d0d0d;
     border: 1px solid rgba(255,255,255,0.1);
