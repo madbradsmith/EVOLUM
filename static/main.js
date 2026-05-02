@@ -1093,14 +1093,16 @@ function renderImageOptionStrip(){
     const slide = refineSlides[currentRefineSlide];
     const options = Array.isArray(slide.image_options) ? slide.image_options : [];
 
+    const noImageActive = slide.image_path === "__none__" ? "active" : "";
+    const noImageTile = `<div class="image-option-thumb no-image-tile ${noImageActive}" onclick="selectNoImage()" title="Text only — no background image"><div class="no-image-icon">T</div><div class="image-option-thumb-label">No Image</div></div>`;
+
     if (!options.length){
-        strip.innerHTML = "";
+        strip.innerHTML = noImageTile;
         empty.style.display = "block";
         return;
     }
 
     empty.style.display = "none";
-    const noImageActive = slide.image_path === "__none__" ? "active" : "";
     strip.innerHTML = options.map((option, optionIndex) => {
         const active = option.option_id === slide.selected_option_id ? "active" : "";
         return `
@@ -1109,12 +1111,7 @@ function renderImageOptionStrip(){
                 <div class="image-option-thumb-label">${option.label || `Option ${optionIndex + 1}`}</div>
             </div>
         `;
-    }).join("") + `
-        <div class="image-option-thumb no-image-tile ${noImageActive}" onclick="selectNoImage()" title="Text only — no background image">
-            <div class="no-image-icon">T</div>
-            <div class="image-option-thumb-label">No Image</div>
-        </div>
-    `;
+    }).join("") + noImageTile;
 }
 
 function openImageOptionModal(optionIndex){

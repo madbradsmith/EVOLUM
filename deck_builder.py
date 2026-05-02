@@ -905,8 +905,8 @@ def add_panel_text(slide, left, top_title, panel_w, slide_title: str, body: str,
     rect.fill.background(); rect.line.fill.background()
     tf2 = rect.text_frame; tf2.clear(); tf2.word_wrap = True
     tf2.margin_left = Inches(0.0); tf2.margin_right = Inches(0.1)
-    tf2.margin_top = Inches(0.0); tf2.margin_bottom = Inches(0.0)
-    tf2.vertical_anchor = MSO_ANCHOR.MIDDLE
+    tf2.margin_top = Inches(0.18); tf2.margin_bottom = Inches(0.0)
+    tf2.vertical_anchor = MSO_ANCHOR.TOP
     p2 = tf2.paragraphs[0]; run2 = p2.add_run()
     run2.text = clean(body)
     run2.font.name = _theme_font(); run2.font.size = Pt(font_size)
