@@ -395,17 +395,19 @@ def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
         return _fallback_story_map(title, list(char_stats.keys()))
 
     char_hint = ", ".join(list(char_stats.keys())[:12])
+    # Cap screenplay at 120K chars (~30K tokens) to keep API time under Gunicorn timeout
+    script_body = text[:120_000] if len(text) > 120_000 else text
     user_msg = (
         f"Title (from first line): {title}\n"
         f"Mechanically-detected character candidates (hints only — correct as needed): {char_hint}\n\n"
-        f"FULL SCREENPLAY:\n{text}"
+        f"FULL SCREENPLAY:\n{script_body}"
     )
 
     try:
         client = anthropic.Anthropic(api_key=api_key)
         message = client.messages.create(
             model="claude-sonnet-4-6",
-            max_tokens=4096,
+            max_tokens=8192,
             system=[{"type": "text", "text": _ANALYSIS_SYSTEM, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_msg}],
         )

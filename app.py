@@ -1921,10 +1921,14 @@ def analyze_script_pass():
             ["python3", str(BASE_DIR / "single_brain_orchestrator_v3.py"), str(temp_path)],
             cwd=str(BASE_DIR),
             check=True,
+            timeout=110,
         )
     except subprocess.CalledProcessError:
         log_usage("analyze_complete", success=False, filename=file.filename, error="analysis_failed")
         return jsonify({"error": "analysis failed"}), 500
+    except subprocess.TimeoutExpired:
+        log_usage("analyze_complete", success=False, filename=file.filename, error="analysis_timeout")
+        return jsonify({"error": "analysis timed out"}), 500
 
     brain_file = BASE_DIR / "approved_brain_output.json"
 
@@ -2034,7 +2038,11 @@ def analyze_script_pass():
         json.dumps(report_output, indent=2),
         encoding="utf-8",
     )
-    build_simple_analysis_pdf(report_output, LATEST_ANALYSIS_PDF)
+    try:
+        build_simple_analysis_pdf(report_output, LATEST_ANALYSIS_PDF)
+    except Exception as pdf_err:
+        print(f"⚠️  PDF build failed: {pdf_err}", flush=True)
+        import traceback; traceback.print_exc()
 
     return jsonify(
         {
