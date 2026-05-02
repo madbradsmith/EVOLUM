@@ -1626,11 +1626,6 @@ def upload():
     elif project_title and uid and DB_ENGINE:
         ensure_projects_table()
         with DB_ENGINE.begin() as conn:
-            count = conn.execute(text(
-                "SELECT COUNT(*) FROM projects WHERE owner_user_id = :uid"
-            ), {"uid": uid}).scalar()
-            if count >= 6:
-                return jsonify({"error": "Project limit reached (6 max). Delete an existing project first."}), 403
             result = conn.execute(text("""
                 INSERT INTO projects (owner_user_id, title, type)
                 VALUES (:uid, :title, :type) RETURNING id
