@@ -1511,9 +1511,10 @@ def admin():
                 stats.update({"total_platform_cost": 0, "total_brain_cost": 0, "total_fal_cost": 0,
                                "total_images_generated": 0, "avg_cost_per_deck": 0})
 
-            # Ensure plan column exists before querying it
+            # Ensure plan column exists — must use begin() so DDL commits
             try:
-                conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
+                with DB_ENGINE.begin() as _mc:
+                    _mc.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
             except Exception:
                 pass
 
