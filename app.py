@@ -1774,6 +1774,13 @@ def upload():
             return
 
         set_status("COMPLETE", project_id=saved_pid, uid=_uid_str)
+        if _uid_str and saved_pid:
+            try:
+                _lbp = USER_DATA_DIR / _uid_str / "latest_built_pid.txt"
+                _lbp.parent.mkdir(parents=True, exist_ok=True)
+                _lbp.write_text(str(saved_pid), encoding="utf-8")
+            except Exception:
+                pass
         _cleanup_old_output_files()
         elapsed = int(time.time() - started_at)
         log_usage("generate_complete", success=True, filename=file.filename, elapsed=f"{elapsed}s")
@@ -1839,14 +1846,40 @@ def demo():
 @app.route("/download/latest.pptx")
 def download_latest_pptx():
     uid = session.get("user_id")
-    pid = session.get("active_project_id") or get_status_project_id()
+
+    # Prefer the project that was most recently BUILT (written by background thread)
+    pid = None
+    if uid:
+        _lbp = USER_DATA_DIR / str(uid) / "latest_built_pid.txt"
+        if _lbp.exists():
+            pid = _lbp.read_text(encoding="utf-8").strip() or None
+    if not pid:
+        pid = session.get("active_project_id") or get_status_project_id(uid or "")
+
+    # Resolve a meaningful download filename from the project title
+    download_name = "pitch_deck.pptx"
+    if uid and pid and DB_ENGINE:
+        try:
+            with DB_ENGINE.connect() as _conn:
+                _row = _conn.execute(
+                    text("SELECT title FROM projects WHERE id = :pid AND owner_user_id = :uid"),
+                    {"pid": int(pid), "uid": uid}
+                ).fetchone()
+                if _row and _row[0]:
+                    _safe = re.sub(r"[^\w\s-]", "", _row[0]).strip().replace(" ", "_")
+                    if _safe:
+                        download_name = f"{_safe}.pptx"
+        except Exception:
+            pass
+
     if uid and pid:
         proj_path = USER_DATA_DIR / str(uid) / str(pid) / "deck.pptx"
         if proj_path.exists():
-            return send_file(proj_path, as_attachment=True)
+            return send_file(proj_path, as_attachment=True, download_name=download_name)
+
     if not LATEST_PPTX.exists():
         abort(404)
-    return send_file(LATEST_PPTX, as_attachment=True)
+    return send_file(LATEST_PPTX, as_attachment=True, download_name=download_name)
 
 
 @app.route("/download/latest_producer.pptx")
