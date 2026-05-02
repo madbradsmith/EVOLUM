@@ -1877,9 +1877,7 @@ def download_latest_pptx():
         if proj_path.exists():
             return send_file(proj_path, as_attachment=True, download_name=download_name)
 
-    if not LATEST_PPTX.exists():
-        abort(404)
-    return send_file(LATEST_PPTX, as_attachment=True, download_name=download_name)
+    abort(404)
 
 
 @app.route("/download/latest_producer.pptx")
