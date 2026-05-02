@@ -110,7 +110,7 @@
 {% if not user_logged_in %}
 <div class="cta-banner" id="ctaBanner">
     <div class="cta-banner-label">Limited Beta Access</div>
-    <div class="cta-banner-text" id="ctaBannerText">Start your 3-day free trial — only $5/month</div>
+    <div class="cta-banner-text" id="ctaBannerText">Start your 3-day free trial — only $10/month</div>
     <button class="cta-banner-btn" onclick="openPricingModal()">See Plans</button>
 </div>
 {% endif %}
@@ -788,7 +788,7 @@
 
         <div class="pricing-toggle">
             <button class="ptog-btn active" id="ptogMonthly" onclick="setPricingBilling('monthly')">Monthly</button>
-            <button class="ptog-btn" id="ptogAnnual" onclick="setPricingBilling('annual')">Annual <span class="ptog-save">Save 20%</span></button>
+            <button class="ptog-btn" id="ptogAnnual" onclick="setPricingBilling('annual')">Annual <span class="ptog-save">2 months free</span></button>
         </div>
 
         <div class="pricing-cards" id="pricingCards">
@@ -796,7 +796,7 @@
         </div>
 
         <div class="pricing-note">
-            All plans include a 3-day free trial. Annual plans billed upfront — cancel any time for a prorated refund of remaining months.<br>
+            Solo includes a 3-day free trial. Annual plans billed upfront — cancel any time for a prorated refund of remaining months.<br>
             Monthly plans can be cancelled at any time with no charge. Questions? <a onclick="closePricingModal(); openContactModal();" style="cursor:pointer;">Contact us</a>.
         </div>
     </div>

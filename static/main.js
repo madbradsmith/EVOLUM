@@ -2412,28 +2412,28 @@ function _rotateBannerText() {
 const _PLANS = [
     {
         id: "solo", name: "Solo",
-        monthly: 5, annual: 42,
+        monthly: 10, annual: 100,
         projects: "3 projects", collaborators: "1 collaborator",
         features: ["Pitch deck generator", "Script analyzer", "Actor prep tools", "3-day free trial"],
         featured: false,
     },
     {
         id: "writers-room", name: "Writer's Room",
-        monthly: 15, annual: 126,
+        monthly: 25, annual: 250,
         projects: "10 projects", collaborators: "5 collaborators",
         features: ["All Solo features", "Team workspace", "Priority builds", "Project sharing"],
         featured: true, badge: "Most Popular",
     },
     {
         id: "production", name: "Production Co.",
-        monthly: 35, annual: 294,
+        monthly: 75, annual: 750,
         projects: "20 projects", collaborators: "10 collaborators",
         features: ["All Writer's Room features", "Advanced analytics", "White-label exports", "Dedicated queue"],
         featured: false,
     },
     {
         id: "studio", name: "Studio",
-        monthly: 75, annual: 630,
+        monthly: 150, annual: 1500,
         projects: "50 projects", collaborators: "100 collaborators",
         features: ["All Production features", "Custom branding", "Dedicated support", "API access"],
         featured: false,
