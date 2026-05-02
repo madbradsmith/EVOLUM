@@ -1104,7 +1104,7 @@
     </div>
 </div>
 
-  <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}";</script>
+  <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}"; window.EVOLUM_USER_NAME = {{ (user_name or "")|tojson }};</script>
   <script src="{{ url_for('static', filename='main.js') }}?v=20260502_refineC"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};

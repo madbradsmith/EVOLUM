@@ -2297,7 +2297,9 @@ function toggleSyncPanel() {
         _syncClearBadge();
         // First open: greet
         if (_syncState.history.length === 0) {
-            _syncFetch(null, "Greet the user warmly in 1-2 sentences. Tell them you're Sync, their EVOLUM studio guide, and you can help them get the best results. Be brief and friendly.");
+            const _uname = (window.EVOLUM_USER_NAME || "").trim();
+            const _nameClause = _uname ? ` Address them by first name: ${_uname.split(" ")[0]}.` : "";
+            _syncFetch(null, `Greet the user warmly in 1-2 sentences. Tell them you're Sync, their EVOLUM studio guide, and you can help them get the best results. Be brief and friendly.${_nameClause}`);
         }
         // Pending proactive tip
         if (_syncState._pendingProactive) {
