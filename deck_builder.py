@@ -174,6 +174,14 @@ def load_brain_output(project_dir: Path) -> dict:
     return {}
 
 
+_image_usage_counts: dict = {}
+
+
+def reset_image_selection_state() -> None:
+    global _image_usage_counts
+    _image_usage_counts = {}
+
+
 def _image_usage_key(path: Path) -> str:
     try:
         return str(path.relative_to(APP_DIR / "visuals")).lower()
@@ -1064,6 +1072,7 @@ def build_presentation(
     uid: str = "" 
 ) -> Path:
     global _active_theme
+    reset_image_selection_state()
     plan = load_json(slide_plan_path)
     brain_output = load_brain_output(output_dir)
 
