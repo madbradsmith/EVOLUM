@@ -2061,8 +2061,6 @@ def main():
     print(f"🧱 Layout Strategy: {json.dumps(story_map['layout_strategy'], indent=2)}")
     print(f"📰 Document Layouts: {json.dumps(story_map['document_layouts'], indent=2)}")
     print(f"🗂️ Slide Blueprint: {json.dumps(story_map['slide_blueprint'], indent=2)}")
-    if story_map["image_plan"]:
-        print(f"🎞️ IMAGE OPTIONS SAMPLE: {json.dumps(story_map['image_plan'][0].get('image_options', [])[:5], indent=2)}")
 
     _dai_work_dir = os.environ.get("DAI_WORK_DIR", "")
     out_path = Path(_dai_work_dir) / "approved_brain_output.json" if _dai_work_dir else OUT
