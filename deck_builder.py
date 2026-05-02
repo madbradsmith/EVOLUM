@@ -1461,19 +1461,17 @@ def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Pat
             "selected_option_id": user_selected_option_id or (resolved_image_options[0].get("option_id", "selected") if resolved_image_options else ""),
         })
 
-    out_path = next_output_path(output_dir, label=label)
-    prs.save(str(out_path))
-    prefix = f"{uid}_" if uid else ""
-    manifest_name = f"{prefix}latest_deck_manifest_{label}.json" if label else f"{prefix}latest_deck_manifest.json"
-    manifest_path = output_dir / manifest_name
-    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    # Also write a labeled latest copy so app.py can find it by label
-    if label:
-        labeled_latest = output_dir / f"latest_{label}.pptx"
-        shutil.copy2(str(out_path), str(labeled_latest))
-    print(f"📦 Deck manifest created: {manifest_path}")
-    print(f"✅ Pitch deck created: {out_path}")
-    return out_path
+out_path = project_dir / f"{label or 'deck'}.pptx"
+prs.save(str(out_path))
+
+manifest_path = project_dir / f"manifest_{label}.json" if label else project_dir / "manifest.json"
+manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+print(f"📦 Deck manifest created: {manifest_path}")
+print(f"✅ Pitch deck created: {out_path}")
+
+return out_path
+
 
 
 def parse_args():
