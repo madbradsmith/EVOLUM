@@ -1055,6 +1055,135 @@ def build_slide_editorial(slide, image_path: Optional[Path], slide_title: str, b
                  body, font_size=font_size, align=PP_ALIGN.CENTER, fill_transparency=0.18)
 
 
+def build_slide_split_right(slide, image_path: Optional[Path], slide_title: str, body: str) -> None:
+    """Layout D — dark text panel left 45%, image fills right 55%."""
+    add_base_background(slide)
+    accent = _active_theme["accent"]
+
+    panel_w = int(float(SLIDE_W) * 0.45)
+    img_x = int(float(SLIDE_W) * 0.45)
+    img_w = int(float(SLIDE_W) - img_x)
+    panel_w_px, panel_h_px = 576, 720
+
+    if image_path and image_path.exists():
+        try:
+            with Image.open(image_path) as im:
+                img = im.convert("RGB")
+                img_ratio = img.width / img.height
+                panel_ratio = img_w / SLIDE_H
+                if img_ratio > panel_ratio:
+                    new_h = int(SLIDE_H / 914400 * 96)
+                    new_w = int(new_h * img_ratio)
+                else:
+                    new_w = panel_w_px
+                    new_h = int(new_w / img_ratio)
+                new_w = max(new_w, panel_w_px)
+                new_h = max(new_h, panel_h_px)
+                img = img.resize((new_w, new_h), Image.LANCZOS)
+                lc = (new_w - panel_w_px) // 2
+                tc = (new_h - panel_h_px) // 2
+                img = img.crop((lc, tc, lc + panel_w_px, tc + panel_h_px))
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                img.save(tmp.name, format="JPEG", quality=82, optimize=True)
+            slide.shapes.add_picture(str(tmp.name), img_x, 0, width=img_w, height=SLIDE_H)
+            os.unlink(tmp.name)
+        except Exception:
+            pass
+
+    # Dark left panel
+    panel = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, 0, panel_w, SLIDE_H)
+    panel.fill.solid()
+    panel.fill.fore_color.rgb = rgb(10, 10, 14)
+    panel.fill.transparency = 0.0
+    panel.line.fill.background()
+
+    # Accent divider line (right edge of panel)
+    div = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, panel_w - int(Inches(0.04)), 0, int(Inches(0.04)), SLIDE_H)
+    div.fill.solid()
+    div.fill.fore_color.rgb = rgb(*accent)
+    div.fill.transparency = 0.35
+    div.line.fill.background()
+
+    tx_w = panel_w - int(Inches(0.56))
+    tx = slide.shapes.add_textbox(int(Inches(0.28)), Inches(0.48), tx_w, Inches(0.9))
+    tf = tx.text_frame; tf.clear(); tf.word_wrap = True
+    p = tf.paragraphs[0]; run = p.add_run()
+    run.text = clean(slide_title.split("(")[0].strip())
+    run.font.name = _theme_font(); run.font.size = Pt(15)
+    run.font.bold = True; run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.LEFT
+
+    font_size = _auto_font_size(body, base=17)
+    add_text_box(slide, int(Inches(0.28)), Inches(1.55), tx_w, Inches(5.2),
+                 body, font_size=font_size, align=PP_ALIGN.LEFT, fill_transparency=0.0)
+
+
+def build_slide_quote_overlay(slide, image_path: Optional[Path], slide_title: str, body: str) -> None:
+    """Layout E — full bleed image, small title top-left, large body floats center-lower."""
+    add_base_background(slide)
+    add_full_bleed_image(slide, image_path)
+    accent = _active_theme["accent"]
+
+    # Small title top-left
+    tx = slide.shapes.add_textbox(Inches(0.7), Inches(0.38), Inches(10.0), Inches(0.52))
+    tf = tx.text_frame; tf.clear(); tf.word_wrap = True
+    p = tf.paragraphs[0]; run = p.add_run()
+    run.text = clean(slide_title.split("(")[0].strip().upper())
+    run.font.name = _theme_font(); run.font.size = Pt(12)
+    run.font.bold = True; run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.LEFT
+
+    if body:
+        fs = _auto_font_size(body, base=22)
+        fs = max(fs, 17)
+        add_text_box(slide, Inches(0.8), Inches(2.6), Inches(11.73), Inches(3.6),
+                     body, font_size=fs, align=PP_ALIGN.CENTER, fill_transparency=0.26)
+
+
+def build_slide_bottom_card(slide, image_path: Optional[Path], slide_title: str, body: str) -> None:
+    """Layout F — full bleed image, prominent bottom card with accent rule, title + body."""
+    add_base_background(slide)
+    add_full_bleed_image(slide, image_path)
+    accent = _active_theme["accent"]
+
+    card_h = Inches(2.75)
+    card_top = SLIDE_H - card_h
+
+    # Card background
+    card = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, card_top, SLIDE_W, card_h)
+    card.fill.solid()
+    card.fill.fore_color.rgb = rgb(6, 6, 10)
+    card.fill.transparency = 0.10
+    card.line.fill.background()
+
+    # Accent rule at top of card
+    rule = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, card_top, SLIDE_W, int(Inches(0.05)))
+    rule.fill.solid()
+    rule.fill.fore_color.rgb = rgb(*accent)
+    rule.fill.transparency = 0.0
+    rule.line.fill.background()
+
+    # Title inside card
+    tx_title = slide.shapes.add_textbox(Inches(0.6), card_top + int(Inches(0.18)), Inches(12.13), Inches(0.56))
+    tf = tx_title.text_frame; tf.clear(); tf.word_wrap = True
+    p = tf.paragraphs[0]; run = p.add_run()
+    run.text = clean(slide_title.split("(")[0].strip())
+    run.font.name = _theme_font(); run.font.size = Pt(15)
+    run.font.bold = True; run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.LEFT
+
+    if body:
+        fs = _auto_font_size(body, base=16)
+        tx_body = slide.shapes.add_textbox(Inches(0.6), card_top + int(Inches(0.86)), Inches(12.13), Inches(1.72))
+        tf2 = tx_body.text_frame; tf2.clear(); tf2.word_wrap = True
+        tf2.margin_left = Inches(0.08)
+        p2 = tf2.paragraphs[0]; run2 = p2.add_run()
+        run2.text = clean(body)
+        run2.font.name = _theme_font(); run2.font.size = Pt(fs)
+        run2.font.bold = True; run2.font.color.rgb = rgb(238, 238, 242)
+        p2.alignment = PP_ALIGN.LEFT
+
+
 def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
     stage = clean(stage).lower()
     layout = clean(layout).lower()
@@ -1139,12 +1268,14 @@ def build_presentation(
             _mark_image_used(image_for_slide)
 
         stage_lower = clean(stage).lower()
+        layout_lower = clean(layout).lower()
+        _stitle = slide_title.split("(")[0].strip()
 
         if image_source == "text_only":
             build_slide_text_only(slide, slide_title, body)
-        elif layout == "title":
+
+        elif layout_lower == "title":
             add_base_background(slide)
-            # If user explicitly selected a non-poster image during refine, respect it
             if image_source not in {"poster", ""} and image_for_slide is not None:
                 _title_img = image_for_slide
             else:
@@ -1153,21 +1284,37 @@ def build_presentation(
             add_top_rule(slide)
             add_title_text(slide, deck_title)
             place_text_by_stage(slide, stage, layout, body)
-        elif stage_lower in {"character", "world"}:
-            build_slide_split_panel(slide, image_for_slide, slide_title.split("(")[0].strip(), body)
-        elif stage_lower in {"market", "why_now", "themes"}:
-            build_slide_editorial(slide, image_for_slide, slide_title.split("(")[0].strip(), body)
-        elif stage_lower == "closing":
+
+        elif layout_lower in {"character_focus", "split_left_text"} or stage_lower == "character":
+            build_slide_split_panel(slide, image_for_slide, _stitle, body)
+
+        elif layout_lower == "split_right_text":
+            build_slide_split_right(slide, image_for_slide, _stitle, body)
+
+        elif layout_lower == "quote_overlay" or stage_lower in {"world", "tone", "themes"}:
+            build_slide_quote_overlay(slide, image_for_slide, _stitle, body)
+
+        elif layout_lower == "bottom_story_card" or stage_lower in {"engine", "setup", "aftermath", "why_now"}:
+            build_slide_bottom_card(slide, image_for_slide, _stitle, body)
+
+        elif layout_lower == "clean_grid" or stage_lower == "market":
+            build_slide_editorial(slide, image_for_slide, _stitle, body)
+
+        elif layout_lower == "hero_full_bleed" or stage_lower == "closing":
             add_base_background(slide)
             add_full_bleed_image(slide, image_for_slide)
-            add_title_text(slide, deck_title)
+            add_title_text(slide, deck_title if stage_lower == "closing" else _stitle)
             place_text_by_stage(slide, stage, layout, body)
+
         else:
-            # Full bleed + cinematic caption — hook, conflict, stakes, tone, engine, turn, etc.
-            add_base_background(slide)
-            add_full_bleed_image(slide, image_for_slide)
-            add_title_text(slide, slide_title.split("(")[0].strip())
-            place_text_by_stage(slide, stage, layout, body)
+            # Default — let composition_bias from brain guide the choice
+            if composition_bias == "split_text_image":
+                build_slide_split_panel(slide, image_for_slide, _stitle, body)
+            elif composition_bias == "illustrative":
+                build_slide_editorial(slide, image_for_slide, _stitle, body)
+            else:
+                # Full bleed with bottom card (richer than plain caption)
+                build_slide_bottom_card(slide, image_for_slide, _stitle, body)
 
         resolved_image_options = resolve_image_options_for_slide(
             visuals_dir=visuals_dir,
