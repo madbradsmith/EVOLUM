@@ -62,9 +62,14 @@ def normalize_manifest_image_options(options) -> list:
     return normalized
 
 
-def newest_generated_file(ext: str):
+def newest_generated_file(ext: str, uid: str = ""):
     excluded = {_LATEST_PPTX.name, _LATEST_PDF.name}
-    files = [p for p in _OUTPUT_DIR.glob(f"pitch_deck_v*{ext}") if p.name not in excluded]
+    uid_prefix = f"{uid}_" if uid else ""
+    pattern = f"{uid_prefix}pitch_deck_v*{ext}"
+    files = [p for p in _OUTPUT_DIR.glob(pattern) if p.name not in excluded]
+    if not files and uid:
+        # fallback: any pitch_deck file (handles builds before uid was threaded through)
+        files = [p for p in _OUTPUT_DIR.glob(f"pitch_deck_v*{ext}") if p.name not in excluded]
     if not files:
         return None
     return max(files, key=lambda p: p.stat().st_mtime)

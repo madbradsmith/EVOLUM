@@ -1760,7 +1760,7 @@ def upload():
             set_status("ERROR", uid=_uid_str)
             return
 
-        fresh_pptx = newest_generated_file(".pptx")
+        fresh_pptx = newest_generated_file(".pptx", uid=_uid_str)
         fresh_pdf = newest_generated_file(".pdf")
 
         if not fresh_pptx or not fresh_pptx.exists():

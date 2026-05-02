@@ -336,20 +336,14 @@ def detect_world(text: str) -> str:
     if api_key:
         try:
             import anthropic as _anthropic
-            # Sample opening + midpoint for better genre signal
-            if len(text) > 6000:
-                mid = len(text) // 2
-                sample = text[:2000] + "\n[...]\n" + text[mid:mid + 2000]
-            else:
-                sample = text[:4000]
             genre_list = "\n".join(
                 f"- {g}: {_GENRE_DESCRIPTIONS.get(g, '')}" for g in _VALID_GENRES
             )
             prompt = (
-                f"Read this script excerpt and classify it into exactly one genre from this list:\n\n"
+                f"Read this screenplay and classify it into exactly one genre from this list:\n\n"
                 f"{genre_list}\n\n"
                 f"Respond with ONLY the genre label exactly as written (e.g. 'feature / romantic comedy'). Nothing else.\n\n"
-                f"Script excerpt:\n{sample}"
+                f"Screenplay:\n{text}"
             )
             client = _anthropic.Anthropic(api_key=api_key)
             msg = client.messages.create(

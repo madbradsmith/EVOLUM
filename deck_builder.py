@@ -132,8 +132,10 @@ def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def next_output_path(output_dir: Path, label: str = "") -> Path:
-    prefix = f"pitch_deck_{label}" if label else "pitch_deck"
+def next_output_path(output_dir: Path, label: str = "", uid: str = "") -> Path:
+    uid_prefix = f"{uid}_" if uid else ""
+    label_part = f"_{label}" if label else ""
+    prefix = f"{uid_prefix}pitch_deck{label_part}"
     nums = []
     pattern = f"{prefix}_v*.pptx"
     for p in output_dir.glob(pattern):
@@ -1197,7 +1199,7 @@ def build_presentation(
             "selected_option_id": user_selected_option_id or (resolved_image_options[0].get("option_id", "selected") if resolved_image_options else ""),
         })
 
-    out_path = next_output_path(output_dir, label=label)
+    out_path = next_output_path(output_dir, label=label, uid=uid)
     prs.save(str(out_path))
     prefix = f"{uid}_" if uid else ""
     manifest_name = f"{prefix}latest_deck_manifest_{label}.json" if label else f"{prefix}latest_deck_manifest.json"
