@@ -1158,6 +1158,13 @@ def build_slide_plan(data: Dict[str, Any]) -> Dict[str, Any]:
         deduped.append(slide)
         seen.add(key)
     plan = deduped
+
+    # Hard cap at 15 slides — keep Title (first) and Closing (last), trim middle
+    MAX_SLIDES = 15
+    if len(plan) > MAX_SLIDES:
+        closing = plan[-1]
+        plan = plan[:MAX_SLIDES - 1] + [closing]
+
     catalog = build_intelligence_catalog(data)
 
     return {
