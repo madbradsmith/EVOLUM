@@ -1334,7 +1334,7 @@ def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
     add_cinematic_caption(slide, body, font_size=fs)
 
 
-def build_presentation(slide_plan_path: Path, visuals_dir: Path, output_dir: Path, label: str = "", uid: str = "") -> Path:
+def build_presentation(slide_plan_path: Path, visuals_dir: Path, project_dir: Path, output_dir: Path, label: str = "", uid: str = "") -> Path:
     global _active_theme
     reset_image_selection_state()
     plan = load_json(slide_plan_path)
