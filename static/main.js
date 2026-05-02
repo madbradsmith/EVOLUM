@@ -164,6 +164,7 @@ let refineSlides = JSON.parse(JSON.stringify(fallbackSlides));
 let latestRefineProjectTitle = "UNTITLED PROJECT";
 let _lastAnalyzedTitle = null;
 let currentRefineSlide = 0;
+let _previewIdx = 0;
 let currentImageOptionModalIndex = 0;
 const BASE_PATH_PREFIX = window.BASE_PATH_PREFIX || "";
 
@@ -455,6 +456,7 @@ function resetCreateProject(){
     sawFreshBuildStatus = false;
     activeCompleteView = "preview";
     currentRefineSlide = 0;
+    _previewIdx = 0;
     latestSlidesLoadedForComplete = false;
 
     const approvedScriptBox = document.getElementById("approvedScriptBox");
@@ -997,7 +999,7 @@ function renderDeckPreview(){
 
         return `
             <div class="deck-preview-card" draggable="true"
-                 onclick="jumpToRefineSlide(${index})" title="${titleText} — click to edit"
+                 onclick="selectPreviewSlide(${index})" title="${titleText} — click to preview"
                  ondragstart="previewDragStart(event,${index})"
                  ondragover="previewDragOver(event,${index})"
                  ondragleave="previewDragLeave(event)"
@@ -1012,12 +1014,42 @@ function renderDeckPreview(){
             </div>
         `;
     }).join("");
+    renderPreviewMainSlide();
 }
 
 function jumpToRefineSlide(index){
     currentRefineSlide = Math.max(0, Math.min(index, refineSlides.length - 1));
     openRefinementStage();
 }
+
+function renderPreviewMainSlide() {
+    if (!refineSlides.length) return;
+    _previewIdx = Math.max(0, Math.min(_previewIdx, refineSlides.length - 1));
+    const slide = refineSlides[_previewIdx];
+    const img = document.getElementById("previewMainImage");
+    if (img) img.src = previewImageSrcForSlide(slide);
+    const counter = document.getElementById("previewSlideCounter");
+    if (counter) counter.textContent = `Slide ${_previewIdx + 1} of ${refineSlides.length}`;
+    const typeEl = document.getElementById("previewSlideType");
+    if (typeEl) typeEl.textContent = slide.type || slide.title || "—";
+    document.querySelectorAll("#deckPreviewStrip .deck-preview-card").forEach((el, i) => {
+        el.classList.toggle("preview-active", i === _previewIdx);
+    });
+    const backBtn = document.getElementById("previewBackBtn");
+    const nextBtn = document.getElementById("previewNextBtn");
+    if (backBtn) backBtn.disabled = _previewIdx === 0;
+    if (nextBtn) nextBtn.disabled = _previewIdx >= refineSlides.length - 1;
+}
+
+function selectPreviewSlide(index) {
+    _previewIdx = Math.max(0, Math.min(index, refineSlides.length - 1));
+    renderPreviewMainSlide();
+    const cards = document.querySelectorAll("#deckPreviewStrip .deck-preview-card");
+    if (cards[_previewIdx]) cards[_previewIdx].scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+}
+
+function goPrevPreviewSlide() { if (_previewIdx > 0) selectPreviewSlide(_previewIdx - 1); }
+function goNextPreviewSlide() { if (_previewIdx < refineSlides.length - 1) selectPreviewSlide(_previewIdx + 1); }
 
 // --- Preview panel: delete & drag-reorder ---
 let _previewDragSrc = null;
@@ -1319,6 +1351,7 @@ async function openRefinementStage(){
         const loaded = await loadLatestRefineSlides();
         if (loaded) latestSlidesLoadedForComplete = true;
     }
+    currentRefineSlide = _previewIdx;
     document.getElementById("previewStage").style.display = "none";
     document.getElementById("refinementStage").style.display = "block";
     _setSyncFabVisible(true);

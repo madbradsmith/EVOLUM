@@ -186,43 +186,53 @@
                 
 <div class="complete-panel" id="completePanel">
     <div id="previewStage">
-        <div class="complete-title" id="studioTitle">Your deck is complete.</div>
-        <div class="complete-copy">
-            Preview your generated deck below. You can download it now or refine it before final export.
-        </div>
+        <div class="preview-stage-layout">
 
-        <div class="deck-preview-strip" id="deckPreviewStrip"></div>
-
-        <div style="margin:14px 0 6px; text-align:center;">
-            <a href="/download/latest.pptx" class="primary-button" style="display:inline-block; text-decoration:none; padding:10px 22px; font-size:13px;">Download PPTX</a>
-        </div>
-
-        <div class="complete-actions">
-            <button class="primary-button" type="button" id="refineDeckBtn" onclick="openRefinementStage()">Refine Deck</button>
-            <button class="primary-button" type="button" onclick="newDeck()">Create New Deck</button>
-        </div>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0 0;">
-            <div class="regen-prompt-area" id="regenPromptArea" style="margin:0;">
-                <div class="regen-prompt-label">Regenerate with a new direction</div>
-                <div class="regen-prompt-row">
-                    <input type="text" id="regenPromptInput" class="regen-prompt-input"
-                        placeholder="e.g. make it darker, lean into the horror tone…"
-                        onkeydown="if(event.key==='Enter') submitRegenDeck()">
-                    <button class="primary-button regen-prompt-btn" type="button" onclick="submitRegenDeck()">Regenerate</button>
+            <!-- LEFT: big slide viewer -->
+            <div class="preview-viewer-col">
+                <div class="preview-meta-row">
+                    <div class="meta-chip" id="previewSlideCounter">Slide 1 of 1</div>
+                    <div class="meta-chip" id="previewSlideType">—</div>
                 </div>
+                <div class="preview-main-nav">
+                    <button class="slide-nav-arrow" id="previewBackBtn" type="button" onclick="goPrevPreviewSlide()" title="Previous slide">&#8592;</button>
+                    <div class="preview-main-img-wrap">
+                        <img id="previewMainImage" class="preview-main-img" src="" alt="Slide preview">
+                    </div>
+                    <button class="slide-nav-arrow" id="previewNextBtn" type="button" onclick="goNextPreviewSlide()" title="Next slide">&#8594;</button>
+                </div>
+                <div class="deck-preview-strip preview-thumb-strip" id="deckPreviewStrip"></div>
             </div>
 
-            <div id="inlineSyncEntry" onclick="toggleSyncPanel()" role="button" tabindex="0" style="background:#0d0d0d; border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; cursor:pointer; transition:border-color 0.15s;" onmouseover="this.style.borderColor='rgba(255,122,0,0.35)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                    <div style="font-size:18px; color:#ff9944; line-height:1;">✦</div>
-                    <div>
-                        <div style="font-size:11px; color:#ff9944; font-weight:700; letter-spacing:0.08em;">SYNC ASSIST</div>
-                        <div style="font-size:10px; color:#666; margin-top:1px;">AI Studio Guide</div>
+            <!-- RIGHT: compact actions -->
+            <div class="preview-action-col">
+                <div class="preview-action-title" id="studioTitle">Your deck is ready.</div>
+
+                <a href="/download/latest.pptx" id="previewDownloadLink" class="primary-button preview-full-btn" style="text-decoration:none; text-align:center; display:block;">&#11015; Download PPTX</a>
+                <button class="primary-button preview-full-btn" type="button" id="refineDeckBtn" onclick="openRefinementStage()">Refine Deck</button>
+                <button class="secondary-button preview-full-btn" type="button" onclick="newDeck()">Create New Deck</button>
+
+                <div class="preview-section-divider"></div>
+
+                <div class="preview-section-label">Regenerate with new direction</div>
+                <input type="text" id="regenPromptInput" class="regen-prompt-input preview-regen-input"
+                    placeholder="e.g. make it darker, lean into the horror tone…"
+                    onkeydown="if(event.key==='Enter') submitRegenDeck()">
+                <button class="primary-button preview-full-btn" type="button" onclick="submitRegenDeck()" style="margin-top:8px;">Regenerate</button>
+
+                <div style="margin-top:16px;">
+                    <div id="inlineSyncEntry" onclick="toggleSyncPanel()" role="button" tabindex="0"
+                         class="preview-sync-entry"
+                         onmouseover="this.style.borderColor='rgba(255,122,0,0.45)'"
+                         onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
+                        <div style="font-size:16px; color:#ff9944; flex-shrink:0;">✦</div>
+                        <div style="flex:1;">
+                            <div style="font-size:10px; color:#ff9944; font-weight:700; letter-spacing:0.08em;">SYNC ASSIST</div>
+                            <div style="font-size:10px; color:#666; margin-top:1px;">Ask Sync about your deck</div>
+                        </div>
+                        <div style="color:#ff9944; font-size:13px;">&#8594;</div>
                     </div>
                 </div>
-                <div style="color:#999; font-size:11px; line-height:1.5; flex:1;">Ask Sync anything about your deck — tone, structure, next steps.</div>
-                <div style="margin-top:10px; background:rgba(255,122,0,0.1); border:1px solid rgba(255,122,0,0.25); border-radius:8px; padding:6px 10px; font-size:11px; color:#ff9944; text-align:center; font-weight:600; letter-spacing:0.05em;">Open Sync →</div>
             </div>
         </div>
     </div>
@@ -1105,7 +1115,7 @@
 </div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}"; window.EVOLUM_USER_NAME = {{ (user_name or "")|tojson }};</script>
-  <script src="{{ url_for('static', filename='main.js') }}?v=20260502_refineC"></script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=20260502_bigPreview"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
     {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal{% else %}showAuthModal{% endif %}());{% endif %}
