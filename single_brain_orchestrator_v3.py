@@ -394,7 +394,7 @@ def _write_brain_tokens(usage) -> None:
         "output_tokens": getattr(usage, "output_tokens", 0) or 0,
         "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0) or 0,
         "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0) or 0,
-        "model": "claude-sonnet-4-6",
+        "model": "claude-haiku-4-5-20251001",
     }
     try:
         _f.write_text(json.dumps(existing), encoding="utf-8")
@@ -403,7 +403,7 @@ def _write_brain_tokens(usage) -> None:
 
 
 def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
-    """Single Claude Sonnet call — generates all story fields from the actual screenplay."""
+    """Single Claude Haiku call — generates all story fields from the actual screenplay."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         return _fallback_story_map(title, list(char_stats.keys()))
@@ -424,7 +424,7 @@ def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
     try:
         client = anthropic.Anthropic(api_key=api_key)
         message = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-haiku-4-5-20251001",
             max_tokens=4096,
             system=[{"type": "text", "text": _ANALYSIS_SYSTEM, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": user_msg}],

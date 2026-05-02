@@ -25,12 +25,14 @@ New in this version:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import io
 import json
 import os
 import re
 import shutil
 import tempfile
+import threading
 import urllib.request
 from pathlib import Path
 from typing import Optional
@@ -48,6 +50,7 @@ PROJECT_DIR = Path(__file__).resolve().parent
 
 _DAI_UID = os.environ.get("DAI_USER_ID", "")
 _fal_image_count = 0
+_fal_count_lock = threading.Lock()
 _DAI_WORK_DIR = os.environ.get("DAI_WORK_DIR", "")
 
 
@@ -597,7 +600,8 @@ def generate_fal_image(prompt: str, cache_path: Path) -> Optional[Path]:
         image_url = result["images"][0]["url"]
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         urllib.request.urlretrieve(image_url, cache_path)
-        _fal_image_count += 1
+        with _fal_count_lock:
+            _fal_image_count += 1
         print(f"✨ FAL generated image for prompt: {prompt[:60]}...")
         return cache_path
     except Exception as e:
@@ -1224,8 +1228,41 @@ def place_text_by_stage(slide, stage: str, layout: str, body: str) -> None:
     add_cinematic_caption(slide, body, font_size=fs)
 
 
+def _prefetch_slide_image(args: tuple) -> tuple:
+    """Run in a thread pool — resolves/generates the image for one slide."""
+    idx, slide_info, visuals_dir, deck_title, brain_output = args
+    slide_title = clean(slide_info.get("title"))
+    body = clean(slide_info.get("body"))
+    layout = clean(slide_info.get("layout", ""))
+    slide_number = int(slide_info.get("slide_number", idx))
+
+    explicit_path_str = str(slide_info.get("image_path") or "").strip()
+    image_source_hint = str(slide_info.get("image_source") or "").strip()
+
+    if explicit_path_str == "__none__" or image_source_hint == "text_only":
+        return idx, None, "text_only"
+
+    if explicit_path_str:
+        explicit = Path(explicit_path_str)
+        if not explicit.is_absolute():
+            explicit = (APP_DIR / explicit).resolve()
+        if explicit.exists():
+            return idx, explicit, str(slide_info.get("image_source") or "user_selected")
+
+    img, src = find_image_for_slide(
+        visuals_dir=visuals_dir,
+        deck_title=deck_title,
+        slide_title=slide_title if layout.lower() != "title" else deck_title,
+        slide_number=slide_number,
+        brain_output=brain_output,
+        last_used_name="",
+        slide_body=body,
+    )
+    return idx, img, src
+
+
 def build_presentation(
-    slide_plan_path: Path, 
+    slide_plan_path: Path,
     visuals_dir: Path,
     output_dir: Path, 
     label: str = "",  
@@ -1249,9 +1286,22 @@ def build_presentation(
     deck_title = clean(plan.get("title", "Project"))
     manifest: list[dict] = []
 
+    # Pre-generate all FAL images in parallel before building slides
+    slides_list = plan.get("slides", [])
+    prefetch_args = [
+        (idx, slide_info, visuals_dir, deck_title, brain_output)
+        for idx, slide_info in enumerate(slides_list, start=1)
+    ]
+    prefetched: dict[int, tuple] = {}
+    print(f"🖼️  Pre-fetching images for {len(prefetch_args)} slides in parallel...")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        for idx, img, src in pool.map(_prefetch_slide_image, prefetch_args):
+            prefetched[idx] = (img, src)
+    print("✅ Image pre-fetch complete")
+
     last_used_image_name = ""
 
-    for idx, slide_info in enumerate(plan.get("slides", []), start=1):
+    for idx, slide_info in enumerate(slides_list, start=1):
         slide_title = clean(slide_info.get("title"))
         body = clean(slide_info.get("body"))
         layout = clean(slide_info.get("layout"))
@@ -1260,38 +1310,8 @@ def build_presentation(
 
         slide = prs.slides.add_slide(prs.slide_layouts[6])
 
-        explicit_path_str = str(slide_info.get("image_path") or "").strip()
-        image_source_hint = str(slide_info.get("image_source") or "").strip()
-        if explicit_path_str == "__none__" or image_source_hint == "text_only":
-            image_for_slide = None
-            image_source = "text_only"
-        elif explicit_path_str:
-            explicit = Path(explicit_path_str)
-            if not explicit.is_absolute():
-                explicit = (APP_DIR / explicit).resolve()
-            if explicit.exists():
-                image_for_slide = explicit
-                image_source = str(slide_info.get("image_source") or "user_selected")
-            else:
-                image_for_slide, image_source = find_image_for_slide(
-                    visuals_dir=visuals_dir,
-                    deck_title=deck_title,
-                    slide_title=slide_title if layout != "title" else deck_title,
-                    slide_number=slide_number,
-                    brain_output=brain_output,
-                    last_used_name=last_used_image_name,
-                    slide_body=body
-                )
-        else:
-            image_for_slide, image_source = find_image_for_slide(
-                visuals_dir=visuals_dir,
-                deck_title=deck_title,
-                slide_title=slide_title if layout != "title" else deck_title,
-                slide_number=slide_number,
-                brain_output=brain_output,
-                last_used_name=last_used_image_name,
-                slide_body=body
-            )
+        image_for_slide, image_source = prefetched.get(idx, (None, "none"))
+
         if image_for_slide:
             last_used_image_name = image_for_slide.name
             _mark_image_used(image_for_slide)
