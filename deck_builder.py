@@ -1295,7 +1295,6 @@ def build_presentation(
             add_title_poster_image(slide, _title_img)
             add_top_rule(slide)
             add_title_text(slide, deck_title)
-            place_text_by_stage(slide, stage, layout, body)
 
         elif layout_lower in {"character_focus", "split_left_text"} or stage_lower == "character":
             build_slide_split_panel(slide, image_for_slide, _stitle, body)
