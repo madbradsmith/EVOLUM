@@ -1339,8 +1339,8 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
                 _page_bg(pdf, width, height, charcoal, gold)
                 y = height - 54
             scene_label = sample.scene_heading if sample.scene_heading and sample.scene_heading != "SCENE NOT DETECTED" else sample.reference
-            slines = [f"{scene_label}", f'"{sample.dialogue[:200]}"']
-            _draw_card(pdf, left + 20, y, usable_width - 20, sample_h, f"↳  {sample.reference}", slines, muted, charcoal, white, muted)
+            slines = [f"{scene_label}", f'"{sample.dialogue[:220]}"']
+            _draw_card(pdf, left + 16, y, usable_width - 16, sample_h, f"↳  {sample.reference}", slines, gold, panel, white, muted)
             y -= sample_h + 8
         y -= 14
     _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
@@ -1395,7 +1395,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     brain_data = brain_data or {}
 
     pdf = canvas.Canvas(str(output_path), pagesize=LETTER)
-    pdf.setTitle(f"{character_name.title()} — Booked Role V2")
+    pdf.setTitle(f"{character_name.title()} — Booked Role Report")
     width, height = LETTER
     left, right = 42, width - 42
     usable_width = right - left
@@ -1405,6 +1405,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     gold = colors.HexColor("#f0c15d")
     white = colors.white
     muted = colors.HexColor("#d8d8d8")
+    soft = colors.HexColor("#8f8f8f")
 
     title = _project_title(brain_data)
     world = _world_value(brain_data)
@@ -1413,106 +1414,185 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     image_path = _find_actor_report_image(brain_data, "actor_booked", character_name, title)
     scene_count = len(_unique_scenes(beats)) or 1
 
+    # Pull brain fields for this character
+    character_arcs = brain_data.get("character_arcs") or {}
+    char_arc = None
+    for k, v in character_arcs.items():
+        if k.upper() == character_name.upper() and isinstance(v, dict):
+            char_arc = v
+            break
+    emotional_continuity = [str(x).strip() for x in (brain_data.get("emotional_continuity") or []) if str(x).strip()]
+    costume_clues = [str(x).strip() for x in (brain_data.get("costume_behavior_clues") or []) if str(x).strip()]
+    relationship_map = brain_data.get("relationship_leverage_map") or []
+    set_ready = _as_list(brain_data.get("set_ready_checklist"), [
+        "Know the scene pressure level before the first take.",
+        "Track what changed from the previous scene.",
+        "Protect body language and listening continuity.",
+        "Mark where status rises, slips, or resets.",
+        "Keep novelty second to continuity.",
+    ])
+
     # Save JSON for HTML report page
     try:
         json_path = output_path.with_suffix(".json")
         groups = group_beats_by_type(beats)
-        beat_groups_data = [
-            {
-                "beat_type": g["beat_type"],
-                "label": g["label"],
-                "coaching": g["coaching"],
-                "count": g["count"],
-                "pages": g["pages"],
-                "samples": [
-                    {
-                        "reference": s.reference,
-                        "scene_heading": s.scene_heading,
-                        "dialogue": s.dialogue[:300],
-                    }
-                    for s in g["samples"]
-                ],
-            }
-            for g in groups
-        ]
-        set_ready = _as_list(brain_data.get("set_ready_checklist"), [
-            "Know the scene pressure level before the first take.",
-            "Track what changed from the previous scene.",
-            "Protect body language and listening continuity.",
-            "Mark where status rises, slips, or resets.",
-            "Keep novelty second to continuity.",
-        ])
         json_path.write_text(json.dumps({
             "character_name": character_name,
             "title": title,
             "tone": _safe(brain_data.get("tone"), ""),
             "world": world,
-            "genre": _safe(brain_data.get("genre"), ""),
             "beat_count": len(beats),
             "scene_count": scene_count,
             "intelligence": intelligence,
-            "beat_groups": beat_groups_data,
+            "beat_groups": [
+                {
+                    "beat_type": g["beat_type"],
+                    "coaching": g["coaching"],
+                    "count": g["count"],
+                    "pages": g["pages"],
+                    "samples": [{"reference": s.reference, "scene_heading": s.scene_heading, "dialogue": s.dialogue[:300]} for s in g["samples"]],
+                }
+                for g in groups
+            ],
             "set_ready_checklist": set_ready,
         }, indent=2), encoding="utf-8")
     except Exception:
         pass
 
+    # ── PAGE 1: COVER ─────────────────────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 15); pdf.drawString(left, height - 54, "BOOKED ROLE REPORT")
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 38); pdf.drawString(left, height - 100, character_name.upper()[:24])
-    pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 14); pdf.drawString(left, height - 126, title.upper()[:42])
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 15)
+    pdf.drawString(left, height - 54, "BOOKED ROLE REPORT")
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 38)
+    pdf.drawString(left, height - 100, character_name.upper()[:24])
+    pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(left, height - 126, title.upper()[:42])
     pdf.setStrokeColor(gold); pdf.line(left, height - 152, right, height - 152)
-    _draw_cover_image(pdf, image_path, left, height - 390, usable_width, 180, gold)
+    _draw_cover_image(pdf, image_path, left, height - 370, usable_width, 170, gold)
+
     summary = _safe(intelligence.get("summary"), _fallback_booked_snapshot(character_name, beats))
-    lines = simpleSplit(summary, "Helvetica-Bold", 11, usable_width - 36)
-    box_h = max(96, len(lines)*14 + 38)
-    y = height - 430
+    snap_lines = simpleSplit(summary, "Helvetica-Bold", 11, usable_width - 36)
+    box_h = max(88, len(snap_lines) * 14 + 36)
+    y = height - 410
     pdf.setFillColor(panel); pdf.roundRect(left, y - box_h, usable_width, box_h, 12, stroke=0, fill=1)
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9); pdf.drawString(left + 14, y - 20, "FULL ROLE SNAPSHOT")
-    _draw_lines(pdf, lines, left + 14, y - 40, 14, "Helvetica-Bold", 11, white)
-    card_y = y - box_h - 42
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(left + 14, y - 20, "FULL ROLE SNAPSHOT")
+    _draw_lines(pdf, snap_lines, left + 14, y - 40, 14, "Helvetica-Bold", 11, white)
+
+    card_y = y - box_h - 38
     card_w = (usable_width - 24) / 3
     for i, (label, vals) in enumerate([
-        ("BEATS", [f"{len(beats)} speaking beats"]),
-        ("WORLD", [world]),
-        ("TONE", [tone[:28] if tone else "—"]),
+        ("SPEAKING BEATS", [f"{len(beats)} beats detected"]),
+        ("SCENE ZONES", [f"{scene_count} distinct scenes"]),
+        ("WORLD", [world[:32] if world else "—"]),
     ]):
-        _draw_card(pdf, left + i*(card_w+12), card_y, card_w, 86, label, vals, gold, panel, white, muted)
+        _draw_card(pdf, left + i * (card_w + 12), card_y, card_w, 80, label, vals, gold, panel, white, muted)
     _footer(pdf, width, 1); pdf.showPage()
 
+    # ── PAGE 2: ROLE CONTINUITY CENTER ────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25); pdf.drawString(left, height - 62, "ROLE CONTINUITY CENTER")
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11); pdf.drawString(left, height - 82, "What must stay consistent across scenes, takes, and shooting days.")
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
+    pdf.drawString(left, height - 62, "ROLE CONTINUITY CENTER")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
+    pdf.drawString(left, height - 82, "What must stay consistent across scenes, takes, and shooting days.")
     col_w = (usable_width - 18) / 2
-    row_h = 176
+    row_h = 170
     data_cards = [
         ("Booked Continuity", _as_list(intelligence.get("booked_continuity"))),
         ("Scene Priorities", _as_list(intelligence.get("scene_priorities"))),
         ("Emotional Triggers", _as_list(intelligence.get("emotional_triggers"))),
         ("Look / Behavior", _as_list(intelligence.get("look_presence"))),
     ]
-    grid_y = height - 140
+    grid_y = height - 136
     for idx, (label, vals) in enumerate(data_cards):
-        x = left + (idx % 2)*(col_w+18)
-        yy = grid_y - (idx//2)*(row_h+24)
+        x = left + (idx % 2) * (col_w + 18)
+        yy = grid_y - (idx // 2) * (row_h + 22)
         _draw_card(pdf, x, yy, col_w, row_h, label, vals, gold, panel, white, muted)
+
+    # Character arc below the grid if available
+    arc_y = grid_y - 2 * (row_h + 22) - 20
+    if char_arc and arc_y > 100:
+        beginning = _safe(char_arc.get("beginning_state"))
+        transformation = _safe(char_arc.get("transformation"))
+        end = _safe(char_arc.get("end_state"))
+        parts = [p for p in [beginning, transformation, end] if p]
+        if parts:
+            arc_str = "  →  ".join(parts)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(left, arc_y, f"CHARACTER ARC  ·  {character_name.upper()}")
+            arc_y -= 13
+            arc_lines = simpleSplit(arc_str, "Helvetica", 10, usable_width - 14)
+            _draw_lines(pdf, arc_lines, left + 10, arc_y, 13, "Helvetica", 10, muted)
     _footer(pdf, width, 2); pdf.showPage()
 
+    # ── PAGE 3: CHARACTER CONTINUITY ──────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    page_no = 3
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
+    pdf.drawString(left, height - 62, "CHARACTER CONTINUITY")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
+    pdf.drawString(left, height - 82, "The physical and emotional thread the actor must protect every day on set.")
+    cy3 = height - 120
+
+    cont_cards = []
+    if emotional_continuity:
+        cont_cards.append(("Emotional Continuity", emotional_continuity))
+    if costume_clues:
+        cont_cards.append(("Costume & Behavior Clues", costume_clues))
+    if cont_cards:
+        cc_col_w = (usable_width - 18) / 2 if len(cont_cards) > 1 else usable_width
+        cc_h = 190
+        for ci, (clabel, cvals) in enumerate(cont_cards[:2]):
+            cx = left + ci * (cc_col_w + 18)
+            _draw_card(pdf, cx, cy3, cc_col_w, cc_h, clabel, cvals, gold, panel, white, muted)
+        cy3 -= cc_h + 22
+
+    # Relationship map
+    rel_lines = []
+    for row in relationship_map:
+        if isinstance(row, dict):
+            character = str(row.get("character") or "").strip()
+            dynamic = str(row.get("dynamic") or "").strip()
+            function = str(row.get("function") or "").strip()
+            parts = [p for p in [character, dynamic, function] if p]
+            if parts:
+                rel_lines.append(" — ".join(parts[:3]))
+    if rel_lines and cy3 > 100:
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 13)
+        pdf.drawString(left, cy3, "Relationship Leverage Map")
+        cy3 -= 16
+        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
+        pdf.drawString(left, cy3, "How each key relationship functions in the story.")
+        cy3 -= 14
+        for rl in rel_lines[:8]:
+            rl_split = simpleSplit(rl, "Helvetica", 10, usable_width - 26)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
+            pdf.drawString(left, cy3, "•")
+            for rls in rl_split:
+                pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+                pdf.drawString(left + 14, cy3, rls)
+                cy3 -= 13
+            cy3 -= 3
+    _footer(pdf, width, 3); pdf.showPage()
+
+    # ── PAGES 4+: SCENE JOURNEY MAP ───────────────────────────────────────────
+    _page_bg(pdf, width, height, charcoal, gold)
+    page_no = 4
     y = height - 62
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25); pdf.drawString(left, y, "SCENE JOURNEY MAP")
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
+    pdf.drawString(left, y, "SCENE JOURNEY MAP")
     y -= 26
     pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-    pdf.drawString(left, y, f"{len(beats)} beats grouped by type. Coaching note + 3 pulled scenes per pattern.")
+    pdf.drawString(left, y, f"{len(beats)} beats grouped by type. Coaching note + continuity key + 3 pulled scenes per pattern.")
     y -= 22
     if not beats:
-        _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found", ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
+        _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found",
+                   ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
         _footer(pdf, width, page_no); pdf.save(); return output_path
+
     groups = group_beats_by_type(beats)
+    header_h = 120
+    sample_h = 96
     for grp in groups:
-        header_h = 110
-        sample_h = 82
         total_h = header_h + len(grp["samples"]) * (sample_h + 8)
         if y - total_h < 54:
             _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
@@ -1521,37 +1601,58 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
             pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
             pdf.drawString(left, y, "SCENE JOURNEY MAP")
             y -= 34
-        page_range = f"{grp['pages'][0]} – {grp['pages'][-1]}" if len(grp['pages']) > 1 else grp['pages'][0] if grp['pages'] else ""
+
+        page_range = f"p.{grp['pages'][0]} – p.{grp['pages'][-1]}" if len(grp['pages']) > 1 else (f"p.{grp['pages'][0]}" if grp['pages'] else "")
         continuity = _CONTINUITY_NOTES.get(grp["beat_type"], _DEFAULT_CONTINUITY)
         header_lines = [
             f"{grp['count']} beat{'s' if grp['count'] != 1 else ''}  ·  {page_range}",
             grp["coaching"],
-            f"Continuity: {continuity}",
+            f"On set: {continuity}",
         ]
-        _draw_card(pdf, left, y, usable_width, header_h + 20, grp["beat_type"].upper(), header_lines, gold, panel, white, muted)
-        y -= header_h + 28
+        _draw_card(pdf, left, y, usable_width, header_h, grp["beat_type"].upper(), header_lines, gold, panel, white, muted)
+        y -= header_h + 8
+
         for sample in grp["samples"]:
             if y - sample_h < 54:
                 _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
                 _page_bg(pdf, width, height, charcoal, gold)
                 y = height - 54
             scene_label = sample.scene_heading if sample.scene_heading and sample.scene_heading != "SCENE NOT DETECTED" else sample.reference
-            slines = [f"{scene_label}", f'"{sample.dialogue[:200]}"']
-            _draw_card(pdf, left + 20, y, usable_width - 20, sample_h, f"↳  {sample.reference}", slines, muted, charcoal, white, muted)
+            dialogue_preview = f'"{sample.dialogue[:220]}"'
+            slines = [scene_label, dialogue_preview]
+            # Use panel background so sample cards are visible against the charcoal page
+            _draw_card(pdf, left + 16, y, usable_width - 16, sample_h, f"↳  {sample.reference}", slines, gold, panel, white, muted)
             y -= sample_h + 8
         y -= 14
     _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
 
+    # ── LAST PAGE: SET-READY CHECKLIST ────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25); pdf.drawString(left, height - 62, "SET-READY CHECKLIST")
-    set_ready = _as_list(brain_data.get("set_ready_checklist"), [
-        "Know the scene pressure level before the first take.",
-        "Track what changed from the previous scene.",
-        "Protect body language and listening continuity.",
-        "Mark where status rises, slips, or resets.",
-        "Keep novelty second to continuity.",
-    ])
-    _draw_card(pdf, left, height - 115, usable_width, 260, "Before Camera", set_ready, gold, panel, white, muted)
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
+    pdf.drawString(left, height - 62, "SET-READY CHECKLIST")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
+    pdf.drawString(left, height - 82, "Clear these before the first take of every scene.")
+    _draw_card(pdf, left, height - 120, usable_width, 260, "Before Camera", set_ready, gold, panel, white, muted)
+
+    if char_arc:
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 13)
+        pdf.drawString(left, height - 410, "Your Arc in Three Movements")
+        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
+        pdf.drawString(left, height - 426, "Keep this in view across the entire shoot.")
+        arc_y2 = height - 448
+        col3 = (usable_width - 20) / 3
+        for i, (phase, key) in enumerate([("BEGINS", "beginning_state"), ("TRANSFORMS", "transformation"), ("ENDS", "end_state")]):
+            val = _safe(char_arc.get(key))
+            if not val:
+                continue
+            cx = left + i * (col3 + 10)
+            pdf.setFillColor(panel); pdf.roundRect(cx, arc_y2 - 68, col3, 68, 8, stroke=0, fill=1)
+            pdf.setFillColor(gold); pdf.roundRect(cx, arc_y2 - 68, 4, 68, 2, stroke=0, fill=1)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+            pdf.drawString(cx + 12, arc_y2 - 14, phase)
+            val_lines = simpleSplit(val, "Helvetica", 9, col3 - 22)
+            _draw_lines(pdf, val_lines[:4], cx + 12, arc_y2 - 28, 11, "Helvetica", 9, muted)
+
     _footer(pdf, width, page_no)
     pdf.save()
     return output_path
