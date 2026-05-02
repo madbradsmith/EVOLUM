@@ -7,6 +7,51 @@ let sawFreshBuildStatus = false;
 let analyzeFlowMode = null;
 const slideCustomImages = {};
 
+let _pipelineLogLines = [];
+let _lastPipelineStep = null;
+
+const PIPELINE_STEP_LINES = {
+    "start":             { type: "system",  text: "Pipeline starting..." },
+    "input_handler":     { type: "accent",  text: "Parsing screenplay format..." },
+    "brain":             { type: "accent",  text: "Analyzing story with Developum AI Engine..." },
+    "layout":            { type: "accent",  text: "Building slide plan and visual layout..." },
+    "deck_builder_full": { type: "accent",  text: "Generating images and assembling deck..." },
+    "complete":          { type: "success", text: "Deck complete — preview ready." },
+};
+
+function _resetPipelineLog() {
+    _pipelineLogLines = [];
+    _lastPipelineStep = null;
+}
+
+function _appendPipelineLogLine(line) {
+    _pipelineLogLines.push(line);
+    _renderProgressiveLog();
+}
+
+function _maybeAppendPipelineStep(step) {
+    if (!step || step === _lastPipelineStep) return;
+    const def = PIPELINE_STEP_LINES[step];
+    if (!def) return;
+    _lastPipelineStep = step;
+    _pipelineLogLines.push(def);
+    _renderProgressiveLog();
+}
+
+function _renderProgressiveLog() {
+    const logEl = document.getElementById("liveProcessLog");
+    if (!logEl || _pipelineLogLines.length === 0) return;
+    const html = _pipelineLogLines.map(line => {
+        const safe = escapeHtml(line.text);
+        if (line.type === "system")  return `<span class="terminal-prompt">[system] ${safe}</span>`;
+        if (line.type === "accent")  return `<span class="terminal-accent">&gt; ${safe}</span>`;
+        if (line.type === "success") return `<span class="terminal-success">[complete] ${safe}</span>`;
+        return safe;
+    }).join("<br>");
+    logEl.innerHTML = html;
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
 const QUOTES = [
     { text: "Here's looking at you, kid.", attr: "— Casablanca", type: "SCREENPLAY" },
     { text: "I'm gonna make him an offer he can't refuse.", attr: "— The Godfather", type: "SCREENPLAY" },
@@ -397,6 +442,7 @@ function showUploadState(){
 }
 
 function resetCreateProject(){
+    _resetPipelineLog();
     closeAllModals();
     stopProgressCreep();
     setProgress(0);
@@ -482,6 +528,8 @@ function startBuildDirect() {
             if (res.status === 403) {
                 buildInFlight = false;
                 showProjectLimitModal();
+            } else if (res.ok) {
+                _appendPipelineLogLine({ type: "system", text: "Script accepted — pipeline starting..." });
             }
         })
         .catch(err => console.error("Upload failed:", err));
@@ -535,6 +583,7 @@ async function analyzeSelectedScript(){
     document.getElementById("buildProgressWorking").style.display = "block";
     document.getElementById("buildProgressActions").style.display = "none";
     progressModal.classList.add("show");
+    _startBuildQuotes();
 
     const formData = new FormData();
     formData.append("script", file);
@@ -546,6 +595,7 @@ async function analyzeSelectedScript(){
         });
 
         if (!response.ok){
+            _stopBuildQuotes();
             document.getElementById("buildProgressWorking").style.display = "none";
             document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
             document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please check your file and try again.";
@@ -566,6 +616,7 @@ async function analyzeSelectedScript(){
                 "Your script has been analyzed and your full report is ready to view.";
         }
 
+        _stopBuildQuotes();
         document.getElementById("buildProgressFill").style.width = "100%";
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Analysis Complete";
@@ -589,6 +640,7 @@ async function analyzeSelectedScript(){
         }
 
     } catch (err) {
+        _stopBuildQuotes();
         document.getElementById("buildProgressWorking").style.display = "none";
         document.getElementById("buildProgressTitle").textContent = "Analysis Failed";
         document.getElementById("buildProgressCopy").textContent = "Something went wrong. Please try again.";
@@ -640,6 +692,8 @@ function validateUploadAndStart(){
         if (res.status === 403) {
             buildInFlight = false;
             showProjectLimitModal();
+        } else if (res.ok) {
+            _appendPipelineLogLine({ type: "system", text: "Script accepted — pipeline starting..." });
         }
     }).catch(err => {
         console.error("Upload failed:", err);
@@ -649,6 +703,7 @@ function validateUploadAndStart(){
 }
 
 function showLiveProcess(){
+    _resetPipelineLog();
     exitFlowMode();
     enterActiveBuildMode();
     hideWorkspacePanels();
@@ -680,6 +735,7 @@ function escapeHtml(text){
 function renderLiveProcessLog(status){
     const logEl = document.getElementById("liveProcessLog");
     if (!logEl) return;
+    if (_pipelineLogLines.length > 0) { _renderProgressiveLog(); return; }
 
     let lines = [];
     if (status === "IDLE"){
@@ -1832,6 +1888,7 @@ async function pollStatus(){
                 activeLoadedProjectId = data.project_id;
             }
             updateStatusUI(data.status);
+            if (data.step) _maybeAppendPipelineStep(data.step);
         }
     } catch (e) {}
 }

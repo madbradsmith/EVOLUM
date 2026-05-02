@@ -1497,9 +1497,21 @@ def status():
         if not uid:
             return jsonify({"status": "IDLE", "project_id": None})
         apf = _active_project_file(uid)
+        _step = None
+        _message = None
+        try:
+            _psf = BASE_DIR / f"pipeline_status_{uid}.json"
+            if _psf.exists():
+                _ps = json.loads(_psf.read_text(encoding="utf-8"))
+                _step = _ps.get("step")
+                _message = _ps.get("message")
+        except Exception:
+            pass
         return jsonify({
             "status": get_status(uid),
-            "project_id": get_status_project_id(uid) or session.get("active_project_id") or (apf.read_text(encoding="utf-8").strip() if apf.exists() else None)
+            "project_id": get_status_project_id(uid) or session.get("active_project_id") or (apf.read_text(encoding="utf-8").strip() if apf.exists() else None),
+            "step": _step,
+            "message": _message,
         })
     except Exception as e:
         print(f"⚠️ /status error: {e}", flush=True)
