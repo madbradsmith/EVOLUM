@@ -1976,6 +1976,8 @@ async function pollStatus(){
             if (!buildInFlight && data.status === "COMPLETE") return;
             if (data.status === "COMPLETE" && data.project_id) {
                 activeLoadedProjectId = data.project_id;
+                const dlLink = document.getElementById("previewDownloadLink");
+                if (dlLink) dlLink.href = `/download/deck/${data.project_id}`;
             }
             updateStatusUI(data.status);
             if (data.step) _maybeAppendPipelineStep(data.step);

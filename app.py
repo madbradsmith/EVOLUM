@@ -2238,6 +2238,31 @@ def download_latest_pptx():
     abort(404)
 
 
+@app.route("/download/deck/<int:pid>")
+def download_deck_by_pid(pid):
+    uid = session.get("user_id")
+    if not uid:
+        abort(403)
+    proj_path = USER_DATA_DIR / str(uid) / str(pid) / "deck.pptx"
+    if not proj_path.exists():
+        abort(404)
+    download_name = f"pitch_deck_{pid}.pptx"
+    if DB_ENGINE:
+        try:
+            with DB_ENGINE.connect() as _conn:
+                _row = _conn.execute(
+                    text("SELECT title FROM projects WHERE id = :pid AND owner_user_id = :uid"),
+                    {"pid": pid, "uid": uid}
+                ).fetchone()
+                if _row and _row[0]:
+                    _safe = re.sub(r"[^\w\s-]", "", _row[0]).strip().replace(" ", "_")
+                    if _safe:
+                        download_name = f"{_safe}.pptx"
+        except Exception:
+            pass
+    return send_file(proj_path, as_attachment=True, download_name=download_name)
+
+
 @app.route("/download/latest_producer.pptx")
 def download_latest_producer_pptx():
     path = OUTPUT_DIR / "latest.pptx"
