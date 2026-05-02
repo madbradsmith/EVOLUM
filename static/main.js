@@ -2473,28 +2473,28 @@ const _PLANS = [
     {
         id: "solo", name: "Solo",
         monthly: 10, annual: 100,
-        projects: "3 projects", collaborators: "1 collaborator",
+        projects: "3 projects",
         features: ["Pitch deck generator", "Script analyzer", "Actor prep tools", "3-day free trial"],
         featured: false,
     },
     {
         id: "writers-room", name: "Writer's Room",
         monthly: 25, annual: 250,
-        projects: "10 projects", collaborators: "5 collaborators",
+        projects: "10 projects",
         features: ["All Solo features", "Team workspace", "Priority builds", "Project sharing"],
         featured: true, badge: "Most Popular",
     },
     {
         id: "production", name: "Production Co.",
         monthly: 75, annual: 750,
-        projects: "20 projects", collaborators: "10 collaborators",
+        projects: "20 projects",
         features: ["All Writer's Room features", "Advanced analytics", "White-label exports", "Dedicated queue"],
         featured: false,
     },
     {
         id: "studio", name: "Studio",
         monthly: 150, annual: 1500,
-        projects: "50 projects", collaborators: "100 collaborators",
+        projects: "50 projects",
         features: ["All Production features", "Custom branding", "Dedicated support", "API access"],
         featured: false,
     },
@@ -2519,7 +2519,6 @@ function _renderPricingCards() {
         const featured = p.featured ? " featured" : "";
         const badge = p.badge ? `<div class="plan-badge">${p.badge}</div>` : "";
         const featureList = [`<div class="plan-feature">${p.projects}</div>`,
-            `<div class="plan-feature">${p.collaborators}</div>`,
             ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
         ].join("");
         return `
