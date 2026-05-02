@@ -786,6 +786,109 @@ class _PDFCtx:
             yy -= 2
         self.y -= box_h + 10
 
+    def act_breakdown_cards(self, act_breakdown: dict):
+        """Render 3-column act breakdown cards."""
+        if not act_breakdown or not isinstance(act_breakdown, dict):
+            return
+        self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, 175, self.page_no, self.charcoal)
+        card_w = (self.uw - 20) / 3
+        card_h = 158
+        acts = [
+            ("ACT ONE", act_breakdown.get("act_1") or {}),
+            ("ACT TWO", act_breakdown.get("act_2") or {}),
+            ("ACT THREE", act_breakdown.get("act_3") or {}),
+        ]
+        for i, (label, act) in enumerate(acts):
+            x = self.left + i * (card_w + 10)
+            y = self.y
+            self.pdf.setFillColor(self.panel)
+            self.pdf.roundRect(x, y - card_h, card_w, card_h, 10, stroke=0, fill=1)
+            self.pdf.setFillColor(self.gold)
+            self.pdf.roundRect(x, y - card_h, 4, card_h, 2, stroke=0, fill=1)
+            self.pdf.setFillColor(self.gold)
+            self.pdf.setFont("Helvetica-Bold", 9)
+            self.pdf.drawString(x + 14, y - 16, label)
+            yy = y - 30
+            summary = _safe(act.get("summary"))
+            if summary:
+                lines = _split_lines(self.pdf, summary, "Helvetica-Bold", 9, card_w - 26)
+                for line in lines[:3]:
+                    self.pdf.setFillColor(self.white)
+                    self.pdf.setFont("Helvetica-Bold", 9)
+                    self.pdf.drawString(x + 14, yy, line)
+                    yy -= 11
+                yy -= 6
+            for beat in (act.get("key_beats") or [])[:3]:
+                beat_str = str(beat).strip()
+                if not beat_str:
+                    continue
+                beat_lines = _split_lines(self.pdf, beat_str, "Helvetica", 8, card_w - 36)
+                self.pdf.setFillColor(self.gold)
+                self.pdf.setFont("Helvetica-Bold", 9)
+                self.pdf.drawString(x + 14, yy, "·")
+                for bl in beat_lines[:2]:
+                    self.pdf.setFillColor(self.muted)
+                    self.pdf.setFont("Helvetica", 8)
+                    self.pdf.drawString(x + 24, yy, bl)
+                    yy -= 10
+            tp = _safe(act.get("turning_point"))
+            if tp and yy > y - card_h + 20:
+                yy -= 4
+                self.pdf.setFillColor(self.gold)
+                self.pdf.setFont("Helvetica-Bold", 8)
+                self.pdf.drawString(x + 14, yy, "↪")
+                tp_lines = _split_lines(self.pdf, tp, "Helvetica", 8, card_w - 36)
+                for tl in tp_lines[:2]:
+                    self.pdf.setFillColor(self.soft)
+                    self.pdf.setFont("Helvetica", 8)
+                    self.pdf.drawString(x + 26, yy, tl)
+                    yy -= 10
+        self.y -= card_h + 16
+
+    def character_arc_rows(self, character_arcs: dict):
+        """Render character arcs as beginning → transformation → end rows."""
+        if not character_arcs or not isinstance(character_arcs, dict):
+            return
+        for char_name, arc in list(character_arcs.items())[:6]:
+            if not isinstance(arc, dict):
+                continue
+            beginning = _safe(arc.get("beginning_state"))
+            transformation = _safe(arc.get("transformation"))
+            end = _safe(arc.get("end_state"))
+            parts = [p for p in [beginning, transformation, end] if p]
+            if not parts:
+                continue
+            arc_line = "  →  ".join(parts)
+            arc_lines = _split_lines(self.pdf, arc_line, "Helvetica", 9.5, self.uw - 14)
+            needed = 16 + len(arc_lines) * 12 + 8
+            self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, needed, self.page_no, self.charcoal)
+            self.pdf.setFillColor(self.gold)
+            self.pdf.setFont("Helvetica-Bold", 9.5)
+            self.pdf.drawString(self.left, self.y, char_name.upper())
+            self.y -= 13
+            self.y = _draw_lines(self.pdf, arc_lines, self.left + 10, self.y, 12, "Helvetica", 9.5, self.muted)
+            self.y -= 8
+
+    def comp_table(self, comparable_details: List[str]):
+        """Render comparable films as a clean per-line table."""
+        if not comparable_details:
+            return
+        for item in comparable_details:
+            item_lines = _split_lines(self.pdf, item, "Helvetica", 10, self.uw - 20)
+            needed = len(item_lines) * 14 + 10
+            self.y, self.page_no = _ensure_space(self.pdf, self.width, self.height, self.y, needed, self.page_no, self.charcoal)
+            self.pdf.setFillColor(self.panel)
+            self.pdf.roundRect(self.left, self.y - needed + 6, self.uw, needed, 6, stroke=0, fill=1)
+            self.pdf.setFillColor(self.gold)
+            self.pdf.roundRect(self.left, self.y - needed + 6, 4, needed, 2, stroke=0, fill=1)
+            yy = self.y - 6
+            for line in item_lines:
+                self.pdf.setFillColor(self.white)
+                self.pdf.setFont("Helvetica", 10)
+                self.pdf.drawString(self.left + 14, yy, line)
+                yy -= 14
+            self.y -= needed + 5
+
 
 # ── LIGHT SYNTHESIS HELPERS ───────────────────────────────────────────────────
 
@@ -1003,59 +1106,46 @@ scene_priorities: list of 6 specific bullets
 
 
 def _find_actor_report_image(brain_data: Dict, mode: str, character_name: str, title: str) -> Optional[Path]:
-    """Find existing image first; optionally generate one with FAL if configured."""
-    candidates: List[Path] = []
-
-    # 1. Explicit paths from brain image_plan (local_path/image_path keys)
+    """Generate a report-specific image via FAL (cached). Never grabs generic pitch-deck images."""
+    # 1. Explicit path from brain image_plan only
     for item in brain_data.get("image_plan") or []:
         if isinstance(item, dict):
             for key in ["local_path", "image_path", "path", "selected_image_path"]:
                 val = str(item.get(key) or "").strip()
                 if val and not val.startswith("http"):
                     p = Path(val)
-                    if p.exists() and p.is_file():
-                        candidates.append(p)
+                    if p.exists() and p.is_file() and p.stat().st_size > 1000:
+                        return p
 
-    # 2. Scan generated_images/ recursively — sort newest first so current session wins
-    gen_dir = _BASE_DIR / "generated_images"
-    if gen_dir.exists():
-        found = []
-        for pat in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
-            found.extend(gen_dir.rglob(pat))
-        found.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-        candidates.extend(found)
-
-    # 3. Fallback: visuals/user_uploaded
-    for base in ["visuals/user_uploaded", "static/generated"]:
-        bp = _BASE_DIR / base
-        if bp.exists():
-            for pat in ["*.jpg", "*.jpeg", "*.png", "*.webp"]:
-                hits = sorted(bp.rglob(pat), key=lambda p: p.stat().st_mtime, reverse=True)
-                candidates.extend(hits)
-
-    for path in candidates:
-        if path.exists() and path.is_file() and path.stat().st_size > 1000:
-            return path
-
+    # 2. FAL generation — cached per report so it never regenerates unnecessarily
     fal_key = os.getenv("FAL_KEY") or os.getenv("FAL_API_KEY")
     if not fal_key:
         return None
     try:
         import urllib.request
         import fal_client  # type: ignore
-        out_dir = Path("output/actor_report_images")
+        out_dir = _BASE_DIR / "visuals" / "output" / "report_images"
         out_dir.mkdir(parents=True, exist_ok=True)
         safe_name = re.sub(r"[^a-zA-Z0-9_-]+", "_", f"{title}_{character_name}_{mode}").strip("_").lower()[:80]
         out_path = out_dir / f"{safe_name}.png"
-        if out_path.exists():
+        if out_path.exists() and out_path.stat().st_size > 1000:
             return out_path
         world = _world_value(brain_data)
         tone = _safe(brain_data.get("tone"), "cinematic, grounded")
-        prompt = (
-            f"Cinematic actor preparation report image for {character_name} in {title}. "
-            f"World: {world}. Tone: {tone}. Professional film still, dramatic but tasteful, "
-            f"no text, no logos, no watermark, shallow depth of field, premium streaming drama look, 16:9."
-        )
+        if mode == "analysis":
+            prompt = (
+                f"Cinematic cover image for a screenplay called '{title}'. "
+                f"World: {world}. Tone: {tone}. "
+                f"Film production still, atmospheric, evocative, no text, no logos, no watermarks, "
+                f"shallow depth of field, premium streaming drama look, 16:9."
+            )
+        else:
+            prompt = (
+                f"Cinematic actor prep image for character {character_name} in '{title}'. "
+                f"World: {world}. Tone: {tone}. "
+                f"Professional film still, dramatic but tasteful, no text, no logos, no watermarks, "
+                f"shallow depth of field, premium streaming drama look, 16:9."
+            )
         result = fal_client.subscribe(
             os.getenv("FAL_IMAGE_MODEL", "fal-ai/flux/dev"),
             arguments={"prompt": prompt, "image_size": "landscape_16_9", "num_images": 1},
@@ -1538,6 +1628,8 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     set_ready_checklist = [str(x).strip() for x in (report_output.get("set_ready_checklist") or []) if str(x).strip()]
     relationship_map = report_output.get("relationship_leverage_map") or []
     image_plan = report_output.get("image_plan") or []
+    act_breakdown = report_output.get("act_breakdown") or {}
+    character_arcs = report_output.get("character_arcs") or {}
 
     layout_strategy = report_output.get("layout_strategy") or {}
     slide_blueprint = report_output.get("slide_blueprint") or {}
@@ -1659,7 +1751,8 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(L + 16, cy, item); cy -= 14
 
     if cy > 80:
-        _draw_cover_image(pdf, cover_image, L, max(54, cy - 140), UW, min(120, cy - 60), gold)
+        img_h = min(cy - 60, 200)
+        _draw_cover_image(pdf, cover_image, L, max(54, cy - img_h), UW, img_h, gold)
 
     pdf.setFillColor(gold)
     pdf.rect(0, 0, W, 4, stroke=0, fill=1)
@@ -1702,9 +1795,21 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         ctx.info_row("Role arc map", "  →  ".join(role_arc_map[:6]))
     ctx.y -= 8
 
+    if act_breakdown:
+        ctx.section_header("Act Structure", "How the story is built across its three movements.")
+        ctx.act_breakdown_cards(act_breakdown)
+        ctx.y -= 4
+
+    if character_arcs:
+        ctx.section_header("Character Arcs", "Where each key role begins, how they transform, and where they land.")
+        ctx.character_arc_rows(character_arcs)
+        ctx.y -= 4
+
     ctx.section_header("Market Position", "The commercial lane this project appears to be in right now.")
     if comparables:
-        ctx.info_row("Comparable titles", ", ".join(comparables[:6]))
+        ctx.pdf.setFillColor(ctx.white); ctx.pdf.setFont("Helvetica-Bold", 10.5)
+        ctx.pdf.drawString(ctx.left, ctx.y, "Comparable titles"); ctx.y -= 13
+        ctx.bullet_list(comparables[:6], bullet_color=gold)
     if audience:
         ctx.info_row("Audience profile", ", ".join(audience[:6]))
     if budget_lane:
@@ -1729,7 +1834,9 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     if sales_hook:
         ctx.info_row("Sales hook", sales_hook)
     if comparable_details:
-        ctx.bullet_list(comparable_details[:5], bullet_color=gold)
+        ctx.pdf.setFillColor(ctx.soft); ctx.pdf.setFont("Helvetica-Bold", 9)
+        ctx.pdf.drawString(ctx.left, ctx.y, "FILM COMPARISONS  ·  BOX OFFICE"); ctx.y -= 10
+        ctx.comp_table(comparable_details[:5])
     if market_projections:
         projection_lines = []
         for label, key in [
@@ -1793,35 +1900,6 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
         ctx.section_header("Things To Watch")
         ctx.bullet_list([str(x) for x in risks_list[:8] if str(x).strip()], bullet_color=gold)
         ctx.y -= 8
-
-    ctx.section_header("Visual & Presentation Strategy", "This is the part of the brain that can feed decks, reports, and creative direction.")
-    if layout_strategy:
-        strat = []
-        for k in ["layout_style", "text_density", "image_priority", "pacing", "visual_energy", "headline_style"]:
-            v = _safe(layout_strategy.get(k))
-            if v:
-                strat.append(f"{k.replace('_', ' ').title()}: {v}")
-        if strat:
-            ctx.bullet_list(strat[:8], bullet_color=gold)
-    if slide_blueprint:
-        blueprint = []
-        for k in ["recommended_slide_count", "opening_style", "mid_deck_focus", "closing_style"]:
-            v = _safe(slide_blueprint.get(k))
-            if v:
-                blueprint.append(f"{k.replace('_', ' ').title()}: {v}")
-        if blueprint:
-            ctx.bullet_list(blueprint[:6], bullet_color=blue)
-    if analysis_layout:
-        layout_lines = []
-        for k in ["layout_family", "cover_style", "chart_style", "section_density"]:
-            v = _safe(analysis_layout.get(k))
-            if v:
-                layout_lines.append(f"{k.replace('_', ' ').title()}: {v}")
-        if layout_lines:
-            ctx.bullet_list(layout_lines[:6], bullet_color=gold)
-    if image_summary:
-        ctx.section_header("Image-plan highlights")
-        ctx.bullet_list(image_summary[:5], bullet_color=blue)
 
     ctx.section_header("Why This Project Matters", "The part a novice user, creative producer, or investor can understand quickly.")
     ctx.bullet_list([str(x) for x in story_insights[:8] if str(x).strip()], bullet_color=gold)
