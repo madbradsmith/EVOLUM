@@ -227,9 +227,8 @@
         </div>
     </div>
 
-    <div id="refinementStage" style="display:none; max-width:1100px; margin:0 auto;">
+    <div id="refinementStage" style="display:none; max-width:1180px; margin:0 auto;">
         <div class="workspace-title" style="text-align:center; margin-bottom:6px;">Refine Deck</div>
-        <div class="workspace-copy" style="text-align:center; margin-bottom:6px;"></div>
 
         <div class="refine-meta">
             <div class="meta-chip" id="slideCounter">Slide 1 of 5</div>
@@ -237,10 +236,18 @@
         </div>
 
         <div class="refine-layout">
+
+            <!-- LEFT: bigger preview panel -->
             <div class="preview-panel">
                 <div class="panel-title">Slide Preview</div>
                 <div class="slide-preview-wrap">
-                    <img id="refineSlideImage" class="slide-preview-img" src="" alt="Slide preview">
+                    <div class="slide-nav-row">
+                        <button class="slide-nav-arrow" id="refineBackBtn" type="button" onclick="goPrevRefineSlide()" title="Previous slide">&#8592;</button>
+                        <div class="slide-img-wrap">
+                            <img id="refineSlideImage" class="slide-preview-img" src="" alt="Slide preview">
+                        </div>
+                        <button class="slide-nav-arrow" id="refineNextBtn" type="button" onclick="goNextRefineSlide()" title="Next slide">&#8594;</button>
+                    </div>
                     <div class="slide-caption" id="refineSlideCaption">Preview of the currently selected placeholder slide.</div>
                     <div class="image-option-strip" id="imageOptionStrip"></div>
                     <div class="image-option-empty" id="imageOptionEmpty" style="display:none;">No alternate images are available for this slide yet.</div>
@@ -248,6 +255,7 @@
                 <div class="slide-list" id="slideList"></div>
             </div>
 
+            <!-- RIGHT: compact edit panel -->
             <div class="edit-panel">
                 <div class="panel-title">Edit Slide Content</div>
 
@@ -268,12 +276,11 @@
 
                 <div class="field-group">
                     <label class="label" for="refineImagePrompt">Image Direction <span class="label-optional">(optional)</span></label>
-                    <input type="text" id="refineImagePrompt" placeholder="e.g. animated style, night scene, wide epic shot…">
-                    <div class="field-help">Describe the look you want for this slide's image. Leave blank to use the script's tone automatically.</div>
+                    <input type="text" id="refineImagePrompt" placeholder="e.g. night scene, wide epic shot…">
                 </div>
 
                 <div class="field-group">
-                    <label class="label">Upload Your Own Image <span class="label-optional">(optional)</span></label>
+                    <label class="label">Upload Image <span class="label-optional">(optional)</span></label>
                     <input type="file" id="slideImageUpload" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleSlideImageUpload(this)">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <button class="secondary-button" type="button" style="font-size:12px; padding:7px 12px;" onclick="document.getElementById('slideImageUpload').click()">Choose Image</button>
@@ -281,30 +288,23 @@
                     </div>
                 </div>
 
-                <div class="upload-actions refine-actions-single">
-    <button class="primary-button" type="button" onclick="submitRefineDeck()">Update &amp; Rebuild</button>
-    <button class="secondary-button" type="button" id="regenImageBtn" onclick="regenerateSlideImage()">Regenerate Image</button>
-</div>
-<div class="upload-actions refine-actions-single" style="margin-top:8px">
-    <button class="secondary-button full-width-btn" type="button" id="loadOptionsBtn" onclick="loadSlideImageOptions()">Load Image Options</button>
-</div>
+                <div class="refine-action-group">
+                    <button class="primary-button refine-full-btn" type="button" onclick="submitRefineDeck()">Update &amp; Rebuild</button>
+                    <div class="refine-btn-row">
+                        <button class="secondary-button" type="button" id="regenImageBtn" onclick="regenerateSlideImage()">Regenerate Image</button>
+                        <button class="secondary-button" type="button" id="loadOptionsBtn" onclick="loadSlideImageOptions()">Load Image Options</button>
+                    </div>
+                </div>
 
-<div class="upload-actions refine-actions-pair">
-    <button class="secondary-button" id="refineBackBtn" type="button" onclick="goPrevRefineSlide()">Previous Slide</button>
-    <button class="secondary-button" id="refineNextBtn" type="button" onclick="goNextRefineSlide()">Next Slide</button>
-</div>
-
-<div class="upload-actions refine-actions-single" style="margin-top:12px;">
-    <input type="text" id="refineRegenInput" class="regen-prompt-input"
-        placeholder="New direction for full deck…"
-        onkeydown="if(event.key==='Enter') submitRegenDeck()">
-</div>
-
-<div class="upload-actions refine-actions-pair">
-    <button class="secondary-button" type="button" onclick="returnToPreviewStage()">Back to Preview</button>
-    <button class="primary-button" type="button" onclick="submitRegenDeck()">Regenerate Deck</button>
-</div>
-
+                <div class="refine-deck-section">
+                    <input type="text" id="refineRegenInput" class="regen-prompt-input"
+                        placeholder="New direction for full deck…"
+                        onkeydown="if(event.key==='Enter') submitRegenDeck()">
+                    <div class="refine-btn-row" style="margin-top:8px;">
+                        <button class="secondary-button" type="button" onclick="returnToPreviewStage()">Back to Preview</button>
+                        <button class="primary-button" type="button" onclick="submitRegenDeck()">Regenerate Deck</button>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -1105,7 +1105,7 @@
 </div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}";</script>
-  <script src="{{ url_for('static', filename='main.js') }}?v=20260429_chunk6"></script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=20260502_refineC"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
     {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal{% else %}showAuthModal{% endif %}());{% endif %}
