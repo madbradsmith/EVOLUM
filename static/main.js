@@ -440,6 +440,56 @@ function showUploadState(){
     if (homeCardGrid) homeCardGrid.style.display = "none";
     if (choicesRow) choicesRow.style.display = "none";
     if (uploadState) uploadState.style.display = "block";
+
+    fetchUsage();
+}
+
+let _cachedUsage = null;
+
+function fetchUsage(){
+    const meter = document.getElementById("usageMeter");
+    if (!meter) return;
+    if (typeof userLoggedIn === "undefined" || !userLoggedIn) return;
+
+    fetch("/usage").then(r => r.ok ? r.json() : null).then(data => {
+        if (!data || data.error) return;
+        _cachedUsage = data;
+        meter.style.display = "block";
+
+        const used = data.weekly_used || 0;
+        const total = data.total_available || 0;
+        const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+        const remaining = data.remaining || 0;
+        const overLimit = data.over_limit;
+
+        const bar = document.getElementById("usageMeterBar");
+        const txt = document.getElementById("usageMeterText");
+        const overMsg = document.getElementById("usageOverMsg");
+        const buyBtn = document.getElementById("buyMoreBtn");
+
+        if (bar) {
+            bar.style.width = pct + "%";
+            bar.style.background = pct >= 100 ? "#ff6b6b" : pct >= 80 ? "#f5a623" : "#6c63ff";
+        }
+        if (txt) txt.textContent = `$${used.toFixed(2)} of $${total.toFixed(2)} used this week`;
+        if (overMsg) overMsg.style.display = overLimit ? "block" : "none";
+        if (buyBtn) buyBtn.style.display = overLimit ? "inline-block" : "none";
+
+        const generateBtn = document.querySelector("#uploadState form button[type=submit]");
+        if (generateBtn) {
+            generateBtn.disabled = overLimit;
+            generateBtn.title = overLimit ? "Weekly credit limit reached" : "";
+        }
+    }).catch(() => {});
+}
+
+function buyMoreCredits(){
+    fetch("/buy-credits", { method: "POST" })
+        .then(r => r.json())
+        .then(data => {
+            if (data.url) window.location.href = data.url;
+            else showInfoModal("Error", data.error || "Could not start checkout.");
+        }).catch(() => showInfoModal("Error", "Could not reach server."));
 }
 
 function resetCreateProject(){
@@ -691,6 +741,16 @@ function validateUploadAndStart(){
         method: "POST",
         body: formData
     }).then(res => {
+        if (res.status === 402) {
+            buildInFlight = false;
+            resetCreateProject();
+            return res.json().then(data => {
+                const msg = data.message || "Weekly credit limit reached. Buy more or wait until Monday.";
+                showInfoModal("Weekly Limit Reached", msg);
+                showUploadState();
+                fetchUsage();
+            });
+        }
         if (res.status === 403) {
             buildInFlight = false;
             showProjectLimitModal();

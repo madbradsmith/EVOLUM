@@ -208,6 +208,7 @@ def ensure_subscription_columns():
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
+        conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS usage_bonus_usd FLOAT DEFAULT 0"))
 
 
 def ensure_referral_tables():
@@ -1132,6 +1133,64 @@ _STRIPE_PLANS = {
     "studio":       {"product": "prod_UQbmcaFzM9v24B", "monthly": 15000, "annual": 150000,"name": "EVOLUM Studio",          "trial_days": 0},
 }
 
+# Weekly API credit budgets per plan (USD)
+_WEEKLY_BUDGETS = {
+    "solo": 2.50,
+    "writers-room": 6.25,
+    "production": 18.75,
+    "studio": 37.50,
+}
+_CREDIT_PACK_USD = 5.00  # one credit pack = $5 of usage
+
+
+def _get_weekly_usage(user_email: str) -> float:
+    """Sum of tracked deck_run costs since the start of the current week (Monday UTC)."""
+    if not DB_ENGINE or not user_email:
+        return 0.0
+    try:
+        with DB_ENGINE.connect() as conn:
+            result = conn.execute(text("""
+                SELECT COALESCE(SUM(CAST(NULLIF(metadata_json::json->>'total_cost_usd','') AS FLOAT)), 0)
+                FROM activity_events
+                WHERE user_email = :email
+                  AND event_type = 'deck_run'
+                  AND metadata_json IS NOT NULL
+                  AND metadata_json::json->>'total_cost_usd' IS NOT NULL
+                  AND created_at >= date_trunc('week', NOW() AT TIME ZONE 'UTC')
+            """), {"email": user_email})
+            return float(result.scalar() or 0)
+    except Exception:
+        return 0.0
+
+
+def _get_user_bonus_credits(user_email: str) -> float:
+    if not DB_ENGINE or not user_email:
+        return 0.0
+    try:
+        with DB_ENGINE.connect() as conn:
+            r = conn.execute(text(
+                "SELECT COALESCE(usage_bonus_usd, 0) FROM beta_users WHERE email = :e"
+            ), {"e": user_email}).scalar()
+            return float(r or 0)
+    except Exception:
+        return 0.0
+
+
+def _check_usage_budget(user_email: str, plan: str) -> dict:
+    weekly_budget = _WEEKLY_BUDGETS.get(plan or "solo", 2.50)
+    weekly_used = _get_weekly_usage(user_email)
+    bonus = _get_user_bonus_credits(user_email)
+    total_available = weekly_budget + bonus
+    remaining = max(0.0, total_available - weekly_used)
+    return {
+        "weekly_budget": weekly_budget,
+        "weekly_used": round(weekly_used, 4),
+        "bonus_credits": round(bonus, 4),
+        "total_available": round(total_available, 4),
+        "remaining": round(remaining, 4),
+        "over_limit": weekly_used >= total_available,
+    }
+
 @app.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
     import stripe as stripe_lib
@@ -1660,6 +1719,80 @@ def admin_download_log():
         abort(404)
     return send_file(log_path, as_attachment=True, download_name="evolum_app.log", mimetype="text/plain")
 
+
+@app.route("/usage")
+def usage():
+    email = get_current_user_email()
+    if not email:
+        return jsonify({"error": "not_signed_in"}), 401
+    user = get_user_by_email(email)
+    plan = (user.get("plan") or "solo") if user else "solo"
+    data = _check_usage_budget(email, plan)
+    data["plan"] = plan
+    return jsonify(data)
+
+
+@app.route("/buy-credits", methods=["POST"])
+def buy_credits():
+    import stripe as stripe_lib
+    email = get_current_user_email()
+    if not email:
+        return jsonify({"error": "not_signed_in"}), 401
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    if not stripe_lib.api_key:
+        return jsonify({"error": "Stripe not configured"}), 500
+    base_url = request.host_url.rstrip("/")
+    try:
+        checkout = stripe_lib.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "usd",
+                    "unit_amount": int(_CREDIT_PACK_USD * 100),
+                    "product_data": {
+                        "name": "EVOLUM Usage Credits",
+                        "description": f"${_CREDIT_PACK_USD:.0f} of API usage credits — use any time, never expire",
+                    },
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            customer_email=email,
+            success_url=f"{base_url}/credits-success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base_url}/?credits_cancelled=1",
+            metadata={"email": email, "credit_usd": str(_CREDIT_PACK_USD)},
+        )
+        return jsonify({"url": checkout.url})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/credits-success")
+def credits_success():
+    import stripe as stripe_lib
+    stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
+    session_id = request.args.get("session_id", "")
+    if not session_id or not stripe_lib.api_key:
+        return redirect("/?credits_error=1")
+    try:
+        cs = stripe_lib.checkout.Session.retrieve(session_id)
+        if cs.payment_status == "paid":
+            email = cs.metadata.get("email") or cs.customer_email or ""
+            credit_usd = float(cs.metadata.get("credit_usd", _CREDIT_PACK_USD))
+            if email and DB_ENGINE:
+                with DB_ENGINE.begin() as conn:
+                    conn.execute(text("""
+                        UPDATE beta_users
+                        SET usage_bonus_usd = COALESCE(usage_bonus_usd, 0) + :amt
+                        WHERE email = :email
+                    """), {"amt": credit_usd, "email": email})
+                log_activity_event("credits_purchased", route="/credits-success",
+                                   user_email=email, metadata={"credit_usd": credit_usd})
+    except Exception as e:
+        _app_logger.error(f"Credits success handler error: {e}")
+    return redirect("/?credits_added=1")
+
+
 # ===== PITCH DECK ROUTES START =======================
 
 # ===== UPLOAD OVERRIDE HELPERS START ====================
@@ -1796,6 +1929,28 @@ def upload():
     else:
         if not project_title and not existing_project_id:
             session.pop("active_project_id", None)
+
+    # --- usage budget gate ---
+    _upload_email = get_current_user_email()
+    if _upload_email and DB_ENGINE:
+        try:
+            with DB_ENGINE.connect() as _uc:
+                _plan_row = _uc.execute(
+                    text("SELECT COALESCE(plan,'solo') FROM beta_users WHERE lower(email)=:e LIMIT 1"),
+                    {"e": _upload_email.lower()}
+                ).fetchone()
+            _upload_plan = (_plan_row[0] if _plan_row else None) or "solo"
+            _budget_check = _check_usage_budget(_upload_email, _upload_plan)
+            if _budget_check["over_limit"]:
+                return jsonify({
+                    "error": "over_limit",
+                    "message": f"You've used your ${_budget_check['weekly_budget']:.2f} weekly credit — resets Monday. Buy more to continue.",
+                    "weekly_used": _budget_check["weekly_used"],
+                    "weekly_budget": _budget_check["weekly_budget"],
+                    "remaining": _budget_check["remaining"],
+                }), 402
+        except Exception:
+            pass  # don't block pipeline on metering errors
 
     clear_latest_targets()
 
