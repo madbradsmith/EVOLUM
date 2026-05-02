@@ -877,6 +877,44 @@ def add_text_box(slide, left, top, width, height, text: str, *, font_size: int =
     p.alignment = align
 
 
+def add_panel_text(slide, left, top_title, panel_w, slide_title: str, body: str, font_size: int = 17) -> None:
+    """Body text directly on a dark panel — no box, no border. Title + thin rule + body."""
+    accent = _active_theme["accent"]
+    tx_w = panel_w - int(Inches(0.56))
+    x = left + int(Inches(0.28))
+
+    # Title
+    tx_title = slide.shapes.add_textbox(x, top_title, tx_w, Inches(0.52))
+    tf = tx_title.text_frame; tf.clear(); tf.word_wrap = True
+    p = tf.paragraphs[0]; run = p.add_run()
+    run.text = clean(slide_title.split("(")[0].strip())
+    run.font.name = _theme_font(); run.font.size = Pt(15)
+    run.font.bold = True; run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.LEFT
+
+    # Thin accent rule under title
+    rule_y = top_title + int(Inches(0.6))
+    rule = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, x, rule_y, tx_w, int(Inches(0.025)))
+    rule.fill.solid(); rule.fill.fore_color.rgb = rgb(*accent)
+    rule.fill.transparency = 0.5; rule.line.fill.background()
+
+    # Body text rectangle — vertically centered in remaining space
+    body_y = rule_y + int(Inches(0.12))
+    body_h = SLIDE_H - body_y - int(Inches(0.36))
+    rect = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, x, body_y, tx_w, body_h)
+    rect.fill.background(); rect.line.fill.background()
+    tf2 = rect.text_frame; tf2.clear(); tf2.word_wrap = True
+    tf2.margin_left = Inches(0.0); tf2.margin_right = Inches(0.1)
+    tf2.margin_top = Inches(0.0); tf2.margin_bottom = Inches(0.0)
+    tf2.vertical_anchor = MSO_ANCHOR.MIDDLE
+    p2 = tf2.paragraphs[0]; run2 = p2.add_run()
+    run2.text = clean(body)
+    run2.font.name = _theme_font(); run2.font.size = Pt(font_size)
+    run2.font.bold = True; run2.font.color.rgb = rgb(240, 240, 240)
+    p2.alignment = PP_ALIGN.LEFT
+    p2.line_spacing = Pt(font_size * 1.45)
+
+
 def add_cinematic_caption(slide, body: str, font_size: int = 18) -> None:
     """Full-width dark band anchored at the bottom — no border, text sits on the image."""
     if not body:
@@ -971,26 +1009,9 @@ def build_slide_split_panel(slide, image_path: Optional[Path], slide_title: str,
     div.fill.transparency = 0.35
     div.line.fill.background()
 
-    # Title in right panel
-    tx_left = right_x + int(Inches(0.28))
-    tx_w = right_w - int(Inches(0.56))
-    tx = slide.shapes.add_textbox(tx_left, Inches(0.48), tx_w, Inches(0.9))
-    tf = tx.text_frame
-    tf.clear()
-    tf.word_wrap = True
-    p = tf.paragraphs[0]
-    run = p.add_run()
-    run.text = clean(slide_title.split("(")[0].strip())
-    run.font.name = _theme_font()
-    run.font.size = Pt(15)
-    run.font.bold = True
-    run.font.color.rgb = rgb(*accent)
-    p.alignment = PP_ALIGN.LEFT
-
-    # Body in right panel — generous height, auto font
+    # Title + rule + body directly on dark panel (no box)
     font_size = _auto_font_size(body, base=17)
-    add_text_box(slide, tx_left, Inches(1.55), tx_w, Inches(5.2),
-                 body, font_size=font_size, align=PP_ALIGN.LEFT, fill_transparency=0.0)
+    add_panel_text(slide, right_x, Inches(0.52), right_w, slide_title, body, font_size=font_size)
 
 
 def build_slide_text_only(slide, slide_title: str, body: str) -> None:
@@ -1104,18 +1125,9 @@ def build_slide_split_right(slide, image_path: Optional[Path], slide_title: str,
     div.fill.transparency = 0.35
     div.line.fill.background()
 
-    tx_w = panel_w - int(Inches(0.56))
-    tx = slide.shapes.add_textbox(int(Inches(0.28)), Inches(0.48), tx_w, Inches(0.9))
-    tf = tx.text_frame; tf.clear(); tf.word_wrap = True
-    p = tf.paragraphs[0]; run = p.add_run()
-    run.text = clean(slide_title.split("(")[0].strip())
-    run.font.name = _theme_font(); run.font.size = Pt(15)
-    run.font.bold = True; run.font.color.rgb = rgb(*accent)
-    p.alignment = PP_ALIGN.LEFT
-
+    # Title + rule + body directly on dark panel (no box)
     font_size = _auto_font_size(body, base=17)
-    add_text_box(slide, int(Inches(0.28)), Inches(1.55), tx_w, Inches(5.2),
-                 body, font_size=font_size, align=PP_ALIGN.LEFT, fill_transparency=0.0)
+    add_panel_text(slide, 0, Inches(0.52), panel_w, slide_title, body, font_size=font_size)
 
 
 def build_slide_quote_overlay(slide, image_path: Optional[Path], slide_title: str, body: str) -> None:
