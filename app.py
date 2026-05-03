@@ -1054,6 +1054,10 @@ def submit_feedback():
     log_activity_event("feedback_message", route="/feedback",
                        user_email=email,
                        metadata={"name": name, "category": category, "message": message[:500]})
+    admin_email = os.environ.get("SMTP_USER", "")
+    _smtp_send(admin_email,
+               f"EVOLUM Feedback [{category or 'general'}] from {name or email or 'anonymous'}",
+               f"From: {name or 'anonymous'} <{email or 'no email'}>\nCategory: {category or '—'}\n\n{message}")
     return jsonify({"ok": True})
 
 @app.route("/contact", methods=["POST"])
@@ -1067,6 +1071,10 @@ def contact():
     log_activity_event("contact_message", route="/contact",
                        user_email=email or session.get("user_email"),
                        metadata={"name": name, "message": message[:500]})
+    admin_email = os.environ.get("SMTP_USER", "")
+    _smtp_send(admin_email,
+               f"EVOLUM Contact from {name or email or 'anonymous'}",
+               f"From: {name or 'anonymous'} <{email or 'no email'}>\n\n{message}")
     return jsonify({"ok": True})
 
 
