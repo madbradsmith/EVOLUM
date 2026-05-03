@@ -1344,6 +1344,10 @@ def payment_success():
 
 
 # ===== CORE ROUTES START =============================
+@app.route("/sw.js")
+def service_worker():
+    return send_file(BASE_DIR / "static" / "sw.js", mimetype="application/javascript")
+
 @app.route("/")
 def index():
     if get_current_user_email():
