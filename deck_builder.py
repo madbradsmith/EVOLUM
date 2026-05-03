@@ -496,10 +496,34 @@ def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "
     concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting")
     style_prefix = _VISUAL_STYLE_PREFIX.get(USER_VISUAL_STYLE, "")
 
-    # Use the actual slide body as the core scene description when available
-    _raw_scene = slide_body.replace("\n", " ").strip()[:200] if slide_body else ""
-    # Trim at last word boundary to avoid cutting mid-word
-    if len(_raw_scene) == 200 and " " in _raw_scene:
+    # Pull story-specific context from brain output for each slide type
+    logline   = str(brain_output.get("logline", "") or "").strip()[:180]
+    synopsis  = str(brain_output.get("synopsis", "") or "").strip()[:220]
+    protagonist = str(brain_output.get("protagonist", "") or "").strip()
+    protagonist_summary = str(brain_output.get("protagonist_summary", "") or "").strip()[:120]
+    antagonist = str(brain_output.get("antagonist", "") or "").strip()
+    antagonist_summary = str(brain_output.get("antagonist_summary", "") or "").strip()[:120]
+    themes_raw = brain_output.get("themes", [])
+    themes = ", ".join(themes_raw[:3]) if isinstance(themes_raw, list) else str(themes_raw or "")[:100]
+    story_engine = str(brain_output.get("story_engine", "") or "").strip()[:120]
+
+    # Prefer story-specific content over slide body for key slides
+    story_scene = {
+        "logline":    logline or slide_body,
+        "synopsis":   synopsis or slide_body,
+        "synopsis 2": synopsis or slide_body,
+        "synopsis 3": synopsis or slide_body,
+        "protagonist": f"{protagonist} — {protagonist_summary}" if protagonist else slide_body,
+        "antagonist":  f"{antagonist} — {antagonist_summary}" if antagonist else slide_body,
+        "themes":      themes or slide_body,
+        "story engine": story_engine or slide_body,
+        "hook":        logline or slide_body,
+        "conflict":    synopsis or slide_body,
+        "stakes":      story_engine or synopsis or slide_body,
+    }.get(normalized, slide_body)
+
+    _raw_scene = (story_scene or "").replace("\n", " ").strip()[:220]
+    if len(_raw_scene) == 220 and " " in _raw_scene:
         _raw_scene = _raw_scene[:_raw_scene.rfind(" ")]
     scene = _raw_scene
 

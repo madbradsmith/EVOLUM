@@ -194,24 +194,20 @@ class BeatEntry:
 # ── AI HELPERS (OPTIONAL / SAFE FALLBACKS) ───────────────────────────────────
 
 def _call_text_ai(system_prompt: str, user_prompt: str, max_tokens: int = 350) -> str:
-    """Best-effort text AI helper. Falls back silently if API/package isn't available."""
-    api_key = os.getenv("OPENAI_API_KEY") or os.getenv("D_AI_OPENAI_API_KEY")
-    model = os.getenv("D_AI_TEXT_MODEL", "gpt-4.1-mini")
+    """Best-effort text AI helper using Claude Haiku."""
+    api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         return ""
     try:
-        from openai import OpenAI  # type: ignore
-        client = OpenAI(api_key=api_key)
-        resp = client.chat.completions.create(
-            model=model,
-            temperature=0.4,
+        import anthropic
+        client = anthropic.Anthropic(api_key=api_key)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
             max_tokens=max_tokens,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            system=system_prompt,
+            messages=[{"role": "user", "content": user_prompt}],
         )
-        return (resp.choices[0].message.content or "").strip()
+        return (resp.content[0].text or "").strip()
     except Exception:
         return ""
 
