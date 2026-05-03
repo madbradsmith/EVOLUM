@@ -393,7 +393,7 @@ def resolve_image_options_for_slide(
 
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
 EVOLUM_SESSION_ID = os.environ.get("EVOLUM_SESSION_ID", "shared")
-TMDB_API_KEY = os.environ.get("TMDB_TOKEN", "")
+TMDB_API_KEY = os.environ.get("TMDB_API_TOKEN", "")
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
 _user_rotation_counters: dict = {}
