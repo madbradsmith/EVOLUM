@@ -199,18 +199,6 @@ tr:hover td { background:#fafafa; }
                 <div class="health-sub">{{ 'Set' if stats.admin_reset_key_set else 'Not set — password reset disabled' }}</div>
             </div>
         </div>
-        {% if stats.disk_total_mb %}
-        <div class="health-card">
-            <div class="health-dot {{ 'err' if stats.disk_pct > 95 else ('warn' if stats.disk_pct > 87 else 'ok') }}"></div>
-            <div style="width:100%;">
-                <div class="health-text">Disk Usage</div>
-                <div class="health-sub">{{ stats.disk_used_mb }} MB / {{ stats.disk_total_mb // 1024 }} GB ({{ stats.disk_pct }}%)</div>
-                <div class="disk-bar">
-                    <div class="disk-bar-fill {{ 'danger' if stats.disk_pct > 95 else ('warn' if stats.disk_pct > 87 else '') }}" style="width:{{ stats.disk_pct }}%;"></div>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 
     <div class="section-label">Snapshot</div>

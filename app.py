@@ -1497,27 +1497,15 @@ def _fetch_fal_balance() -> dict:
 def admin():
     if not session.get("admin_authed"):
         return redirect("/admin/login")
-    import shutil
     stats = {
         "users": 0, "projects": 0,
-        "logins_total": 0, "logins_today": 0, "active_sessions": 0,
-        "deck_runs": 0, "script_analyses": 0, "actor_prep": 0, "actor_booked": 0,
         "db_ok": False, "db_error": "", "api_key_set": bool(os.environ.get("ANTHROPIC_API_KEY")),
         "fal_key_set": bool(os.environ.get("FAL_API_KEY")),
         "admin_reset_key_set": bool(os.environ.get("ADMIN_RESET_KEY")),
-        "disk_used_mb": 0, "disk_total_mb": 0, "disk_pct": 0,
     }
     users = []
     recent_activity = []
     messages = []
-
-    try:
-        _du = shutil.disk_usage(BASE_DIR)
-        stats["disk_total_mb"] = round(_du.total / (1024 * 1024), 1)
-        stats["disk_used_mb"] = round((_du.total - _du.free) / (1024 * 1024), 1)
-        stats["disk_pct"] = round(((_du.total - _du.free) / _du.total) * 100, 1)
-    except Exception:
-        pass
 
     fal_balance = {"available": False, "reason": "loading"}  # fetched async by JS
     stats["fal_balance"] = fal_balance
