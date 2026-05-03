@@ -1533,12 +1533,13 @@ def _fetch_fal_balance() -> dict:
         return {"available": False, "reason": "no_key"}
     try:
         req = urllib.request.Request(
-            "https://rest.fal.ai/billing/balance",
+            "https://api.fal.ai/v1/account/billing?expand=credits",
             headers={"Authorization": f"Key {fal_key}", "Accept": "application/json"},
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read().decode())
-        return {"available": True, "balance": data.get("balance"), "raw": data}
+        balance = (data.get("credits") or {}).get("current_balance")
+        return {"available": True, "balance": balance, "raw": data}
     except urllib.error.HTTPError as e:
         return {"available": False, "reason": "Check fal.ai dashboard"}
     except Exception as e:
