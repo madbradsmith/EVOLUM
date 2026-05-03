@@ -270,20 +270,63 @@ def _get_or_create_referral_code(user_id: str) -> str:
 MAX_REFERRAL_WEEKS = 52
 
 
-def _send_referral_notification(referrer_email: str, referrer_name: str, new_user_name: str, weeks_total: int):
-    """Email the referrer when someone signs up with their link."""
+def _smtp_send(to: str, subject: str, body: str) -> bool:
+    """Send a plain-text email via configured SMTP. Returns True on success."""
+    import smtplib
+    from email.mime.text import MIMEText
     smtp_host = os.environ.get("SMTP_HOST", "")
     smtp_user = os.environ.get("SMTP_USER", "")
     smtp_pass = os.environ.get("SMTP_PASS", "")
-    from_email = os.environ.get("FROM_EMAIL", smtp_user) or "noreply@evolum.ai"
+    from_email = os.environ.get("FROM_EMAIL", smtp_user) or smtp_user
+    if not (smtp_host and smtp_user and smtp_pass and to):
+        return False
+    try:
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        msg = MIMEText(body)
+        msg["Subject"] = subject
+        msg["From"] = f"EVOLUM Studio <{from_email}>"
+        msg["To"] = to
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.sendmail(from_email, [to], msg.as_string())
+        print(f"📧 Email sent → {to}: {subject}", flush=True)
+        return True
+    except Exception as e:
+        print(f"⚠️ Email failed → {to}: {e}", flush=True)
+        return False
 
-    if not (smtp_host and smtp_user and smtp_pass and referrer_email):
-        print(f"📧 Referral notification (no SMTP): {referrer_email} ← {new_user_name}", flush=True)
-        return
 
-    import smtplib
-    from email.mime.text import MIMEText
+def _send_welcome_email(to: str, name: str):
+    subject = "Welcome to EVOLUM Studio 🎬"
+    body = (
+        f"Hi {name or 'there'},\n\n"
+        f"You're in. Welcome to EVOLUM Studio.\n\n"
+        f"Here's what you can do right now:\n"
+        f"  • Generate a pitch deck from your script in minutes\n"
+        f"  • Analyze your script for story, character, and tone\n"
+        f"  • Prep for auditions with a full sides breakdown\n"
+        f"  • Get your booked role character analysis\n\n"
+        f"Head back anytime at evolumstudio.com\n\n"
+        f"— MadBrad & The EVOLUM Team\n"
+    )
+    _smtp_send(to, subject, body)
 
+
+def _send_boost_confirmation(to: str, name: str, amount: float):
+    subject = f"EVOLUM Credits Added — ${amount:.0f}"
+    body = (
+        f"Hi {name or 'there'},\n\n"
+        f"Your ${amount:.0f} credit boost has been added to your account.\n\n"
+        f"Credits never expire and stack on top of your weekly budget. "
+        f"Go build something great.\n\n"
+        f"evolumstudio.com\n\n"
+        f"— The EVOLUM Team\n"
+    )
+    _smtp_send(to, subject, body)
+
+
+def _send_referral_notification(referrer_email: str, referrer_name: str, new_user_name: str, weeks_total: int):
     subject = f"🎉 {new_user_name} just joined EVOLUM using your link!"
     body = (
         f"Hi {referrer_name or 'there'},\n\n"
@@ -293,20 +336,7 @@ def _send_referral_notification(referrer_email: str, referrer_name: str, new_use
         f"Keep sharing — you can earn up to {MAX_REFERRAL_WEEKS} free weeks.\n\n"
         f"— The EVOLUM Team\n"
     )
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = from_email
-    msg["To"] = referrer_email
-
-    try:
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
-            server.sendmail(from_email, [referrer_email], msg.as_string())
-        print(f"📧 Referral email sent to {referrer_email}", flush=True)
-    except Exception as e:
-        print(f"⚠️ Referral email failed: {e}", flush=True)
+    _smtp_send(referrer_email, subject, body)
 
 
 def process_referral(ref_code: str, new_user_id: str, new_user_email: str, new_user_name: str = ""):
@@ -969,6 +999,7 @@ def create_account():
 
         log_beta_access(access_code, "ACCOUNT CREATED")
         log_activity_event("account_created", route="/create-account", user_email=email, metadata={"name": name})
+        _send_welcome_email(email, name)
         return redirect("/?welcome=new")
     except Exception as e:
         return redirect("/?auth_error=" + quote(f"Account creation failed: {e}"))
@@ -1802,6 +1833,8 @@ def credits_success():
                     """), {"amt": credit_usd, "email": email})
                 log_activity_event("credits_purchased", route="/credits-success",
                                    user_email=email, metadata={"credit_usd": credit_usd})
+                user = get_user_by_email(email)
+                _send_boost_confirmation(email, (user or {}).get("name", ""), credit_usd)
     except Exception as e:
         _app_logger.error(f"Credits success handler error: {e}")
     return """<!DOCTYPE html><html><head><title>Credits Added</title></head><body>
