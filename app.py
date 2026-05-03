@@ -1522,7 +1522,15 @@ def admin():
     if not DB_ENGINE:
         return render_template("admin.html", stats=stats, users=users,
                                recent_activity=recent_activity, messages=messages,
-                               fal_balance=fal_balance, geo_breakdown=[], user_cost_rows=[])
+                               fal_balance=fal_balance)
+
+    # Ensure plan column exists — own connection, before the read connection opens
+    try:
+        with DB_ENGINE.begin() as _mc:
+            _mc.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
+    except Exception:
+        pass
+
     try:
         with DB_ENGINE.connect() as conn:
             conn.execute(text("SET statement_timeout = '8s'"))
@@ -1530,13 +1538,6 @@ def admin():
 
             stats["users"] = conn.execute(text("SELECT COUNT(*) FROM beta_users")).scalar() or 0
             stats["projects"] = conn.execute(text("SELECT COUNT(*) FROM projects")).scalar() or 0
-
-            # Ensure plan column exists — must use begin() so DDL commits
-            try:
-                with DB_ENGINE.begin() as _mc:
-                    _mc.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
-            except Exception:
-                pass
 
             # Users with plan + project count — fast, no activity_events join
             try:
