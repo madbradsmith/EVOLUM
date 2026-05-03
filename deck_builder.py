@@ -393,6 +393,10 @@ def resolve_image_options_for_slide(
 
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
 EVOLUM_SESSION_ID = os.environ.get("EVOLUM_SESSION_ID", "shared")
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
+
+_user_rotation_counters: dict = {}
 
 _SLIDE_VISUAL_CONCEPTS = {
     "logline":              "cinematic establishing shot, wide angle, dramatic lighting",
@@ -491,6 +495,39 @@ _VISUAL_STYLE_PREFIX = {
     "live_action": "",
 }
 
+
+def _parse_demographics(description: str) -> str:
+    """Extract race/age/build/gender from a character description for accurate FAL prompts."""
+    desc = description.lower()
+    parts = []
+
+    for race in ["black", "african american", "white", "caucasian", "latina", "latino",
+                 "hispanic", "asian", "middle eastern", "indigenous", "biracial"]:
+        if re.search(rf'\b{re.escape(race)}\b', desc):
+            parts.append(race)
+            break
+
+    age_m = re.search(
+        r'\b(early|mid|late)?\s*(teens?|twenties|thirties|forties|fifties|sixties|seventies|\d{2}s?)\b',
+        desc,
+    )
+    if age_m:
+        parts.append(age_m.group(0).strip())
+
+    for build in ["broad-shouldered", "broad shouldered", "muscular", "stocky",
+                  "lean", "athletic", "heavyset", "heavy-set", "slender", "petite", "tall"]:
+        clean_build = build.replace("-", " ")
+        if clean_build in desc or build in desc:
+            parts.append(clean_build)
+            break
+
+    if re.search(r'\b(he|his|him|man|guy|male|boy)\b', desc):
+        parts.append("man")
+    elif re.search(r'\b(she|her|hers|woman|girl|female|lady)\b', desc):
+        parts.append("woman")
+
+    return ", ".join(parts) if parts else ""
+
 def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "") -> str:
     normalized = normalize_key(slide_title)
     concept = _SLIDE_VISUAL_CONCEPTS.get(normalized, "cinematic scene, dramatic lighting")
@@ -541,12 +578,35 @@ def build_image_prompt(slide_title: str, brain_output: dict, slide_body: str = "
 
     period_content, period_render = _detect_period_style(brain_output)
 
+    # Character portrait slides: inject demographics for accurate representation
+    if normalized in {"protagonist", "antagonist"}:
+        _char_sum = protagonist_summary if normalized == "protagonist" else antagonist_summary
+        _char_name = protagonist if normalized == "protagonist" else antagonist
+        _demographics = _parse_demographics(_char_sum) if _char_sum else ""
+        _char_desc = _demographics if _demographics else (_char_name[:60] if _char_name else "single character")
+        if period_render:
+            prompt = (
+                f"{style_prefix}{period_render}, cinematic portrait, {_char_desc}, "
+                f"dramatic portrait lighting, {period_content}, "
+                f"highly detailed, no text, no watermarks, 16:9 aspect ratio"
+            )
+        else:
+            prompt = (
+                f"{style_prefix}cinematic portrait, {_char_desc}, "
+                f"dramatic portrait lighting, film still, {genre_style}, "
+                f"professional cinematography, ultra-detailed, photorealistic, "
+                f"no text, no watermarks, 16:9 aspect ratio"
+            )
+        print(f"🎨 FAL prompt [{slide_title}]: {prompt}")
+        return prompt
+
     # Title slide gets a dedicated movie poster prompt
     film_title = str(brain_output.get("title", "")).strip()
     if film_title and normalize_key(slide_title) == normalize_key(film_title):
         protagonist = str(brain_output.get("protagonist", "")).strip()
         protagonist_summary = str(brain_output.get("protagonist_summary", "")).strip()
-        char_hint = f"{protagonist} — {protagonist_summary[:80]}" if protagonist and protagonist_summary else protagonist
+        _demographics = _parse_demographics(protagonist_summary) if protagonist_summary else ""
+        char_hint = _demographics if _demographics else (protagonist[:60] if protagonist else "")
         tone_hint = f", {tone[:60]}" if tone else ""
         if period_render:
             prompt = (
@@ -1364,12 +1424,167 @@ def _prefetch_slide_image(args: tuple) -> tuple:
     return idx, img, src
 
 
+def _fetch_tmdb_poster(title: str, cache_dir: Path) -> Optional[Path]:
+    """Download a movie poster from TMDb. Returns local path or None."""
+    if not TMDB_API_KEY:
+        return None
+    import urllib.parse
+    safe = re.sub(r"[^a-z0-9_]", "_", title.lower())[:40]
+    cache_path = cache_dir / f"tmdb_{safe}.jpg"
+    if cache_path.exists():
+        return cache_path
+    try:
+        search_url = (
+            f"https://api.themoviedb.org/3/search/movie"
+            f"?api_key={TMDB_API_KEY}&query={urllib.parse.quote(title)}&include_adult=false"
+        )
+        with urllib.request.urlopen(search_url, timeout=10) as resp:
+            data = json.loads(resp.read())
+        results = data.get("results", [])
+        if not results:
+            return None
+        poster_path = results[0].get("poster_path")
+        if not poster_path:
+            return None
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(f"{TMDB_IMAGE_BASE}{poster_path}", cache_path)
+        return cache_path
+    except Exception as e:
+        print(f"⚠️ TMDb fetch failed for '{title}': {e}")
+        return None
+
+
+def _build_comp_poster_strip_slide(slide, poster_paths: list, comp_titles: list) -> None:
+    """Film strip layout — real movie posters side by side with gold frame borders."""
+    add_base_background(slide)
+    accent = _active_theme["accent"]
+
+    label_tx = slide.shapes.add_textbox(Inches(0.5), Inches(0.22), Inches(6.0), Inches(0.45))
+    tf = label_tx.text_frame; tf.clear()
+    p = tf.paragraphs[0]; run = p.add_run()
+    run.text = "COMPARABLES"
+    run.font.name = _theme_font(); run.font.size = Pt(13)
+    run.font.bold = True; run.font.color.rgb = rgb(*accent)
+
+    n = max(len(poster_paths), 1)
+    margin_x  = Inches(0.45)
+    margin_top = Inches(0.88)
+    margin_bot = Inches(0.78)
+    spacing    = Inches(0.22)
+    total_w    = SLIDE_W - 2 * margin_x - (n - 1) * spacing
+    poster_w   = int(total_w / n)
+    poster_h   = int(SLIDE_H - margin_top - margin_bot)
+
+    for i, (ppath, ptitle) in enumerate(zip(poster_paths, comp_titles)):
+        x = int(margin_x + i * (poster_w + spacing))
+        y = int(margin_top)
+
+        border = slide.shapes.add_shape(
+            MSO_AUTO_SHAPE_TYPE.RECTANGLE,
+            x - int(Inches(0.04)), y - int(Inches(0.04)),
+            poster_w + int(Inches(0.08)), poster_h + int(Inches(0.08)),
+        )
+        border.fill.solid(); border.fill.fore_color.rgb = rgb(*accent)
+        border.fill.transparency = 0.55; border.line.fill.background()
+
+        if ppath and ppath.exists():
+            try:
+                PW = int(poster_w / 914400 * 96)
+                PH = int(poster_h / 914400 * 96)
+                with Image.open(ppath) as im:
+                    img = im.convert("RGB")
+                    ir = img.width / img.height
+                    pr = PW / PH
+                    if ir > pr:
+                        nh = PH; nw = int(nh * ir)
+                    else:
+                        nw = PW; nh = int(nw / ir)
+                    img = img.resize((nw, nh), Image.LANCZOS)
+                    lc = (nw - PW) // 2; tc = (nh - PH) // 2
+                    img = img.crop((lc, tc, lc + PW, tc + PH))
+                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                    img.save(tmp.name, format="JPEG", quality=82, optimize=True)
+                slide.shapes.add_picture(tmp.name, x, y, width=poster_w, height=poster_h)
+                os.unlink(tmp.name)
+            except Exception as e:
+                print(f"⚠️ Comp poster render error: {e}")
+
+        if ptitle:
+            tb = slide.shapes.add_textbox(x, y + poster_h + int(Inches(0.08)), poster_w, int(Inches(0.5)))
+            tf2 = tb.text_frame; tf2.clear(); tf2.word_wrap = True
+            p2 = tf2.paragraphs[0]; run2 = p2.add_run()
+            run2.text = clean(ptitle)
+            run2.font.name = _theme_font(); run2.font.size = Pt(11)
+            run2.font.bold = True; run2.font.color.rgb = rgb(220, 220, 220)
+            p2.alignment = PP_ALIGN.CENTER
+
+
+def _build_poster_cover_slide(slide, image_path: Optional[Path], title: str, tagline: str, brain_output: dict) -> None:
+    """Movie poster style cover — full-bleed image, dark gradient, large gold title, italic tagline."""
+    accent = _active_theme["accent"]
+
+    if image_path and image_path.exists():
+        add_full_bleed_image(slide, image_path)
+    else:
+        add_base_background(slide)
+
+    # Dark gradient overlay covering bottom 55%
+    overlay_h = int(float(SLIDE_H) * 0.55)
+    overlay_y = int(float(SLIDE_H) - overlay_h)
+    overlay = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, 0, overlay_y, SLIDE_W, overlay_h)
+    overlay.fill.solid(); overlay.fill.fore_color.rgb = rgb(4, 4, 6)
+    overlay.fill.transparency = 0.05; overlay.line.fill.background()
+
+    # Thin gold rule
+    rule_y = int(float(SLIDE_H) * 0.52)
+    rule = slide.shapes.add_shape(
+        MSO_AUTO_SHAPE_TYPE.RECTANGLE, int(Inches(0.7)), rule_y,
+        int(SLIDE_W - Inches(1.4)), int(Inches(0.04)),
+    )
+    rule.fill.solid(); rule.fill.fore_color.rgb = rgb(*accent)
+    rule.fill.transparency = 0.0; rule.line.fill.background()
+
+    # Large title
+    title_clean = clean(title).upper()
+    title_fs = 52 if len(title_clean) <= 18 else (42 if len(title_clean) <= 28 else 34)
+    title_y = int(float(SLIDE_H) * 0.54)
+    tx_title = slide.shapes.add_textbox(int(Inches(0.5)), title_y, int(SLIDE_W - Inches(1.0)), int(Inches(1.5)))
+    tf = tx_title.text_frame; tf.clear(); tf.word_wrap = True
+    p = tf.paragraphs[0]; run = p.add_run()
+    run.text = title_clean
+    run.font.name = _theme_font(); run.font.size = Pt(title_fs)
+    run.font.bold = True; run.font.color.rgb = rgb(*accent)
+    p.alignment = PP_ALIGN.CENTER
+
+    # Italic tagline
+    if tagline:
+        tag_y = title_y + int(Inches(1.5))
+        tx_tag = slide.shapes.add_textbox(int(Inches(1.0)), tag_y, int(SLIDE_W - Inches(2.0)), int(Inches(0.65)))
+        tf2 = tx_tag.text_frame; tf2.clear(); tf2.word_wrap = True
+        p2 = tf2.paragraphs[0]; run2 = p2.add_run()
+        run2.text = clean(tagline)
+        run2.font.name = _theme_font(); run2.font.size = Pt(17)
+        run2.font.bold = False; run2.font.italic = True
+        run2.font.color.rgb = rgb(210, 210, 210)
+        p2.alignment = PP_ALIGN.CENTER
+
+    # Writer credit top-left (if available)
+    writer = clean(brain_output.get("writer", "") or brain_output.get("author", ""))
+    if writer:
+        tx_w = slide.shapes.add_textbox(int(Inches(0.55)), int(Inches(0.28)), int(Inches(5.0)), int(Inches(0.42)))
+        tf3 = tx_w.text_frame; tf3.clear()
+        p3 = tf3.paragraphs[0]; run3 = p3.add_run()
+        run3.text = f"Written by {writer}"
+        run3.font.name = _theme_font(); run3.font.size = Pt(11)
+        run3.font.color.rgb = rgb(180, 180, 180)
+
+
 def build_presentation(
     slide_plan_path: Path,
     visuals_dir: Path,
-    output_dir: Path, 
-    label: str = "",  
-    uid: str = "" 
+    output_dir: Path,
+    label: str = "",
+    uid: str = ""
 ) -> Path:
     global _active_theme
     reset_image_selection_state()
@@ -1436,14 +1651,15 @@ def build_presentation(
             build_slide_text_only(slide, slide_title, body)
 
         elif layout_lower == "title":
-            add_base_background(slide)
             if image_source not in {"poster", ""} and image_for_slide is not None:
                 _title_img = image_for_slide
             else:
                 _title_img = Path(POSTER_PATH) if POSTER_PATH else image_for_slide
-            add_title_poster_image(slide, _title_img)
-            add_top_rule(slide)
-            add_title_text(slide, deck_title)
+            _tagline = clean(brain_output.get("tagline", "") or "")
+            if not _tagline:
+                _logline = clean(brain_output.get("logline", "") or "")
+                _tagline = _logline[:90] if _logline else ""
+            _build_poster_cover_slide(slide, _title_img, deck_title, _tagline, brain_output)
 
         elif layout_lower in {"character_focus", "split_left_text"} or stage_lower == "character":
             build_slide_split_panel(slide, image_for_slide, _stitle, body)
@@ -1456,6 +1672,15 @@ def build_presentation(
 
         elif layout_lower == "bottom_story_card" or stage_lower in {"engine", "setup", "aftermath", "why_now"}:
             build_slide_bottom_card(slide, image_for_slide, _stitle, body)
+
+        elif normalize_key(slide_title) in {"comparables", "comparable films", "comps"} and TMDB_API_KEY:
+            _comp_raw = brain_output.get("comparables", [])
+            if isinstance(_comp_raw, str):
+                _comp_raw = [t.strip() for t in _comp_raw.split(",") if t.strip()]
+            _comp_titles = [clean(str(t)) for t in _comp_raw if t][:4]
+            _cache_dir = APP_DIR / "generated_images" / EVOLUM_SESSION_ID / "tmdb_posters"
+            _poster_paths = [_fetch_tmdb_poster(t, _cache_dir) for t in _comp_titles]
+            _build_comp_poster_strip_slide(slide, _poster_paths, _comp_titles)
 
         elif layout_lower == "clean_grid" or stage_lower == "market":
             build_slide_editorial(slide, image_for_slide, _stitle, body)
