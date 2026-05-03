@@ -1145,6 +1145,74 @@ def _page_bg(pdf: canvas.Canvas, width: float, height: float, charcoal, gold):
     pdf.rect(0, height - 6, width, 6, stroke=0, fill=1)
 
 
+def _draw_tag_pill(pdf: canvas.Canvas, text: str, x: float, y: float, gold, panel) -> float:
+    """Draws a pill tag. Returns x position after the pill."""
+    tw = len(text) * 5.4 + 18
+    pdf.setFillColor(panel)
+    pdf.roundRect(x, y - 14, tw, 17, 6, stroke=0, fill=1)
+    pdf.setFillColor(gold)
+    pdf.setFont("Helvetica-Bold", 7)
+    pdf.drawString(x + 9, y - 7, text.upper()[:30])
+    return x + tw + 7
+
+
+def _draw_beat_map(pdf: canvas.Canvas, groups: list, x: float, y: float, w: float,
+                   gold, panel, white, muted) -> float:
+    """Draws beat frequency bar chart + 2 signature moment cards. Returns final y."""
+    if not groups:
+        return y
+    max_count = max(g["count"] for g in groups)
+    bar_bg = colors.HexColor("#1e2226")
+    label_w = 174
+    bar_total = w - label_w - 62
+    row_h = 28
+
+    for g in groups[:9]:
+        filled = max(int((g["count"] / max_count) * bar_total), 6)
+        page_range = (f"p.{g['pages'][0]}–{g['pages'][-1]}" if len(g["pages"]) > 1
+                      else (f"p.{g['pages'][0]}" if g["pages"] else ""))
+        bx = x + label_w
+
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+        pdf.drawString(x, y - 11, g["beat_type"].upper()[:26])
+
+        pdf.setFillColor(bar_bg)
+        pdf.roundRect(bx, y - 18, bar_total, 12, 4, stroke=0, fill=1)
+        pdf.setFillColor(gold)
+        pdf.roundRect(bx, y - 18, filled, 12, 4, stroke=0, fill=1)
+
+        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 8)
+        pdf.drawString(bx + bar_total + 7, y - 11, str(g["count"]))
+        pdf.setFillColor(muted); pdf.setFont("Helvetica", 7)
+        pdf.drawString(bx + bar_total + 26, y - 11, page_range)
+
+        y -= row_h
+
+    sig = [g for g in groups if g.get("samples")][:2]
+    if sig:
+        y -= 10
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+        pdf.drawString(x, y - 4, "SIGNATURE MOMENTS")
+        y -= 18
+        sg_w = (w - 12) / len(sig)
+        for si, sg in enumerate(sig):
+            s = sg["samples"][0]
+            sx = x + si * (sg_w + 12)
+            scene = s.scene_heading if s.scene_heading and s.scene_heading != "SCENE NOT DETECTED" else s.reference
+            quote = f'"{s.dialogue[:110]}"'
+            pdf.setFillColor(panel)
+            pdf.roundRect(sx, y - 58, sg_w, 58, 8, stroke=0, fill=1)
+            pdf.setFillColor(gold)
+            pdf.roundRect(sx, y - 58, 3, 58, 2, stroke=0, fill=1)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 7)
+            pdf.drawString(sx + 10, y - 13, sg["beat_type"].upper()[:30])
+            pdf.setFillColor(muted); pdf.setFont("Helvetica", 7)
+            pdf.drawString(sx + 10, y - 24, scene[:40])
+            q_lines = simpleSplit(quote, "Helvetica", 7, sg_w - 18)
+            _draw_lines(pdf, q_lines[:3], sx + 10, y - 36, 10, "Helvetica", 7, colors.HexColor("#aaaaaa"))
+        y -= 66
+    return y
+
 
 # ── MODE 1: AUDITION QUICKPACK ───────────────────────────────────────────────
 
@@ -1187,120 +1255,121 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     except Exception:
         pass
 
+    # ── PAGE 1: COVER ─────────────────────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 15)
-    pdf.drawString(left, height - 54, "ACTOR PREP REPORT")
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 39)
-    pdf.drawString(left, height - 100, character_name.upper()[:24])
-    pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(left, height - 126, title.upper()[:42])
-    pdf.setStrokeColor(gold); pdf.line(left, height - 152, right, height - 152)
-    has_image = _draw_cover_image(pdf, image_path, left, height - 390, usable_width, 180, gold)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(left, height - 44, "ACTOR PREP REPORT")
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 40)
+    pdf.drawString(left, height - 96, character_name.upper()[:22])
+    pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(left, height - 118, title.upper()[:46])
+    pdf.setStrokeColor(gold); pdf.setLineWidth(0.5)
+    pdf.line(left, height - 138, right, height - 138)
+
+    has_image = _draw_cover_image(pdf, image_path, left, height - 338, usable_width, 186, gold)
 
     snap = intelligence.get("summary") or ""
-    lines = simpleSplit(snap, "Helvetica-Bold", 11, usable_width - 36)
-    box_h = max(92, len(lines)*14 + 36)
-    y = height - 430 if has_image else height - 195
-    pdf.setFillColor(panel); pdf.roundRect(left, y - box_h, usable_width, box_h, 12, stroke=0, fill=1)
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9); pdf.drawString(left + 14, y - 20, "ROLE SNAPSHOT")
-    _draw_lines(pdf, lines, left + 14, y - 40, 14, "Helvetica-Bold", 11, white)
+    snap_lines = simpleSplit(snap, "Helvetica", 10, usable_width - 32)
+    box_h = max(76, len(snap_lines) * 13 + 30)
+    sy = height - 352 if has_image else height - 156
+    pdf.setFillColor(panel); pdf.roundRect(left, sy - box_h, usable_width, box_h, 10, stroke=0, fill=1)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 7)
+    pdf.drawString(left + 12, sy - 13, "ROLE SNAPSHOT")
+    _draw_lines(pdf, snap_lines, left + 12, sy - 27, 13, "Helvetica", 10, white)
 
-    card_y = y - box_h - 42
-    card_w = (usable_width - 24) / 3
-    for i, (label, vals) in enumerate([
-        ("TONE", [tone]),
-        ("WORLD", [world]),
-        ("DETECTED BEATS", [f"{len(beats)} playable beats", f"{len(_unique_scenes(beats)) or 1} scene zones"]),
-    ]):
-        _draw_card(pdf, left + i*(card_w+12), card_y, card_w, 86, label, vals, gold, panel, white, muted)
+    pill_y = sy - box_h - 16
+    px = left
+    for tag in [tone[:22] if tone else None, world[:24] if world else None, f"{len(beats)} Beats · {len(_unique_scenes(beats)) or 1} Scenes"]:
+        if tag:
+            px = _draw_tag_pill(pdf, tag, px, pill_y, gold, panel)
     _footer(pdf, width, 1); pdf.showPage()
 
+    # ── PAGE 2: THE PLAYBOOK ──────────────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, height - 62, "AUDITION COMMAND CENTER")
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-    pdf.drawString(left, height - 82, "What the actor should play, protect, and avoid in the room.")
-    grid_y = height - 140
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(left, height - 58, "THE PLAYBOOK")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(left, height - 76, "What to play, what to protect, and what to avoid in the room.")
+
     col_w = (usable_width - 18) / 2
-    row_h = 170
-    data_cards = [
-        ("Casting Read", _as_list(intelligence.get("casting_read"))),
-        ("Playable Tactics", _as_list(intelligence.get("playable_tactics"))),
-        ("Emotional Triggers", _as_list(intelligence.get("emotional_triggers"))),
-        ("Danger Zones", _as_list(intelligence.get("danger_zones"))),
-    ]
-    for idx, (label, vals) in enumerate(data_cards):
-        x = left + (idx % 2) * (col_w + 18)
-        yy = grid_y - (idx // 2) * (row_h + 24)
-        _draw_card(pdf, x, yy, col_w, row_h, label, vals, gold, panel, white, muted)
+    row_h = 178
+    grid_y = height - 108
+    for idx, (label, key) in enumerate([
+        ("Casting Read",       "casting_read"),
+        ("Danger Zones",       "danger_zones"),
+        ("Playable Tactics",   "playable_tactics"),
+        ("Emotional Triggers", "emotional_triggers"),
+    ]):
+        cx = left + (idx % 2) * (col_w + 18)
+        cy = grid_y - (idx // 2) * (row_h + 18)
+        _draw_card(pdf, cx, cy, col_w, row_h, label, _as_list(intelligence.get(key)), gold, panel, white, muted)
     _footer(pdf, width, 2); pdf.showPage()
 
+    # ── PAGE 3: TAPE ROOM + BEAT FREQUENCY MAP ────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, height - 62, "TAPE ROOM STRATEGY")
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-    pdf.drawString(left, height - 82, "A practical pass for self-tape, reader work, and performance choices.")
-    _draw_card(pdf, left, height - 130, col_w, 215, "Memorization Beats", _as_list(intelligence.get("memorization_beats")), gold, panel, white, muted)
-    _draw_card(pdf, left + col_w + 18, height - 130, col_w, 215, "Reader Chemistry", _as_list(intelligence.get("reader_chemistry")), gold, panel, white, muted)
-    _draw_card(pdf, left, height - 375, usable_width, 185, "Look / Presence", _as_list(intelligence.get("look_presence")), gold, panel, white, muted)
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(left, height - 58, "TAPE ROOM")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(left, height - 76, "Memorization, reader chemistry, and physical presence.")
+
+    tape_col_w = (usable_width - 24) / 3
+    tape_h = 168
+    tape_y = height - 100
+    for ti, (label, key) in enumerate([
+        ("Memorization Beats", "memorization_beats"),
+        ("Reader Chemistry",   "reader_chemistry"),
+        ("Look / Presence",    "look_presence"),
+    ]):
+        _draw_card(pdf, left + ti * (tape_col_w + 12), tape_y, tape_col_w, tape_h,
+                   label, _as_list(intelligence.get(key)), gold, panel, white, muted)
+
+    bm_top = tape_y - tape_h - 20
+    pdf.setStrokeColor(colors.HexColor("#252a2e")); pdf.setLineWidth(0.5)
+    pdf.line(left, bm_top + 2, right, bm_top + 2)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(left, bm_top - 12, "BEAT FREQUENCY MAP")
+    beat_count_label = f"{len(beats)} detected beats — how often each pattern appears in the script"
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 8)
+    pdf.drawString(left, bm_top - 24, beat_count_label)
+
+    if beats:
+        groups = group_beats_by_type(beats)
+        _draw_beat_map(pdf, groups, left, bm_top - 40, usable_width, gold, panel, white, muted)
+    else:
+        pdf.setFillColor(muted); pdf.setFont("Helvetica", 9)
+        pdf.drawString(left, bm_top - 54, "No beats detected. Confirm the character name matches the script exactly.")
     _footer(pdf, width, 3); pdf.showPage()
 
+    # ── PAGE 4: BEFORE YOU SEND ───────────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    page_no = 4
-    y = height - 62
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, y, "BEAT PATTERN BREAKDOWN")
-    y -= 26
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(left, height - 58, "BEFORE YOU SEND")
     pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-    pdf.drawString(left, y, f"{len(beats)} beats grouped by type. Each group shows coaching and 3 pulled scenes.")
-    y -= 22
-    if not beats:
-        _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found", ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
-        _footer(pdf, width, page_no); pdf.save(); return output_path
-    groups = group_beats_by_type(beats)
-    for grp in groups:
-        # header card height: label + count + pages + coaching = ~110, plus up to 3 sample cards ~80 each
-        header_h = 110
-        sample_h = 82
-        total_h = header_h + len(grp["samples"]) * (sample_h + 8)
-        if y - total_h < 54:
-            _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
-            _page_bg(pdf, width, height, charcoal, gold)
-            y = height - 54
-            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
-            pdf.drawString(left, y, "BEAT PATTERN BREAKDOWN")
-            y -= 34
-        page_range = f"{grp['pages'][0]} – {grp['pages'][-1]}" if len(grp['pages']) > 1 else grp['pages'][0] if grp['pages'] else ""
-        header_lines = [
-            f"{grp['count']} beat{'s' if grp['count'] != 1 else ''}  ·  {page_range}",
-            grp["coaching"],
-        ]
-        _draw_card(pdf, left, y, usable_width, header_h, grp["beat_type"].upper(), header_lines, gold, panel, white, muted)
-        y -= header_h + 8
-        for sample in grp["samples"]:
-            if y - sample_h < 54:
-                _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
-                _page_bg(pdf, width, height, charcoal, gold)
-                y = height - 54
-            scene_label = sample.scene_heading if sample.scene_heading and sample.scene_heading != "SCENE NOT DETECTED" else sample.reference
-            slines = [f"{scene_label}", f'"{sample.dialogue[:220]}"']
-            _draw_card(pdf, left + 16, y, usable_width - 16, sample_h, f"↳  {sample.reference}", slines, gold, panel, white, muted)
-            y -= sample_h + 8
-        y -= 14
-    _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
+    pdf.drawString(left, height - 76, "Five things to lock in before the tape leaves your hands.")
 
-    _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, height - 62, "FINAL AUDITION CHECKLIST")
     checklist = [
-        "Lead with the objective, not the emotion.",
-        "Protect listening beats; that is where the role breathes.",
-        "Choose one clean physical life for the character and keep it consistent.",
-        "Let pressure alter pace before it alters volume.",
-        "Check framing, sound, file name, and instructions before upload.",
+        ("Lead with the objective",   "Play what the character wants — not how they feel about it. Want drives the scene."),
+        ("Protect listening beats",   "The role breathes in the wait. Over-acting lives there. Stay present, not prepared."),
+        ("One physical life",         "Choose one body choice and keep it consistent across every take and every page."),
+        ("Let pressure change pace",  "Raise the stakes through timing and stillness before you raise your volume."),
+        ("Technical check",           "File name, framing, clean audio, upload instructions — confirm before you hit send."),
     ]
-    _draw_card(pdf, left, height - 115, usable_width, 250, "Before You Send", checklist, gold, panel, white, muted)
-    _footer(pdf, width, page_no)
+    cy = height - 112
+    for i, (heading, note) in enumerate(checklist):
+        pdf.setFillColor(gold)
+        pdf.circle(left + 13, cy - 13, 13, stroke=0, fill=1)
+        pdf.setFillColor(charcoal); pdf.setFont("Helvetica-Bold", 13)
+        pdf.drawCentredString(left + 13, cy - 18, str(i + 1))
+        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawString(left + 34, cy - 9, heading)
+        note_lines = simpleSplit(note, "Helvetica", 9, usable_width - 50)
+        _draw_lines(pdf, note_lines, left + 34, cy - 22, 12, "Helvetica", 9, muted)
+        cy -= 52
+        if i < len(checklist) - 1:
+            pdf.setStrokeColor(colors.HexColor("#1e2226")); pdf.setLineWidth(0.5)
+            pdf.line(left + 34, cy + 10, right, cy + 10)
+
+    _footer(pdf, width, 4)
     pdf.save()
     return output_path
 
@@ -1405,199 +1474,147 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
 
     # ── PAGE 1: COVER ─────────────────────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 15)
-    pdf.drawString(left, height - 54, "BOOKED ROLE REPORT")
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 38)
-    pdf.drawString(left, height - 100, character_name.upper()[:24])
-    pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 14)
-    pdf.drawString(left, height - 126, title.upper()[:42])
-    pdf.setStrokeColor(gold); pdf.line(left, height - 152, right, height - 152)
-    has_image = _draw_cover_image(pdf, image_path, left, height - 370, usable_width, 170, gold)
-
-    summary = intelligence.get("summary") or ""
-    snap_lines = simpleSplit(summary, "Helvetica-Bold", 11, usable_width - 36)
-    box_h = max(88, len(snap_lines) * 14 + 36)
-    y = height - 410 if has_image else height - 195
-    pdf.setFillColor(panel); pdf.roundRect(left, y - box_h, usable_width, box_h, 12, stroke=0, fill=1)
     pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(left + 14, y - 20, "FULL ROLE SNAPSHOT")
-    _draw_lines(pdf, snap_lines, left + 14, y - 40, 14, "Helvetica-Bold", 11, white)
+    pdf.drawString(left, height - 44, "BOOKED ROLE REPORT")
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 40)
+    pdf.drawString(left, height - 96, character_name.upper()[:22])
+    pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(left, height - 118, title.upper()[:46])
+    pdf.setStrokeColor(gold); pdf.setLineWidth(0.5)
+    pdf.line(left, height - 138, right, height - 138)
 
-    card_y = y - box_h - 38
-    card_w = (usable_width - 24) / 3
-    for i, (label, vals) in enumerate([
-        ("SPEAKING BEATS", [f"{len(beats)} beats detected"]),
-        ("SCENE ZONES", [f"{scene_count} distinct scenes"]),
-        ("WORLD", [world[:32] if world else "—"]),
-    ]):
-        _draw_card(pdf, left + i * (card_w + 12), card_y, card_w, 80, label, vals, gold, panel, white, muted)
+    has_image = _draw_cover_image(pdf, image_path, left, height - 338, usable_width, 186, gold)
+
+    snap = intelligence.get("summary") or ""
+    snap_lines = simpleSplit(snap, "Helvetica", 10, usable_width - 32)
+    box_h = max(76, len(snap_lines) * 13 + 30)
+    sy = height - 352 if has_image else height - 156
+    pdf.setFillColor(panel); pdf.roundRect(left, sy - box_h, usable_width, box_h, 10, stroke=0, fill=1)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 7)
+    pdf.drawString(left + 12, sy - 13, "FULL ROLE SNAPSHOT")
+    _draw_lines(pdf, snap_lines, left + 12, sy - 27, 13, "Helvetica", 10, white)
+
+    pill_y = sy - box_h - 16
+    px = left
+    for tag in [f"{len(beats)} Beats · {scene_count} Scenes", world[:24] if world else None, tone[:22] if tone else None]:
+        if tag:
+            px = _draw_tag_pill(pdf, tag, px, pill_y, gold, panel)
     _footer(pdf, width, 1); pdf.showPage()
 
-    # ── PAGE 2: ROLE CONTINUITY CENTER ────────────────────────────────────────
+    # ── PAGE 2: ROLE INTELLIGENCE ─────────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, height - 62, "ROLE CONTINUITY CENTER")
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-    pdf.drawString(left, height - 82, "What must stay consistent across scenes, takes, and shooting days.")
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(left, height - 58, "ROLE INTELLIGENCE")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(left, height - 76, "What this role requires you to hold, protect, and deliver across the shoot.")
     col_w = (usable_width - 18) / 2
-    row_h = 170
-    data_cards = [
-        ("Booked Continuity", _as_list(intelligence.get("booked_continuity"))),
-        ("Scene Priorities", _as_list(intelligence.get("scene_priorities"))),
-        ("Emotional Triggers", _as_list(intelligence.get("emotional_triggers"))),
-        ("Look / Behavior", _as_list(intelligence.get("look_presence"))),
-    ]
-    grid_y = height - 136
-    for idx, (label, vals) in enumerate(data_cards):
-        x = left + (idx % 2) * (col_w + 18)
-        yy = grid_y - (idx // 2) * (row_h + 22)
-        _draw_card(pdf, x, yy, col_w, row_h, label, vals, gold, panel, white, muted)
-
-    # Character arc below the grid if available
-    arc_y = grid_y - 2 * (row_h + 22) - 20
-    if char_arc and arc_y > 100:
-        beginning = _safe(char_arc.get("beginning_state"))
-        transformation = _safe(char_arc.get("transformation"))
-        end = _safe(char_arc.get("end_state"))
-        parts = [p for p in [beginning, transformation, end] if p]
-        if parts:
-            arc_str = "  →  ".join(parts)
-            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
-            pdf.drawString(left, arc_y, f"CHARACTER ARC  ·  {character_name.upper()}")
-            arc_y -= 13
-            arc_lines = simpleSplit(arc_str, "Helvetica", 10, usable_width - 14)
-            _draw_lines(pdf, arc_lines, left + 10, arc_y, 13, "Helvetica", 10, muted)
+    row_h = 178
+    grid_y = height - 108
+    for idx, (label, key) in enumerate([
+        ("Booked Continuity",  "booked_continuity"),
+        ("Scene Priorities",   "scene_priorities"),
+        ("Emotional Triggers", "emotional_triggers"),
+        ("Look / Behavior",    "look_presence"),
+    ]):
+        cx = left + (idx % 2) * (col_w + 18)
+        cy = grid_y - (idx // 2) * (row_h + 18)
+        _draw_card(pdf, cx, cy, col_w, row_h, label, _as_list(intelligence.get(key)), gold, panel, white, muted)
     _footer(pdf, width, 2); pdf.showPage()
 
-    # ── PAGE 3: CHARACTER CONTINUITY ──────────────────────────────────────────
+    # ── PAGE 3: CHARACTER DNA ─────────────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, height - 62, "CHARACTER CONTINUITY")
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-    pdf.drawString(left, height - 82, "The physical and emotional thread the actor must protect every day on set.")
-    cy3 = height - 120
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(left, height - 58, "CHARACTER DNA")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(left, height - 76, "The physical and emotional thread to protect from first day to wrap.")
+    dna_y = height - 106
 
-    cont_cards = []
-    if emotional_continuity:
-        cont_cards.append(("Emotional Continuity", emotional_continuity))
-    if costume_clues:
-        cont_cards.append(("Costume & Behavior Clues", costume_clues))
+    # Character arc panels
+    if char_arc:
+        arc_parts = [(phase, _safe(char_arc.get(key))) for phase, key in
+                     [("BEGINS", "beginning_state"), ("TRANSFORMS", "transformation"), ("ENDS", "end_state")]
+                     if _safe(char_arc.get(key))]
+        if arc_parts:
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+            pdf.drawString(left, dna_y - 4, f"CHARACTER ARC  ·  {character_name.upper()}")
+            dna_y -= 18
+            arc_col_w = (usable_width - (len(arc_parts) - 1) * 10) / len(arc_parts)
+            for ai, (phase, val) in enumerate(arc_parts):
+                ax = left + ai * (arc_col_w + 10)
+                pdf.setFillColor(panel); pdf.roundRect(ax, dna_y - 72, arc_col_w, 72, 8, stroke=0, fill=1)
+                pdf.setFillColor(gold); pdf.roundRect(ax, dna_y - 72, 3, 72, 2, stroke=0, fill=1)
+                pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 7)
+                pdf.drawString(ax + 10, dna_y - 14, phase)
+                val_lines = simpleSplit(val, "Helvetica", 9, arc_col_w - 18)
+                _draw_lines(pdf, val_lines[:5], ax + 10, dna_y - 28, 12, "Helvetica", 9, muted)
+            dna_y -= 86
+
+    # Emotional continuity + costume side by side
+    cont_cards = [(l, v) for l, v in [("Emotional Continuity", emotional_continuity), ("Costume & Behavior", costume_clues)] if v]
     if cont_cards:
-        cc_col_w = (usable_width - 18) / 2 if len(cont_cards) > 1 else usable_width
-        cc_h = 190
-        for ci, (clabel, cvals) in enumerate(cont_cards[:2]):
-            cx = left + ci * (cc_col_w + 18)
-            _draw_card(pdf, cx, cy3, cc_col_w, cc_h, clabel, cvals, gold, panel, white, muted)
-        cy3 -= cc_h + 22
+        cc_w = (usable_width - 18) / 2 if len(cont_cards) > 1 else usable_width
+        cc_h = 158
+        for ci, (cl, cv) in enumerate(cont_cards[:2]):
+            _draw_card(pdf, left + ci * (cc_w + 18), dna_y, cc_w, cc_h, cl, cv, gold, panel, white, muted)
+        dna_y -= cc_h + 18
 
     # Relationship map
     rel_lines = []
     for row in relationship_map:
         if isinstance(row, dict):
-            character = str(row.get("character") or "").strip()
-            dynamic = str(row.get("dynamic") or "").strip()
-            function = str(row.get("function") or "").strip()
-            parts = [p for p in [character, dynamic, function] if p]
+            parts = [str(row.get(k) or "").strip() for k in ["character", "dynamic", "function"] if str(row.get(k) or "").strip()]
             if parts:
                 rel_lines.append(" — ".join(parts[:3]))
-    if rel_lines and cy3 > 100:
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 13)
-        pdf.drawString(left, cy3, "Relationship Leverage Map")
-        cy3 -= 16
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(left, cy3, "How each key relationship functions in the story.")
-        cy3 -= 14
-        for rl in rel_lines[:8]:
-            rl_split = simpleSplit(rl, "Helvetica", 10, usable_width - 26)
-            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
-            pdf.drawString(left, cy3, "•")
-            for rls in rl_split:
-                pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-                pdf.drawString(left + 14, cy3, rls)
-                cy3 -= 13
-            cy3 -= 3
+    if rel_lines and dna_y > 80:
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(left, dna_y - 6, "RELATIONSHIP LEVERAGE MAP")
+        dna_y -= 20
+        for rl in rel_lines[:7]:
+            rls = simpleSplit(rl, "Helvetica", 9, usable_width - 18)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(left, dna_y, "•")
+            pdf.setFillColor(muted); pdf.setFont("Helvetica", 9)
+            for line in rls[:2]:
+                pdf.drawString(left + 12, dna_y, line)
+                dna_y -= 13
+            dna_y -= 3
     _footer(pdf, width, 3); pdf.showPage()
 
-    # ── PAGES 4+: SCENE JOURNEY MAP ───────────────────────────────────────────
+    # ── PAGE 4: BEAT MAP + SET-READY ─────────────────────────────────────────
     _page_bg(pdf, width, height, charcoal, gold)
-    page_no = 4
-    y = height - 62
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, y, "SCENE JOURNEY MAP")
-    y -= 26
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(left, height - 58, "BEAT FREQUENCY MAP")
     pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
-    pdf.drawString(left, y, f"{len(beats)} beats grouped by type. Coaching note + continuity key + 3 pulled scenes per pattern.")
-    y -= 22
-    if not beats:
-        _draw_card(pdf, left, y, usable_width, 140, "No matching dialogue found",
-                   ["Try entering the character name exactly as it appears in the script."], gold, panel, white, muted)
-        _footer(pdf, width, page_no); pdf.save(); return output_path
+    pdf.drawString(left, height - 76, f"{len(beats)} beats — how this character operates across every scene in the script.")
 
-    groups = group_beats_by_type(beats)
-    header_h = 120
-    sample_h = 96
-    for grp in groups:
-        total_h = header_h + len(grp["samples"]) * (sample_h + 8)
-        if y - total_h < 54:
-            _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
-            _page_bg(pdf, width, height, charcoal, gold)
-            y = height - 54
-            pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
-            pdf.drawString(left, y, "SCENE JOURNEY MAP")
-            y -= 34
+    bm_top = height - 106
+    if beats:
+        groups = group_beats_by_type(beats)
+        bm_end = _draw_beat_map(pdf, groups, left, bm_top, usable_width, gold, panel, white, muted)
+    else:
+        pdf.setFillColor(muted); pdf.setFont("Helvetica", 9)
+        pdf.drawString(left, bm_top - 14, "No beats detected. Confirm the character name matches the script exactly.")
+        bm_end = bm_top - 40
 
-        page_range = f"p.{grp['pages'][0]} – p.{grp['pages'][-1]}" if len(grp['pages']) > 1 else (f"p.{grp['pages'][0]}" if grp['pages'] else "")
-        continuity = _CONTINUITY_NOTES.get(grp["beat_type"], _DEFAULT_CONTINUITY)
-        header_lines = [
-            f"{grp['count']} beat{'s' if grp['count'] != 1 else ''}  ·  {page_range}",
-            grp["coaching"],
-            f"On set: {continuity}",
-        ]
-        _draw_card(pdf, left, y, usable_width, header_h, grp["beat_type"].upper(), header_lines, gold, panel, white, muted)
-        y -= header_h + 8
+    # Set-ready checklist below
+    sr_y = bm_end - 20
+    if set_ready and sr_y > 80:
+        pdf.setStrokeColor(colors.HexColor("#252a2e")); pdf.setLineWidth(0.5)
+        pdf.line(left, sr_y + 6, right, sr_y + 6)
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 11)
+        pdf.drawString(left, sr_y - 8, "SET-READY CHECKLIST")
+        pdf.setFillColor(muted); pdf.setFont("Helvetica", 8)
+        pdf.drawString(left, sr_y - 20, "Clear these before the first take of every scene.")
+        sr_y -= 34
+        for item in set_ready[:6]:
+            chunks = simpleSplit(str(item), "Helvetica", 9, usable_width - 20)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
+            pdf.drawString(left, sr_y, "✓")
+            pdf.setFillColor(muted); pdf.setFont("Helvetica", 9)
+            pdf.drawString(left + 14, sr_y, chunks[0] if chunks else "")
+            sr_y -= 15
 
-        for sample in grp["samples"]:
-            if y - sample_h < 54:
-                _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
-                _page_bg(pdf, width, height, charcoal, gold)
-                y = height - 54
-            scene_label = sample.scene_heading if sample.scene_heading and sample.scene_heading != "SCENE NOT DETECTED" else sample.reference
-            dialogue_preview = f'"{sample.dialogue[:220]}"'
-            slines = [scene_label, dialogue_preview]
-            # Use panel background so sample cards are visible against the charcoal page
-            _draw_card(pdf, left + 16, y, usable_width - 16, sample_h, f"↳  {sample.reference}", slines, gold, panel, white, muted)
-            y -= sample_h + 8
-        y -= 14
-    _footer(pdf, width, page_no); pdf.showPage(); page_no += 1
-
-    # ── LAST PAGE: SET-READY CHECKLIST ────────────────────────────────────────
-    _page_bg(pdf, width, height, charcoal, gold)
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 25)
-    pdf.drawString(left, height - 62, "SET-READY CHECKLIST")
-    pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-    pdf.drawString(left, height - 82, "Clear these before the first take of every scene.")
-    _draw_card(pdf, left, height - 120, usable_width, 260, "Before Camera", set_ready, gold, panel, white, muted)
-
-    if char_arc:
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 13)
-        pdf.drawString(left, height - 410, "Your Arc in Three Movements")
-        pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-        pdf.drawString(left, height - 426, "Keep this in view across the entire shoot.")
-        arc_y2 = height - 448
-        col3 = (usable_width - 20) / 3
-        for i, (phase, key) in enumerate([("BEGINS", "beginning_state"), ("TRANSFORMS", "transformation"), ("ENDS", "end_state")]):
-            val = _safe(char_arc.get(key))
-            if not val:
-                continue
-            cx = left + i * (col3 + 10)
-            pdf.setFillColor(panel); pdf.roundRect(cx, arc_y2 - 68, col3, 68, 8, stroke=0, fill=1)
-            pdf.setFillColor(gold); pdf.roundRect(cx, arc_y2 - 68, 4, 68, 2, stroke=0, fill=1)
-            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-            pdf.drawString(cx + 12, arc_y2 - 14, phase)
-            val_lines = simpleSplit(val, "Helvetica", 9, col3 - 22)
-            _draw_lines(pdf, val_lines[:4], cx + 12, arc_y2 - 28, 11, "Helvetica", 9, muted)
-
-    _footer(pdf, width, page_no)
+    _footer(pdf, width, 4)
     pdf.save()
     return output_path
 
