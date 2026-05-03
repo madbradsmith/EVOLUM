@@ -1741,6 +1741,18 @@ def status():
         return jsonify({"status": "IDLE", "project_id": None})
 
 
+@app.route("/admin/test-email")
+def admin_test_email():
+    if not session.get("admin_authed"):
+        abort(403)
+    ok = _smtp_send(
+        os.environ.get("SMTP_USER", ""),
+        "EVOLUM Email Test",
+        "This is a test email from EVOLUM Studio. SMTP is working correctly."
+    )
+    return jsonify({"ok": ok})
+
+
 @app.route("/admin/fal-balance")
 def admin_fal_balance():
     if not session.get("admin_authed"):
