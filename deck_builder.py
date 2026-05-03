@@ -1035,6 +1035,74 @@ def build_slide_split_panel(slide, image_path: Optional[Path], slide_title: str,
     add_panel_text(slide, right_x, Inches(0.52), right_w, slide_title, body, font_size=font_size)
 
 
+def build_slide_person_attached(slide, image_path: Optional[Path], name: str, role: str, credits_line: str) -> None:
+    """Person Attached slide — portrait photo left, role/name/credits right."""
+    add_base_background(slide)
+    accent = _active_theme["accent"]
+
+    panel_w = int(float(SLIDE_W) * 0.50)
+    panel_w_px, panel_h_px = 640, 720
+
+    if image_path and image_path.exists():
+        try:
+            with Image.open(image_path) as im:
+                img = im.convert("RGB")
+                img_ratio = img.width / img.height
+                panel_ratio = panel_w_px / panel_h_px
+                if img_ratio > panel_ratio:
+                    new_h = panel_h_px
+                    new_w = int(new_h * img_ratio)
+                else:
+                    new_w = panel_w_px
+                    new_h = int(new_w / img_ratio)
+                img = img.resize((new_w, new_h), Image.LANCZOS)
+                lc = (new_w - panel_w_px) // 2
+                tc = max(0, min(int(new_h * 0.05), new_h - panel_h_px))
+                img = img.crop((lc, tc, lc + panel_w_px, tc + panel_h_px))
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+                img.save(tmp.name, format="JPEG", quality=85, optimize=True)
+            slide.shapes.add_picture(str(tmp.name), 0, 0, width=panel_w, height=SLIDE_H)
+            os.unlink(tmp.name)
+        except Exception as e:
+            print(f"⚠️ Person photo error: {e}")
+
+    right_x = int(float(SLIDE_W) * 0.49)
+    right_w = int(float(SLIDE_W) - right_x)
+
+    panel = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, right_x, 0, right_w, SLIDE_H)
+    panel.fill.solid(); panel.fill.fore_color.rgb = rgb(10, 10, 14)
+    panel.fill.transparency = 0.0; panel.line.fill.background()
+
+    div = slide.shapes.add_shape(MSO_AUTO_SHAPE_TYPE.RECTANGLE, right_x, 0, Inches(0.04), SLIDE_H)
+    div.fill.solid(); div.fill.fore_color.rgb = rgb(*accent)
+    div.fill.transparency = 0.35; div.line.fill.background()
+
+    pad_x = right_x + int(Inches(0.32))
+    text_w = right_w - int(Inches(0.64))
+
+    # Role label
+    tb_role = slide.shapes.add_textbox(pad_x, Inches(1.1), text_w, Inches(0.42))
+    tf = tb_role.text_frame; tf.clear()
+    p = tf.paragraphs[0]; run = p.add_run()
+    run.text = clean(role).upper()
+    run.font.name = _theme_font(); run.font.size = Pt(13)
+    run.font.bold = True; run.font.color.rgb = rgb(*accent)
+
+    # Name
+    tb_name = slide.shapes.add_textbox(pad_x, Inches(1.62), text_w, Inches(1.4))
+    tf2 = tb_name.text_frame; tf2.clear(); tf2.word_wrap = True
+    p2 = tf2.paragraphs[0]; run2 = p2.add_run()
+    run2.text = clean(name)
+    run2.font.name = _theme_font(); run2.font.size = Pt(30)
+    run2.font.bold = True; run2.font.color.rgb = rgb(255, 255, 255)
+
+    # Credits line in rounded card
+    if credits_line:
+        card_y = Inches(3.2)
+        card_h = SLIDE_H - card_y - int(Inches(0.55))
+        add_text_box(slide, pad_x, card_y, text_w, card_h, credits_line, font_size=15, align=PP_ALIGN.LEFT, fill_transparency=0.22)
+
+
 def build_slide_text_only(slide, slide_title: str, body: str) -> None:
     """Text-only layout — no image. Big centered body text fills the slide."""
     add_base_background(slide)
@@ -1242,6 +1310,17 @@ def _prefetch_slide_image(args: tuple) -> tuple:
     if explicit_path_str == "__none__" or image_source_hint == "text_only":
         return idx, None, "text_only"
 
+    # Person attached: download headshot from TMDb URL
+    person_photo_url = str(slide_info.get("person_photo_url") or "").strip()
+    if person_photo_url and layout.lower() == "person_attached":
+        try:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            urllib.request.urlretrieve(person_photo_url, tmp.name)
+            return idx, Path(tmp.name), "tmdb"
+        except Exception as e:
+            print(f"⚠️ TMDb photo download failed: {e}")
+            return idx, None, "tmdb_failed"
+
     if explicit_path_str:
         explicit = Path(explicit_path_str)
         if not explicit.is_absolute():
@@ -1320,7 +1399,16 @@ def build_presentation(
         layout_lower = clean(layout).lower()
         _stitle = slide_title.split("(")[0].strip()
 
-        if image_source == "text_only":
+        if layout_lower == "person_attached":
+            build_slide_person_attached(
+                slide,
+                image_for_slide,
+                clean(slide_info.get("person_name", "") or _stitle),
+                clean(slide_info.get("person_role", "") or "Attached"),
+                clean(slide_info.get("person_credits_line", "") or body),
+            )
+
+        elif image_source == "text_only":
             build_slide_text_only(slide, slide_title, body)
 
         elif layout_lower == "title":

@@ -111,6 +111,10 @@ def rebuild_refined_deck(slides: list, latest_manifest_path=None, label: str = "
                     "image_source": str(s.get("image_source", "") or "").strip(),
                     "image_options": normalize_manifest_image_options(s.get("image_options", [])),
                     "selected_option_id": str(s.get("selected_option_id", "") or "").strip(),
+                    "person_name": str(s.get("person_name", "") or "").strip(),
+                    "person_role": str(s.get("person_role", "") or "").strip(),
+                    "person_credits_line": str(s.get("person_credits_line", "") or "").strip(),
+                    "person_photo_url": str(s.get("person_photo_url", "") or "").strip(),
                 }
                 for s in slides
             ],
@@ -135,6 +139,10 @@ def rebuild_refined_deck(slides: list, latest_manifest_path=None, label: str = "
                 "image_source": str(s.get("image_source", "") or "").strip(),
                 "image_options": normalize_manifest_image_options(s.get("image_options", [])),
                 "selected_option_id": str(s.get("selected_option_id", "") or "").strip(),
+                "person_name": str(s.get("person_name", "") or "").strip(),
+                "person_role": str(s.get("person_role", "") or "").strip(),
+                "person_credits_line": str(s.get("person_credits_line", "") or "").strip(),
+                "person_photo_url": str(s.get("person_photo_url", "") or "").strip(),
             }
             for i, s in enumerate(slides, start=1)
         ]

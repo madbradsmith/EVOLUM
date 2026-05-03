@@ -19,6 +19,7 @@ import time
 import re
 import urllib.request
 import urllib.error
+import requests as _requests
 import hashlib
 import secrets
 import string
@@ -668,6 +669,9 @@ def build_project_file_url(image_path: Path) -> str:
 
 
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
+TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+TMDB_BASE = "https://api.themoviedb.org/3"
+TMDB_IMG = "https://image.tmdb.org/t/p/w500"
 
 _SLIDE_VISUAL_CONCEPTS = {
     "logline": "cinematic establishing shot, wide angle, dramatic lighting",
@@ -3434,6 +3438,99 @@ def sync_chat():
         return jsonify({"reply": "Something went wrong — try again in a moment."})
 
 # ===== SYNC AI ASSISTANT ROUTE END ===================
+
+# ===== TMDB PERSON SEARCH ROUTES START ===============
+
+@app.route("/tmdb/search")
+def tmdb_search():
+    q = (request.args.get("q") or "").strip()
+    if not q or not TMDB_API_KEY:
+        return jsonify({"results": []})
+    try:
+        r = _requests.get(f"{TMDB_BASE}/search/person", params={"query": q, "api_key": TMDB_API_KEY}, timeout=8)
+        data = r.json()
+        results = []
+        for p in data.get("results", [])[:6]:
+            results.append({
+                "id": p["id"],
+                "name": p["name"],
+                "photo": (TMDB_IMG + p["profile_path"]) if p.get("profile_path") else None,
+                "known_for": [x.get("title") or x.get("name", "") for x in p.get("known_for", [])[:3]],
+            })
+        return jsonify({"results": results})
+    except Exception as e:
+        return jsonify({"error": str(e), "results": []}), 500
+
+
+@app.route("/tmdb/credits/<int:person_id>")
+def tmdb_credits(person_id):
+    if not TMDB_API_KEY:
+        return jsonify({"error": "TMDB_API_KEY not configured"}), 400
+    try:
+        r = _requests.get(f"{TMDB_BASE}/person/{person_id}/combined_credits", params={"api_key": TMDB_API_KEY}, timeout=8)
+        data = r.json()
+        cast = sorted(data.get("cast", []), key=lambda x: x.get("popularity", 0), reverse=True)
+        crew = sorted(data.get("crew", []), key=lambda x: x.get("popularity", 0), reverse=True)
+        cast_titles = [x.get("title") or x.get("name", "") for x in cast[:12] if x.get("title") or x.get("name")]
+        crew_titles = [x.get("title") or x.get("name", "") for x in crew[:8] if x.get("title") or x.get("name")]
+        # Also get person details (department, biography)
+        det = _requests.get(f"{TMDB_BASE}/person/{person_id}", params={"api_key": TMDB_API_KEY}, timeout=8).json()
+        return jsonify({
+            "cast_titles": cast_titles,
+            "crew_titles": crew_titles,
+            "known_for_dept": det.get("known_for_department", ""),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/tmdb/format-credits", methods=["POST"])
+def tmdb_format_credits():
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    role = (data.get("role") or "").strip()
+    cast_titles = data.get("cast_titles") or []
+    crew_titles = data.get("crew_titles") or []
+    known_dept = (data.get("known_for_dept") or "").strip()
+
+    if not name:
+        return jsonify({"credits_line": ""}), 400
+
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        fallback = ", ".join((crew_titles + cast_titles)[:3])
+        return jsonify({"credits_line": f"Known for {fallback}." if fallback else ""})
+
+    try:
+        import anthropic as _anthropic
+        client = _anthropic.Anthropic(api_key=api_key)
+        acting = ", ".join(cast_titles[:8])
+        directing = ", ".join(crew_titles[:5])
+        prompt = (
+            f"Write ONE short, punchy credits line (max 16 words) for a film pitch deck 'Person Attached' slide.\n\n"
+            f"Name: {name}\n"
+            f"Role being attached as: {role}\n"
+            f"Known for department: {known_dept}\n"
+            f"Top acting credits: {acting or 'N/A'}\n"
+            f"Top directing/producing credits: {directing or 'N/A'}\n\n"
+            f"Examples of the style:\n"
+            f"- \"Academy Award winner — directed Braveheart, The Patriot, and Hacksaw Ridge.\"\n"
+            f"- \"Emmy-nominated writer — known for Breaking Bad, Better Call Saul, and El Camino.\"\n"
+            f"- \"BAFTA winner — starred in The Crown, Downton Abbey, and Gosford Park.\"\n\n"
+            f"Output ONLY the one line, no quotes, no explanation."
+        )
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=80,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return jsonify({"credits_line": resp.content[0].text.strip()})
+    except Exception as e:
+        fallback = ", ".join((crew_titles + cast_titles)[:3])
+        return jsonify({"credits_line": f"Known for {fallback}." if fallback else ""})
+
+# ===== TMDB PERSON SEARCH ROUTES END =================
+
 
 @app.errorhandler(Exception)
 def handle_exception(e):
