@@ -1214,6 +1214,40 @@ def _draw_beat_map(pdf: canvas.Canvas, groups: list, x: float, y: float, w: floa
     return y
 
 
+def _draw_strength_bars(pdf: canvas.Canvas, strength_dict: dict, x: float, y: float, w: float,
+                        gold, panel, white, muted) -> float:
+    """Draws 1-10 score bars for strength_index fields. Returns final y."""
+    score_map = [
+        ("Concept",     strength_dict.get("concept")),
+        ("Character",   strength_dict.get("character")),
+        ("Market",      strength_dict.get("marketability")),
+        ("Originality", strength_dict.get("originality")),
+    ]
+    valid = []
+    for lbl, val in score_map:
+        try:
+            valid.append((lbl, min(max(float(val), 0), 10)))
+        except (TypeError, ValueError):
+            pass
+    if not valid:
+        return y
+    bar_bg = colors.HexColor("#1e2226")
+    label_w = 112
+    bar_total = w - label_w - 58
+    row_h = 28
+    for label, score in valid:
+        filled = max(int((score / 10) * bar_total), 6)
+        bx = x + label_w
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(x, y - 11, label.upper())
+        pdf.setFillColor(bar_bg); pdf.roundRect(bx, y - 18, bar_total, 12, 4, stroke=0, fill=1)
+        pdf.setFillColor(gold); pdf.roundRect(bx, y - 18, filled, 12, 4, stroke=0, fill=1)
+        pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(bx + bar_total + 8, y - 11, f"{score:.0f}/10")
+        y -= row_h
+    return y
+
+
 # ── MODE 1: AUDITION QUICKPACK ───────────────────────────────────────────────
 
 def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str | Path, brain_data: Optional[Dict] = None) -> Path:
@@ -1761,215 +1795,275 @@ def build_simple_analysis_pdf(report_output: dict, out_path: Path):
     pdf = canvas.Canvas(str(out_path), pagesize=LETTER)
     pdf.setTitle(f"{title} — Script Analysis Report")
 
-    pdf.setFillColor(charcoal)
-    pdf.rect(0, 0, W, H, stroke=0, fill=1)
-    pdf.setFillColor(gold)
-    pdf.rect(0, H - 6, W, 6, stroke=0, fill=1)
-    pdf.setFillColor(soft); pdf.setFont("Helvetica", 9)
-    pdf.drawString(L, H - 30, "EVOLUM  ·  DEVELOPUM AI ENGINE")
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 40)
-    pdf.drawString(L, H - 80, "SCRIPT")
+    # ── PAGE 1: COVER ─────────────────────────────────────────────────────────
+    _page_bg(pdf, W, H, charcoal, gold)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+    pdf.drawString(L, H - 44, "SCRIPT ANALYSIS REPORT")
+
+    # Title — up to 2 lines at 30pt
+    t_lines = simpleSplit(title.upper(), "Helvetica-Bold", 30, UW)[:2]
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 30)
+    for i, tl in enumerate(t_lines):
+        pdf.drawString(L, H - 88 - i * 36, tl)
+    title_base = H - 88 - (len(t_lines) - 1) * 36
+
+    meta_str = "  ·  ".join(p for p in [genre, tone, time_frame] if p)
+    if meta_str:
+        pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+        pdf.drawString(L, title_base - 20, meta_str[:80])
+    divider_y = title_base - 38
+    pdf.setStrokeColor(gold); pdf.setLineWidth(0.5)
+    pdf.line(L, divider_y, R, divider_y)
+
+    # Cover image — full width, prominent
+    img_h = 188
+    has_image = _draw_cover_image(pdf, cover_image, L, divider_y - 12 - img_h, UW, img_h, gold)
+
+    # Executive snapshot box
+    snap_y = (divider_y - 12 - img_h - 14) if has_image else (divider_y - 22)
+    snap_lines = simpleSplit(executive_summary or "", "Helvetica", 10, UW - 32)
+    snap_box_h = max(76, len(snap_lines) * 13 + 30)
+    pdf.setFillColor(panel); pdf.roundRect(L, snap_y - snap_box_h, UW, snap_box_h, 10, stroke=0, fill=1)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 7)
+    pdf.drawString(L + 12, snap_y - 13, "EXECUTIVE SNAPSHOT")
+    _draw_lines(pdf, snap_lines, L + 12, snap_y - 27, 13, "Helvetica", 10, white)
+
+    pill_y = snap_y - snap_box_h - 16
+    px = L
+    for tag in [budget_lane[:26] if budget_lane else None,
+                streamer_fit[:26] if streamer_fit else None,
+                awards_lane[:26] if awards_lane else None]:
+        if tag and px < R - 60:
+            px = _draw_tag_pill(pdf, tag, px, pill_y, gold, panel)
+    _footer(pdf, W, 1); pdf.showPage()
+
+    # ── PAGE 2: STORY FOUNDATION ──────────────────────────────────────────────
+    _page_bg(pdf, W, H, charcoal, gold)
     pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
-    pdf.drawString(L, H - 116, "ANALYSIS REPORT")
-    pdf.setStrokeColor(gold); pdf.line(L, H - 132, R, H - 132)
-    pdf.setFillColor(soft); pdf.setFont("Helvetica", 10)
-    pdf.drawString(L, H - 154, "PROJECT")
-    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 20)
-    ty = H - 174
-    for tl in simpleSplit(title.upper(), "Helvetica-Bold", 20, UW):
-        pdf.drawString(L, ty, tl); ty -= 26
-    cy = ty - 10
-    meta = "  ·  ".join([p for p in [genre, tone, time_frame] if p])
-    if meta:
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 11)
-        for ml in simpleSplit(meta, "Helvetica", 11, UW):
-            pdf.drawString(L, cy, ml); cy -= 13
-        cy -= 4
+    pdf.drawString(L, H - 58, "STORY FOUNDATION")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(L, H - 76, "The plain-English engine underneath this project.")
+    sy2 = H - 106
 
-    summary_lines = simpleSplit(executive_summary, "Helvetica", 11, UW - 32)
-    box_h = len(summary_lines) * 15 + 30
-    pdf.setFillColor(panel)
-    pdf.roundRect(L, cy - box_h + 10, UW, box_h, 12, stroke=0, fill=1)
-    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
-    pdf.drawString(L + 16, cy - 6, "EXECUTIVE SNAPSHOT")
-    sy = cy - 22
-    pdf.setFillColor(white); pdf.setFont("Helvetica", 11)
-    for line in summary_lines:
-        pdf.drawString(L + 16, sy, line); sy -= 15
-    cy -= box_h + 10
-
-    contents = [
-        "Executive snapshot",
-        "Story engine",
-        "Market position",
-        "Actor-ready intelligence",
-        "Relationship leverage",
-        "Visual strategy",
-    ]
-    pdf.setFillColor(soft); pdf.setFont("Helvetica-Bold", 9)
-    pdf.drawString(L, cy, "THIS REPORT INCLUDES"); cy -= 14
-    for item in contents:
-        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10); pdf.drawString(L, cy, "—")
-        pdf.setFillColor(muted); pdf.setFont("Helvetica", 10); pdf.drawString(L + 16, cy, item); cy -= 14
-
-    if cy > 80:
-        img_h = min(cy - 60, 200)
-        _draw_cover_image(pdf, cover_image, L, max(54, cy - img_h), UW, img_h, gold)
-
-    pdf.setFillColor(gold)
-    pdf.rect(0, 0, W, 4, stroke=0, fill=1)
-    _footer(pdf, W, 1)
-    pdf.showPage()
-
-    pdf.setFillColor(charcoal)
-    pdf.rect(0, 0, W, H, stroke=0, fill=1)
-    ctx = _PDFCtx(pdf, W, H, L, UW, charcoal, gold, blue, white, muted, soft, panel)
-
-    ctx.section_header("Story Engine", "The plain-English version of what is driving the movie.")
+    # Logline — hero panel
     if logline:
-        ctx.info_row("Logline", logline)
-    if synopsis:
-        ctx.info_row("Synopsis", synopsis)
-    if lead:
-        ctx.info_row("Lead", lead)
-    if world:
-        ctx.info_row("World", world)
-    if setting:
-        ctx.info_row("Setting", setting)
-    if core:
-        ctx.info_row("Core conflict", core)
-    if engine:
-        ctx.info_row("Story engine", engine)
-    if reversal:
-        ctx.info_row("Reversal", reversal)
-    if theme:
-        ctx.info_row("Theme", theme)
-    ctx.y -= 8
+        lg_lines = simpleSplit(logline, "Helvetica-Bold", 12, UW - 32)
+        lg_h = max(64, len(lg_lines) * 16 + 28)
+        pdf.setFillColor(panel); pdf.roundRect(L, sy2 - lg_h, UW, lg_h, 10, stroke=0, fill=1)
+        pdf.setFillColor(gold); pdf.roundRect(L, sy2 - lg_h, 4, lg_h, 3, stroke=0, fill=1)
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 7)
+        pdf.drawString(L + 12, sy2 - 13, "LOGLINE")
+        _draw_lines(pdf, lg_lines, L + 12, sy2 - 28, 16, "Helvetica-Bold", 12, white)
+        sy2 -= lg_h + 14
 
-    ctx.section_header("Character Value", "Why the roles matter and what the cast landscape looks like.")
-    if protagonist_sum:
-        ctx.info_row("Lead role read", protagonist_sum)
-    if char_leverage:
-        ctx.info_row("Character leverage", char_leverage)
-    if top_chars:
-        ctx.info_row("Top characters", ", ".join(top_chars[:10]))
-    if role_arc_map:
-        ctx.info_row("Role arc map", "  →  ".join(role_arc_map[:6]))
-    ctx.y -= 8
+    # Synopsis
+    if synopsis:
+        syn_lines = simpleSplit(synopsis, "Helvetica", 10, UW - 32)[:8]
+        syn_h = max(56, len(syn_lines) * 13 + 28)
+        pdf.setFillColor(panel); pdf.roundRect(L, sy2 - syn_h, UW, syn_h, 10, stroke=0, fill=1)
+        pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 7)
+        pdf.drawString(L + 12, sy2 - 13, "SYNOPSIS")
+        _draw_lines(pdf, syn_lines, L + 12, sy2 - 27, 13, "Helvetica", 10, muted)
+        sy2 -= syn_h + 16
+
+    # 3-column mini-cards: World | Core Conflict | Story Engine
+    mini_data = [(lbl, val) for lbl, val in [
+        ("World", world), ("Core Conflict", core or reversal), ("Story Engine", engine)
+    ] if val]
+    if mini_data:
+        mc_n = len(mini_data)
+        mc_w = (UW - (mc_n - 1) * 12) / mc_n
+        mc_h = 90
+        for mi, (ml, mv) in enumerate(mini_data):
+            mx = L + mi * (mc_w + 12)
+            pdf.setFillColor(panel); pdf.roundRect(mx, sy2 - mc_h, mc_w, mc_h, 8, stroke=0, fill=1)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 7)
+            pdf.drawString(mx + 10, sy2 - 14, ml.upper())
+            mv_lines = simpleSplit(mv, "Helvetica", 9, mc_w - 18)
+            _draw_lines(pdf, mv_lines[:5], mx + 10, sy2 - 28, 12, "Helvetica", 9, muted)
+        sy2 -= mc_h + 16
+
+    # Compact info rows: Lead, Theme, Setting
+    for lbl, val in [("Lead Role", protagonist_sum or lead), ("Theme", theme), ("Setting", setting)]:
+        if val and sy2 > 80:
+            v_lines = simpleSplit(val, "Helvetica", 9, UW - 100)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+            pdf.drawString(L, sy2, lbl.upper())
+            for vi, vl in enumerate(v_lines[:2]):
+                pdf.setFillColor(muted); pdf.setFont("Helvetica", 9)
+                pdf.drawString(L + 98, sy2 - vi * 13, vl)
+            sy2 -= max(15, len(v_lines[:2]) * 13) + 4
+    _footer(pdf, W, 2); pdf.showPage()
+
+    # ── PAGE 3: MARKET POSITION ───────────────────────────────────────────────
+    _page_bg(pdf, W, H, charcoal, gold)
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(L, H - 58, "MARKET POSITION")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(L, H - 76, "The commercial lane and how this project compares.")
+    my = H - 106
+
+    if strength:
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(L, my - 4, "STRENGTH INDEX")
+        pdf.setFillColor(muted); pdf.setFont("Helvetica", 8)
+        pdf.drawString(L, my - 16, "AI assessment of four key market dimensions")
+        my = _draw_strength_bars(pdf, strength, L, my - 32, UW, gold, panel, white, muted)
+        my -= 14
+
+    if comparable_details:
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(L, my - 4, "COMPARABLE FILMS")
+        my -= 22
+        for comp in comparable_details[:5]:
+            comp_lines = simpleSplit(comp, "Helvetica", 9, UW - 20)
+            ch = max(46, len(comp_lines) * 12 + 20)
+            pdf.setFillColor(panel); pdf.roundRect(L, my - ch, UW, ch, 6, stroke=0, fill=1)
+            pdf.setFillColor(gold); pdf.roundRect(L, my - ch, 3, ch, 2, stroke=0, fill=1)
+            yy = my - 10
+            for cl in comp_lines[:4]:
+                pdf.setFillColor(white); pdf.setFont("Helvetica", 9)
+                pdf.drawString(L + 12, yy, cl)
+                yy -= 12
+            my -= ch + 8
+        my -= 8
+
+    market_rows = [(lbl, val) for lbl, val in [
+        ("Budget Lane",  budget_lane), ("Streaming Fit", streamer_fit),
+        ("Awards Angle", awards_lane), ("Audience",      ", ".join(audience[:4]) if audience else None),
+        ("Commercial",   commercial),  ("Franchise",     franchise),
+    ] if val]
+    if market_rows and my > 80:
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(L, my - 4, "MARKET DETAILS")
+        my -= 22
+        for lbl, val in market_rows[:6]:
+            if my < 80:
+                break
+            v_lines = simpleSplit(val, "Helvetica", 9, UW - 110)
+            pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 8)
+            pdf.drawString(L, my, lbl.upper())
+            pdf.setFillColor(muted); pdf.setFont("Helvetica", 9)
+            pdf.drawString(L + 108, my, v_lines[0] if v_lines else "")
+            my -= 14
+    _footer(pdf, W, 3); pdf.showPage()
+
+    # ── PAGE 4: CHARACTER INTELLIGENCE ───────────────────────────────────────
+    _page_bg(pdf, W, H, charcoal, gold)
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(L, H - 58, "CHARACTER INTELLIGENCE")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(L, H - 76, "The arc and leverage of every key role in the project.")
+    ctx4 = _PDFCtx(pdf, W, H, L, UW, charcoal, gold, blue, white, muted, soft, panel)
+    ctx4.y = H - 106
+    ctx4.page_no = 4
 
     if act_breakdown:
-        ctx.section_header("Act Structure", "How the story is built across its three movements.")
-        ctx.act_breakdown_cards(act_breakdown)
-        ctx.y -= 4
+        ctx4.section_header("Act Structure", "How the story is built across its three movements.")
+        ctx4.act_breakdown_cards(act_breakdown)
+        ctx4.y -= 8
+
+    char_rows = [(lbl, val) for lbl, val in [
+        ("Lead role", protagonist_sum or lead), ("Character leverage", char_leverage),
+        ("Top characters", ", ".join(top_chars[:8]) if top_chars else None),
+    ] if val]
+    if char_rows:
+        ctx4.section_header("Character Value", "Why the roles matter.")
+        for lbl, val in char_rows:
+            ctx4.info_row(lbl, val)
+        ctx4.y -= 8
 
     if character_arcs:
-        ctx.section_header("Character Arcs", "Where each key role begins, how they transform, and where they land.")
-        ctx.character_arc_rows(character_arcs)
-        ctx.y -= 4
+        ctx4.section_header("Character Arcs", "Where each key role begins, transforms, and lands.")
+        ctx4.character_arc_rows(character_arcs)
+        ctx4.y -= 4
 
-    ctx.section_header("Market Position", "The commercial lane this project appears to be in right now.")
-    if comparables:
-        ctx.pdf.setFillColor(ctx.white); ctx.pdf.setFont("Helvetica-Bold", 10.5)
-        ctx.pdf.drawString(ctx.left, ctx.y, "Comparable titles"); ctx.y -= 13
-        ctx.bullet_list(comparables[:6], bullet_color=gold)
-    if audience:
-        ctx.info_row("Audience profile", ", ".join(audience[:6]))
-    if budget_lane:
-        ctx.info_row("Budget lane", budget_lane)
-    if streamer_fit:
-        ctx.info_row("Distribution / buyer fit", streamer_fit)
-    if awards_lane:
-        ctx.info_row("Awards lane", awards_lane)
-    if commercial:
-        ctx.info_row("Commercial positioning", commercial)
-    if packaging:
-        ctx.info_row("Packaging potential", packaging)
-    if franchise:
-        ctx.info_row("Franchise potential", franchise)
-    if strength_line:
-        ctx.info_row("Strength index", strength_line)
-
-    ctx.new_page()
-    ctx.section_header("Executive & Producer Gold", "The material already carries stronger development-facing value than a basic summary report shows.")
-    if executive_summary:
-        ctx.info_row("Executive summary", executive_summary)
-    if sales_hook:
-        ctx.info_row("Sales hook", sales_hook)
-    if comparable_details:
-        ctx.pdf.setFillColor(ctx.soft); ctx.pdf.setFont("Helvetica-Bold", 9)
-        ctx.pdf.drawString(ctx.left, ctx.y, "FILM COMPARISONS  ·  BOX OFFICE"); ctx.y -= 10
-        ctx.comp_table(comparable_details[:5])
-    if market_projections:
-        projection_lines = []
-        for label, key in [
-            ("Budget", "estimated_budget_tier"),
-            ("Distribution", "distribution_angle"),
-            ("Awards", "awards_potential"),
-            ("Audience reach", "audience_reach"),
-            ("Franchise", "franchise_potential"),
-        ]:
-            val = _safe(market_projections.get(key))
-            if val:
-                projection_lines.append(f"{label}: {val}")
-        if projection_lines:
-            ctx.bullet_list(projection_lines[:6], bullet_color=blue)
-
-    ctx.section_header("Actor Intelligence", "This is where the report starts behaving like an actual prep tool.")
-    if actor_objective:
-        ctx.info_row("Actor objective", actor_objective)
-    if playable_tactics:
-        ctx.info_row("Playable tactics", ", ".join(playable_tactics[:8]))
-    if emotional_triggers:
-        ctx.info_row("Emotional triggers", ", ".join(emotional_triggers[:8]))
-    if memorization_beats:
-        ctx.info_row("Memorization beats", "  ·  ".join(memorization_beats[:8]))
-    if pressure_ladder:
-        ctx.info_row("Pressure ladder", "  →  ".join(pressure_ladder[:8]))
-    if audition_danger_zones:
-        ctx.bullet_list(audition_danger_zones[:6], bullet_color=gold)
-
-    ctx.new_page()
-    ctx.section_header("Reader & Set Readiness", "The brain is already creating practical prep value for performers and directors.")
-    if reader_chemistry_tips:
-        ctx.bullet_list(reader_chemistry_tips[:6], bullet_color=blue)
-    if emotional_continuity:
-        ctx.section_header("Emotional continuity")
-        ctx.bullet_list(emotional_continuity[:6], bullet_color=gold)
-    if costume_behavior_clues:
-        ctx.section_header("Costume & behavior clues")
-        ctx.bullet_list(costume_behavior_clues[:5], bullet_color=blue)
-    if set_ready_checklist:
-        ctx.section_header("Set-ready checklist")
-        ctx.bullet_list(set_ready_checklist[:6], bullet_color=gold)
     if relationship_lines:
-        ctx.section_header("Relationship leverage map")
-        ctx.bullet_list(relationship_lines[:6], bullet_color=blue)
+        ctx4.section_header("Relationship Map", "How each key relationship functions in the story.")
+        ctx4.bullet_list(relationship_lines[:6], bullet_color=gold)
 
-    ctx.new_page()
-    ctx.section_header("What Is Working", "The report should not just criticize. It should identify value.")
-    ctx.bullet_list([str(x) for x in strengths_list[:8] if str(x).strip()] or [
-        "The central pressure line is easy to pitch.",
-        "The material has a clean story engine and a usable reversal.",
-        "The lead role appears to carry real performance opportunity.",
-    ], bullet_color=gold)
-    ctx.y -= 8
+    # ── PAGE 5: DEVELOPMENT INTELLIGENCE ─────────────────────────────────────
+    _footer(pdf, W, ctx4.page_no); pdf.showPage()
+    page_no5 = ctx4.page_no + 1
+    _page_bg(pdf, W, H, charcoal, gold)
+    pdf.setFillColor(white); pdf.setFont("Helvetica-Bold", 28)
+    pdf.drawString(L, H - 58, "DEVELOPMENT INTELLIGENCE")
+    pdf.setFillColor(muted); pdf.setFont("Helvetica", 10)
+    pdf.drawString(L, H - 76, "What is working, what to fix next, and why this project matters.")
 
-    ctx.section_header("Rewrite Priorities", "Where the next draft can create the fastest value.")
-    ctx.bullet_list([str(x) for x in rewrite_priorities[:8] if str(x).strip()], bullet_color=blue)
-    ctx.y -= 8
+    # 2-column: What's Working | Rewrite Priorities
+    col_w5 = (UW - 18) / 2
+    dev_y = H - 108
+    _draw_card(pdf, L, dev_y, col_w5, 178, "What's Working",
+               [str(x) for x in strengths_list[:6] if str(x).strip()], gold, panel, white, muted)
+    _draw_card(pdf, L + col_w5 + 18, dev_y, col_w5, 178, "Rewrite Priorities",
+               [str(x) for x in rewrite_priorities[:6] if str(x).strip()], gold, panel, white, muted)
+    dev_y -= 196
 
-    if risks_list:
-        ctx.section_header("Things To Watch")
-        ctx.bullet_list([str(x) for x in risks_list[:8] if str(x).strip()], bullet_color=gold)
-        ctx.y -= 8
+    # Story insights full-width card
+    si_items = [str(x).strip() for x in story_insights[:5] if str(x).strip()]
+    if si_items:
+        _draw_card(pdf, L, dev_y, UW, 138, "Why This Project Matters", si_items, gold, panel, white, muted)
+        dev_y -= 154
 
-    ctx.section_header("Why This Project Matters", "The part a novice user, creative producer, or investor can understand quickly.")
-    ctx.bullet_list([str(x) for x in story_insights[:8] if str(x).strip()], bullet_color=gold)
-    if summary_note:
-        ctx.info_row("Final note", summary_note)
+    # Actor intelligence — compact 4-column if data present
+    actor_cols = [(lbl, vals) for lbl, vals in [
+        ("Playable Tactics",   playable_tactics[:5]),
+        ("Emotional Triggers", emotional_triggers[:5]),
+        ("Danger Zones",       audition_danger_zones[:5]),
+        ("Reader Chemistry",   reader_chemistry_tips[:4]),
+    ] if vals]
+    if actor_cols and dev_y > 120:
+        pdf.setStrokeColor(colors.HexColor("#252a2e")); pdf.setLineWidth(0.5)
+        pdf.line(L, dev_y + 6, R, dev_y + 6)
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 10)
+        pdf.drawString(L, dev_y - 8, "ACTOR INTELLIGENCE")
+        dev_y -= 28
+        ac_w = (UW - (len(actor_cols) - 1) * 8) / len(actor_cols)
+        ac_h = min(dev_y - 50, 110)
+        if ac_h > 60:
+            for ai, (al, av) in enumerate(actor_cols):
+                _draw_card(pdf, L + ai * (ac_w + 8), dev_y, ac_w, ac_h, al, av, gold, panel, white, muted)
+            dev_y -= ac_h + 10
 
-    ctx.methodology_box()
-    _footer(pdf, W, ctx.page_no)
+    # Risks (compact)
+    if risks_list and dev_y > 80:
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(L, dev_y - 6, "THINGS TO WATCH")
+        dev_y -= 20
+        for risk in risks_list[:4]:
+            if dev_y < 80:
+                break
+            r_chunk = simpleSplit(str(risk).strip(), "Helvetica", 9, UW - 20)
+            pdf.setFillColor(colors.HexColor("#e05252")); pdf.setFont("Helvetica-Bold", 9)
+            pdf.drawString(L, dev_y, "!")
+            pdf.setFillColor(muted); pdf.setFont("Helvetica", 9)
+            pdf.drawString(L + 12, dev_y, r_chunk[0] if r_chunk else "")
+            dev_y -= 14
+
+    # Methodology box
+    meth_items = _methodology_lines()
+    meth_lines_flat = []
+    for item in meth_items:
+        meth_lines_flat.extend(simpleSplit(item, "Helvetica", 9, UW - 34))
+    mbox_h = max(84, len(meth_lines_flat) * 11 + 34)
+    if dev_y - mbox_h < 40:
+        _footer(pdf, W, page_no5); pdf.showPage(); page_no5 += 1
+        _page_bg(pdf, W, H, charcoal, gold)
+        dev_y = H - 56
+    mbox_y = dev_y - 18
+    pdf.setFillColor(panel); pdf.roundRect(L, mbox_y - mbox_h, UW, mbox_h, 12, stroke=0, fill=1)
+    pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 11)
+    pdf.drawString(L + 14, mbox_y - 14, "Sources & Methodology")
+    yy = mbox_y - 30
+    for item in meth_items:
+        bl = simpleSplit(item, "Helvetica", 9, UW - 34)
+        pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
+        pdf.drawString(L + 14, yy, "•")
+        yy = _draw_lines(pdf, bl, L + 28, yy, 11, "Helvetica", 9, muted)
+        yy -= 2
+
+    _footer(pdf, W, page_no5)
     pdf.save()
 
 #========== DAI DECK PIPELINE ==============
