@@ -393,7 +393,7 @@ def resolve_image_options_for_slide(
 
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
 EVOLUM_SESSION_ID = os.environ.get("EVOLUM_SESSION_ID", "shared")
-TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+TMDB_API_KEY = os.environ.get("TMDB_TOKEN", "")
 TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w500"
 
 _user_rotation_counters: dict = {}
@@ -1436,9 +1436,13 @@ def _fetch_tmdb_poster(title: str, cache_dir: Path) -> Optional[Path]:
     try:
         search_url = (
             f"https://api.themoviedb.org/3/search/movie"
-            f"?api_key={TMDB_API_KEY}&query={urllib.parse.quote(title)}&include_adult=false"
+            f"?query={urllib.parse.quote(title)}&include_adult=false"
         )
-        with urllib.request.urlopen(search_url, timeout=10) as resp:
+        req = urllib.request.Request(
+            search_url,
+            headers={"Authorization": f"Bearer {TMDB_API_KEY}", "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read())
         results = data.get("results", [])
         if not results:
