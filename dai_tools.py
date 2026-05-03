@@ -1017,16 +1017,6 @@ Logline: {logline}
 Synopsis: {synopsis}
 Detected beat types: {[b.beat for b in beats[:12]]}
 Sample dialogue beats: {top_dialogue}
-Existing brain fields:
-objective={brain_data.get('actor_objective')}
-tactics={brain_data.get('playable_tactics')}
-triggers={brain_data.get('emotional_triggers')}
-danger_zones={brain_data.get('audition_danger_zones')}
-reader_tips={brain_data.get('reader_chemistry_tips')}
-memorization={brain_data.get('memorization_beats')}
-continuity={brain_data.get('emotional_continuity')}
-set_ready={brain_data.get('set_ready_checklist')}
-
 Return JSON with these keys:
 summary: string, 60-90 words
 casting_read: list of 4 specific bullets
@@ -1063,46 +1053,46 @@ scene_priorities: list of 6 specific bullets
             "Protect the role's pressure without turning every beat into volume.",
             f"Let the {top.lower()} energy shape timing, stillness, and eye contact.",
         ],
-        "playable_tactics": _as_list(brain_data.get("playable_tactics"), [
+        "playable_tactics": [
             "Hold authority quietly before raising pressure.",
             "Use the other person's reaction as fuel for the next choice.",
             "Let the thought land before moving to the next line.",
             "Play the objective, not the emotion label.",
-        ]),
-        "emotional_triggers": _as_list(brain_data.get("emotional_triggers"), [
+        ],
+        "emotional_triggers": [
             "Loss of control", "Being doubted", "Time pressure", "A truth being withheld"
-        ]),
-        "danger_zones": _as_list(brain_data.get("audition_danger_zones"), [
+        ],
+        "danger_zones": [
             "Do not overplay intention before the scene earns it.",
             "Do not mistake authority for loudness.",
             "Do not flatten listening beats into waiting time.",
             "Do not rush the turn just because the dialogue is familiar.",
-        ]),
-        "memorization_beats": _as_list(brain_data.get("memorization_beats"), [
+        ],
+        "memorization_beats": [
             "Mark the first line where the character needs something specific.",
             "Circle the line where the power balance changes.",
             "Protect the silence before the biggest choice.",
             "Know the final emotional temperature of the scene.",
-        ]),
-        "reader_chemistry": _as_list(brain_data.get("reader_chemistry_tips"), [
+        ],
+        "reader_chemistry": [
             "Give the reader exact eyelines and let interruptions feel live.",
             "Use the reader to sharpen pressure changes, not flatten rhythm.",
             "Let reactions answer before dialogue does.",
             "Stay available to pace shifts instead of locking one rhythm.",
-        ]),
-        "look_presence": _as_list(brain_data.get("costume_behavior_clues"), [
+        ],
+        "look_presence": [
             "Dress to suggest the world without wearing a costume.",
             "Let posture show status before dialogue explains it.",
             "Choose one physical habit that tightens under pressure.",
             "Keep movement economical unless the scene forces release.",
-        ]),
-        "booked_continuity": _as_list(brain_data.get("emotional_continuity"), [
+        ],
+        "booked_continuity": [
             "Track where confidence cracks even when behavior stays controlled.",
             "Let pressure affect pace before it affects volume.",
             "Carry unresolved tension into the next scene instead of resetting.",
             "Protect listening behavior across takes.",
             "Know what the character learned in the previous scene.",
-        ]),
+        ],
         "scene_priorities": [
             f"{b.reference}: {_friendly_beat_title(b.beat, i+1)} — {b.playable_note}" for i, b in enumerate(beats[:6])
         ] or ["No specific scene priorities were detected for this character name."],
