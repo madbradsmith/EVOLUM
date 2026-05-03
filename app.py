@@ -1512,15 +1512,10 @@ def admin():
     messages = []
 
     try:
-        projects_dir = BASE_DIR / "sessions"
-        if projects_dir.exists():
-            used_bytes = sum(f.stat().st_size for f in projects_dir.rglob("*") if f.is_file())
-        else:
-            used_bytes = 0
-        limit_mb = 10 * 1024  # 10 GB limit
-        stats["disk_total_mb"] = limit_mb
-        stats["disk_used_mb"] = round(used_bytes / (1024 * 1024), 1)
-        stats["disk_pct"] = round(stats["disk_used_mb"] / limit_mb * 100, 1)
+        _du = shutil.disk_usage(BASE_DIR)
+        stats["disk_total_mb"] = round(_du.total / (1024 * 1024), 1)
+        stats["disk_used_mb"] = round((_du.total - _du.free) / (1024 * 1024), 1)
+        stats["disk_pct"] = round(((_du.total - _du.free) / _du.total) * 100, 1)
     except Exception:
         pass
 
