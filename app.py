@@ -87,6 +87,9 @@ def db_init() -> None:
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
         conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS user_email TEXT"))
         conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS route TEXT"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_activity_event_type ON activity_events (event_type)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_activity_created_at ON activity_events (created_at DESC)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_activity_event_type_created ON activity_events (event_type, created_at DESC)"))
 
 def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
     if not DB_ENGINE:
