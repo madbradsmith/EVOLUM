@@ -1690,10 +1690,20 @@ def build_presentation(
             build_slide_editorial(slide, image_for_slide, _stitle, body)
 
         elif layout_lower == "hero_full_bleed" or stage_lower == "closing":
-            add_base_background(slide)
-            add_full_bleed_image(slide, image_for_slide)
-            add_title_text(slide, deck_title if stage_lower == "closing" else _stitle)
-            place_text_by_stage(slide, stage, layout, body)
+            if stage_lower == "title":
+                _title_img = image_for_slide
+                if not _title_img and POSTER_PATH:
+                    _title_img = Path(POSTER_PATH)
+                _tagline = clean(brain_output.get("tagline", "") or "")
+                if not _tagline:
+                    _logline = clean(brain_output.get("logline", "") or "")
+                    _tagline = _logline[:90] if _logline else ""
+                _build_poster_cover_slide(slide, _title_img, deck_title, _tagline, brain_output)
+            else:
+                add_base_background(slide)
+                add_full_bleed_image(slide, image_for_slide)
+                add_title_text(slide, deck_title if stage_lower == "closing" else _stitle)
+                place_text_by_stage(slide, stage, layout, body)
 
         else:
             # Default — let composition_bias from brain guide the choice
