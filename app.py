@@ -19,7 +19,7 @@ import time
 import re
 import urllib.request
 import urllib.error
-import requests as _requests
+import urllib.parse
 import hashlib
 import secrets
 import string
@@ -3437,8 +3437,10 @@ def tmdb_search():
     if not q or not TMDB_API_KEY:
         return jsonify({"results": []})
     try:
-        r = _requests.get(f"{TMDB_BASE}/search/person", params={"query": q, "api_key": TMDB_API_KEY}, timeout=8)
-        data = r.json()
+        params = urllib.parse.urlencode({"query": q, "api_key": TMDB_API_KEY})
+        url = f"{TMDB_BASE}/search/person?{params}"
+        with urllib.request.urlopen(url, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
         results = []
         for p in data.get("results", [])[:6]:
             results.append({
@@ -3457,14 +3459,17 @@ def tmdb_credits(person_id):
     if not TMDB_API_KEY:
         return jsonify({"error": "TMDB_API_KEY not configured"}), 400
     try:
-        r = _requests.get(f"{TMDB_BASE}/person/{person_id}/combined_credits", params={"api_key": TMDB_API_KEY}, timeout=8)
-        data = r.json()
+        params = urllib.parse.urlencode({"api_key": TMDB_API_KEY})
+        url = f"{TMDB_BASE}/person/{person_id}/combined_credits?{params}"
+        with urllib.request.urlopen(url, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
         cast = sorted(data.get("cast", []), key=lambda x: x.get("popularity", 0), reverse=True)
         crew = sorted(data.get("crew", []), key=lambda x: x.get("popularity", 0), reverse=True)
         cast_titles = [x.get("title") or x.get("name", "") for x in cast[:12] if x.get("title") or x.get("name")]
         crew_titles = [x.get("title") or x.get("name", "") for x in crew[:8] if x.get("title") or x.get("name")]
-        # Also get person details (department, biography)
-        det = _requests.get(f"{TMDB_BASE}/person/{person_id}", params={"api_key": TMDB_API_KEY}, timeout=8).json()
+        det_url = f"{TMDB_BASE}/person/{person_id}?{params}"
+        with urllib.request.urlopen(det_url, timeout=8) as resp2:
+            det = json.loads(resp2.read().decode())
         return jsonify({
             "cast_titles": cast_titles,
             "crew_titles": crew_titles,
