@@ -13,6 +13,17 @@
 
 
 <div class="top-nav-shell">
+    {% if user_logged_in %}
+    <div id="headerCreditMeter" onclick="openBoostModal()" title="Your weekly credits — click to top up" style="display:none; align-items:center; gap:8px; cursor:pointer; margin-right:10px; padding:5px 10px; border-radius:20px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);">
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+            <div id="headerCreditText" style="font-size:11px; font-weight:700; color:#ccc; white-space:nowrap;">— / —</div>
+            <div style="width:64px; height:3px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+                <div id="headerCreditBar" style="height:100%; width:0%; background:#6c63ff; border-radius:2px; transition:width .4s;"></div>
+            </div>
+        </div>
+        <div style="font-size:10px; font-weight:800; color:#ff9944; letter-spacing:0.05em;">BOOST</div>
+    </div>
+    {% endif %}
     <button class="hamburger-button" type="button" onclick="toggleTopNavMenu()" aria-label="Open menu">
         <div class="hamburger-lines">
             <span></span><span></span><span></span>
@@ -361,6 +372,21 @@
 
             <div class="footer-powered home-footer">Powered by Developum AI Engine -- Beta Version V2.0 - Build 1.1</div>
         </div>
+    </div>
+</div>
+
+<div class="modal" id="boostModal">
+    <div class="modal-content" style="max-width:360px;">
+        <div class="modal-close" onclick="closeModal('boostModal')">×</div>
+        <h3 style="margin-bottom:4px;">Top Up Credits</h3>
+        <div id="boostCurrentUsage" style="font-size:12px; color:#888; margin-bottom:16px;"></div>
+        <label class="label">Amount to add (minimum $5)</label>
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+            <span style="font-size:20px; color:#ccc; font-weight:700;">$</span>
+            <input type="number" id="boostAmountInput" min="5" step="1" value="10" placeholder="10" style="font-size:20px; font-weight:700; width:100%; margin:0;">
+        </div>
+        <div style="font-size:11px; color:#666; margin-bottom:16px;">Credits never expire and stack on top of your weekly budget.</div>
+        <button class="primary-button" type="button" onclick="submitBoost()" style="width:100%; box-sizing:border-box;">Add Credits via Stripe →</button>
     </div>
 </div>
 

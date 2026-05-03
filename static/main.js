@@ -447,33 +447,39 @@ function showUploadState(){
 let _cachedUsage = null;
 
 function fetchUsage(){
-    const meter = document.getElementById("usageMeter");
-    if (!meter) return;
     if (typeof userLoggedIn === "undefined" || !userLoggedIn) return;
 
     fetch("/usage").then(r => r.ok ? r.json() : null).then(data => {
         if (!data || data.error) return;
         _cachedUsage = data;
-        meter.style.display = "block";
 
         const used = data.weekly_used || 0;
         const total = data.total_available || 0;
         const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
-        const remaining = data.remaining || 0;
         const overLimit = data.over_limit;
+        const color = pct >= 100 ? "#ff6b6b" : pct >= 80 ? "#f5a623" : "#6c63ff";
 
-        const bar = document.getElementById("usageMeterBar");
-        const txt = document.getElementById("usageMeterText");
-        const overMsg = document.getElementById("usageOverMsg");
-        const buyBtn = document.getElementById("buyMoreBtn");
+        // Header meter
+        const hMeter = document.getElementById("headerCreditMeter");
+        const hText = document.getElementById("headerCreditText");
+        const hBar = document.getElementById("headerCreditBar");
+        if (hMeter) hMeter.style.display = "flex";
+        if (hText) hText.textContent = `$${used.toFixed(2)} / $${total.toFixed(2)}`;
+        if (hBar) { hBar.style.width = pct + "%"; hBar.style.background = color; }
 
-        if (bar) {
-            bar.style.width = pct + "%";
-            bar.style.background = pct >= 100 ? "#ff6b6b" : pct >= 80 ? "#f5a623" : "#6c63ff";
+        // Upload panel meter
+        const meter = document.getElementById("usageMeter");
+        if (meter) {
+            meter.style.display = "block";
+            const bar = document.getElementById("usageMeterBar");
+            const txt = document.getElementById("usageMeterText");
+            const overMsg = document.getElementById("usageOverMsg");
+            const buyBtn = document.getElementById("buyMoreBtn");
+            if (bar) { bar.style.width = pct + "%"; bar.style.background = color; }
+            if (txt) txt.textContent = `$${used.toFixed(2)} of $${total.toFixed(2)} used this week`;
+            if (overMsg) overMsg.style.display = overLimit ? "block" : "none";
+            if (buyBtn) buyBtn.style.display = overLimit ? "inline-block" : "none";
         }
-        if (txt) txt.textContent = `$${used.toFixed(2)} of $${total.toFixed(2)} used this week`;
-        if (overMsg) overMsg.style.display = overLimit ? "block" : "none";
-        if (buyBtn) buyBtn.style.display = overLimit ? "inline-block" : "none";
 
         const generateBtn = document.querySelector("#uploadState form button[type=submit]");
         if (generateBtn) {
@@ -483,14 +489,33 @@ function fetchUsage(){
     }).catch(() => {});
 }
 
-function buyMoreCredits(){
-    fetch("/buy-credits", { method: "POST" })
-        .then(r => r.json())
-        .then(data => {
-            if (data.url) window.location.href = data.url;
-            else showInfoModal("Error", data.error || "Could not start checkout.");
-        }).catch(() => showInfoModal("Error", "Could not reach server."));
+function openBoostModal(){
+    const el = document.getElementById("boostCurrentUsage");
+    if (el && _cachedUsage) {
+        el.textContent = `$${(_cachedUsage.weekly_used||0).toFixed(2)} used of $${(_cachedUsage.total_available||0).toFixed(2)} this week`;
+    }
+    document.getElementById("boostAmountInput").value = "10";
+    document.getElementById("boostModal").classList.add("show");
 }
+
+function submitBoost(){
+    const amt = parseFloat(document.getElementById("boostAmountInput").value) || 0;
+    if (amt < 5) { alert("Minimum top-up is $5."); return; }
+    fetch("/buy-credits", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount_usd: amt })
+    }).then(r => r.json()).then(data => {
+        if (data.url) {
+            closeModal("boostModal");
+            window.open(data.url, "_blank");
+        } else {
+            showInfoModal("Error", data.error || "Could not start checkout.");
+        }
+    }).catch(() => showInfoModal("Error", "Could not reach server."));
+}
+
+function buyMoreCredits(){ openBoostModal(); }
 
 function resetCreateProject(){
     _resetPipelineLog();
@@ -1912,6 +1937,7 @@ function updateStatusUI(status){
         stopTimer();
         stopQuoteRotation();
         buildInFlight = false;
+        fetchUsage();
         document.body.classList.add("complete-mode");
         syncTrackDeckDone();
         document.getElementById("buildProgressBar").style.display = "none";

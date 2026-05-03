@@ -1741,6 +1741,11 @@ def buy_credits():
     stripe_lib.api_key = os.environ.get("STRIPE_SECRET_KEY", "")
     if not stripe_lib.api_key:
         return jsonify({"error": "Stripe not configured"}), 500
+    try:
+        amount_usd = float(request.json.get("amount_usd", _CREDIT_PACK_USD)) if request.is_json else _CREDIT_PACK_USD
+    except (TypeError, ValueError):
+        amount_usd = _CREDIT_PACK_USD
+    amount_usd = max(_CREDIT_PACK_USD, round(amount_usd, 2))
     base_url = request.host_url.rstrip("/")
     try:
         checkout = stripe_lib.checkout.Session.create(
@@ -1748,10 +1753,10 @@ def buy_credits():
             line_items=[{
                 "price_data": {
                     "currency": "usd",
-                    "unit_amount": int(_CREDIT_PACK_USD * 100),
+                    "unit_amount": int(amount_usd * 100),
                     "product_data": {
                         "name": "EVOLUM Usage Credits",
-                        "description": f"${_CREDIT_PACK_USD:.0f} of API usage credits — use any time, never expire",
+                        "description": f"${amount_usd:.2f} of usage credits — never expire, stack on weekly budget",
                     },
                 },
                 "quantity": 1,
@@ -1760,7 +1765,7 @@ def buy_credits():
             customer_email=email,
             success_url=f"{base_url}/credits-success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{base_url}/?credits_cancelled=1",
-            metadata={"email": email, "credit_usd": str(_CREDIT_PACK_USD)},
+            metadata={"email": email, "credit_usd": str(amount_usd)},
         )
         return jsonify({"url": checkout.url})
     except Exception as e:
@@ -1790,7 +1795,11 @@ def credits_success():
                                    user_email=email, metadata={"credit_usd": credit_usd})
     except Exception as e:
         _app_logger.error(f"Credits success handler error: {e}")
-    return redirect("/?credits_added=1")
+    return """<!DOCTYPE html><html><head><title>Credits Added</title></head><body>
+<script>window.close();</script>
+<p style="font-family:sans-serif;text-align:center;margin-top:40px;color:#ccc;">
+Credits added! You can close this tab.</p>
+</body></html>"""
 
 
 # ===== PITCH DECK ROUTES START =======================
