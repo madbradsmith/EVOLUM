@@ -209,6 +209,11 @@ def ensure_subscription_columns():
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS subscription_active BOOLEAN DEFAULT FALSE"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'solo'"))
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS usage_bonus_usd FLOAT DEFAULT 0"))
+        conn.execute(text("""
+            UPDATE beta_users
+            SET usage_bonus_usd = 100
+            WHERE COALESCE(usage_bonus_usd, 0) < 100
+        """))
 
 
 def ensure_referral_tables():

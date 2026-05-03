@@ -1628,6 +1628,9 @@ body {
     top: 16px;
     right: 18px;
     z-index: 1200;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 .hamburger-button {
     width: 48px;
