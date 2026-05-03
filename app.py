@@ -1540,9 +1540,9 @@ def _fetch_fal_balance() -> dict:
             data = json.loads(resp.read().decode())
         return {"available": True, "balance": data.get("balance"), "raw": data}
     except urllib.error.HTTPError as e:
-        return {"available": False, "reason": f"http_{e.code}"}
+        return {"available": False, "reason": "Check fal.ai dashboard"}
     except Exception as e:
-        return {"available": False, "reason": str(e)[:60]}
+        return {"available": False, "reason": "Check fal.ai dashboard"}
 
 
 @app.route("/admin")
