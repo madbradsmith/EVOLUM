@@ -2987,11 +2987,11 @@ def actor_prep_pass():
         build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF, brain_data=brain_data)
     except Exception as e:
         log_usage("actor_prep_complete", success=False, role=character_name, error="actor_prep_failed")
-        return jsonify({"error": f"Actor preparation failed: {e}"}), 500
+        return jsonify({"error": str(e) if str(e) else "We encountered a problem generating this report. Please try again later."}), 500
 
     if not LATEST_ACTOR_PREP_PDF.exists():
         log_usage("actor_prep_complete", success=False, role=character_name, error="actor_pdf_missing")
-        return jsonify({"error": "Actor prep PDF was not created."}), 500
+        return jsonify({"error": "We encountered a problem generating this report. Please try again later."}), 500
 
     log_usage("actor_prep_complete", success=True, role=character_name)
 
@@ -3053,11 +3053,11 @@ def actor_booked_pass():
         build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF, brain_data=brain_data)
     except Exception as e:
         log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_failed")
-        return jsonify({"error": f"Booked role preparation failed: {e}"}), 500
+        return jsonify({"error": str(e) if str(e) else "We encountered a problem generating this report. Please try again later."}), 500
 
     if not LATEST_ACTOR_BOOKED_PDF.exists():
         log_usage("actor_booked_complete", success=False, role=character_name, error="actor_booked_pdf_missing")
-        return jsonify({"error": "Booked role PDF was not created."}), 500
+        return jsonify({"error": "We encountered a problem generating this report. Please try again later."}), 500
 
     log_usage("actor_booked_complete", success=True, role=character_name)
 

@@ -1043,60 +1043,7 @@ scene_priorities: list of 6 specific bullets
         except Exception:
             pass
 
-    top = beats[0].beat if beats else "Hold Authority"
-    role = character_name.title()
-    return {
-        "summary": _fallback_audition_snapshot(character_name, beats) if mode == "audition" else _fallback_booked_snapshot(character_name, beats),
-        "casting_read": [
-            f"See whether {role} can enter the scene with a clear want, not just a mood.",
-            "Test how well the actor listens before pushing the next line.",
-            "Protect the role's pressure without turning every beat into volume.",
-            f"Let the {top.lower()} energy shape timing, stillness, and eye contact.",
-        ],
-        "playable_tactics": [
-            "Hold authority quietly before raising pressure.",
-            "Use the other person's reaction as fuel for the next choice.",
-            "Let the thought land before moving to the next line.",
-            "Play the objective, not the emotion label.",
-        ],
-        "emotional_triggers": [
-            "Loss of control", "Being doubted", "Time pressure", "A truth being withheld"
-        ],
-        "danger_zones": [
-            "Do not overplay intention before the scene earns it.",
-            "Do not mistake authority for loudness.",
-            "Do not flatten listening beats into waiting time.",
-            "Do not rush the turn just because the dialogue is familiar.",
-        ],
-        "memorization_beats": [
-            "Mark the first line where the character needs something specific.",
-            "Circle the line where the power balance changes.",
-            "Protect the silence before the biggest choice.",
-            "Know the final emotional temperature of the scene.",
-        ],
-        "reader_chemistry": [
-            "Give the reader exact eyelines and let interruptions feel live.",
-            "Use the reader to sharpen pressure changes, not flatten rhythm.",
-            "Let reactions answer before dialogue does.",
-            "Stay available to pace shifts instead of locking one rhythm.",
-        ],
-        "look_presence": [
-            "Dress to suggest the world without wearing a costume.",
-            "Let posture show status before dialogue explains it.",
-            "Choose one physical habit that tightens under pressure.",
-            "Keep movement economical unless the scene forces release.",
-        ],
-        "booked_continuity": [
-            "Track where confidence cracks even when behavior stays controlled.",
-            "Let pressure affect pace before it affects volume.",
-            "Carry unresolved tension into the next scene instead of resetting.",
-            "Protect listening behavior across takes.",
-            "Know what the character learned in the previous scene.",
-        ],
-        "scene_priorities": [
-            f"{b.reference}: {_friendly_beat_title(b.beat, i+1)} — {b.playable_note}" for i, b in enumerate(beats[:6])
-        ] or ["No specific scene priorities were detected for this character name."],
-    }
+    raise RuntimeError("We encountered a problem generating this report. Please try again later.")
 
 
 def _find_actor_report_image(brain_data: Dict, mode: str, character_name: str, title: str) -> Optional[Path]:
@@ -1158,16 +1105,19 @@ def _find_actor_report_image(brain_data: Dict, mode: str, character_name: str, t
     return None
 
 
-def _draw_cover_image(pdf: canvas.Canvas, image_path: Optional[Path], x: float, y: float, w: float, h: float, stroke_color) -> None:
+def _draw_cover_image(pdf: canvas.Canvas, image_path: Optional[Path], x: float, y: float, w: float, h: float, stroke_color) -> bool:
+    """Draws the cover image box. Returns True if drawn, False if no image."""
+    if not (image_path and image_path.exists()):
+        return False
     pdf.setFillColor(colors.HexColor("#0b0b0b"))
     pdf.roundRect(x, y, w, h, 14, stroke=0, fill=1)
-    if image_path and image_path.exists():
-        try:
-            pdf.drawImage(ImageReader(str(image_path)), x, y, width=w, height=h, preserveAspectRatio=True, anchor="c", mask="auto")
-        except Exception:
-            pass
+    try:
+        pdf.drawImage(ImageReader(str(image_path)), x, y, width=w, height=h, preserveAspectRatio=True, anchor="c", mask="auto")
+    except Exception:
+        pass
     pdf.setStrokeColor(stroke_color)
     pdf.roundRect(x, y, w, h, 14, stroke=1, fill=0)
+    return True
 
 
 def _draw_card(pdf: canvas.Canvas, x: float, y: float, w: float, h: float, title: str, lines: List[str], gold, panel, white, muted) -> None:
@@ -1245,12 +1195,12 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 14)
     pdf.drawString(left, height - 126, title.upper()[:42])
     pdf.setStrokeColor(gold); pdf.line(left, height - 152, right, height - 152)
-    _draw_cover_image(pdf, image_path, left, height - 390, usable_width, 180, gold)
+    has_image = _draw_cover_image(pdf, image_path, left, height - 390, usable_width, 180, gold)
 
-    snap = _safe(intelligence.get("summary"), _fallback_audition_snapshot(character_name, beats))
+    snap = intelligence.get("summary") or ""
     lines = simpleSplit(snap, "Helvetica-Bold", 11, usable_width - 36)
     box_h = max(92, len(lines)*14 + 36)
-    y = height - 430
+    y = height - 430 if has_image else height - 195
     pdf.setFillColor(panel); pdf.roundRect(left, y - box_h, usable_width, box_h, 12, stroke=0, fill=1)
     pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9); pdf.drawString(left + 14, y - 20, "ROLE SNAPSHOT")
     _draw_lines(pdf, lines, left + 14, y - 40, 14, "Helvetica-Bold", 11, white)
@@ -1462,12 +1412,12 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     pdf.setFillColor(muted); pdf.setFont("Helvetica-Bold", 14)
     pdf.drawString(left, height - 126, title.upper()[:42])
     pdf.setStrokeColor(gold); pdf.line(left, height - 152, right, height - 152)
-    _draw_cover_image(pdf, image_path, left, height - 370, usable_width, 170, gold)
+    has_image = _draw_cover_image(pdf, image_path, left, height - 370, usable_width, 170, gold)
 
-    summary = _safe(intelligence.get("summary"), _fallback_booked_snapshot(character_name, beats))
+    summary = intelligence.get("summary") or ""
     snap_lines = simpleSplit(summary, "Helvetica-Bold", 11, usable_width - 36)
     box_h = max(88, len(snap_lines) * 14 + 36)
-    y = height - 410
+    y = height - 410 if has_image else height - 195
     pdf.setFillColor(panel); pdf.roundRect(left, y - box_h, usable_width, box_h, 12, stroke=0, fill=1)
     pdf.setFillColor(gold); pdf.setFont("Helvetica-Bold", 9)
     pdf.drawString(left + 14, y - 20, "FULL ROLE SNAPSHOT")
