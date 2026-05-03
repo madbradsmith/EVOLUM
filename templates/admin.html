@@ -201,12 +201,12 @@ tr:hover td { background:#fafafa; }
         </div>
         {% if stats.disk_total_mb %}
         <div class="health-card">
-            <div class="health-dot {{ 'err' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else 'ok') }}"></div>
+            <div class="health-dot {{ 'err' if stats.disk_pct > 95 else ('warn' if stats.disk_pct > 87 else 'ok') }}"></div>
             <div style="width:100%;">
                 <div class="health-text">Disk Usage</div>
                 <div class="health-sub">{{ stats.disk_used_mb }} MB / {{ stats.disk_total_mb // 1024 }} GB ({{ stats.disk_pct }}%)</div>
                 <div class="disk-bar">
-                    <div class="disk-bar-fill {{ 'danger' if stats.disk_pct > 90 else ('warn' if stats.disk_pct > 75 else '') }}" style="width:{{ stats.disk_pct }}%;"></div>
+                    <div class="disk-bar-fill {{ 'danger' if stats.disk_pct > 95 else ('warn' if stats.disk_pct > 87 else '') }}" style="width:{{ stats.disk_pct }}%;"></div>
                 </div>
             </div>
         </div>
@@ -225,19 +225,19 @@ tr:hover td { background:#fafafa; }
         </div>
         <div class="stat-card">
             <div class="stat-label">Deck Runs</div>
-            <div class="stat-value orange">{{ stats.deck_runs }}</div>
+            <div class="stat-value orange"><span data-stat="deck-runs">…</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Script Analyses</div>
-            <div class="stat-value">{{ stats.script_analyses }}</div>
+            <div class="stat-value"><span data-stat="script-analyses">…</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Sign-ins Today</div>
-            <div class="stat-value green">{{ stats.logins_today }}</div>
+            <div class="stat-value green"><span data-stat="logins-today">…</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Active 30 Min</div>
-            <div class="stat-value green">{{ stats.active_sessions }}</div>
+            <div class="stat-value green"><span data-stat="active-sessions">…</span></div>
         </div>
     </div>
 
@@ -260,15 +260,15 @@ tr:hover td { background:#fafafa; }
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-label">Sign-ins All Time</div>
-            <div class="stat-value">{{ stats.logins_total }}</div>
+            <div class="stat-value"><span data-stat="logins-total">…</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Sign-ins Today</div>
-            <div class="stat-value green">{{ stats.logins_today }}</div>
+            <div class="stat-value green"><span data-stat="logins-today">…</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Active Last 30 Min</div>
-            <div class="stat-value green">{{ stats.active_sessions }}</div>
+            <div class="stat-value green"><span data-stat="active-sessions">…</span></div>
         </div>
     </div>
 
@@ -276,21 +276,21 @@ tr:hover td { background:#fafafa; }
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-label">Deck Runs</div>
-            <div class="stat-value orange">{{ stats.deck_runs }}</div>
+            <div class="stat-value orange"><span data-stat="deck-runs">…</span></div>
             <div class="stat-sub">Full pipeline builds</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Script Analyses</div>
-            <div class="stat-value">{{ stats.script_analyses }}</div>
+            <div class="stat-value"><span data-stat="script-analyses">…</span></div>
             <div class="stat-sub">Analyze-only passes</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Audition Reports</div>
-            <div class="stat-value">{{ stats.actor_prep }}</div>
+            <div class="stat-value"><span data-stat="actor-prep">…</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Booked Reports</div>
-            <div class="stat-value">{{ stats.actor_booked }}</div>
+            <div class="stat-value"><span data-stat="actor-booked">…</span></div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Total Users</div>
@@ -335,27 +335,10 @@ tr:hover td { background:#fafafa; }
     <div class="panel-card">
         <div class="panel-head">
             <div class="panel-title">Users by Country (from sign-ins)</div>
-            <div class="panel-count">{{ geo_breakdown | length }}</div>
+            <div class="panel-count" id="geo-count">…</div>
         </div>
-        <div class="scroll-panel">
-            {% if geo_breakdown %}
-            <table>
-                <thead>
-                    <tr><th>Country</th><th>Code</th><th>Sign-ins</th></tr>
-                </thead>
-                <tbody>
-                    {% for g in geo_breakdown %}
-                    <tr>
-                        <td style="font-weight:600;">{{ g.country or '—' }}</td>
-                        <td style="color:var(--soft); font-size:12px;">{{ g.country_code or '' }}</td>
-                        <td style="font-weight:700; color:var(--orange);">{{ g.logins }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">No geographic data yet — will populate on next sign-in after deployment.</div>
-            {% endif %}
+        <div id="geo-table-container" class="scroll-panel">
+            <div style="color:#94a3b8; padding:14px; font-size:13px;">Loading…</div>
         </div>
     </div>
 
@@ -497,27 +480,27 @@ tr:hover td { background:#fafafa; }
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-label">Total Spend (All Time)</div>
-            <div class="stat-value red">${{ '%.2f'|format(stats.total_platform_cost or 0) }}</div>
+            <div class="stat-value red"><span data-stat="total-platform-cost">…</span></div>
             <div class="stat-sub">Claude + FAL combined</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Avg Cost / Deck</div>
-            <div class="stat-value orange">${{ '%.3f'|format(stats.avg_cost_per_deck or 0) }}</div>
+            <div class="stat-value orange"><span data-stat="avg-cost-per-deck">…</span></div>
             <div class="stat-sub">From tracked runs</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Claude (Brain) Spend</div>
-            <div class="stat-value">${{ '%.2f'|format(stats.total_brain_cost or 0) }}</div>
+            <div class="stat-value"><span data-stat="total-brain-cost">…</span></div>
             <div class="stat-sub">Sonnet 4.6 API calls</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">FAL (Images) Spend</div>
-            <div class="stat-value">${{ '%.2f'|format(stats.total_fal_cost or 0) }}</div>
+            <div class="stat-value"><span data-stat="total-fal-cost">…</span></div>
             <div class="stat-sub">Flux Schnell generations</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Images Generated</div>
-            <div class="stat-value blue">{{ stats.total_images_generated or 0 }}</div>
+            <div class="stat-value blue"><span data-stat="total-images">…</span></div>
             <div class="stat-sub">FAL API calls total</div>
         </div>
     </div>
@@ -551,31 +534,10 @@ tr:hover td { background:#fafafa; }
     <div class="panel-card">
         <div class="panel-head">
             <div class="panel-title">Top Users by Spend</div>
-            <div class="panel-count">{{ user_cost_rows | length }}</div>
+            <div class="panel-count" id="ucost-count">…</div>
         </div>
-        <div class="scroll-panel tall">
-            {% if user_cost_rows %}
-            <table>
-                <thead>
-                    <tr><th>Email</th><th>Plan</th><th>Deck Runs</th><th>Images</th><th>Est. Spend</th><th>Avg / Deck</th></tr>
-                </thead>
-                <tbody>
-                    {% for r in user_cost_rows %}
-                    {% set avg = (r.total_cost / r.deck_runs) if r.deck_runs else 0 %}
-                    <tr>
-                        <td class="email-cell">{{ r.user_email or '—' }}</td>
-                        <td><span class="plan-badge plan-{{ r.plan or 'solo' }}">{{ r.plan or 'solo' }}</span></td>
-                        <td style="font-weight:700;">{{ r.deck_runs }}</td>
-                        <td>{{ r.total_images or 0 }}</td>
-                        <td style="font-weight:700; color:{% if (r.total_cost or 0) > 1 %}var(--red){% elif (r.total_cost or 0) > 0.25 %}var(--orange){% else %}var(--ink){% endif %};">${{ '%.3f'|format(r.total_cost or 0) }}</td>
-                        <td style="color:var(--soft);">${{ '%.3f'|format(avg) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">No cost data yet — tracking starts on the next deck run.</div>
-            {% endif %}
+        <div id="user-cost-table-container" class="scroll-panel tall">
+            <div style="color:#94a3b8; padding:14px; font-size:13px;">Loading…</div>
         </div>
     </div>
 
@@ -742,6 +704,72 @@ async function doResetPwWithKey(uid, email) {
 }
 // Override doResetPw to use the keyed version
 window.doResetPw = doResetPwWithKey;
+
+// ── ANALYTICS (async so admin page loads instantly) ────────
+async function fetchAnalytics() {
+    try {
+        const r = await fetch('/admin/analytics');
+        const d = await r.json();
+        const setAll = (key, val) => {
+            document.querySelectorAll(`[data-stat="${key}"]`).forEach(el => el.textContent = val);
+        };
+        setAll('logins-total',       d.logins_total      ?? '—');
+        setAll('logins-today',       d.logins_today      ?? '—');
+        setAll('active-sessions',    d.active_sessions   ?? '—');
+        setAll('deck-runs',          d.deck_runs         ?? '—');
+        setAll('script-analyses',    d.script_analyses   ?? '—');
+        setAll('actor-prep',         d.actor_prep        ?? '—');
+        setAll('actor-booked',       d.actor_booked      ?? '—');
+        setAll('total-platform-cost', d.total_platform_cost != null ? '$' + d.total_platform_cost.toFixed(2) : '—');
+        setAll('avg-cost-per-deck',   d.avg_cost_per_deck   != null ? '$' + d.avg_cost_per_deck.toFixed(3)   : '—');
+        setAll('total-brain-cost',    d.total_brain_cost    != null ? '$' + d.total_brain_cost.toFixed(2)    : '—');
+        setAll('total-fal-cost',      d.total_fal_cost      != null ? '$' + d.total_fal_cost.toFixed(2)      : '—');
+        setAll('total-images',        d.total_images_generated ?? '—');
+
+        // Geo table
+        const geoContainer = document.getElementById('geo-table-container');
+        const geoCount = document.getElementById('geo-count');
+        if (geoContainer) {
+            if (!d.geo_breakdown || d.geo_breakdown.length === 0) {
+                geoContainer.innerHTML = '<div class="empty-state">No geographic data yet.</div>';
+                if (geoCount) geoCount.textContent = '0';
+            } else {
+                let html = '<table><thead><tr><th>Country</th><th>Code</th><th>Sign-ins</th></tr></thead><tbody>';
+                d.geo_breakdown.forEach(g => {
+                    html += `<tr><td style="font-weight:600;">${g.country||'—'}</td><td style="color:var(--soft);font-size:12px;">${g.country_code||''}</td><td style="font-weight:700;color:var(--orange);">${g.logins}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                geoContainer.innerHTML = html;
+                if (geoCount) geoCount.textContent = d.geo_breakdown.length;
+            }
+        }
+
+        // Per-user cost table
+        const costContainer = document.getElementById('user-cost-table-container');
+        const costCount = document.getElementById('ucost-count');
+        if (costContainer) {
+            if (!d.user_cost_rows || d.user_cost_rows.length === 0) {
+                costContainer.innerHTML = '<div class="empty-state">No cost data yet — tracking starts on next deck run.</div>';
+                if (costCount) costCount.textContent = '0';
+            } else {
+                let html = '<table><thead><tr><th>Email</th><th>Plan</th><th>Deck Runs</th><th>Images</th><th>Est. Spend</th><th>Avg / Deck</th></tr></thead><tbody>';
+                d.user_cost_rows.forEach(r => {
+                    const avg = r.deck_runs ? (r.total_cost||0) / r.deck_runs : 0;
+                    const cc = (r.total_cost||0) > 1 ? 'var(--red)' : (r.total_cost||0) > 0.25 ? 'var(--orange)' : 'var(--ink)';
+                    html += `<tr><td class="email-cell">${r.user_email||'—'}</td><td><span class="plan-badge plan-${r.plan||'solo'}">${r.plan||'solo'}</span></td><td style="font-weight:700;">${r.deck_runs}</td><td>${r.total_images||0}</td><td style="font-weight:700;color:${cc};">$${(r.total_cost||0).toFixed(3)}</td><td style="color:var(--soft);">$${avg.toFixed(3)}</td></tr>`;
+                });
+                html += '</tbody></table>';
+                costContainer.innerHTML = html;
+                if (costCount) costCount.textContent = d.user_cost_rows.length;
+            }
+        }
+    } catch(e) {
+        document.querySelectorAll('[data-stat]').forEach(el => {
+            if (el.textContent === '…') el.textContent = '—';
+        });
+    }
+}
+fetchAnalytics();
 
 // Load FAL balance async so it never blocks page render
 (async function() {

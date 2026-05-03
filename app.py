@@ -1528,51 +1528,11 @@ def admin():
                                fal_balance=fal_balance, geo_breakdown=[], user_cost_rows=[])
     try:
         with DB_ENGINE.connect() as conn:
-            conn.execute(text("SET LOCAL statement_timeout = '12s'"))
+            conn.execute(text("SET statement_timeout = '8s'"))
             stats["db_ok"] = True
 
             stats["users"] = conn.execute(text("SELECT COUNT(*) FROM beta_users")).scalar() or 0
             stats["projects"] = conn.execute(text("SELECT COUNT(*) FROM projects")).scalar() or 0
-
-            stats["logins_total"] = conn.execute(
-                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in'")).scalar() or 0
-            stats["logins_today"] = conn.execute(
-                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '24 hours'")).scalar() or 0
-            stats["active_sessions"] = conn.execute(
-                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '30 minutes'")).scalar() or 0
-
-            stats["deck_runs"] = conn.execute(
-                text("SELECT COUNT(*) FROM activity_events WHERE event_type='deck_run'")).scalar() or 0
-            stats["script_analyses"] = conn.execute(
-                text("SELECT COUNT(*) FROM activity_events WHERE event_type='script_analysis'")).scalar() or 0
-            stats["actor_prep"] = conn.execute(
-                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_prep'")).scalar() or 0
-            stats["actor_booked"] = conn.execute(
-                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_booked'")).scalar() or 0
-
-            # Total platform cost from tracked deck runs
-            cost_agg = conn.execute(text("""
-                SELECT
-                    COUNT(*) AS deck_count,
-                    SUM(CAST(metadata_json::json->>'total_cost_usd' AS FLOAT)) AS total_cost,
-                    SUM(CAST(metadata_json::json->>'brain_cost_usd' AS FLOAT)) AS brain_cost,
-                    SUM(CAST(metadata_json::json->>'fal_cost_usd' AS FLOAT)) AS fal_cost,
-                    SUM(CAST(metadata_json::json->>'fal_images' AS INT)) AS total_images
-                FROM activity_events
-                WHERE event_type='deck_run'
-                  AND metadata_json IS NOT NULL
-                  AND metadata_json::json->>'total_cost_usd' IS NOT NULL
-            """)).mappings().first()
-            if cost_agg:
-                stats["total_platform_cost"] = round(cost_agg["total_cost"] or 0, 2)
-                stats["total_brain_cost"] = round(cost_agg["brain_cost"] or 0, 2)
-                stats["total_fal_cost"] = round(cost_agg["fal_cost"] or 0, 2)
-                stats["total_images_generated"] = int(cost_agg["total_images"] or 0)
-                tracked_runs = int(cost_agg["deck_count"] or 0)
-                stats["avg_cost_per_deck"] = round(stats["total_platform_cost"] / tracked_runs, 3) if tracked_runs else 0
-            else:
-                stats.update({"total_platform_cost": 0, "total_brain_cost": 0, "total_fal_cost": 0,
-                               "total_images_generated": 0, "avg_cost_per_deck": 0})
 
             # Ensure plan column exists — must use begin() so DDL commits
             try:
@@ -1613,47 +1573,9 @@ def admin():
             )).mappings().all()
             messages = [dict(r) for r in rows]
 
-            # Geographic breakdown from sign_in events
-            geo_rows = conn.execute(text("""
-                SELECT
-                    metadata_json::json->>'country' AS country,
-                    metadata_json::json->>'country_code' AS country_code,
-                    COUNT(*) AS logins
-                FROM activity_events
-                WHERE event_type='sign_in'
-                  AND metadata_json IS NOT NULL
-                  AND metadata_json::json->>'country' IS NOT NULL
-                  AND metadata_json::json->>'country' != ''
-                GROUP BY country, country_code
-                ORDER BY logins DESC
-                LIMIT 20
-            """)).mappings().all()
-            geo_breakdown = [dict(r) for r in geo_rows]
-
-            # Per-user cost ranking (top 20 by cost, for cost analysis)
-            ucost_rows = conn.execute(text("""
-                SELECT
-                    dr.user_email,
-                    COALESCE(u.plan, 'solo') AS plan,
-                    COUNT(dr.id) AS deck_runs,
-                    SUM(CAST(NULLIF(dr.metadata_json::json->>'total_cost_usd', '') AS FLOAT)) AS total_cost,
-                    SUM(CAST(NULLIF(dr.metadata_json::json->>'fal_images', '') AS INT)) AS total_images
-                FROM activity_events dr
-                LEFT JOIN beta_users u ON u.email = dr.user_email
-                WHERE dr.event_type='deck_run'
-                  AND dr.metadata_json IS NOT NULL
-                  AND dr.metadata_json::json->>'total_cost_usd' IS NOT NULL
-                GROUP BY dr.user_email, u.plan
-                ORDER BY total_cost DESC NULLS LAST
-                LIMIT 20
-            """)).mappings().all()
-            user_cost_rows = [dict(r) for r in ucost_rows]
-
     except Exception as e:
         stats["db_ok"] = False
         stats["db_error"] = str(e)[:120]
-        geo_breakdown = []
-        user_cost_rows = []
 
     log_lines = []
     try:
@@ -1669,8 +1591,94 @@ def admin():
     return render_template("admin.html", stats=stats, users=users,
                            recent_activity=recent_activity, messages=messages,
                            log_lines=log_lines, fal_balance=fal_balance,
-                           geo_breakdown=geo_breakdown, user_cost_rows=user_cost_rows,
                            admin_reset_key=os.environ.get("ADMIN_RESET_KEY", ""))
+
+
+@app.route("/admin/analytics")
+def admin_analytics():
+    if not session.get("admin_authed"):
+        return jsonify({"error": "unauthorized"}), 401
+    result = {
+        "logins_total": 0, "logins_today": 0, "active_sessions": 0,
+        "deck_runs": 0, "script_analyses": 0, "actor_prep": 0, "actor_booked": 0,
+        "total_platform_cost": 0, "avg_cost_per_deck": 0,
+        "total_brain_cost": 0, "total_fal_cost": 0, "total_images_generated": 0,
+        "geo_breakdown": [], "user_cost_rows": []
+    }
+    if not DB_ENGINE:
+        return jsonify(result)
+    try:
+        with DB_ENGINE.connect() as conn:
+            conn.execute(text("SET statement_timeout = '25s'"))
+
+            result["logins_total"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in'")).scalar() or 0
+            result["logins_today"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '24 hours'")).scalar() or 0
+            result["active_sessions"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='sign_in' AND created_at >= NOW() - INTERVAL '30 minutes'")).scalar() or 0
+            result["deck_runs"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='deck_run'")).scalar() or 0
+            result["script_analyses"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='script_analysis'")).scalar() or 0
+            result["actor_prep"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_prep'")).scalar() or 0
+            result["actor_booked"] = conn.execute(
+                text("SELECT COUNT(*) FROM activity_events WHERE event_type='actor_booked'")).scalar() or 0
+
+            cost_agg = conn.execute(text("""
+                SELECT COUNT(*) AS deck_count,
+                    SUM(CAST(metadata_json::json->>'total_cost_usd' AS FLOAT)) AS total_cost,
+                    SUM(CAST(metadata_json::json->>'brain_cost_usd' AS FLOAT)) AS brain_cost,
+                    SUM(CAST(metadata_json::json->>'fal_cost_usd' AS FLOAT)) AS fal_cost,
+                    SUM(CAST(metadata_json::json->>'fal_images' AS INT)) AS total_images
+                FROM activity_events
+                WHERE event_type='deck_run'
+                  AND metadata_json IS NOT NULL
+                  AND metadata_json::json->>'total_cost_usd' IS NOT NULL
+            """)).mappings().first()
+            if cost_agg:
+                result["total_platform_cost"] = round(cost_agg["total_cost"] or 0, 2)
+                result["total_brain_cost"] = round(cost_agg["brain_cost"] or 0, 2)
+                result["total_fal_cost"] = round(cost_agg["fal_cost"] or 0, 2)
+                result["total_images_generated"] = int(cost_agg["total_images"] or 0)
+                tracked = int(cost_agg["deck_count"] or 0)
+                result["avg_cost_per_deck"] = round(result["total_platform_cost"] / tracked, 3) if tracked else 0
+
+            geo_rows = conn.execute(text("""
+                SELECT metadata_json::json->>'country' AS country,
+                       metadata_json::json->>'country_code' AS country_code,
+                       COUNT(*) AS logins
+                FROM activity_events
+                WHERE event_type='sign_in'
+                  AND metadata_json IS NOT NULL
+                  AND metadata_json::json->>'country' IS NOT NULL
+                  AND metadata_json::json->>'country' != ''
+                GROUP BY country, country_code
+                ORDER BY logins DESC LIMIT 20
+            """)).mappings().all()
+            result["geo_breakdown"] = [dict(r) for r in geo_rows]
+
+            ucost_rows = conn.execute(text("""
+                SELECT dr.user_email,
+                       COALESCE(u.plan, 'solo') AS plan,
+                       COUNT(dr.id) AS deck_runs,
+                       SUM(CAST(NULLIF(dr.metadata_json::json->>'total_cost_usd', '') AS FLOAT)) AS total_cost,
+                       SUM(CAST(NULLIF(dr.metadata_json::json->>'fal_images', '') AS INT)) AS total_images
+                FROM activity_events dr
+                LEFT JOIN beta_users u ON u.email = dr.user_email
+                WHERE dr.event_type='deck_run'
+                  AND dr.metadata_json IS NOT NULL
+                  AND dr.metadata_json::json->>'total_cost_usd' IS NOT NULL
+                GROUP BY dr.user_email, u.plan
+                ORDER BY total_cost DESC NULLS LAST
+                LIMIT 20
+            """)).mappings().all()
+            result["user_cost_rows"] = [dict(r) for r in ucost_rows]
+    except Exception as e:
+        result["error"] = str(e)[:200]
+    return jsonify(result)
+
 
 @app.route("/status")
 def status():
