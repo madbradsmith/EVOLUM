@@ -527,7 +527,7 @@ function openPersonModal() {
     document.getElementById("personSearchResults").innerHTML = "";
     document.getElementById("personSelectedDetail").style.display = "none";
     document.getElementById("personCreditsInput").value = "";
-    openModal("personModal");
+    document.getElementById("personModal").classList.add("show");
 }
 
 async function searchTMDb() {
