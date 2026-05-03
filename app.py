@@ -87,9 +87,15 @@ def db_init() -> None:
         conn.execute(text("ALTER TABLE beta_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
         conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS user_email TEXT"))
         conn.execute(text("ALTER TABLE activity_events ADD COLUMN IF NOT EXISTS route TEXT"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_activity_event_type ON activity_events (event_type)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_activity_created_at ON activity_events (created_at DESC)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_activity_event_type_created ON activity_events (event_type, created_at DESC)"))
+
+    # Indexes must run outside a transaction (CONCURRENTLY) so they don't lock the table
+    try:
+        with DB_ENGINE.connect().execution_options(isolation_level="AUTOCOMMIT") as iconn:
+            iconn.execute(text("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_activity_event_type ON activity_events (event_type)"))
+            iconn.execute(text("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_activity_created_at ON activity_events (created_at DESC)"))
+            iconn.execute(text("CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_activity_event_type_created ON activity_events (event_type, created_at DESC)"))
+    except Exception:
+        pass
 
 def log_activity_event(event_type: str, route: str = "", user_email: str = "", metadata: dict | None = None) -> None:
     if not DB_ENGINE:
