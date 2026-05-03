@@ -669,7 +669,6 @@ def build_project_file_url(image_path: Path) -> str:
 
 
 FAL_API_KEY = os.environ.get("FAL_API_KEY", "")
-TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
 TMDB_BASE = "https://api.themoviedb.org/3"
 TMDB_IMG = "https://image.tmdb.org/t/p/w500"
 
