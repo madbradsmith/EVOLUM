@@ -1519,7 +1519,7 @@ def admin():
     except Exception:
         pass
 
-    fal_balance = _fetch_fal_balance()
+    fal_balance = {"available": False, "reason": "loading"}  # fetched async by JS
     stats["fal_balance"] = fal_balance
 
     if not DB_ENGINE:
@@ -1528,6 +1528,7 @@ def admin():
                                fal_balance=fal_balance, geo_breakdown=[], user_cost_rows=[])
     try:
         with DB_ENGINE.connect() as conn:
+            conn.execute(text("SET LOCAL statement_timeout = '12s'"))
             stats["db_ok"] = True
 
             stats["users"] = conn.execute(text("SELECT COUNT(*) FROM beta_users")).scalar() or 0
@@ -1580,34 +1581,22 @@ def admin():
             except Exception:
                 pass
 
-            # Users enriched with plan, last login, deck count, estimated cost
+            # Users with plan + project count — fast, no activity_events join
             try:
                 rows = conn.execute(text("""
                     SELECT u.id, u.email, u.name, u.created_at,
                            COALESCE(u.plan, 'solo') AS plan,
                            COUNT(DISTINCT p.id) AS project_count,
-                           MAX(s.created_at) AS last_login,
-                           COUNT(DISTINCT dr.id) AS deck_run_count,
-                           SUM(CAST(NULLIF(dr.metadata_json::json->>'total_cost_usd', '') AS FLOAT)) AS est_cost
+                           NULL::timestamptz AS last_login,
+                           0 AS deck_run_count,
+                           NULL::float AS est_cost
                     FROM beta_users u
                     LEFT JOIN projects p ON p.owner_user_id = CAST(u.id AS TEXT)
-                    LEFT JOIN activity_events s ON s.user_email = u.email AND s.event_type = 'sign_in'
-                    LEFT JOIN activity_events dr ON dr.user_email = u.email AND dr.event_type = 'deck_run'
-                        AND dr.metadata_json IS NOT NULL
-                        AND dr.metadata_json::json->>'total_cost_usd' IS NOT NULL
                     GROUP BY u.id, u.email, u.name, u.created_at, u.plan
                     ORDER BY u.created_at DESC
                 """)).mappings().all()
             except Exception:
-                rows = conn.execute(text("""
-                    SELECT u.id, u.email, u.name, u.created_at,
-                           'solo' AS plan, COUNT(DISTINCT p.id) AS project_count,
-                           NULL AS last_login, 0 AS deck_run_count, NULL AS est_cost
-                    FROM beta_users u
-                    LEFT JOIN projects p ON p.owner_user_id = CAST(u.id AS TEXT)
-                    GROUP BY u.id, u.email, u.name, u.created_at
-                    ORDER BY u.created_at DESC
-                """)).mappings().all()
+                rows = []
             users = [dict(r) for r in rows]
 
             rows = conn.execute(text(
@@ -1709,6 +1698,13 @@ def status():
     except Exception as e:
         print(f"⚠️ /status error: {e}", flush=True)
         return jsonify({"status": "IDLE", "project_id": None})
+
+
+@app.route("/admin/fal-balance")
+def admin_fal_balance():
+    if not session.get("admin_authed"):
+        abort(403)
+    return jsonify(_fetch_fal_balance())
 
 
 @app.route("/admin/download-log")

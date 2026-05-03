@@ -525,16 +525,10 @@ tr:hover td { background:#fafafa; }
     <div class="section-label">Live API Balances</div>
     <div class="health-grid">
         <div class="health-card">
-            <div class="health-dot {{ 'ok' if fal_balance.available else 'warn' }}"></div>
+            <div class="health-dot warn" id="falDot"></div>
             <div>
                 <div class="health-text">FAL AI Credits</div>
-                {% if fal_balance.available %}
-                <div class="health-sub" style="color:var(--orange); font-weight:700;">
-                    ${{ '%.4f'|format(fal_balance.balance or 0) }} remaining
-                </div>
-                {% else %}
-                <div class="health-sub">{{ fal_balance.reason or 'Unavailable' }} — <a href="https://fal.ai/dashboard" target="_blank" style="color:#94a3b8;">check dashboard ↗</a></div>
-                {% endif %}
+                <div class="health-sub" id="falBalanceText" style="color:#666;">Loading...</div>
             </div>
         </div>
         <div class="health-card">
@@ -748,6 +742,29 @@ async function doResetPwWithKey(uid, email) {
 }
 // Override doResetPw to use the keyed version
 window.doResetPw = doResetPwWithKey;
+
+// Load FAL balance async so it never blocks page render
+(async function() {
+    try {
+        const r = await fetch("/admin/fal-balance");
+        const d = await r.json();
+        const dot = document.getElementById("falDot");
+        const txt = document.getElementById("falBalanceText");
+        if (d.available) {
+            dot.className = "health-dot ok";
+            txt.style.color = "var(--orange, #ff9944)";
+            txt.style.fontWeight = "700";
+            txt.textContent = "$" + (d.balance || 0).toFixed(4) + " remaining";
+        } else {
+            dot.className = "health-dot warn";
+            txt.style.color = "";
+            txt.innerHTML = (d.reason || "Unavailable") + ' — <a href="https://fal.ai/dashboard" target="_blank" style="color:#94a3b8;">check dashboard ↗</a>';
+        }
+    } catch(e) {
+        const txt = document.getElementById("falBalanceText");
+        if (txt) txt.textContent = "Could not load";
+    }
+})();
 </script>
 </body>
 </html>
