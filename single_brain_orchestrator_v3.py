@@ -365,9 +365,9 @@ CRITICAL RULES:
   "packaging_potential": "what casting makes this work, 12 words max",
   "character_leverage": "commercial and awards appeal, 12 words max",
   "comparable_films": [
-    {"title": "Film Title", "why": "10 words", "budget_tier": "low/mid/studio", "box_office": "$XM"},
-    {"title": "Film Title", "why": "10 words", "budget_tier": "low/mid/studio", "box_office": "$XM"},
-    {"title": "Film Title", "why": "10 words", "budget_tier": "low/mid/studio", "box_office": "$XM"}
+    {"title": "Film Title", "why": "Cross-reference tone + world + budget + story structure — 15 words max on which axes match", "budget_tier": "micro/low/low-mid/mid/mid-to-studio/studio", "box_office": "$XM"},
+    {"title": "Film Title", "why": "Not just genre — explain the structural or tonal reason this comp is accurate", "budget_tier": "micro/low/low-mid/mid/mid-to-studio/studio", "box_office": "$XM"},
+    {"title": "Film Title", "why": "Prefer last 20 years; include one that shows distribution/awards upside if applicable", "budget_tier": "micro/low/low-mid/mid/mid-to-studio/studio", "box_office": "$XM"}
   ],
   "tone_comparables": ["Film 1", "Film 2", "Film 3"],
   "audience_profile": ["segment 1", "segment 2", "segment 3"],
