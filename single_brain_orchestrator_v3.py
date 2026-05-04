@@ -356,9 +356,9 @@ CRITICAL RULES:
     {"character": "name", "dynamic": "6 words", "function": "8 words"}
   ],
   "act_breakdown": {
-    "act_1": {"summary": "15 words max", "key_beats": ["6 words", "6 words"], "turning_point": "8 words"},
-    "act_2": {"summary": "15 words max", "key_beats": ["6 words", "6 words"], "turning_point": "8 words"},
-    "act_3": {"summary": "15 words max", "key_beats": ["6 words", "6 words"], "turning_point": "8 words"}
+    "act_1": {"scene_range": "Scenes 1-28", "summary": "15 words max", "key_beats": ["Scene N: 10 words", "Scene N: 10 words"], "turning_point": "Scene N: 8 words"},
+    "act_2": {"scene_range": "Scenes 29-80", "summary": "15 words max", "key_beats": ["Scene N: 10 words", "Scene N: 10 words"], "turning_point": "Scene N: 8 words"},
+    "act_3": {"scene_range": "Scenes 81-110", "summary": "15 words max", "key_beats": ["Scene N: 10 words", "Scene N: 10 words"], "turning_point": "Scene N: 8 words"}
   },
   "executive_summary": "producer-facing pitch, 2 sentences max",
   "commercial_positioning": "how this sells today, 15 words max",
