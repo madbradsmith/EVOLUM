@@ -401,6 +401,14 @@ CRITICAL RULES:
     "Specific pitchable moment from the actual script — concrete scene or line, under 20 words",
     "Another specific moment — not a genre claim, an actual story beat that makes investors lean in",
     "Third hook if warranted — the reversal, the central image, the line that lands"
+  ],
+  "exposition_heavy_scenes": [
+    {"scene": "Scene N or heading", "issue": "what is being over-explained, under 15 words", "example": "the specific line or exchange that flags it, quoted, under 20 words"},
+    {"scene": "Scene N or heading", "issue": "characters recapping events both lived through", "example": "quoted line or exchange"}
+  ],
+  "on_the_nose_moments": [
+    {"scene": "Scene N or heading", "line": "the exact line that states what should be implied", "subtext": "what it should be showing instead, under 10 words"},
+    {"scene": "Scene N or heading", "line": "another on-the-nose line", "subtext": "the emotion or truth it telegraphs too directly"}
   ]
 }"""
 
