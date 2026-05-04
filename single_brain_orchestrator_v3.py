@@ -392,7 +392,16 @@ CRITICAL RULES:
   "memorization_beats": ["beat 1, 8 words", "beat 2, 8 words"],
   "costume_behavior_clues": ["clue 1, 8 words", "clue 2, 8 words"],
   "set_ready_checklist": ["item 1, 8 words", "item 2, 8 words", "item 3, 8 words"],
-  "visual_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6"]
+  "visual_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5", "keyword6"],
+  "character_voice": {
+    "CHARACTER_NAME": "10-12 words: how they actually speak, vocabulary, rhythm, what they avoid",
+    "CHARACTER_NAME": "10-12 words: specific to THIS script, not generic actor notes"
+  },
+  "investor_hooks": [
+    "Specific pitchable moment from the actual script — concrete scene or line, under 20 words",
+    "Another specific moment — not a genre claim, an actual story beat that makes investors lean in",
+    "Third hook if warranted — the reversal, the central image, the line that lands"
+  ]
 }"""
 
 
