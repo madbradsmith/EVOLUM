@@ -282,27 +282,41 @@ def merge_character_signals(dialogue_counts, dialogue_first, dialogue_support, a
 def _world_category(world: str) -> str:
     """Map Claude's free-form world description to a visual/layout category."""
     w = world.lower()
-    if any(t in w for t in ["espionage", "spy", "covert", "assassin", "secret agent", "operative"]):
+    # Espionage / covert ops — check before generic thriller
+    if any(t in w for t in ["espionage", "spy", "covert", "assassin", "secret agent", "operative", "cia", "cia operative", "intel agency"]):
         return "action_espionage"
-    if any(t in w for t in ["rideshare", "cab driver", "contained urban", "urban thriller"]):
+    # Contained single-location urban thrillers
+    if any(t in w for t in ["rideshare", "cab driver", "contained urban", "urban thriller", "single night", "one location"]):
         return "contained_urban"
-    if any(t in w for t in ["courtroom", "trial", "tribunal", "military court"]):
+    # Courtroom / legal drama — check before generic legal/romance overlap
+    if any(t in w for t in ["courtroom", "trial", "tribunal", "military court", "court martial", "prosecution", "verdict"]):
         return "legal_courtroom"
-    if any(t in w for t in ["legal", "law school"]) and any(t in w for t in ["comedy", "romance", "romantic"]):
-        return "romantic_comedy"
-    if any(t in w for t in ["legal", "law"]):
-        return "legal_courtroom"
-    if any(t in w for t in ["fantasy", "medieval", "kingdom", "wizard", "dragon", "satire"]):
+    # Fantasy / satire / medieval — check before other comedy
+    if any(t in w for t in ["fantasy", "medieval", "kingdom", "wizard", "dragon", "satire", "storybook", "fairy tale", "mythical"]):
         return "fantasy_satire"
-    if any(t in w for t in ["romantic comedy", "rom-com", "romance", "love story", "sorority"]):
+    # Romantic comedy — explicit signals first
+    if any(t in w for t in ["romantic comedy", "rom-com", "rom com", "love story", "love interest", "meet cute"]):
         return "romantic_comedy"
-    if any(t in w for t in ["nightlife", "club scene", "party"]):
+    # Legal + romantic overlap (law school rom-com etc.)
+    if any(t in w for t in ["legal", "law school", "law firm"]) and any(t in w for t in ["comedy", "romance", "romantic", "relationship"]):
+        return "romantic_comedy"
+    # Romance without legal qualifier
+    if any(t in w for t in ["romance", "romantic", "sorority", "wedding comedy", "relationship comedy"]):
+        return "romantic_comedy"
+    # Remaining legal/courtroom (no romantic element)
+    if any(t in w for t in ["legal", "law", "attorney", "lawyer", "courtroom"]):
+        return "legal_courtroom"
+    # Nightlife / social comedy
+    if any(t in w for t in ["nightlife", "club scene", "party", "nightclub", "velvet rope", "social comedy"]):
         return "nightlife_comedy"
-    if any(t in w for t in ["sports", "basketball", "football", "soccer", "athlete", "coach"]):
+    # Sports
+    if any(t in w for t in ["sports", "basketball", "football", "soccer", "baseball", "athlete", "coach", "championship"]):
         return "sports_drama"
-    if any(t in w for t in ["crime", "heist", "gangster", "cartel", "mob", "drug"]):
+    # Crime / heist / underworld
+    if any(t in w for t in ["crime", "heist", "gangster", "cartel", "mob", "drug", "underworld", "organized crime"]):
         return "crime_drama"
-    if any(t in w for t in ["thriller", "suspense"]):
+    # Generic thriller / suspense
+    if any(t in w for t in ["thriller", "suspense", "psychological thriller", "paranoia"]):
         return "thriller"
     return "drama"
 
