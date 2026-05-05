@@ -872,9 +872,16 @@ function startBuildDirect() {
                 showProjectLimitModal();
             } else if (res.ok) {
                 _appendPipelineLogLine({ type: "system", text: "Script accepted — pipeline starting..." });
+            } else {
+                buildInFlight = false;
+                showLiveProcess(false);
+                showInfoModal("Upload Failed", "Your file couldn't be processed. Please try a TXT, PDF, FDX, or DOCX file.");
             }
         })
-        .catch(err => console.error("Upload failed:", err));
+        .catch(err => {
+            buildInFlight = false;
+            showInfoModal("Upload Failed", "Something went wrong sending your file. Please try again.");
+        });
 }
 
 function continueToApprovedUpload(){
@@ -942,8 +949,16 @@ async function analyzeSelectedScript(){
             .then(res => {
                 if (res.status === 403) { buildInFlight = false; showProjectLimitModal(); }
                 else if (res.ok) _appendPipelineLogLine({ type: "system", text: "Script accepted — pipeline starting..." });
+                else {
+                    buildInFlight = false;
+                    exitActiveBuildMode();
+                    showInfoModal("Upload Failed", "Your file couldn't be processed. Please try a TXT, PDF, FDX, or DOCX file.");
+                }
             })
-            .catch(err => console.error("Upload failed:", err));
+            .catch(err => {
+                buildInFlight = false;
+                showInfoModal("Upload Failed", "Something went wrong sending your file. Please try again.");
+            });
         return;
     }
 

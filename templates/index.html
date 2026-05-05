@@ -1243,7 +1243,7 @@
 </div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}"; window.EVOLUM_USER_NAME = {{ (user_name or "")|tojson }};</script>
-  <script src="{{ url_for('static', filename='main.js') }}?v=20260505"></script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=20260505b</script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
     {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal{% else %}showAuthModal{% endif %}());{% endif %}
