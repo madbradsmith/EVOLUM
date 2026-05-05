@@ -304,12 +304,16 @@ function checkTerms(e) {
     return true;
 }
 
-function showAuthModal(){
+function showAuthModal(tab){
     closeAllModals();
     const badge = document.getElementById("authPlanBadge");
     if (badge && !_selectedPlan) badge.style.display = "none";
     const m = document.getElementById("authModal");
     if (m) m.classList.add("show");
+    if (tab) {
+        const btn = document.querySelector(`.auth-tab[onclick*="${tab}"]`);
+        switchAuthTab(tab, btn);
+    }
 }
 function requireAuth(fn){
     if (typeof userLoggedIn !== "undefined" && userLoggedIn) { fn(); return; }
