@@ -1919,8 +1919,9 @@ function evieWaitReply() {
         _evieWaitPollForInsight();
     } else if (_evieWait.stage === "chatting") {
         _evieWait.stage = "done";
+        const _echo = val.length < 40 ? `${val.charAt(0).toUpperCase() + val.slice(1)} — ` : "";
         setTimeout(() => {
-            _evieWaitMsg("Love it. Your deck should be ready any second now.", "evie");
+            _evieWaitMsg(`${_echo}love it. Your deck should be ready any second now.`, "evie");
             _evieWaitSetStatus("deck incoming");
         }, 400);
     }
