@@ -3622,6 +3622,37 @@ def sync_chat():
 
 # ===== TMDB PERSON SEARCH ROUTES START ===============
 
+@app.route("/tmdb/find-by-imdb")
+def tmdb_find_by_imdb():
+    """Look up a person by IMDb ID using TMDb's /find endpoint."""
+    imdb_id = (request.args.get("id") or "").strip()
+    if not imdb_id or not TMDB_API_KEY:
+        return jsonify({"found": False})
+    # Normalise: accept full URL or bare nm ID
+    m = re.search(r"(nm\d+)", imdb_id)
+    if not m:
+        return jsonify({"found": False})
+    nm = m.group(1)
+    try:
+        params = urllib.parse.urlencode({"api_key": TMDB_API_KEY, "external_source": "imdb_id"})
+        url = f"{TMDB_BASE}/find/{nm}?{params}"
+        with urllib.request.urlopen(url, timeout=8) as resp:
+            data = json.loads(resp.read().decode())
+        people = data.get("person_results", [])
+        if not people:
+            return jsonify({"found": False})
+        p = people[0]
+        return jsonify({
+            "found": True,
+            "id": p["id"],
+            "name": p["name"],
+            "photo": (TMDB_IMG + p["profile_path"]) if p.get("profile_path") else None,
+            "known_for": [x.get("title") or x.get("name", "") for x in p.get("known_for", [])[:3]],
+        })
+    except Exception as e:
+        return jsonify({"found": False, "error": str(e)})
+
+
 @app.route("/tmdb/search")
 def tmdb_search():
     q = (request.args.get("q") or "").strip()

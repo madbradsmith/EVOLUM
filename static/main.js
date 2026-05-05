@@ -534,56 +534,164 @@ function buyMoreCredits(){ openBoostModal(); }
 
 // ===== PERSON ATTACHED SLIDE =====
 let _tmdbPerson = null;
+let _personModalStage = "idle"; // idle | searching | ask_imdb | confirmed
+
+function _personMsg(text, who) {
+    const box = document.getElementById("personModalMessages");
+    if (!box) return;
+    const el = document.createElement("div");
+    el.className = "evie-msg evie-msg--" + (who === "user" ? "user" : "evie");
+    el.textContent = text;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+}
+
+function _personSetStatus(txt) {
+    const el = document.getElementById("personModalStatus");
+    if (el) el.textContent = txt;
+}
+
+function _personSetInputPlaceholder(txt) {
+    const el = document.getElementById("personSearchInput");
+    if (el) el.placeholder = txt;
+}
 
 function openPersonModal() {
     _tmdbPerson = null;
+    _personModalStage = "idle";
     document.getElementById("personSearchInput").value = "";
-    document.getElementById("personSearchResults").style.display = "none";
-    document.getElementById("personSearchResults").innerHTML = "";
     document.getElementById("personSelectedDetail").style.display = "none";
     document.getElementById("personCreditsInput").value = "";
+    document.getElementById("personModalMessages").innerHTML = "";
+    document.getElementById("personModalInputRow").style.display = "flex";
+
+    // Evie avatar
+    const avatarEl = document.getElementById("personModalAvatar");
+    if (avatarEl && typeof EvieAvatar !== "undefined") {
+        avatarEl.innerHTML = EvieAvatar.inline(28, "pitch", "idle");
+    }
+
     document.getElementById("personModal").classList.add("show");
+
+    // Evie opens the conversation
+    setTimeout(() => {
+        _personMsg("Who do you want to attach? Give me their name or drop an IMDb link.", "evie");
+        _personSetStatus("ready");
+        _personSetInputPlaceholder("Name or imdb.com/name/nm… link");
+        _personModalStage = "waiting_input";
+        setTimeout(() => document.getElementById("personSearchInput")?.focus(), 80);
+    }, 300);
 }
 
-async function searchTMDb() {
-    const q = (document.getElementById("personSearchInput").value || "").trim();
-    if (!q) return;
-    const resultsEl = document.getElementById("personSearchResults");
-    resultsEl.style.display = "block";
-    resultsEl.innerHTML = `<div style="font-size:12px; color:#888; padding:6px 0;">Searching...</div>`;
-    document.getElementById("personSelectedDetail").style.display = "none";
-    _tmdbPerson = null;
+async function personModalSubmit() {
+    const input = document.getElementById("personSearchInput");
+    const val = (input.value || "").trim();
+    if (!val) return;
+    input.value = "";
+    _personMsg(val, "user");
 
+    // Detect IMDb URL or nm ID
+    const imdbMatch = val.match(/nm\d+/);
+    if (imdbMatch || val.includes("imdb.com")) {
+        await _personLookupByImdb(val);
+        return;
+    }
+
+    // Name search
+    await _personSearchByName(val);
+}
+
+async function _personLookupByImdb(raw) {
+    _personSetStatus("looking up...");
+    _personMsg("One sec — looking that up by IMDb ID.", "evie");
     try {
-        const r = await fetch(`/tmdb/search?q=${encodeURIComponent(q)}`);
+        const r = await fetch(`/tmdb/find-by-imdb?id=${encodeURIComponent(raw)}`);
         const data = await r.json();
-        if (!data.results || !data.results.length) {
-            resultsEl.innerHTML = `<div style="font-size:12px; color:#888; padding:6px 0;">No results found. Try a different spelling.</div>`;
-            return;
+        if (data.found) {
+            await _personConfirm(data.id, data.name, data.photo || "", (data.known_for || []).join(" · "));
+        } else {
+            _personMsg("Couldn't find that IMDb ID. Double-check the link and try again, or type their name.", "evie");
+            _personSetStatus("try again");
+            _personModalStage = "waiting_input";
         }
-        resultsEl.innerHTML = data.results.map(p => `
-            <div onclick="selectTMDbPerson(${p.id}, ${JSON.stringify(p.name)}, ${JSON.stringify(p.photo || '')}, ${JSON.stringify((p.known_for||[]).join(', '))})"
-                 style="display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; cursor:pointer; border:1px solid rgba(255,255,255,0.08); margin-bottom:6px; transition:0.15s;"
-                 onmouseover="this.style.background='rgba(255,255,255,0.06)'"
-                 onmouseout="this.style.background='none'">
-                ${p.photo ? `<img src="${p.photo}" style="width:44px; height:44px; border-radius:8px; object-fit:cover; flex-shrink:0;">` : `<div style="width:44px; height:44px; border-radius:8px; background:rgba(255,255,255,0.1); flex-shrink:0;"></div>`}
-                <div>
-                    <div style="font-size:14px; font-weight:700; color:#fff;">${p.name}</div>
-                    ${p.known_for && p.known_for.length ? `<div style="font-size:11px; color:#888; margin-top:2px;">${p.known_for.join(' · ')}</div>` : ''}
-                </div>
-            </div>
-        `).join('');
     } catch(e) {
-        resultsEl.innerHTML = `<div style="font-size:12px; color:#e05555;">Search failed — check your connection.</div>`;
+        _personMsg("Lookup failed — check your connection.", "evie");
+        _personSetStatus("error");
     }
 }
 
-async function selectTMDbPerson(id, name, photoUrl, knownFor) {
+async function _personSearchByName(name) {
+    _personSetStatus("searching...");
+    _personMsg(`Searching for ${name}…`, "evie");
+    try {
+        const r = await fetch(`/tmdb/search?q=${encodeURIComponent(name)}`);
+        const data = await r.json();
+        if (!data.results || !data.results.length) {
+            _personMsg(`Couldn't find "${name}" by name. Do you have their IMDb link? Paste it here.`, "evie");
+            _personSetStatus("try IMDb link");
+            _personModalStage = "ask_imdb";
+            _personSetInputPlaceholder("imdb.com/name/nm…");
+            setTimeout(() => document.getElementById("personSearchInput")?.focus(), 80);
+            return;
+        }
+        // Show results as clickable chips
+        const p = data.results[0];
+        const others = data.results.slice(1, 4);
+        const knownFor = (p.known_for || []).join(" · ");
+        _personMsg(`Found ${p.name}${knownFor ? " — " + knownFor : ""}. Is that the right person?`, "evie");
+        _personSetStatus("confirm or pick another");
+
+        // Build quick-pick buttons
+        const box = document.getElementById("personModalMessages");
+        const btnRow = document.createElement("div");
+        btnRow.style.cssText = "display:flex; flex-wrap:wrap; gap:6px; margin-top:4px;";
+
+        const yesBtn = document.createElement("button");
+        yesBtn.textContent = `Yes, ${p.name.split(" ")[0]}`;
+        yesBtn.className = "evie-nav-btn evie-nav-btn--primary";
+        yesBtn.style.fontSize = "12px";
+        yesBtn.onclick = async () => { btnRow.remove(); await _personConfirm(p.id, p.name, p.photo || "", knownFor); };
+        btnRow.appendChild(yesBtn);
+
+        others.forEach(op => {
+            const btn = document.createElement("button");
+            btn.textContent = op.name;
+            btn.className = "evie-nav-btn";
+            btn.style.fontSize = "12px";
+            btn.onclick = async () => { btnRow.remove(); await _personConfirm(op.id, op.name, op.photo || "", (op.known_for||[]).join(" · ")); };
+            btnRow.appendChild(btn);
+        });
+
+        const noBtn = document.createElement("button");
+        noBtn.textContent = "None of these";
+        noBtn.className = "evie-nav-btn";
+        noBtn.style.fontSize = "12px";
+        noBtn.onclick = () => {
+            btnRow.remove();
+            _personMsg("No problem. Try their IMDb link instead.", "evie");
+            _personSetInputPlaceholder("imdb.com/name/nm…");
+            _personModalStage = "ask_imdb";
+            setTimeout(() => document.getElementById("personSearchInput")?.focus(), 80);
+        };
+        btnRow.appendChild(noBtn);
+
+        box.appendChild(btnRow);
+        box.scrollTop = box.scrollHeight;
+        document.getElementById("personModalInputRow").style.display = "none";
+    } catch(e) {
+        _personMsg("Search failed — check your connection.", "evie");
+        _personSetStatus("error");
+    }
+}
+
+async function _personConfirm(id, name, photoUrl, knownFor) {
     _tmdbPerson = { id, name, photoUrl, creditsLine: "" };
+    _personModalStage = "confirmed";
+    _personSetStatus("building their slide...");
+    _personMsg(`Got it — generating credits for ${name}.`, "evie");
+    document.getElementById("personModalInputRow").style.display = "none";
 
-    document.getElementById("personSearchResults").style.display = "none";
     document.getElementById("personSelectedDetail").style.display = "block";
-
     const card = document.getElementById("personSelectedCard");
     card.innerHTML = `
         ${photoUrl ? `<img src="${photoUrl}" style="width:52px; height:52px; border-radius:10px; object-fit:cover; flex-shrink:0;">` : ''}
@@ -593,7 +701,6 @@ async function selectTMDbPerson(id, name, photoUrl, knownFor) {
         </div>
     `;
 
-    // Fetch credits and format them
     const loaderEl = document.getElementById("personCreditsLoader");
     const creditsEl = document.getElementById("personCreditsInput");
     loaderEl.style.display = "block";
@@ -603,13 +710,11 @@ async function selectTMDbPerson(id, name, photoUrl, knownFor) {
         const role = document.getElementById("personRoleInput").value;
         const cr = await fetch(`/tmdb/credits/${id}`);
         const crData = await cr.json();
-
         const fmt = await fetch("/tmdb/format-credits", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
-                name,
-                role,
+                name, role,
                 cast_titles: crData.cast_titles || [],
                 crew_titles: crData.crew_titles || [],
                 known_for_dept: crData.known_for_dept || "",
@@ -619,8 +724,10 @@ async function selectTMDbPerson(id, name, photoUrl, knownFor) {
         creditsEl.value = fmtData.credits_line || "";
         _tmdbPerson.castTitles = crData.cast_titles || [];
         _tmdbPerson.crewTitles = crData.crew_titles || [];
+        _personSetStatus("ready to add");
     } catch(e) {
         creditsEl.value = "";
+        _personSetStatus("ready to add");
     } finally {
         loaderEl.style.display = "none";
     }
@@ -630,34 +737,23 @@ function addPersonToDecK() {
     if (!_tmdbPerson) return;
     const role = (document.getElementById("personRoleInput").value || "Attached").trim();
     const creditsLine = (document.getElementById("personCreditsInput").value || "").trim();
-
     const personSlide = {
-        layout: "person_attached",
-        stage: "talent",
-        title: role,
-        body: creditsLine,
-        person_name: _tmdbPerson.name,
-        person_role: role,
+        layout: "person_attached", stage: "talent",
+        title: role, body: creditsLine,
+        person_name: _tmdbPerson.name, person_role: role,
         person_credits_line: creditsLine,
         person_photo_url: _tmdbPerson.photoUrl,
         image_url: _tmdbPerson.photoUrl,
-        image_source: "tmdb",
-        image_path: "",
-        image_options: [],
-        selected_option_id: "",
+        image_source: "tmdb", image_path: "",
+        image_options: [], selected_option_id: "",
     };
-
-    // Insert before closing slide (last slide)
     if (refineSlides.length > 1) {
         refineSlides.splice(refineSlides.length - 1, 0, personSlide);
     } else {
         refineSlides.push(personSlide);
     }
-
     closeModal("personModal");
     renderDeckPreview();
-
-    // Show confirmation toast
     const toast = document.createElement("div");
     toast.textContent = `${_tmdbPerson.name} added! Click "Update & Rebuild" to include their slide.`;
     toast.style.cssText = "position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1a1a1a; border:1px solid rgba(255,153,68,0.4); color:#fff; padding:12px 20px; border-radius:12px; font-size:13px; z-index:9999; white-space:nowrap;";

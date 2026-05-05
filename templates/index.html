@@ -422,23 +422,32 @@
 <div class="modal" id="personModal">
     <div class="modal-content" style="max-width:480px;">
         <div class="modal-close" onclick="closeModal('personModal')">×</div>
-        <h3 style="margin-bottom:4px;">Attach a Person</h3>
-        <p style="font-size:12px; color:#888; margin-bottom:18px;">Search for a director, producer, or actor to add their slide to your pitch deck.</p>
 
-        <!-- Search row -->
-        <div style="display:flex; gap:8px; margin-bottom:14px;">
-            <input type="text" id="personSearchInput" placeholder="e.g. Ava DuVernay" onkeydown="if(event.key==='Enter')searchTMDb()" style="flex:1; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px;">
-            <button type="button" onclick="searchTMDb()" class="primary-button" style="padding:10px 18px; font-size:13px; white-space:nowrap;">Search</button>
+        <!-- Evie header -->
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+            <div id="personModalAvatar" style="flex-shrink:0;">✦</div>
+            <div>
+                <div style="font-size:12px; font-weight:800; color:#ff9944; letter-spacing:0.06em; text-transform:uppercase;">Evie</div>
+                <div style="font-size:11px; color:#666;" id="personModalStatus">Let's attach some talent</div>
+            </div>
         </div>
 
-        <!-- Search results -->
-        <div id="personSearchResults" style="display:none; margin-bottom:14px;"></div>
+        <!-- Evie chat messages -->
+        <div id="personModalMessages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; min-height:48px;"></div>
 
-        <!-- Selected person detail (hidden until selected) -->
+        <!-- Input row -->
+        <div id="personModalInputRow" style="display:flex; gap:8px; margin-bottom:14px;">
+            <input type="text" id="personSearchInput"
+                placeholder="Name or IMDb link..."
+                onkeydown="if(event.key==='Enter'){ event.preventDefault(); personModalSubmit(); }"
+                style="flex:1; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px;">
+            <button type="button" onclick="personModalSubmit()" class="primary-button" style="padding:10px 18px; font-size:13px; white-space:nowrap;">&#8594;</button>
+        </div>
+
+        <!-- Confirmed person card + role select + credits (hidden until confirmed) -->
         <div id="personSelectedDetail" style="display:none;">
             <div id="personSelectedCard" style="display:flex; align-items:center; gap:12px; background:rgba(255,153,68,0.08); border:1px solid rgba(255,153,68,0.25); border-radius:12px; padding:12px; margin-bottom:14px;"></div>
-
-            <label class="label" style="font-size:11px; color:#888; display:block; margin-bottom:4px;">Their role on this project</label>
+            <label style="font-size:11px; color:#888; display:block; margin-bottom:4px;">Their role on this project</label>
             <select id="personRoleInput" style="width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px; margin-bottom:14px;">
                 <option value="Director">Director</option>
                 <option value="Executive Producer">Executive Producer</option>
@@ -449,11 +458,9 @@
                 <option value="Composer">Composer</option>
                 <option value="Cinematographer">Cinematographer</option>
             </select>
-
-            <label class="label" style="font-size:11px; color:#888; display:block; margin-bottom:4px;">Credits line <span style="color:#555;">(auto-generated, editable)</span></label>
+            <label style="font-size:11px; color:#888; display:block; margin-bottom:4px;">Credits line <span style="color:#555;">(auto-generated, editable)</span></label>
             <div id="personCreditsLoader" style="display:none; font-size:12px; color:#888; padding:8px 0;">Generating credits...</div>
             <textarea id="personCreditsInput" rows="2" placeholder="e.g. Academy Award winner — directed Braveheart and The Patriot." style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:13px; resize:vertical; margin-bottom:16px;"></textarea>
-
             <button type="button" onclick="addPersonToDecK()" class="primary-button" style="width:100%; padding:13px;">Add to Deck</button>
         </div>
     </div>
