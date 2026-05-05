@@ -1970,11 +1970,17 @@ function _evieWaitPollForInsight(attempt) {
 function startBuildVideo() {
     const v = document.getElementById("buildVideo");
     if (!v) return;
-    v.muted = true;
-    v.play().catch(() => {});
     const muteBtn = document.getElementById("buildVideoMuteBtn");
-    if (muteBtn) muteBtn.textContent = "🔇 Unmute";
     const playBtn = document.getElementById("buildVideoPlayBtn");
+    v.volume = 0.35;
+    v.muted = false;
+    v.play().then(() => {
+        if (muteBtn) { muteBtn.textContent = "🔊 Sound On"; muteBtn.classList.remove("sound-off"); }
+    }).catch(() => {
+        v.muted = true;
+        v.play().catch(() => {});
+        if (muteBtn) { muteBtn.textContent = "🔈 Tap for Sound"; muteBtn.classList.add("sound-off"); }
+    });
     if (playBtn) playBtn.textContent = "⏸";
 }
 
@@ -2004,8 +2010,14 @@ function toggleBuildVideoMute() {
     const btn = document.getElementById("buildVideoMuteBtn");
     if (!v) return;
     v.muted = !v.muted;
-    if (!v.muted) v.play().catch(() => { v.muted = true; if (btn) btn.textContent = "🔇 Unmute"; });
-    if (btn) btn.textContent = v.muted ? "🔇 Unmute" : "🔊 Mute";
+    if (!v.muted) {
+        v.volume = 0.35;
+        v.play().catch(() => { v.muted = true; if (btn) { btn.textContent = "🔈 Tap for Sound"; btn.classList.add("sound-off"); } });
+    }
+    if (btn) {
+        if (v.muted) { btn.textContent = "🔈 Tap for Sound"; btn.classList.add("sound-off"); }
+        else { btn.textContent = "🔊 Sound On"; btn.classList.remove("sound-off"); }
+    }
 }
 
 function openBuildProgressModal(){

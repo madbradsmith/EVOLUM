@@ -401,9 +401,29 @@ input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
     font-size: 11px;
     padding: 5px 10px;
     cursor: pointer;
-    transition: background 0.15s;
+    transition: all 0.15s;
 }
 .bvc-btn:hover { background: rgba(255,122,0,0.18); border-color: rgba(255,122,0,0.4); color: #fff; }
+.bvc-btn-sound {
+    background: #ff7a00;
+    border: 1px solid #ff7a00;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+}
+.bvc-btn-sound:hover { background: #e86e00; border-color: #e86e00; }
+.bvc-btn-sound.sound-off {
+    background: rgba(255,255,255,0.07);
+    border-color: rgba(255,255,255,0.2);
+    color: #999;
+    font-weight: 600;
+}
+.bvc-btn-sound.sound-off:hover { background: rgba(255,122,0,0.15); border-color: #ff7a00; color: #ff7a00; }
 .quote-label {
     font-size: 10px;
     font-weight: 700;
