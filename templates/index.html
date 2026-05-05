@@ -194,6 +194,26 @@
                         </div>
                     </div>
 
+                    <!-- Evie wait chat -->
+                    <div class="evie-wait-shell" id="evieWaitShell" style="display:none;">
+                        <div class="evie-wait-header">
+                            <div class="evie-wait-avatar" id="evieWaitAvatar">✦</div>
+                            <div style="flex:1;">
+                                <div class="evie-wait-name">Evie</div>
+                                <div class="evie-wait-status" id="evieWaitStatus">thinking...</div>
+                            </div>
+                            <button class="evie-wait-minimize" id="evieWaitMinBtn" onclick="toggleEvieWait()" title="Minimize">—</button>
+                        </div>
+                        <div class="evie-wait-body" id="evieWaitBody">
+                            <div class="evie-wait-messages" id="evieWaitMessages"></div>
+                            <div class="evie-wait-input-row" id="evieWaitInputRow" style="display:none;">
+                                <input class="evie-wait-input" id="evieWaitInput" type="text" placeholder="Type here…" maxlength="60"
+                                    onkeydown="if(event.key==='Enter'){ event.preventDefault(); evieWaitReply(); }">
+                                <button class="evie-wait-send" onclick="evieWaitReply()">&#8594;</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="build-quote-card" id="buildQuoteCard">
                         <div class="build-video-wrap" id="buildVideoWrap">
                             <video id="buildVideo" loop muted playsinline autoplay

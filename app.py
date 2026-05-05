@@ -2765,6 +2765,75 @@ def api_saved_deck():
     return jsonify({"has_deck": True, "project_id": int(pid)})
 
 
+@app.route("/api/build-preview")
+def api_build_preview():
+    """Return story_map summary + Haiku-generated insight once brain JSON is ready."""
+    uid = session.get("user_id", "")
+    if not uid:
+        return jsonify({"ready": False})
+
+    # Find the in-flight project's brain output
+    lbp = USER_DATA_DIR / uid / "latest_built_pid.txt"
+    brain_data = None
+    if lbp.exists():
+        pid = lbp.read_text(encoding="utf-8").strip()
+        if pid:
+            brain_path = USER_DATA_DIR / uid / pid / "build" / "approved_brain_output.json"
+            if not brain_path.exists():
+                brain_path = BASE_DIR / "approved_brain_output.json"
+            if brain_path.exists():
+                try:
+                    brain_data = json.loads(brain_path.read_text(encoding="utf-8"))
+                except Exception:
+                    pass
+
+    if not brain_data:
+        return jsonify({"ready": False})
+
+    title = brain_data.get("title", "your script")
+    protagonist = brain_data.get("protagonist", "")
+    logline = brain_data.get("logline", "")
+    tone = brain_data.get("tone", "")
+    theme = brain_data.get("theme", "")
+    characters = brain_data.get("characters", [])
+    synopsis = brain_data.get("synopsis", "")
+
+    # Ask Haiku for one genuinely interesting observation about the script
+    insight = ""
+    try:
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if api_key:
+            import anthropic as _anthropic
+            _client = _anthropic.Anthropic(api_key=api_key)
+            _prompt = (
+                f"You just read a screenplay called \"{title}\". "
+                f"Protagonist: {protagonist}. "
+                f"Logline: {logline}. "
+                f"Tone: {tone}. Theme: {theme}. "
+                f"Characters: {', '.join(characters[:5])}. "
+                f"Synopsis: {synopsis[:400]}.\n\n"
+                "In ONE sentence (max 20 words), say the single most interesting or surprising thing about this script. "
+                "Be specific to this story — no generic praise. No quotes around the sentence. Just the sentence."
+            )
+            _resp = _client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=80,
+                messages=[{"role": "user", "content": _prompt}]
+            )
+            insight = _resp.content[0].text.strip().rstrip(".")
+    except Exception as _e:
+        print(f"⚠️ build-preview Haiku call failed: {_e}", flush=True)
+
+    return jsonify({
+        "ready": True,
+        "title": title,
+        "protagonist": protagonist,
+        "logline": logline,
+        "insight": insight,
+        "characters": characters[:4],
+    })
+
+
 @app.route("/api/referral-info")
 @require_login
 def api_referral_info():

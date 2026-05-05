@@ -711,6 +711,13 @@ function resetCreateProject(){
 function newDeck() {
     _savedDeckRestored = false;
     closeModal('welcomeModal');
+    // Hide and reset Evie wait chat for the new build
+    const _ews = document.getElementById("evieWaitShell");
+    if (_ews) { _ews.style.display = "none"; _ews.classList.remove("minimized"); }
+    const _ewm = document.getElementById("evieWaitMessages");
+    if (_ewm) _ewm.innerHTML = "";
+    _evieWait.stage = "idle";
+    _evieWait.callName = "";
     resetCreateProject();
     startDeckFlow();
 }
@@ -751,6 +758,7 @@ function startBuildDirect() {
     setLocalStatus("UPLOADED");
     _startBuildQuotes();
     startBuildVideo();
+    startEvieWaitChat();
 
     const formData = new FormData();
     formData.append("script", approvedScriptFile);
@@ -827,6 +835,7 @@ async function analyzeSelectedScript(){
         setLocalStatus("UPLOADED");
         _startBuildQuotes();
         startBuildVideo();
+        startEvieWaitChat();
         const fd = new FormData();
         fd.append("script", file);
         const stem = file.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim();
@@ -1712,6 +1721,136 @@ function _stopBuildQuotes() {
     if (_quoteInterval) { clearInterval(_quoteInterval); _quoteInterval = null; }
 }
 
+// ===== EVIE WAIT CHAT =====
+const _evieWait = {
+    stage: "idle",       // idle | greeting | asked_name | got_name | insight_done
+    callName: "",
+    _previewPollTimer: null,
+};
+
+function _evieWaitMsg(text, who) {
+    const box = document.getElementById("evieWaitMessages");
+    if (!box) return;
+    const el = document.createElement("div");
+    el.className = "evie-msg evie-msg--" + (who === "user" ? "user" : "evie");
+    el.textContent = text;
+    box.appendChild(el);
+    box.scrollTop = box.scrollHeight;
+}
+
+function _evieWaitSetStatus(txt) {
+    const el = document.getElementById("evieWaitStatus");
+    if (el) el.textContent = txt;
+}
+
+function _evieWaitShowInput(show) {
+    const row = document.getElementById("evieWaitInputRow");
+    if (row) row.style.display = show ? "flex" : "none";
+    if (show) setTimeout(() => document.getElementById("evieWaitInput")?.focus(), 50);
+}
+
+function toggleEvieWait() {
+    const shell = document.getElementById("evieWaitShell");
+    if (!shell) return;
+    const minBtn = document.getElementById("evieWaitMinBtn");
+    shell.classList.toggle("minimized");
+    if (minBtn) minBtn.textContent = shell.classList.contains("minimized") ? "+" : "—";
+}
+
+function startEvieWaitChat() {
+    const shell = document.getElementById("evieWaitShell");
+    if (!shell) return;
+    shell.style.display = "flex";
+    _evieWait.stage = "greeting";
+
+    // Inject avatar
+    const avatarEl = document.getElementById("evieWaitAvatar");
+    if (avatarEl && typeof EvieAvatar !== "undefined") {
+        avatarEl.innerHTML = EvieAvatar.inline(28, "idea", "thinking");
+    }
+
+    const signupName = (window.EVOLUM_USER_NAME || "").trim();
+    const namePhrase = signupName
+        ? `I see you signed up as ${signupName} — what would you like me to call you?`
+        : "What's your name?";
+
+    setTimeout(() => {
+        _evieWaitMsg(`Hey — I'm Evie. I'll be your guide while your deck builds. ${namePhrase}`, "evie");
+        _evieWait.stage = "asked_name";
+        _evieWaitSetStatus("waiting for you");
+        _evieWaitShowInput(true);
+    }, 1800);
+}
+
+function stopEvieWaitChat() {
+    if (_evieWait._previewPollTimer) {
+        clearTimeout(_evieWait._previewPollTimer);
+        _evieWait._previewPollTimer = null;
+    }
+    _evieWaitShowInput(false);
+    _evieWait.stage = "idle";
+}
+
+function evieWaitReply() {
+    const input = document.getElementById("evieWaitInput");
+    if (!input) return;
+    const val = input.value.trim();
+    if (!val) return;
+    input.value = "";
+    _evieWaitMsg(val, "user");
+    _evieWaitShowInput(false);
+
+    if (_evieWait.stage === "asked_name") {
+        _evieWait.callName = val.split(" ")[0];
+        _evieWait.stage = "got_name";
+        _evieWaitSetStatus("reading your script...");
+        _evieWaitMsg(`Nice to meet you, ${_evieWait.callName}. Give me a second — I'm reading your script now.`, "evie");
+        _evieWaitPollForInsight();
+    } else if (_evieWait.stage === "chatting") {
+        _evieWait.stage = "done";
+        setTimeout(() => {
+            _evieWaitMsg("Love it. Your deck should be ready any second now.", "evie");
+            _evieWaitSetStatus("deck incoming");
+        }, 400);
+    }
+}
+
+function _evieWaitPollForInsight(attempt) {
+    attempt = attempt || 0;
+    if (attempt > 20) {
+        _evieWaitMsg("Still building — I'll catch up with you in a bit.", "evie");
+        return;
+    }
+    fetch("/api/build-preview")
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ready) {
+                _evieWait._previewPollTimer = setTimeout(() => _evieWaitPollForInsight(attempt + 1), 3000);
+                return;
+            }
+            _evieWait.stage = "insight_done";
+            const name = _evieWait.callName;
+            const insight = data.insight || `${data.title || "This script"} has some strong angles to work with.`;
+            _evieWaitMsg(`Okay ${name} — ${insight}.`, "evie");
+
+            // One casual follow-up question
+            setTimeout(() => {
+                const protagonist = data.protagonist;
+                const q = protagonist
+                    ? `How long have you been working on ${protagonist}'s story?`
+                    : "How long have you been working on this one?";
+                _evieWaitMsg(q, "evie");
+                _evieWaitSetStatus("here when you need me");
+                _evieWaitShowInput(true);
+                _evieWait.stage = "chatting";
+            }, 900);
+        })
+        .catch(() => {
+            _evieWait._previewPollTimer = setTimeout(() => _evieWaitPollForInsight(attempt + 1), 4000);
+        });
+}
+// ===== EVIE WAIT CHAT END =====
+
 function startBuildVideo() {
     const v = document.getElementById("buildVideo");
     if (!v) return;
@@ -2175,6 +2314,7 @@ function updateStatusUI(status){
         stopTimer();
         stopQuoteRotation();
         stopBuildVideo();
+        stopEvieWaitChat();
         buildInFlight = false;
         fetchUsage();
         document.body.classList.add("complete-mode");

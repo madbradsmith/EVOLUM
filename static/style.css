@@ -2271,6 +2271,113 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
     .sync-panel { right: 10px; left: 10px; width: auto; }
 }
 
+/* ─── Evie wait chat ─── */
+.evie-wait-shell {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(255,153,68,0.25);
+    border-radius: 12px;
+    background: rgba(255,153,68,0.04);
+    overflow: hidden;
+    width: 100%;
+}
+.evie-wait-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,153,68,0.12);
+}
+.evie-wait-avatar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.evie-wait-name {
+    font-size: 12px;
+    font-weight: 800;
+    color: #ff9944;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.evie-wait-status {
+    font-size: 11px;
+    color: #666;
+    margin-top: 1px;
+}
+.evie-wait-minimize {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.evie-wait-minimize:hover { color: #ff9944; }
+.evie-wait-body { padding: 10px 14px 12px; }
+.evie-wait-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 40px;
+}
+.evie-msg {
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 90%;
+    animation: evieMsg 0.25s ease;
+}
+@keyframes evieMsg { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.evie-msg--evie {
+    background: rgba(255,153,68,0.08);
+    color: #e0e0e0;
+    align-self: flex-start;
+}
+.evie-msg--user {
+    background: rgba(255,255,255,0.06);
+    color: #bbb;
+    align-self: flex-end;
+}
+.evie-wait-input-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+.evie-wait-input {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: #e0e0e0;
+    font-family: inherit;
+    outline: none;
+}
+.evie-wait-input:focus { border-color: rgba(255,153,68,0.4); }
+.evie-wait-send {
+    background: #ff9944;
+    border: none;
+    border-radius: 8px;
+    color: #111;
+    font-size: 15px;
+    font-weight: 800;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+.evie-wait-send:hover { background: #e8872e; }
+.evie-wait-shell.minimized .evie-wait-body { display: none; }
+.evie-wait-shell.minimized { border-color: rgba(255,153,68,0.15); }
+
 /* ─── Evie preview bar ─── */
 .evie-preview-bar {
     display: flex;
