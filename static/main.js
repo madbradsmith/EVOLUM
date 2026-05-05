@@ -1984,6 +1984,7 @@ function toggleBuildVideoMute() {
     const btn = document.getElementById("buildVideoMuteBtn");
     if (!v) return;
     v.muted = !v.muted;
+    if (!v.muted) v.play().catch(() => { v.muted = true; if (btn) btn.textContent = "🔇 Unmute"; });
     if (btn) btn.textContent = v.muted ? "🔇 Unmute" : "🔊 Mute";
 }
 
