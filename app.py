@@ -2149,10 +2149,18 @@ def upload():
             _cached_brain = _brain_cache_dir / f"{_script_hash}.json"
             if _cached_brain.exists():
                 try:
-                    import shutil as _sc
-                    _sc.copy2(_cached_brain, _work_dir / "approved_brain_output.json")
-                    (_work_dir / "brain_cache_hit.txt").write_text(_script_hash, encoding="utf-8")
-                    print(f"🧠 Brain cache HIT for hash {_script_hash[:12]} — skipping Claude call", flush=True)
+                    _cached_data = json.loads(_cached_brain.read_text(encoding="utf-8"))
+                    _cached_title = (_cached_data.get("title") or "").lower().strip()
+                    _BAD_TITLE_PREFIXES = ("tone:", "genre:", "written by:", "draft:", "format:", "by:", "fade in:", "fade out:")
+                    _title_is_bad = any(_cached_title.startswith(p) for p in _BAD_TITLE_PREFIXES) or (":" in _cached_title[:20] and len(_cached_title) < 60)
+                    if _title_is_bad:
+                        print(f"🧠 Brain cache INVALID (bad title: '{_cached_data.get('title')}') — busting and re-running", flush=True)
+                        _cached_brain.unlink(missing_ok=True)
+                    else:
+                        import shutil as _sc
+                        _sc.copy2(_cached_brain, _work_dir / "approved_brain_output.json")
+                        (_work_dir / "brain_cache_hit.txt").write_text(_script_hash, encoding="utf-8")
+                        print(f"🧠 Brain cache HIT for hash {_script_hash[:12]} — skipping Claude call", flush=True)
                 except Exception:
                     pass
             _pipeline_env["DAI_BRAIN_CACHE_DIR"] = str(_brain_cache_dir)

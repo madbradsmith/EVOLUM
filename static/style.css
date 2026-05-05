@@ -4,6 +4,7 @@ body {
     background: linear-gradient(135deg, #0b0b0b, #1a1a1a);
     color: white;
     overflow-y: auto;
+    overflow-x: hidden;
     justify-content: space-between;
 }
 .container {
@@ -2460,8 +2461,9 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
 @media (max-width: 1100px) {
     #siteHeadline > div:first-child { font-size: 26px; }
     #siteHeadline > div:nth-child(2) { font-size: 14px; }
-    .cta-banner { flex-wrap: wrap; gap: 8px; padding: 12px 16px 12px 20px; }
-    .cta-banner-btn { position: static; transform: none; }
+}
+@media (max-height: 800px) {
+    .home-module-card { min-height: 240px; }
 }
 
 </style>
