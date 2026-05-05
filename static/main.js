@@ -2817,24 +2817,10 @@ restoreSavedDeck();
 setInterval(pollStatus, 1200);
 pollStatus();
 
-// Post-login welcome modal
+// Post-login: clear the ?welcome= param from the URL silently if present
 (function () {
     const params = new URLSearchParams(window.location.search);
-    const welcome = params.get("welcome");
-    if (!welcome) return;
-    history.replaceState({}, "", "/");
-    const heading = document.getElementById("welcomeModalHeading");
-    const sub = document.getElementById("welcomeModalSubtext");
-    const userName = (document.querySelector(".top-nav-item[style*='cursor:default']") || {}).textContent || "";
-    const firstName = userName.split(" ")[0].trim();
-    if (welcome === "new") {
-        if (heading) heading.textContent = "Welcome to EVOLUM" + (firstName && firstName !== "Account" ? ", " + firstName : "") + "!";
-        if (sub) sub.textContent = "You're in. What would you like to do first?";
-    } else {
-        if (heading) heading.textContent = "Welcome back" + (firstName && firstName !== "Account" ? ", " + firstName : "") + "!";
-        if (sub) sub.textContent = "Pick up where you left off or start something new.";
-    }
-    document.getElementById("welcomeModal").classList.add("show");
+    if (params.get("welcome")) history.replaceState({}, "", "/");
 })();
 
 // ===== SYNC AI ASSISTANT ==============================
