@@ -251,13 +251,16 @@
         <div class="workspace-title" style="text-align:center; margin-bottom:6px;">Refine Deck</div>
 
         <div class="refine-meta">
-            <div class="meta-chip" id="slideCounter">Slide 1 of 5</div>
-            <div class="meta-chip" id="slideType">Title Slide</div>
+            <button class="refine-back-link" type="button" onclick="returnToPreviewStage()">&#8592; Preview</button>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <div class="meta-chip" id="slideCounter">Slide 1 of 5</div>
+                <div class="meta-chip" id="slideType">Title Slide</div>
+            </div>
         </div>
 
         <div class="refine-layout">
 
-            <!-- LEFT: slide preview + controls -->
+            <!-- LEFT: slide preview + slide tools -->
             <div class="preview-panel">
                 <div class="panel-title">Slide Preview</div>
                 <div class="slide-preview-wrap">
@@ -273,11 +276,9 @@
                     <div class="image-option-empty" id="imageOptionEmpty" style="display:none;">No alternate images are available for this slide yet.</div>
                 </div>
 
-                <!-- Three action buttons under the slide image -->
+                <!-- Slide-level image tools -->
                 <input type="file" id="slideImageUpload" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleSlideImageUpload(this)">
                 <div class="refine-left-btns">
-                    <button class="secondary-button refine-left-btn" type="button" onclick="returnToPreviewStage()">&#8592; Preview</button>
-                    <button class="primary-button refine-left-btn" type="button" onclick="submitRefineDeck()">Update &amp; Rebuild</button>
                     <button class="secondary-button refine-left-btn" type="button" onclick="document.getElementById('slideImageUpload').click()">Upload Image</button>
                     <button class="secondary-button refine-left-btn" type="button" onclick="openPersonModal()">+ Attach Person</button>
                 </div>
@@ -286,7 +287,7 @@
                 <div class="slide-list" id="slideList"></div>
             </div>
 
-            <!-- RIGHT: edit fields + regenerate actions -->
+            <!-- RIGHT: edit fields → save → regenerate -->
             <div class="edit-panel">
                 <div class="panel-title">Edit Slide Content</div>
 
@@ -309,6 +310,8 @@
                     <label class="label" for="refineImagePrompt">Image Direction <span class="label-optional">(optional)</span></label>
                     <input type="text" id="refineImagePrompt" placeholder="e.g. night scene, wide epic shot…">
                 </div>
+
+                <button class="primary-button" type="button" onclick="submitRefineDeck()" style="width:100%; margin-top:6px; box-sizing:border-box;">Update &amp; Rebuild</button>
 
                 <div class="refine-regen-section">
                     <div class="refine-regen-label">Regenerate</div>

@@ -1421,10 +1421,21 @@ body {
 }
 
 /* Right panel action groups */
-/* Three equal buttons under the refine slide image */
+/* Slide-level image tools under the refine slide image */
+.refine-back-link {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 4px 0;
+    letter-spacing: 0.04em;
+    transition: color 0.15s;
+}
+.refine-back-link:hover { color: #cfcfcf; }
 .refine-left-btns {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
     margin-top: 10px;
 }
