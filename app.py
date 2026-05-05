@@ -47,7 +47,10 @@ app = Flask(__name__)
 
 _REFINE_BUILDER_MODULE = None
 _LATEST_SLIDE_PAYLOAD_CACHE = {"key": None, "payload": None}
-app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
+_secret_key = os.environ.get("SECRET_KEY", "")
+if not _secret_key:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
+app.secret_key = _secret_key
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 DB_ENGINE = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
