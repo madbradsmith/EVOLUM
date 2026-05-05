@@ -2537,6 +2537,26 @@ async function restoreSavedDeck() {
 restoreSavedDeck();
 // ===== SAVED DECK RESTORE END =================================
 
+// ===== EVIE AVATAR INIT =====
+(function initEvieAvatars() {
+    if (typeof EvieAvatar === "undefined") return;
+    const fabIcon = document.getElementById("syncFabAvatar");
+    if (fabIcon) {
+        fabIcon.innerHTML = EvieAvatar.inline(28, "idea", "idle") +
+            '<div class="sync-fab-badge" id="syncBadge"></div>';
+        fabIcon.style.cssText = "display:flex;align-items:center;justify-content:center;position:relative;";
+    }
+    const panelAvatar = document.getElementById("syncPanelAvatar");
+    if (panelAvatar) {
+        panelAvatar.innerHTML = EvieAvatar.inline(32, "idea", "idle");
+        panelAvatar.style.cssText = "display:flex;align-items:center;justify-content:center;background:none;border:none;padding:0;";
+    }
+    const previewAvatar = document.getElementById("eviePreviewAvatar");
+    if (previewAvatar) {
+        previewAvatar.innerHTML = EvieAvatar.inline(30, "pitch", "idle");
+    }
+})();
+
 setInterval(pollStatus, 1200);
 pollStatus();
 

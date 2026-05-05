@@ -2271,4 +2271,90 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
     .sync-panel { right: 10px; left: 10px; width: auto; }
 }
 
+/* ─── Evie preview bar ─── */
+.evie-preview-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,153,68,0.2);
+    border-radius: 10px;
+    background: rgba(255,153,68,0.04);
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.evie-preview-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+.evie-preview-avatar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.evie-preview-name {
+    font-size: 11px;
+    font-weight: 800;
+    color: #ff9944;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.evie-preview-hint {
+    font-size: 11px;
+    color: #777;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.evie-preview-bar-btns {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.evie-nav-btn {
+    background: transparent;
+    border: 1px solid rgba(255,153,68,0.4);
+    color: #ff9944;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+}
+.evie-nav-btn:hover { background: rgba(255,153,68,0.1); border-color: rgba(255,153,68,0.7); }
+.evie-nav-btn--primary {
+    background: #ff9944;
+    color: #111;
+    border-color: #ff9944;
+}
+.evie-nav-btn--primary:hover { background: #e8872e; border-color: #e8872e; }
+
+/* ─── Responsive: laptop / MacBook / iPad (≤1280px wide) ─── */
+@media (max-width: 1280px) {
+    body.active-build.complete-mode .container {
+        width: min(1080px, calc(100vw - 32px));
+        max-width: 1080px;
+    }
+    body.active-build.complete-mode .shell {
+        max-width: 1060px;
+    }
+}
+
+/* ─── Responsive: hero / logged-out page on small laptops ─── */
+@media (max-width: 1100px) {
+    #siteHeadline > div:first-child { font-size: 26px; }
+    #siteHeadline > div:nth-child(2) { font-size: 14px; }
+    .cta-banner { flex-wrap: wrap; gap: 8px; padding: 12px 16px 12px 20px; }
+    .cta-banner-btn { position: static; transform: none; }
+}
+
 </style>

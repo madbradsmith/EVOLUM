@@ -13,6 +13,7 @@
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='evie-avatar.js') }}"></script>
 </head>
 
 <body>
@@ -55,21 +56,21 @@
 
 
 <div class="sync-fab" onclick="toggleSyncPanel()" role="button" tabindex="0" id="syncFab">
-    <div class="sync-fab-icon">
+    <div class="sync-fab-icon" id="syncFabAvatar">
         ✦
         <div class="sync-fab-badge" id="syncBadge"></div>
     </div>
     <div class="sync-fab-text">
-        <div class="sync-fab-label">Sync Assist</div>
+        <div class="sync-fab-label">Evie</div>
         <div class="sync-fab-sub">Your AI studio guide</div>
     </div>
 </div>
 
 <div class="sync-panel" id="syncPanel">
     <div class="sync-panel-head">
-        <div class="sync-panel-avatar">✦</div>
+        <div class="sync-panel-avatar" id="syncPanelAvatar">✦</div>
         <div>
-            <div class="sync-panel-name">Sync Assist</div>
+            <div class="sync-panel-name">Evie</div>
             <div class="sync-panel-status">AI Studio Guide</div>
         </div>
         <button class="sync-panel-close" onclick="toggleSyncPanel()">×</button>
@@ -81,7 +82,7 @@
     </div>
 </div>
 
-<div class="feedback-fab" onclick="openFeedbackModal()" role="button" tabindex="0">
+<div class="feedback-fab" onclick="openFeedbackModal()" role="button" tabindex="0" {% if not user_logged_in %}style="display:none"{% endif %}>
     <div class="feedback-fab-icon">💬</div>
     <div class="feedback-fab-text">
         <div class="feedback-fab-label">Feedback</div>
@@ -241,16 +242,18 @@
                     <button class="primary-button preview-action-btn" type="button" onclick="newDeck()">New Deck</button>
                 </div>
 
-                <div id="inlineSyncEntry" onclick="toggleSyncPanel()" role="button" tabindex="0"
-                     class="preview-sync-entry"
-                     onmouseover="this.style.borderColor='rgba(255,122,0,0.45)'"
-                     onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'">
-                    <div style="font-size:16px; color:#ff9944; flex-shrink:0;">✦</div>
-                    <div style="flex:1;">
-                        <div style="font-size:10px; color:#ff9944; font-weight:700; letter-spacing:0.08em;">SYNC ASSIST</div>
-                        <div style="font-size:10px; color:#666; margin-top:1px;">Ask Sync about your deck</div>
+                <div class="evie-preview-bar">
+                    <div class="evie-preview-bar-left">
+                        <div class="evie-preview-avatar" id="eviePreviewAvatar">✦</div>
+                        <div>
+                            <div class="evie-preview-name">Evie</div>
+                            <div class="evie-preview-hint">Your deck is ready — want to refine it?</div>
+                        </div>
                     </div>
-                    <div style="color:#ff9944; font-size:13px;">&#8594;</div>
+                    <div class="evie-preview-bar-btns">
+                        <button class="evie-nav-btn" onclick="toggleSyncPanel()">Ask Evie</button>
+                        <button class="evie-nav-btn evie-nav-btn--primary" onclick="openRefinementStage()">Refine Deck &#8594;</button>
+                    </div>
                 </div>
             </div>
 
