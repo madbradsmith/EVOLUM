@@ -148,7 +148,7 @@
 </div>
 
 <!-- Generate Pitch Deck -->
-<div class="choice home-module-card" onclick="{% if user_logged_in %}showUploadAnalyzeModal(){% else %}openPricingModal(){% endif %}">
+<div class="choice home-module-card" onclick="{% if user_logged_in %}startDeckFlow(){% else %}openPricingModal(){% endif %}">
     <div class="choice-title">Deck Generator</div>
     <img src="/static/deck_thumb.jpg" class="home-thumb-img">
     <div class="choice-copy">
@@ -194,8 +194,18 @@
                     </div>
 
                     <div class="build-quote-card" id="buildQuoteCard">
-                        <div class="quote-label" id="quoteLabel">SCREENPLAY</div>
-                        <div class="quote-text" id="quoteText">"Here's looking at you, kid."</div>
+                        <div class="build-video-wrap" id="buildVideoWrap">
+                            <video id="buildVideo" loop muted playsinline autoplay
+                                style="width:100%;border-radius:8px;display:block;background:#000;">
+                                <source src="/static/evolum_ad1.mp4" type="video/mp4">
+                            </video>
+                            <div class="build-video-controls">
+                                <button class="bvc-btn" id="buildVideoPlayBtn" onclick="toggleBuildVideo()" title="Play / Pause">⏸</button>
+                                <button class="bvc-btn" id="buildVideoMuteBtn" onclick="toggleBuildVideoMute()" title="Sound">🔇 Unmute</button>
+                            </div>
+                        </div>
+                        <div class="quote-label" id="quoteLabel" style="margin-top:10px;">SCREENPLAY</div>
+                        <div class="quote-text" id="quoteText" style="font-size:13px;">"Here's looking at you, kid."</div>
                         <div class="quote-attribution" id="quoteAttribution">— Casablanca</div>
                     </div>
                 </div>
@@ -465,7 +475,7 @@
             </select>
         </div>
         <div class="upload-actions">
-            <button class="primary-button" type="button" onclick="analyzeSelectedScript()">Analyze Script</button>
+            <button class="primary-button" type="button" id="uploadModalSubmitBtn" onclick="analyzeSelectedScript()">Analyze Script</button>
             <button class="primary-button" type="button" onclick="closeModal('uploadModal')">Back</button>
         </div>
     </div>

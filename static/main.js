@@ -712,6 +712,14 @@ function newDeck() {
     _savedDeckRestored = false;
     closeModal('welcomeModal');
     resetCreateProject();
+    startDeckFlow();
+}
+
+function startDeckFlow() {
+    analyzeFlowMode = "deck";
+    const btn = document.getElementById("uploadModalSubmitBtn");
+    if (btn) btn.textContent = "Build Deck";
+    resetCreateProject();
     showUploadAnalyzeModal();
 }
 
@@ -741,6 +749,8 @@ function startBuildDirect() {
     resetTimer();
     showLiveProcess();
     setLocalStatus("UPLOADED");
+    _startBuildQuotes();
+    startBuildVideo();
 
     const formData = new FormData();
     formData.append("script", approvedScriptFile);
@@ -801,8 +811,38 @@ async function analyzeSelectedScript(){
     }
 
     closeModal("uploadModal");
+    // Reset submit button label for next time
+    const _submitBtn = document.getElementById("uploadModalSubmitBtn");
+    if (_submitBtn) _submitBtn.textContent = "Analyze Script";
 
-    // Show progress modal
+    // Deck mode: skip analyze-only step — go straight into the full build pipeline
+    if (analyzeFlowMode === "deck") {
+        approvedScriptFile = file;
+        _lastAnalyzedTitle = null;
+        buildInFlight = true;
+        _savedDeckRestored = false;
+        sawFreshBuildStatus = false;
+        resetTimer();
+        showLiveProcess();
+        setLocalStatus("UPLOADED");
+        _startBuildQuotes();
+        startBuildVideo();
+        const fd = new FormData();
+        fd.append("script", file);
+        const stem = file.name.replace(/\.[^.]+$/, "").replace(/[_\-]+/g, " ").trim();
+        if (stem) fd.append("project_title", stem);
+        const _vs = document.getElementById("visualStyleSelect");
+        if (_vs) fd.append("visual_style", _vs.value);
+        fetch("/upload", { method: "POST", body: fd })
+            .then(res => {
+                if (res.status === 403) { buildInFlight = false; showProjectLimitModal(); }
+                else if (res.ok) _appendPipelineLogLine({ type: "system", text: "Script accepted — pipeline starting..." });
+            })
+            .catch(err => console.error("Upload failed:", err));
+        return;
+    }
+
+    // Analyze-only mode: show progress modal as before
     const progressModal = document.getElementById("buildProgressModal");
     document.getElementById("buildProgressTitle").textContent = "Analyzing Your Script";
     document.getElementById("buildProgressCopy").textContent = "The Developum AI Engine is reading your script. This takes about 30–60 seconds.";
@@ -1672,6 +1712,46 @@ function _stopBuildQuotes() {
     if (_quoteInterval) { clearInterval(_quoteInterval); _quoteInterval = null; }
 }
 
+function startBuildVideo() {
+    const v = document.getElementById("buildVideo");
+    if (!v) return;
+    v.muted = true;
+    v.play().catch(() => {});
+    const muteBtn = document.getElementById("buildVideoMuteBtn");
+    if (muteBtn) muteBtn.textContent = "🔇 Unmute";
+    const playBtn = document.getElementById("buildVideoPlayBtn");
+    if (playBtn) playBtn.textContent = "⏸";
+}
+
+function stopBuildVideo() {
+    const v = document.getElementById("buildVideo");
+    if (!v) return;
+    v.pause();
+    const playBtn = document.getElementById("buildVideoPlayBtn");
+    if (playBtn) playBtn.textContent = "▶";
+}
+
+function toggleBuildVideo() {
+    const v = document.getElementById("buildVideo");
+    const btn = document.getElementById("buildVideoPlayBtn");
+    if (!v) return;
+    if (v.paused) {
+        v.play().catch(() => {});
+        if (btn) btn.textContent = "⏸";
+    } else {
+        v.pause();
+        if (btn) btn.textContent = "▶";
+    }
+}
+
+function toggleBuildVideoMute() {
+    const v = document.getElementById("buildVideo");
+    const btn = document.getElementById("buildVideoMuteBtn");
+    if (!v) return;
+    v.muted = !v.muted;
+    if (btn) btn.textContent = v.muted ? "🔇 Unmute" : "🔊 Mute";
+}
+
 function openBuildProgressModal(){
     const modal = document.getElementById("buildProgressModal");
     document.getElementById("buildProgressTitle").textContent = "Building Your Deck";
@@ -2094,6 +2174,7 @@ function updateStatusUI(status){
         updateBuildProgressModal("COMPLETE");
         stopTimer();
         stopQuoteRotation();
+        stopBuildVideo();
         buildInFlight = false;
         fetchUsage();
         document.body.classList.add("complete-mode");
