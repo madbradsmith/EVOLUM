@@ -2750,7 +2750,7 @@ async function deleteLimitProject(projectId, title, btn) {
 let _savedDeckRestored = false;
 
 async function restoreSavedDeck() {
-    if (!userLoggedIn) return;
+    if (typeof userLoggedIn === "undefined" || !userLoggedIn) return;
     try {
         const r = await fetch('/api/saved-deck', { cache: 'no-store' });
         if (!r.ok) return;
