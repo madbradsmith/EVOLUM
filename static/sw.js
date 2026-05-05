@@ -1,4 +1,4 @@
-const CACHE = 'evolum-v1';
+const CACHE = 'evolum-v4';
 const STATIC = [
   '/static/style.css',
   '/static/main.js',

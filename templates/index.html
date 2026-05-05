@@ -13,7 +13,7 @@
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="icon" href="/static/logo.png" type="image/png">
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260505">
 <script src="{{ url_for('static', filename='evie-avatar.js') }}"></script>
 </head>
 
@@ -1243,7 +1243,7 @@
 </div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}"; window.EVOLUM_USER_NAME = {{ (user_name or "")|tojson }};</script>
-  <script src="{{ url_for('static', filename='main.js') }}?v=20260502_previewFix"></script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=20260505"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
     {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal{% else %}showAuthModal{% endif %}());{% endif %}
