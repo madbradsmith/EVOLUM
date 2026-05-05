@@ -709,6 +709,7 @@ function resetCreateProject(){
 }
 
 function newDeck() {
+    _savedDeckRestored = false;
     closeModal('welcomeModal');
     resetCreateProject();
     showUploadAnalyzeModal();
@@ -2139,6 +2140,8 @@ function updateStatusUI(status){
 }
 
 async function pollStatus(){
+    // Don't disturb a restored saved deck unless the user started a new build
+    if (_savedDeckRestored && !buildInFlight) return;
     try {
         const response = await fetch("/status", { cache: "no-store" });
         if (!response.ok) return;
@@ -2425,6 +2428,33 @@ async function deleteLimitProject(projectId, title, btn) {
     } catch(e) {}
 }
 // ===== MY PROJECTS PANEL END ==================================
+
+// ===== SAVED DECK RESTORE =====================================
+let _savedDeckRestored = false;
+
+async function restoreSavedDeck() {
+    if (!userLoggedIn) return;
+    try {
+        const r = await fetch('/api/saved-deck', { cache: 'no-store' });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!d.has_deck) return;
+        activeLoadedProjectId = d.project_id;
+        const dlLink = document.getElementById('previewDownloadLink');
+        if (dlLink) dlLink.href = `/download/deck/${d.project_id}`;
+        _savedDeckRestored = true;
+        buildInFlight = false;
+        await syncLatestSlidesForPreview();
+        // Enter complete mode without triggering the build flow
+        document.body.classList.add('complete-mode');
+        document.getElementById('completePanel').style.display = 'block';
+        document.getElementById('previewStage').style.display = 'block';
+        document.getElementById('refinementStage').style.display = 'none';
+    } catch(e) {}
+}
+
+restoreSavedDeck();
+// ===== SAVED DECK RESTORE END =================================
 
 setInterval(pollStatus, 1200);
 pollStatus();

@@ -2747,6 +2747,24 @@ def api_latest_manifest():
         return jsonify([]), 500
 
 
+@app.route("/api/saved-deck")
+def api_saved_deck():
+    """Return the user's most recently built deck project ID, if it still exists on disk."""
+    uid = session.get("user_id", "")
+    if not uid:
+        return jsonify({"has_deck": False})
+    lbp = USER_DATA_DIR / uid / "latest_built_pid.txt"
+    if not lbp.exists():
+        return jsonify({"has_deck": False})
+    pid = lbp.read_text(encoding="utf-8").strip()
+    if not pid:
+        return jsonify({"has_deck": False})
+    deck_path = USER_DATA_DIR / uid / pid / "deck.pptx"
+    if not deck_path.exists():
+        return jsonify({"has_deck": False})
+    return jsonify({"has_deck": True, "project_id": int(pid)})
+
+
 @app.route("/api/referral-info")
 @require_login
 def api_referral_info():
