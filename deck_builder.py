@@ -111,7 +111,8 @@ TOP_RULE_Y = Inches(0.36)
 TOP_RULE_H = Inches(0.05)
 
 LAYOUT_THEMES = {
-    "cinematic_grounded":      {"base": (18,18,22), "base2": (34,32,30), "glow": (196,126,76,44),  "accent": (206,210,219), "font": "Georgia"},
+    # Warm near-black ink base + gold accent — EVOLUM brand palette
+    "cinematic_grounded":      {"base": (10,9,7),   "base2": (20,17,14), "glow": (201,169,97,36),  "accent": (201,169,97),  "font": "Georgia"},
     "cinematic_high_tension":  {"base": (14,10,10), "base2": (28,18,14), "glow": (220,60,40,50),   "accent": (220,100,80),  "font": "Arial Black"},
     "contained_nocturnal":     {"base": (8,8,16),   "base2": (16,16,28), "glow": (60,80,200,40),   "accent": (100,140,220), "font": "Trebuchet MS"},
     "institutional_cinematic": {"base": (12,14,18), "base2": (24,28,34), "glow": (80,120,180,36),  "accent": (160,185,210), "font": "Verdana"},

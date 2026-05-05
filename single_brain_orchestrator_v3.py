@@ -63,11 +63,36 @@ def slugify(text: str) -> str:
     return text
 
 
+_METADATA_PREFIXES = (
+    "tone:", "genre:", "written by:", "draft:", "revision:", "format:",
+    "written:", "author:", "contact:", "by:", "wga:", "registered:",
+    "fade in:", "fade out:", "copyright:", "©", "all rights",
+)
+
 def extract_title(text: str) -> str:
+    candidates = []
     for line in text.splitlines():
-        clean = normalize(line).replace("﻿", "")
-        if clean:
-            return clean
+        stripped = line.strip().replace("﻿", "")
+        if not stripped:
+            continue
+        lower = stripped.lower()
+        if any(lower.startswith(p) for p in _METADATA_PREFIXES):
+            continue
+        # Skip lines that look like metadata (contain colon near the start)
+        if ":" in stripped[:20] and len(stripped) < 60:
+            continue
+        candidates.append(stripped)
+        if len(candidates) >= 8:
+            break
+
+    # Prefer a short all-caps line (classic screenplay title format)
+    for c in candidates:
+        if c == c.upper() and 2 < len(c) < 80 and not c.startswith("EXT.") and not c.startswith("INT."):
+            return c.title()
+
+    # Otherwise take the first non-metadata candidate
+    if candidates:
+        return candidates[0]
     return "Untitled"
 
 
@@ -462,13 +487,24 @@ def analyze_script_with_claude(text: str, title: str, char_stats: dict) -> dict:
         )
         raw = next((b.text for b in message.content if hasattr(b, "text")), "")
         if not raw:
+            print("⚠️  Claude analysis: empty response — using fallback")
             return _fallback_story_map(title, list(char_stats.keys()))
-        raw = raw.strip()
-        if raw.startswith("```"):
-            raw = re.sub(r"^```[a-z]*\n?", "", raw)
-            raw = re.sub(r"\n?```$", "", raw.rstrip())
         _write_brain_tokens(message.usage)
-        return json.loads(raw)
+        # Strip code fences if present
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```[a-z]*\n?", "", cleaned)
+            cleaned = re.sub(r"\n?```$", "", cleaned.rstrip())
+        # If Haiku wrapped the JSON in prose, extract the outermost {...} block
+        if not cleaned.startswith("{"):
+            m = re.search(r"\{[\s\S]*\}", cleaned)
+            if m:
+                cleaned = m.group(0)
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError as je:
+            print(f"⚠️  Claude JSON parse failed ({je}) — raw[:200]: {raw[:200]}")
+            return _fallback_story_map(title, list(char_stats.keys()))
     except Exception as e:
         print(f"⚠️  Claude analysis failed: {e}")
         return _fallback_story_map(title, list(char_stats.keys()))
