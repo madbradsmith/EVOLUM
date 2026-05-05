@@ -51,6 +51,8 @@ app.secret_key = os.environ.get("SECRET_KEY", "evolum-beta-gate-v4-7")
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 DB_ENGINE = create_engine(DATABASE_URL, pool_pre_ping=True) if DATABASE_URL else None
+if not DATABASE_URL:
+    logging.warning("DATABASE_URL is not set — projects, referrals, and activity logging will not function")
 
 def db_check() -> bool:
     if not DB_ENGINE:
@@ -431,7 +433,7 @@ def allowed_file(filename: str) -> bool:
 
 def validate_file_content(file_storage, ext: str) -> bool:
     """Check magic bytes match the declared extension. Resets stream position."""
-    header = file_storage.stream.read(8)
+    header = file_storage.stream.read(12)
     file_storage.stream.seek(0)
     if ext == ".pdf":
         return header[:4] == b"%PDF"
@@ -441,6 +443,12 @@ def validate_file_content(file_storage, ext: str) -> bool:
             return True
         except UnicodeDecodeError:
             return False
+    if ext in (".jpg", ".jpeg"):
+        return header[:3] == b"\xff\xd8\xff"
+    if ext == ".png":
+        return header[:4] == b"\x89PNG"
+    if ext == ".webp":
+        return header[:4] == b"RIFF" and header[8:12] == b"WEBP"
     return False
 
 
@@ -1214,10 +1222,10 @@ _WEEKLY_BUDGETS = {
 _CREDIT_PACK_USD = 5.00  # one credit pack = $5 of usage
 
 
-def _get_weekly_usage(user_email: str) -> float:
-    """Sum of tracked deck_run costs since the start of the current week (Monday UTC)."""
+def _get_weekly_usage(user_email: str) -> tuple[float, bool]:
+    """Returns (usage_float, db_error). db_error=True means the DB was unreachable."""
     if not DB_ENGINE or not user_email:
-        return 0.0
+        return 0.0, False
     try:
         with DB_ENGINE.connect() as conn:
             result = conn.execute(text("""
@@ -1229,9 +1237,10 @@ def _get_weekly_usage(user_email: str) -> float:
                   AND metadata_json::json->>'total_cost_usd' IS NOT NULL
                   AND created_at >= date_trunc('week', NOW() AT TIME ZONE 'UTC')
             """), {"email": user_email})
-            return float(result.scalar() or 0)
+            return float(result.scalar() or 0), False
     except Exception:
-        return 0.0
+        logging.warning("_get_weekly_usage DB error for %s — failing closed", user_email)
+        return 0.0, True
 
 
 def _get_user_bonus_credits(user_email: str) -> float:
@@ -1249,7 +1258,7 @@ def _get_user_bonus_credits(user_email: str) -> float:
 
 def _check_usage_budget(user_email: str, plan: str) -> dict:
     weekly_budget = _WEEKLY_BUDGETS.get(plan or "solo", 2.50)
-    weekly_used = _get_weekly_usage(user_email)
+    weekly_used, db_error = _get_weekly_usage(user_email)
     bonus = _get_user_bonus_credits(user_email)
     total_available = weekly_budget + bonus
     remaining = max(0.0, total_available - weekly_used)
@@ -1259,7 +1268,8 @@ def _check_usage_budget(user_email: str, plan: str) -> dict:
         "bonus_credits": round(bonus, 4),
         "total_available": round(total_available, 4),
         "remaining": round(remaining, 4),
-        "over_limit": weekly_used >= total_available,
+        "over_limit": db_error or (weekly_used >= total_available),
+        "db_error": db_error,
     }
 
 @app.route("/create-checkout-session", methods=["POST"])
@@ -2384,6 +2394,8 @@ def upload_slide_image():
     ext = Path(file.filename).suffix.lower()
     if ext not in {".jpg", ".jpeg", ".png", ".webp"}:
         return jsonify({"ok": False, "error": "Image files only"}), 400
+    if not validate_file_content(file, ext):
+        return jsonify({"ok": False, "error": "File content does not match image type"}), 400
     uid = session.get("user_id", "anon")
     dest = USER_DATA_DIR / str(uid) / "slide_images"
     dest.mkdir(parents=True, exist_ok=True)
@@ -2952,6 +2964,8 @@ def regen_deck():
             _LATEST_SLIDE_PAYLOAD_CACHE["payload"] = None
             set_status("COMPLETE", uid=uid)
         except Exception:
+            import traceback as _tb
+            logging.error("_regen_bg failed: %s", _tb.format_exc())
             set_status("ERROR", uid=uid)
 
     threading.Thread(target=_regen_bg, daemon=True).start()
