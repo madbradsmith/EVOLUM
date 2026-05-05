@@ -26,6 +26,8 @@ import string
 import logging
 from datetime import datetime
 from urllib.parse import unquote, quote
+from zipfile import ZipFile
+import xml.etree.ElementTree as ET
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import LETTER
@@ -184,7 +186,7 @@ def user_manifest_path(uid: str, label: str = "") -> "Path":
     name = f"{prefix}latest_deck_manifest_{label}.json" if label else f"{prefix}latest_deck_manifest.json"
     return OUTPUT_DIR / name
 
-ALLOWED_EXTENSIONS = {".txt", ".pdf"}
+ALLOWED_EXTENSIONS = {".txt", ".pdf", ".fdx", ".docx", ".doc"}
 
 ACCESS_CODES = [
     "EVOLUM-REEL-471",
@@ -434,6 +436,48 @@ def allowed_file(filename: str) -> bool:
     return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
 
 
+def _extract_script_text(file_storage, ext: str) -> str:
+    """Extract plain text from an uploaded script file (txt, pdf, fdx, docx)."""
+    if ext == ".txt":
+        return file_storage.read().decode("utf-8", errors="ignore")
+    if ext == ".pdf":
+        try:
+            reader = PdfReader(file_storage)
+            return "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
+        except Exception:
+            return ""
+    if ext == ".fdx":
+        try:
+            data = file_storage.read()
+            root = ET.fromstring(data)
+            lines = []
+            for para in root.findall(".//Paragraph"):
+                texts = [t.text for t in para.findall(".//Text") if t.text]
+                line = "".join(texts).strip()
+                if line:
+                    lines.append(line)
+            return "\n".join(lines)
+        except Exception:
+            return ""
+    if ext in (".docx", ".doc"):
+        try:
+            data = file_storage.read()
+            with ZipFile(io.BytesIO(data)) as z:
+                xml_bytes = z.read("word/document.xml")
+            root = ET.fromstring(xml_bytes)
+            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+            paragraphs = []
+            for p in root.findall(".//w:p", ns):
+                texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
+                line = "".join(texts).strip()
+                if line:
+                    paragraphs.append(line)
+            return "\n".join(paragraphs)
+        except Exception:
+            return ""
+    return ""
+
+
 def validate_file_content(file_storage, ext: str) -> bool:
     """Check magic bytes match the declared extension. Resets stream position."""
     header = file_storage.stream.read(12)
@@ -446,6 +490,10 @@ def validate_file_content(file_storage, ext: str) -> bool:
             return True
         except UnicodeDecodeError:
             return False
+    if ext in (".docx", ".doc"):
+        return header[:4] == b"PK\x03\x04"
+    if ext == ".fdx":
+        return header.lstrip()[:1] == b"<"
     if ext in (".jpg", ".jpeg"):
         return header[:3] == b"\xff\xd8\xff"
     if ext == ".png":
@@ -1992,7 +2040,7 @@ def upload():
         return "No file uploaded", 400
 
     if not allowed_file(file.filename):
-        return "Only .txt and .pdf supported", 400
+        return "Unsupported file type", 400
 
     _ext = Path(file.filename).suffix.lower()
     if not validate_file_content(file, _ext):
@@ -2445,7 +2493,7 @@ def _analyze_script_pass_inner():
 
 
     if not allowed_file(file.filename):
-        return jsonify({"error": "Only .txt and .pdf supported"}), 400
+        return jsonify({"error": "Unsupported file type"}), 400
 
     _ext2 = Path(file.filename).suffix.lower()
     if not validate_file_content(file, _ext2):
@@ -3087,16 +3135,8 @@ def actor_prep_pass():
 
     if file and file.filename:
         source_mode = "upload"
-        filename = file.filename.lower()
-
-        if filename.endswith(".txt"):
-            script_text = file.read().decode("utf-8", errors="ignore")
-        elif filename.endswith(".pdf"):
-            try:
-                reader = PdfReader(file)
-                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
-                script_text = ""
+        _ext_ap = Path(file.filename).suffix.lower()
+        script_text = _extract_script_text(file, _ext_ap)
 
         if not script_text.strip() and not pasted_text:
             return jsonify({
@@ -3153,16 +3193,8 @@ def actor_booked_pass():
 
     if file and file.filename:
         source_mode = "upload"
-        filename = file.filename.lower()
-
-        if filename.endswith(".txt"):
-            script_text = file.read().decode("utf-8", errors="ignore")
-        elif filename.endswith(".pdf"):
-            try:
-                reader = PdfReader(file)
-                script_text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
-            except Exception:
-                script_text = ""
+        _ext_ab = Path(file.filename).suffix.lower()
+        script_text = _extract_script_text(file, _ext_ab)
 
         if not script_text.strip() and not pasted_text:
             return jsonify({
