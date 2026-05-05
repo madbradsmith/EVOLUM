@@ -1,3 +1,18 @@
+function _toast(msg, duration) {
+    duration = duration || 3000;
+    let el = document.getElementById('_evToast');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = '_evToast';
+        el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#e8e0d0;font-size:13px;padding:10px 18px;border-radius:8px;z-index:99999;box-shadow:0 4px 20px rgba(0,0,0,.4);pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap';
+        document.body.appendChild(el);
+    }
+    clearTimeout(el._timer);
+    el.textContent = msg;
+    el.style.opacity = '1';
+    el._timer = setTimeout(() => { el.style.opacity = '0'; }, duration);
+}
+
 let runStartedAt = null;
 let timerInterval = null;
 let lastStatus = "IDLE";
@@ -363,7 +378,7 @@ function submitFeedback(){
     const message = (document.getElementById("feedbackMessage") || {}).value || "";
 
     if (!message.trim()) {
-        alert("Please enter a message before submitting.");
+        _toast("Please enter a message before submitting.");
         return;
     }
 
@@ -500,7 +515,7 @@ function openBoostModal(){
 
 function submitBoost(){
     const amt = parseFloat(document.getElementById("boostAmountInput").value) || 0;
-    if (amt < 5) { alert("Minimum top-up is $5."); return; }
+    if (amt < 5) { _toast("Minimum top-up is $5."); return; }
     fetch("/buy-credits", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1225,7 +1240,7 @@ function renderDeckPreview(){
                  ondragleave="previewDragLeave(event)"
                  ondrop="previewDrop(event,${index})"
                  ondragend="previewDragEnd(event)">
-                <button class="deck-preview-delete" onclick="event.stopPropagation();deletePreviewSlide(${index})" title="Delete slide">×</button>
+                <button class="deck-preview-delete" onclick="event.stopPropagation();deletePreviewSlide(${index},this)" title="Delete slide">×</button>
                 ${mediaHtml}
                 <div class="deck-preview-card-title">
                     <span class="deck-preview-num">${index + 1}</span>${typeText}
@@ -1274,10 +1289,17 @@ function goNextPreviewSlide() { if (_previewIdx < refineSlides.length - 1) selec
 // --- Preview panel: delete & drag-reorder ---
 let _previewDragSrc = null;
 
-function deletePreviewSlide(index) {
-    if (refineSlides.length <= 1) { alert("A deck needs at least one slide."); return; }
-    const label = refineSlides[index].type || refineSlides[index].title || "Slide";
-    if (!confirm(`Delete slide ${index + 1}: "${label}"?`)) return;
+function deletePreviewSlide(index, btn) {
+    if (refineSlides.length <= 1) { _toast("A deck needs at least one slide."); return; }
+    if (!btn || btn.dataset.confirming !== '1') {
+        if (btn) {
+            btn.dataset.confirming = '1';
+            btn.textContent = '?';
+            setTimeout(() => { btn.dataset.confirming = ''; btn.textContent = '×'; }, 3000);
+        }
+        return;
+    }
+    btn.dataset.confirming = '';
     refineSlides.splice(index, 1);
     if (currentRefineSlide >= refineSlides.length) currentRefineSlide = refineSlides.length - 1;
     renderDeckPreview();
@@ -2214,7 +2236,7 @@ function renderProjectsList(projects) {
             ${p.thumbnail ? `<img class="proj-thumb" src="${p.thumbnail}" alt="">` : '<div class="proj-thumb-empty"></div>'}
             <span class="proj-list-title">${escapeHtml(p.title)}</span>
             ${p.has_deck ? '<span class="proj-list-badge">✓</span>' : ''}
-            <button class="proj-list-del" onclick="event.stopPropagation(); deleteProjectFromPanel('${p.id}', '${escapeHtml(p.title)}')" title="Delete">×</button>
+            <button class="proj-list-del" onclick="event.stopPropagation(); deleteProjectFromPanel('${p.id}', '${escapeHtml(p.title)}', this)" title="Delete">×</button>
         </div>
     `).join('');
     // Update header title to active project name
@@ -2325,8 +2347,18 @@ async function selectWelcomeProject(projectId) {
 }
 
 
-async function deleteProjectFromPanel(projectId, title) {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+async function deleteProjectFromPanel(projectId, title, btn) {
+    if (!btn || btn.dataset.confirming !== '1') {
+        if (btn) {
+            btn.dataset.confirming = '1';
+            const orig = btn.textContent;
+            btn.textContent = 'Sure?';
+            btn.style.color = '#ff6666';
+            setTimeout(() => { btn.dataset.confirming = ''; btn.textContent = orig; btn.style.color = ''; }, 3000);
+        }
+        return;
+    }
+    btn.dataset.confirming = '';
     try {
         const res = await fetch(`/project/${projectId}/delete`, { method: "POST" });
         const data = await res.json();
@@ -2365,13 +2397,22 @@ function renderLimitProjectsList(projects) {
         <div style="display:flex; align-items:center; gap:8px; padding:8px 10px; background:#111; border-radius:8px; border:1px solid rgba(255,255,255,0.07);">
             <span style="flex:1; font-size:13px; color:#ddd; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(p.title)}</span>
             ${p.has_deck ? '<span style="font-size:10px; color:#ff7a00; flex-shrink:0;">HAS DECK</span>' : ''}
-            <button style="background:transparent; border:1px solid rgba(255,80,80,0.4); border-radius:6px; color:#ff6666; font-size:11px; padding:3px 8px; cursor:pointer; flex-shrink:0;" onclick="deleteLimitProject('${p.id}', '${escapeHtml(p.title)}')">Delete</button>
+            <button style="background:transparent; border:1px solid rgba(255,80,80,0.4); border-radius:6px; color:#ff6666; font-size:11px; padding:3px 8px; cursor:pointer; flex-shrink:0;" onclick="deleteLimitProject('${p.id}', '${escapeHtml(p.title)}', this)">Delete</button>
         </div>
     `).join('');
 }
 
-async function deleteLimitProject(projectId, title) {
-    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+async function deleteLimitProject(projectId, title, btn) {
+    if (!btn || btn.dataset.confirming !== '1') {
+        if (btn) {
+            btn.dataset.confirming = '1';
+            const orig = btn.textContent;
+            btn.textContent = 'Sure?';
+            setTimeout(() => { btn.dataset.confirming = ''; btn.textContent = orig; }, 3000);
+        }
+        return;
+    }
+    btn.dataset.confirming = '';
     try {
         const res = await fetch(`/project/${projectId}/delete`, { method: "POST" });
         const data = await res.json();
