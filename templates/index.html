@@ -56,6 +56,7 @@
 </div>
 
 
+{% if user_logged_in %}
 <div class="sync-fab" onclick="toggleSyncPanel()" role="button" tabindex="0" id="syncFab">
     <div class="sync-fab-icon" id="syncFabAvatar">
         ✦
@@ -82,6 +83,7 @@
         <button class="sync-send-btn" id="syncSendBtn" onclick="sendSyncMessage()">Send</button>
     </div>
 </div>
+{% endif %}
 
 <div class="feedback-fab" onclick="openFeedbackModal()" role="button" tabindex="0" {% if not user_logged_in %}style="display:none"{% endif %}>
     <div class="feedback-fab-icon">💬</div>
@@ -1243,7 +1245,7 @@
 </div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}"; window.EVOLUM_USER_NAME = {{ (user_name or "")|tojson }};</script>
-  <script src="{{ url_for('static', filename='main.js') }}?v=20260505c</script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=20260505d"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
     {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal{% else %}showAuthModal{% endif %}());{% endif %}
