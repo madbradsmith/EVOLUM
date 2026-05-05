@@ -429,6 +429,21 @@ def allowed_file(filename: str) -> bool:
     return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
 
 
+def validate_file_content(file_storage, ext: str) -> bool:
+    """Check magic bytes match the declared extension. Resets stream position."""
+    header = file_storage.stream.read(8)
+    file_storage.stream.seek(0)
+    if ext == ".pdf":
+        return header[:4] == b"%PDF"
+    if ext == ".txt":
+        try:
+            header.decode("utf-8")
+            return True
+        except UnicodeDecodeError:
+            return False
+    return False
+
+
 def clear_latest_targets():
     for path in (LATEST_PPTX, LATEST_PDF):
         try:
@@ -1966,6 +1981,10 @@ def upload():
     if not allowed_file(file.filename):
         return "Only .txt and .pdf supported", 400
 
+    _ext = Path(file.filename).suffix.lower()
+    if not validate_file_content(file, _ext):
+        return "File content does not match declared type", 400
+
     # Studio mode: create or reuse project record before pipeline starts
     project_title = (request.form.get("project_title") or "").strip()
     project_type = (request.form.get("project_type") or "").strip()
@@ -2404,6 +2423,10 @@ def _analyze_script_pass_inner():
 
     if not allowed_file(file.filename):
         return jsonify({"error": "Only .txt and .pdf supported"}), 400
+
+    _ext2 = Path(file.filename).suffix.lower()
+    if not validate_file_content(file, _ext2):
+        return jsonify({"error": "File content does not match declared type"}), 400
 
     temp_path = UPLOAD_DIR / Path(file.filename).name
     file.save(temp_path)
