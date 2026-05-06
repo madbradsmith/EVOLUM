@@ -3206,7 +3206,11 @@ def actor_prep_pass():
     uid = session.get("user_id", "")
     brain_data = _load_user_brain(uid)
     if movie_title:
-        brain_data.setdefault("title", movie_title)
+        stored_title = (brain_data.get("title") or "").strip().lower()
+        if stored_title and stored_title != movie_title.strip().lower():
+            brain_data = {"title": movie_title}
+        else:
+            brain_data["title"] = movie_title
     try:
         build_actor_prep_pdf(script_text, character_name, LATEST_ACTOR_PREP_PDF, brain_data=brain_data)
     except Exception as e:
@@ -3264,7 +3268,11 @@ def actor_booked_pass():
     uid = session.get("user_id", "")
     brain_data = _load_user_brain(uid)
     if movie_title:
-        brain_data.setdefault("title", movie_title)
+        stored_title = (brain_data.get("title") or "").strip().lower()
+        if stored_title and stored_title != movie_title.strip().lower():
+            brain_data = {"title": movie_title}
+        else:
+            brain_data["title"] = movie_title
     try:
         build_actor_booked_pdf(script_text, character_name, LATEST_ACTOR_BOOKED_PDF, brain_data=brain_data)
     except Exception as e:
