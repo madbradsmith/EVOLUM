@@ -1838,7 +1838,8 @@ function _stopBuildQuotes() {
 
 // ===== EVIE WAIT CHAT =====
 const _evieWait = {
-    stage: "idle",
+    stage: "idle",    // idle | watching | context_shown | deck_done | asked_callname | chatting
+    callName: "",
     _previewPollTimer: null,
     _contextTimer: null,
 };
@@ -1910,6 +1911,44 @@ function stopEvieWaitChat() {
     _evieWait.stage = "idle";
 }
 
+function evieWaitComplete() {
+    // Cancel any pending context timers — deck is done
+    if (_evieWait._previewPollTimer) { clearTimeout(_evieWait._previewPollTimer); _evieWait._previewPollTimer = null; }
+    if (_evieWait._contextTimer)     { clearTimeout(_evieWait._contextTimer);     _evieWait._contextTimer = null; }
+
+    _evieWait.stage = "deck_done";
+    _evieWaitSetStatus("your deck is ready");
+
+    // Acknowledge the moment, then move into first-meeting
+    setTimeout(() => {
+        _evieWaitMsg("Your deck is ready.", "evie");
+    }, 600);
+
+    setTimeout(() => {
+        // Use signup name if we have it, otherwise ask fresh
+        const savedName = localStorage.getItem("evie_call_name") || "";
+        const signupName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
+        if (savedName) {
+            // Already know their name — skip the ask
+            _evieWait.callName = savedName;
+            _evieWait.stage = "chatting";
+            _evieWaitMsg(`Good to see you again, ${savedName}. Take a look — let me know if you want to change anything.`, "evie");
+            _evieWaitSetStatus("here when you need me");
+            _evieWaitShowInput(true);
+        } else if (signupName) {
+            _evieWaitMsg(`I'm Evie — I'll be with you from here. Is ${signupName} what you'd like me to call you, or do you go by something else?`, "evie");
+            _evieWait.stage = "asked_callname";
+            _evieWaitSetStatus("waiting for you");
+            _evieWaitShowInput(true);
+        } else {
+            _evieWaitMsg("I'm Evie — I'll be with you from here. What would you like me to call you?", "evie");
+            _evieWait.stage = "asked_callname";
+            _evieWaitSetStatus("waiting for you");
+            _evieWaitShowInput(true);
+        }
+    }, 2200);
+}
+
 function evieWaitReply() {
     const input = document.getElementById("evieWaitInput");
     if (!input) return;
@@ -1918,10 +1957,29 @@ function evieWaitReply() {
     input.value = "";
     _evieWaitMsg(val, "user");
     _evieWaitShowInput(false);
-    setTimeout(() => {
-        _evieWaitMsg("Love it. Your deck should be ready any second now.", "evie");
-        _evieWaitSetStatus("almost there");
-    }, 400);
+
+    if (_evieWait.stage === "asked_callname") {
+        // User confirmed or corrected their name
+        const signupName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
+        // If they replied with something that sounds like "yes"/"yeah"/"that's fine", use signup name
+        const yesWords = /^(yes|yeah|yep|yup|sure|that'?s? ?(fine|good|right|me)|correct|that works)/i;
+        _evieWait.callName = yesWords.test(val) ? signupName : val.split(" ")[0];
+        // Save automatically — this is her profile update
+        localStorage.setItem("evie_call_name", _evieWait.callName);
+        _evieWait.stage = "chatting";
+        _evieWaitSetStatus("here when you need me");
+        setTimeout(() => {
+            _evieWaitMsg(`Great — ${_evieWait.callName} it is. Take a look at your deck. I'm right here if you want to change anything.`, "evie");
+            _evieWaitShowInput(true);
+        }, 400);
+    } else {
+        // General chat after first-meeting
+        setTimeout(() => {
+            _evieWaitMsg("Got it. Your deck is yours — make it exactly what you need.", "evie");
+            _evieWaitSetStatus("here when you need me");
+            _evieWaitShowInput(true);
+        }, 400);
+    }
 }
 
 function _evieWaitFetchContext(attempt) {
@@ -2436,7 +2494,7 @@ function updateStatusUI(status){
         stopTimer();
         stopQuoteRotation();
         stopBuildVideo();
-        stopEvieWaitChat();
+        evieWaitComplete();
         buildInFlight = false;
         fetchUsage();
         document.body.classList.add("complete-mode");
