@@ -2409,6 +2409,46 @@ body.active-build.complete-mode #refinementStage .slide-preview-img {
 .evie-wait-send:hover { background: #e8872e; }
 .evie-wait-shell.minimized .evie-wait-body { display: none; }
 .evie-wait-shell.minimized { border-color: rgba(255,153,68,0.15); }
+.evie-voice-row {
+    display: none;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 14px;
+    border-bottom: 1px solid rgba(255,153,68,0.1);
+    background: rgba(0,0,0,0.2);
+}
+.evie-voice-row.open { display: flex; }
+.evie-voice-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    color: #888;
+    font-size: 11px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.evie-voice-btn:hover { border-color: rgba(255,153,68,0.5); color: #ff9944; }
+.evie-voice-btn.active { border-color: rgba(255,153,68,0.7); color: #ff9944; background: rgba(255,153,68,0.08); }
+.evie-voice-glyph { font-size: 10px; opacity: 0.7; }
+.evie-wait-mic {
+    background: none;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #666;
+    font-size: 14px;
+    padding: 7px 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color 0.15s, color 0.15s;
+}
+.evie-wait-mic:hover { border-color: rgba(255,153,68,0.5); color: #ff9944; }
+.evie-wait-mic.recording { border-color: #e05555; color: #e05555; animation: micPulse 0.8s ease infinite alternate; }
+@keyframes micPulse { from { opacity:1; } to { opacity:0.4; } }
 
 /* ─── Evie preview bar ─── */
 .evie-preview-bar {

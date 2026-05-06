@@ -1836,6 +1836,105 @@ function _stopBuildQuotes() {
     if (_quoteInterval) { clearInterval(_quoteInterval); _quoteInterval = null; }
 }
 
+// ===== EVIE VOICE + MIC =====
+const EVIE_VOICES = [
+    { id: 'nova',  label: 'Nova',  desc: 'Warm · American',  glyph: '♀', pitch: 1.05, rate: 0.93,
+      match: [/google.*us.*english.*female/i, /samantha/i, /zira/i, /microsoft.*aria/i] },
+    { id: 'sage',  label: 'Sage',  desc: 'Clear · British',  glyph: '♀', pitch: 0.97, rate: 0.91,
+      match: [/google.*uk.*english.*female/i, /karen/i, /victoria/i, /moira/i, /kate/i] },
+    { id: 'river', label: 'River', desc: 'Neutral · Calm',   glyph: '◈', pitch: 1.0,  rate: 0.92,
+      match: [/google.*us.*english$/i, /^alex$/i, /google.*en.*us(?!.*female|.*male)/i] },
+    { id: 'atlas', label: 'Atlas', desc: 'Deep · British',   glyph: '♂', pitch: 0.87, rate: 0.90,
+      match: [/google.*uk.*english.*male/i, /daniel/i, /oliver/i, /microsoft.*george/i] },
+    { id: 'cole',  label: 'Cole',  desc: 'Warm · American',  glyph: '♂', pitch: 0.92, rate: 0.92,
+      match: [/google.*us.*english.*male/i, /^fred$/i, /david/i, /mark/i, /microsoft.*guy/i] },
+];
+
+function getEvieVoiceId() { return localStorage.getItem('evie_voice_id') || 'nova'; }
+function setEvieVoiceId(id) { localStorage.setItem('evie_voice_id', id); }
+
+function pickSpeechVoice(voiceId) {
+    const all = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    if (!all.length) return null;
+    const persona = EVIE_VOICES.find(v => v.id === voiceId) || EVIE_VOICES[0];
+    for (const re of persona.match) {
+        const v = all.find(v => re.test(v.name));
+        if (v) return v;
+    }
+    return all.find(v => v.lang === 'en-US') || all.find(v => v.lang.startsWith('en')) || all[0];
+}
+
+function speakWithEvieVoice(text, onEnd) {
+    if (!window.speechSynthesis) return null;
+    window.speechSynthesis.cancel();
+    const voiceId  = getEvieVoiceId();
+    const persona  = EVIE_VOICES.find(v => v.id === voiceId) || EVIE_VOICES[0];
+    const utt      = new SpeechSynthesisUtterance(text);
+    utt.rate  = persona.rate;
+    utt.pitch = persona.pitch;
+    const doSpeak = () => {
+        const v = pickSpeechVoice(voiceId);
+        if (v) utt.voice = v;
+        if (onEnd) utt.onend = onEnd;
+        window.speechSynthesis.speak(utt);
+    };
+    if (window.speechSynthesis.getVoices().length) { doSpeak(); }
+    else { window.speechSynthesis.addEventListener('voiceschanged', doSpeak, { once: true }); }
+    return utt;
+}
+
+function renderEvieVoicePicker(rowId) {
+    const cur = getEvieVoiceId();
+    const btns = EVIE_VOICES.map(p => {
+        const active = p.id === cur ? ' active' : '';
+        return `<button class="evie-voice-btn${active}" data-vid="${p.id}"
+            onclick="setEvieVoiceId('${p.id}');
+                     this.closest('.evie-voice-row').querySelectorAll('.evie-voice-btn').forEach(b=>b.classList.toggle('active',b===this));
+                     speakWithEvieVoice('${p.label}. ${p.desc.replace('·','').trim()}.');"
+            title="${p.desc}">
+            <span class="evie-voice-glyph">${p.glyph}</span>${p.label}
+        </button>`;
+    }).join('');
+    return `<div class="evie-voice-row" id="${rowId}">${btns}</div>`;
+}
+
+function toggleEvieVoicePicker(rowId, toggleBtn) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const open = row.classList.toggle('open');
+    if (toggleBtn) toggleBtn.classList.toggle('active', open);
+}
+
+function startEvieMic(inputId, sendFn, btnEl) {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { alert('Voice input requires Chrome or Edge'); return null; }
+    const rec = new SR();
+    rec.continuous     = false;
+    rec.interimResults = false;
+    rec.lang           = 'en-US';
+    if (btnEl) btnEl.classList.add('recording');
+    rec.onresult = function(e) {
+        const text  = e.results[0][0].transcript;
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.value = text;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (btnEl) btnEl.classList.remove('recording');
+        if (sendFn) setTimeout(sendFn, 350);
+    };
+    rec.onerror = function(e) {
+        console.warn('Mic error:', e.error);
+        if (btnEl) btnEl.classList.remove('recording');
+    };
+    rec.onend = function() {
+        if (btnEl) btnEl.classList.remove('recording');
+    };
+    rec.start();
+    return rec;
+}
+// ===== EVIE VOICE + MIC END =====
+
 // ===== EVIE WAIT CHAT =====
 const _evieWait = {
     stage: "idle",    // idle | watching | context_shown | deck_done | asked_callname | chatting
@@ -1852,6 +1951,7 @@ function _evieWaitMsg(text, who) {
     el.textContent = text;
     box.appendChild(el);
     box.scrollTop = box.scrollHeight;
+    if (who !== "user") speakWithEvieVoice(text);
 }
 
 function _evieWaitSetStatus(txt) {
@@ -1882,6 +1982,16 @@ function startEvieWaitChat() {
     const avatarEl = document.getElementById("evieWaitAvatar");
     if (avatarEl && typeof EvieAvatar !== "undefined") {
         avatarEl.innerHTML = EvieAvatar.inline(28, "idea", "thinking");
+    }
+
+    // Inject voice picker row below header on first open
+    if (!document.getElementById("evieWaitVoiceRow")) {
+        const header = shell.querySelector(".evie-wait-header");
+        if (header) {
+            const wrap = document.createElement("div");
+            wrap.innerHTML = renderEvieVoicePicker("evieWaitVoiceRow");
+            header.insertAdjacentElement("afterend", wrap.firstChild);
+        }
     }
 
     // First message: ambient check-in, uses signup name if we have it
@@ -1969,9 +2079,12 @@ function evieWaitReply() {
         _evieWait.stage = "chatting";
         _evieWaitSetStatus("here when you need me");
         setTimeout(() => {
-            _evieWaitMsg(`Great — ${_evieWait.callName} it is. Take a look at your deck. I'm right here if you want to change anything.`, "evie");
-            _evieWaitShowInput(true);
+            _evieWaitMsg(`Great — ${_evieWait.callName} it is. Take a look at your deck.`, "evie");
         }, 400);
+        setTimeout(() => {
+            _evieWaitMsg("And you don't have to use me at all — minimize me and I'll be right here whenever you need me.", "evie");
+            _evieWaitShowInput(true);
+        }, 2800);
     } else {
         // General chat after first-meeting
         setTimeout(() => {

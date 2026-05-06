@@ -224,6 +224,7 @@
                                     <div class="evie-wait-name">Evie</div>
                                     <div class="evie-wait-status" id="evieWaitStatus">thinking...</div>
                                 </div>
+                                <button class="evie-wait-minimize" id="evieVoiceToggleBtn" onclick="toggleEvieVoicePicker('evieWaitVoiceRow', this)" title="Voice">🎙</button>
                                 <button class="evie-wait-minimize" id="evieWaitMinBtn" onclick="toggleEvieWait()" title="Minimize">—</button>
                             </div>
                             <div class="evie-wait-body" id="evieWaitBody">
@@ -231,6 +232,7 @@
                                 <div class="evie-wait-input-row" id="evieWaitInputRow" style="display:none;">
                                     <input class="evie-wait-input" id="evieWaitInput" type="text" placeholder="Type here…" maxlength="60"
                                         onkeydown="if(event.key==='Enter'){ event.preventDefault(); evieWaitReply(); }">
+                                    <button class="evie-wait-mic" id="evieWaitMicBtn" onclick="startEvieMic('evieWaitInput', evieWaitReply, this)" title="Voice input">🎤</button>
                                     <button class="evie-wait-send" onclick="evieWaitReply()">&#8594;</button>
                                 </div>
                             </div>
