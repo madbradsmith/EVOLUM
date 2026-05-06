@@ -21,6 +21,7 @@
     line-height: 1.65;
 }
 .terms-body strong { color: #cfcfcf; }
+.terms-body a { color: #ff9944; text-decoration: none; }
 .terms-back {
     display: inline-block;
     text-decoration: none;
@@ -30,6 +31,31 @@
     transition: color 0.15s;
 }
 .terms-back:hover { color: #ff9944; }
+.pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 12px 0;
+}
+.pricing-table th {
+    text-align: left;
+    padding: 7px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #888;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.pricing-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    color: #aaa;
+    vertical-align: top;
+    line-height: 1.5;
+}
+.pricing-table tr:last-child td { border-bottom: none; }
+.pricing-table td:first-child { font-weight: 700; color: #cfcfcf; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -44,75 +70,125 @@
 
             <div style="font-size:10px; font-weight:700; letter-spacing:0.14em; color:#ff7a00; text-transform:uppercase; margin-bottom:8px;">Legal</div>
             <div class="workspace-title" style="margin-bottom:4px;">Terms &amp; Conditions</div>
-            <div style="font-size:12px; color:#555; margin-bottom:28px;">Effective date: April 2026 · EVOLUM Private Beta</div>
+            <div style="font-size:12px; color:#555; margin-bottom:28px;">Effective date: May 2026 · EVOLUM</div>
 
             <div class="terms-section">
                 <div class="terms-heading">1. The Service</div>
                 <div class="terms-body">
-                    EVOLUM is a private beta platform providing AI-powered tools for the film and television industry, including pitch deck generation, script analysis, and actor preparation reports (the "Service"). By accessing or using the Service, you agree to these Terms.
+                    EVOLUM is a platform providing AI-powered tools for the film and television industry, including pitch deck generation, script analysis, and actor preparation reports (the "Service"). By accessing or using the Service, you agree to these Terms.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">2. Beta Access &amp; Payment</div>
+                <div class="terms-heading">2. Pricing &amp; Plans</div>
                 <div class="terms-body">
-                    During the private beta period, access is gated at <strong>$5/month</strong> via Stripe. This fee grants full access to all available tools. Billing is recurring monthly and can be cancelled at any time from your account settings or by contacting us. No refunds are issued for partial billing periods.
+                    The Service is offered on a subscription basis at the following rates:
+
+                    <table class="pricing-table" style="margin-top:14px;">
+                        <thead>
+                            <tr><th>Plan</th><th>Monthly</th><th>Annual</th><th>Includes</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Solo</td>
+                                <td>$10/mo</td>
+                                <td>$100/yr</td>
+                                <td>Pitch deck, script analysis, actor prep tools. Includes a <strong style="color:#cfcfcf;">3-day free trial</strong>.</td>
+                            </tr>
+                            <tr>
+                                <td>Writer's Room</td>
+                                <td>$25/mo</td>
+                                <td>$250/yr</td>
+                                <td>Everything in Solo, plus team workspace, priority builds, and project sharing.</td>
+                            </tr>
+                            <tr>
+                                <td>Production Co.</td>
+                                <td>$75/mo</td>
+                                <td>$750/yr</td>
+                                <td>Everything in Writer's Room, plus advanced analytics, white-label exports, and a dedicated queue.</td>
+                            </tr>
+                            <tr>
+                                <td>Studio</td>
+                                <td>$150/mo</td>
+                                <td>$1,500/yr</td>
+                                <td>Everything in Production Co., plus custom branding, dedicated support, and API access.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    All prices are in USD. Subscriptions renew automatically unless cancelled. Payments are processed securely by Stripe.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">3. Your Content &amp; Intellectual Property</div>
+                <div class="terms-heading">3. Free Trial</div>
+                <div class="terms-body">
+                    The Solo plan includes a <strong>3-day free trial</strong> for new subscribers. No charge is made during the trial period. If you do not cancel before the trial ends, your payment method will be charged the applicable rate. The free trial is available once per account and is not available on annual billing.
+                </div>
+            </div>
+
+            <div class="terms-section">
+                <div class="terms-heading">4. Cancellation &amp; Refunds</div>
+                <div class="terms-body">
+                    <strong>Monthly plans:</strong> You may cancel at any time. Cancellation takes effect at the end of the current billing period. No refunds are issued for partial monthly periods already paid.
+                    <br><br>
+                    <strong>Annual plans:</strong> You may cancel an annual subscription at any time. Upon cancellation, you are entitled to a prorated refund for any complete unused months remaining in your billing year, calculated from the date of cancellation. Partial months are not refunded. Conditions apply — contact us to initiate a cancellation and refund.
+                </div>
+            </div>
+
+            <div class="terms-section">
+                <div class="terms-heading">5. Your Content &amp; Intellectual Property</div>
                 <div class="terms-body">
                     Any script, story, character, or creative material you upload to EVOLUM remains entirely your own. <strong>We claim no rights whatsoever to your creative work.</strong> Your content is processed by AI to generate reports and decks for your use. You are solely responsible for ensuring you have the rights to upload any material you submit.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">4. AI-Generated Output</div>
+                <div class="terms-heading">6. AI-Generated Output</div>
                 <div class="terms-body">
                     Decks, reports, and analysis generated by the Service are tools to assist your creative process — they are not professional legal, financial, or industry advice. Results may vary based on the content you provide. You are responsible for reviewing and editing all AI-generated output before use.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">5. Acceptable Use</div>
+                <div class="terms-heading">7. Acceptable Use</div>
                 <div class="terms-body">
                     You agree not to use the Service to upload content that is unlawful, defamatory, or that you do not have rights to use. You may not attempt to reverse-engineer, scrape, or resell any part of the Service. Abuse of the platform may result in immediate account termination without refund.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">6. Data &amp; Privacy</div>
+                <div class="terms-heading">8. Data &amp; Privacy</div>
                 <div class="terms-body">
-                    Scripts you upload are processed and then deleted from our servers. Generated outputs (decks, reports) are stored temporarily for your download. We do not sell, share, or license your data. AI processing uses Anthropic's Claude API, governed by <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener" style="color:#ff9944; text-decoration:none;">Anthropic's privacy policy</a>.
+                    Scripts you upload are processed to generate your outputs. We do not sell, share, or license your data or creative content. AI processing uses Anthropic's Claude API, governed by <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener">Anthropic's privacy policy</a>.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">7. Limitation of Liability</div>
+                <div class="terms-heading">9. Limitation of Liability</div>
                 <div class="terms-body">
-                    The Service is provided "as is" during the beta period. EVOLUM is not liable for any indirect, incidental, or consequential damages arising from your use of the Service, including loss of data or failed pitch meetings. Our total liability shall not exceed the amount you paid in the 30 days prior to any claim.
+                    The Service is provided "as is." EVOLUM is not liable for any indirect, incidental, or consequential damages arising from your use of the Service. Our total liability shall not exceed the amount you paid in the 30 days prior to any claim.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">8. Changes to Terms</div>
+                <div class="terms-heading">10. Changes to Terms</div>
                 <div class="terms-body">
-                    We may update these Terms as the platform evolves. Continued use of the Service after changes are posted constitutes your acceptance. We will notify active subscribers of material changes via email.
+                    We may update these Terms as the platform evolves. Continued use of the Service after changes are posted constitutes your acceptance. We will notify active subscribers of material changes via email at least 14 days before they take effect.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">9. Termination</div>
+                <div class="terms-heading">11. Termination</div>
                 <div class="terms-body">
                     Either party may terminate access at any time. You may cancel your subscription through Stripe or by contacting us. We reserve the right to suspend or terminate accounts that violate these Terms.
                 </div>
             </div>
 
             <div class="terms-section">
-                <div class="terms-heading">10. Contact</div>
+                <div class="terms-heading">12. Contact</div>
                 <div class="terms-body">
-                    Questions about these Terms? Use the Contact form on the EVOLUM main page or reach us at <strong>hello@evolumstudio.com</strong>.
+                    Questions about these Terms? Email us at <strong>hello@evolumstudio.com</strong>.
                 </div>
             </div>
 
@@ -122,7 +198,6 @@
 
         </div>
     </div>
-
     <div class="footer-powered" style="text-align:center; padding:20px 0;">Powered by the Developum AI Engine</div>
 </div>
 </body>

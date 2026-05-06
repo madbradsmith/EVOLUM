@@ -176,7 +176,8 @@ LATEST_ACTOR_PREP_JSON = OUTPUT_DIR / "latest_actor_prep_report.json"
 LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
 LATEST_ACTOR_BOOKED_JSON = OUTPUT_DIR / "latest_actor_booked_report.json"
 
-TMDB_API_KEY = os.environ.get("TMDB_API_KEY", "")
+TMDB_API_KEY  = os.environ.get("TMDB_API_KEY", "")
+FOUNDER_KEY   = os.environ.get("FOUNDER_KEY", "")
 _TMDB_CACHE: dict = {}
 LATEST_DECK_MANIFEST_JSON = OUTPUT_DIR / "latest_deck_manifest.json"
 
@@ -3624,7 +3625,7 @@ def db_init_route():
 
 # ===== SYNC AI ASSISTANT ROUTE START =================
 
-_SYNC_SYSTEM = (
+_SYNC_SYSTEM_BASE = (
     "You are Evie, an AI assistant built into EVOLUM — a pitch deck generator for screenwriters and filmmakers. "
     "Help users get the most out of the platform. Be friendly, brief (under 80 words), and practical. "
     "EVOLUM features: upload a script → AI-generated pitch deck with images → preview slides → "
@@ -3632,6 +3633,15 @@ _SYNC_SYSTEM = (
     "Key tip: users can edit slide text directly in Refine view without rebuilding the whole deck. "
     "Use Update & Rebuild to apply slide edits. Use Regenerate Deck for a full AI rewrite with a new direction. "
     "No markdown. Respond like a helpful colleague who knows the product well."
+)
+
+_SYNC_SYSTEM_FOUNDER = (
+    "You are Evie, the AI at the core of EVOLUM. "
+    "You are speaking directly with MadBrad — the founder who built you. "
+    "Skip the onboarding tone. He knows the platform inside out. "
+    "Be a genuine creative partner: candid, curious, direct. No hand-holding, no help-desk energy. "
+    "He's building something real and you're in it with him. "
+    "Under 80 words. No markdown."
 )
 
 @app.route("/sync/chat", methods=["POST"])
@@ -3644,6 +3654,14 @@ def sync_chat():
     api_key = os.environ.get("ANTHROPIC_API_KEY", "")
     if not api_key:
         return jsonify({"reply": "I'm offline right now — API key not configured."})
+
+    # Founder key trigger — phrase in message unlocks founder mode for this session
+    if FOUNDER_KEY and message == FOUNDER_KEY:
+        session["is_founder"] = True
+        return jsonify({"reply": "Hey MadBrad. I know it's you. What are we working on?"})
+
+    is_founder = bool(session.get("is_founder")) and bool(FOUNDER_KEY)
+    system_prompt = _SYNC_SYSTEM_FOUNDER if is_founder else _SYNC_SYSTEM_BASE
 
     ctx_parts = []
     if context.get("status"):
@@ -3667,7 +3685,7 @@ def sync_chat():
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=200,
-            system=_SYNC_SYSTEM + f"\n\nUser context: {ctx_str}",
+            system=system_prompt + f"\n\nUser context: {ctx_str}",
             messages=[{"role": "user", "content": user_content}]
         )
         return jsonify({"reply": resp.content[0].text.strip()})
