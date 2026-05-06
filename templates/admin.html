@@ -10,8 +10,9 @@
     --bg: #eef1f5;
     --card: #ffffff;
     --ink: #0f172a;
-    --muted: #111827;
+    --muted: #1e293b;
     --soft: #374151;
+    --dim: #64748b;
     --line: #d7dce5;
     --line-soft: #e5e7eb;
     --orange: #f97316;
@@ -20,156 +21,287 @@
     --green: #16a34a;
     --red: #dc2626;
     --yellow: #d97706;
+    --radius: 12px;
 }
-body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh; padding:0 0 60px; }
-.topbar { background:var(--card); border-bottom:1px solid var(--line); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; gap:16px; position:sticky; top:0; z-index:20; box-shadow:0 1px 6px rgba(15,23,42,0.08); }
-.topbar-title { font-size:19px; font-weight:850; color:var(--ink); letter-spacing:0.3px; }
-.topbar-sub { font-size:12px; color:var(--soft); margin-top:2px; font-weight:600; }
-.topbar-links { display:flex; gap:8px; flex-wrap:wrap; }
-.topbar-links a { font-size:12px; font-weight:750; color:var(--orange); text-decoration:none; padding:7px 12px; border:1px solid #fed7aa; border-radius:8px; background:var(--orange-soft); }
-.topbar-links a.logout { color:var(--ink); border-color:var(--line); background:#f9fafb; }
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 0 0 60px;
+    line-height: 1.5;
+}
 
-.tab-bar { background:var(--card); border-bottom:1px solid var(--line); padding:0 28px; display:flex; gap:0; position:sticky; top:56px; z-index:19; }
-.tab-btn { background:none; border:none; padding:14px 18px; font-size:13px; font-weight:750; color:var(--soft); cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-1px; transition:color .15s,border-color .15s; font-family:inherit; }
-.tab-btn:hover { color:var(--orange); }
-.tab-btn.active { color:var(--orange); border-bottom-color:var(--orange); }
+/* ── TOPBAR ── */
+.topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    box-shadow: 0 1px 6px rgba(15,23,42,0.08);
+}
+.topbar-brand { font-size: 20px; font-weight: 900; color: var(--ink); letter-spacing: 0.3px; }
+.topbar-brand span { color: var(--orange); }
+.topbar-sub { font-size: 12px; color: var(--dim); margin-top: 2px; font-weight: 600; }
+.topbar-links { display: flex; gap: 8px; flex-wrap: wrap; }
+.topbar-links a {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--orange);
+    text-decoration: none;
+    padding: 7px 14px;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    background: var(--orange-soft);
+}
+.topbar-links a.logout { color: var(--ink); border-color: var(--line); background: #f9fafb; }
 
-.tab-content { display:none; }
-.tab-content.active { display:block; }
+/* ── TAB BAR ── */
+.tab-bar {
+    background: var(--card);
+    border-bottom: 2px solid var(--line);
+    padding: 0 28px;
+    display: flex;
+    position: sticky;
+    top: 57px;
+    z-index: 19;
+}
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 15px 20px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--dim);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color .15s, border-color .15s;
+    font-family: inherit;
+    letter-spacing: 0.01em;
+}
+.tab-btn:hover { color: var(--orange); }
+.tab-btn.active { color: var(--orange); border-bottom-color: var(--orange); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
 
-.page { max-width:1240px; margin:0 auto; padding:24px 18px; }
-.section-label { font-size:11px; font-weight:850; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink); margin:24px 0 10px; }
-.section-label:first-child { margin-top:0; }
+/* ── PAGE LAYOUT ── */
+.page { max-width: 1300px; margin: 0 auto; padding: 28px 20px; }
 
-.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:10px; }
-.stat-card,.health-card,.panel-card { background:var(--card); border:1px solid var(--line); border-radius:13px; box-shadow:0 1px 4px rgba(15,23,42,0.06); }
-.stat-card { padding:16px 17px; }
-.stat-label { font-size:10.5px; color:var(--ink); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; font-weight:850; }
-.stat-value { font-size:31px; font-weight:850; color:var(--ink); line-height:1; }
-.stat-value.orange { color:var(--orange); }
-.stat-value.green { color:var(--green); }
-.stat-value.blue { color:var(--blue); }
-.stat-sub { font-size:11px; color:var(--soft); margin-top:5px; font-weight:600; }
+/* ── SECTION LABEL ── */
+.section-label {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin: 28px 0 12px;
+}
+.section-label:first-child { margin-top: 0; }
 
-.health-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; }
-.health-card { padding:14px 16px; display:flex; align-items:flex-start; gap:12px; min-height:78px; }
-.health-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; margin-top:4px; }
-.health-dot.ok { background:var(--green); box-shadow:0 0 7px rgba(22,163,74,0.5); }
-.health-dot.warn { background:var(--yellow); box-shadow:0 0 7px rgba(217,119,6,0.5); }
-.health-dot.err { background:var(--red); box-shadow:0 0 7px rgba(220,38,38,0.5); }
-.health-text { font-size:14px; font-weight:850; color:var(--ink); }
-.health-sub { font-size:12px; color:var(--soft); margin-top:3px; line-height:1.35; font-weight:600; }
-.disk-bar { height:8px; background:#edf0f4; border-radius:999px; overflow:hidden; margin-top:10px; width:100%; }
-.disk-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--green),var(--blue)); }
-.disk-bar-fill.warn { background:linear-gradient(90deg,var(--yellow),var(--orange)); }
-.disk-bar-fill.danger { background:linear-gradient(90deg,var(--orange),var(--red)); }
+/* ── STAT CARDS ── */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+.stat-label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 10px; font-weight: 800; }
+.stat-value { font-size: 36px; font-weight: 900; color: var(--ink); line-height: 1; }
+.stat-value.orange { color: var(--orange); }
+.stat-value.green  { color: var(--green);  }
+.stat-value.blue   { color: var(--blue);   }
+.stat-value.red    { color: var(--red);    }
+.stat-sub { font-size: 12px; color: var(--dim); margin-top: 6px; font-weight: 600; }
 
-.quick-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:8px; }
-.quick-link { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--orange); text-decoration:none; font-weight:800; box-shadow:0 1px 3px rgba(15,23,42,0.05); display:block; }
-.quick-link:hover { border-color:#fed7aa; background:var(--orange-soft); }
+/* ── HEALTH CARDS ── */
+.health-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.health-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+}
+.health-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.health-dot.ok   { background: var(--green);  box-shadow: 0 0 8px rgba(22,163,74,0.45); }
+.health-dot.warn { background: var(--yellow); box-shadow: 0 0 8px rgba(217,119,6,0.45); }
+.health-dot.err  { background: var(--red);    box-shadow: 0 0 8px rgba(220,38,38,0.45); }
+.health-text { font-size: 14px; font-weight: 800; color: var(--ink); }
+.health-sub  { font-size: 13px; color: var(--soft); margin-top: 3px; line-height: 1.4; font-weight: 500; }
+.health-sub a { color: var(--orange); text-decoration: none; }
 
-.panel-card { overflow:hidden; }
-.panel-head { background:#f8fafc; border-bottom:1px solid var(--line-soft); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
-.panel-title { font-size:11px; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink); }
-.panel-count { font-size:11px; font-weight:850; color:var(--orange); background:var(--orange-soft); border:1px solid #fed7aa; border-radius:999px; padding:2px 8px; }
-.scroll-panel { max-height:320px; overflow-y:auto; }
-.scroll-panel.short { max-height:220px; }
-.scroll-panel.tall { max-height:480px; }
+/* ── PANEL CARDS (tables) ── */
+.panel-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 4px rgba(15,23,42,0.06); }
+.panel-head {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--line-soft);
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.panel-title { font-size: 12px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); }
+.panel-count { font-size: 12px; font-weight: 800; color: var(--orange); background: var(--orange-soft); border: 1px solid #fed7aa; border-radius: 999px; padding: 3px 10px; }
+.scroll-panel { max-height: 340px; overflow-y: auto; }
+.scroll-panel.tall { max-height: 520px; }
+.scroll-panel.short { max-height: 200px; }
 
-table { width:100%; border-collapse:collapse; font-size:13px; }
-thead { background:#f9fafb; }
-th { text-align:left; padding:10px 14px; font-size:10px; font-weight:900; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink); border-bottom:1px solid var(--line-soft); }
-td { padding:10px 14px; border-bottom:1px solid #eef0f4; color:#1f2937; vertical-align:middle; }
-tr:last-child td { border-bottom:none; }
-tr:hover td { background:#fafafa; }
-.email-cell { color:var(--ink); font-weight:750; }
-.time-cell { color:var(--soft); font-size:11px; white-space:nowrap; font-weight:650; }
-.empty-state { text-align:center; color:var(--soft); padding:28px; font-size:13px; font-weight:650; }
+/* ── TABLES ── */
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead { background: #f9fafb; position: sticky; top: 0; z-index: 1; }
+th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--line-soft);
+    white-space: nowrap;
+}
+td { padding: 10px 14px; border-bottom: 1px solid var(--line-soft); color: var(--ink); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafbfc; }
+.email-cell { font-size: 13px; color: var(--ink); font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.time-cell  { font-size: 13px; color: var(--soft); white-space: nowrap; font-weight: 500; }
 
-.event-badge { display:inline-block; padding:3px 8px; border-radius:999px; font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:0.06em; }
-.badge-sign_in { background:#dbeafe; color:#1d4ed8; }
-.badge-sign_out { background:#f3f4f6; color:#374151; }
-.badge-account_created { background:#dcfce7; color:#15803d; }
-.badge-deck_run { background:#fff7ed; color:#c2410c; }
-.badge-script_analysis { background:#fef3c7; color:#92400e; }
-.badge-actor_prep { background:#ede9fe; color:#6d28d9; }
-.badge-actor_booked { background:#fee2e2; color:#b91c1c; }
-.badge-feedback_message { background:#dbeafe; color:#1d4ed8; }
-.badge-contact_message { background:#dcfce7; color:#15803d; }
-.badge-generate_start { background:#fff7ed; color:#c2410c; }
-.badge-generate_complete { background:#dcfce7; color:#15803d; }
-.badge-default { background:#f3f4f6; color:#374151; }
+/* ── BADGES ── */
+.plan-badge { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; }
+.plan-solo     { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+.plan-pro      { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.plan-studio   { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.plan-founder  { background: #fdf4ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+.event-badge, .badge-default { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: var(--soft); border: 1px solid var(--line); }
+.badge-deck_run   { background: #fff7ed; color: var(--orange); border-color: #fed7aa; }
+.badge-sign_in    { background: #f0fdf4; color: var(--green);  border-color: #bbf7d0; }
+.badge-account_created { background: #eff6ff; color: var(--blue); border-color: #bfdbfe; }
+.msg-cat { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: var(--soft); border: 1px solid var(--line); }
+.msg-body { font-size: 13px; color: var(--ink); max-width: 360px; }
 
-.user-actions { display:flex; gap:7px; flex-wrap:wrap; align-items:center; }
-.small-btn { background:#fff; border:1px solid var(--line); color:var(--ink); border-radius:7px; padding:4px 9px; font-size:11px; font-weight:800; cursor:pointer; font-family:inherit; }
-.small-btn:hover { background:#f9fafb; }
-.small-btn.orange { color:var(--orange); border-color:#fed7aa; background:var(--orange-soft); }
-.small-btn.red { color:var(--red); border-color:#fca5a5; background:#fef2f2; }
+/* ── USER CONTROLS ── */
+.user-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.small-btn {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: #f8fafc;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .12s, border-color .12s;
+}
+.small-btn:hover { background: #eef1f5; }
+.small-btn.orange { color: var(--orange); border-color: #fed7aa; background: var(--orange-soft); }
+.small-btn.red    { color: var(--red);    border-color: #fecaca; background: #fff5f5; }
+.reset-form { display: none; gap: 6px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+.reset-form.open { display: flex; }
+.reset-form input { font-size: 13px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; font-family: inherit; color: var(--ink); }
+.reset-msg { font-size: 12px; font-weight: 600; }
+.reset-msg.ok  { color: var(--green); }
+.reset-msg.err { color: var(--red); }
+.del-row-btn { background: none; border: none; color: var(--dim); font-size: 16px; cursor: pointer; padding: 2px 6px; border-radius: 4px; line-height: 1; }
+.del-row-btn:hover { color: var(--red); background: #fff5f5; }
 
-.reset-form { display:none; background:#f8fafc; border:1px solid var(--line-soft); border-radius:9px; padding:10px 12px; margin-top:8px; gap:8px; flex-wrap:wrap; align-items:center; }
-.reset-form.open { display:flex; }
-.reset-form input { border:1px solid var(--line); border-radius:7px; padding:5px 9px; font-size:12px; font-family:inherit; background:#fff; color:var(--ink); flex:1; min-width:140px; }
-.reset-msg { font-size:11px; font-weight:700; margin-top:6px; }
-.reset-msg.ok { color:var(--green); }
-.reset-msg.err { color:var(--red); }
+/* ── QUICK LINKS ── */
+.quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.quick-link {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--orange);
+    text-decoration: none;
+    font-weight: 800;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    display: block;
+    transition: border-color .12s, background .12s;
+}
+.quick-link:hover { border-color: #fed7aa; background: var(--orange-soft); }
+.quick-link .link-sub { font-size: 12px; color: var(--dim); font-weight: 500; margin-top: 3px; }
 
-.msg-body { word-break:break-word; font-size:12px; color:#374151; }
-.msg-cat { display:inline-block; padding:2px 7px; border-radius:6px; font-size:10px; font-weight:850; text-transform:uppercase; background:#fff7ed; color:#c2410c; margin-bottom:4px; }
-.del-row-btn { background:none; border:none; color:#94a3b8; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; }
-.del-row-btn:hover { color:var(--red); }
+/* ── LOGS ── */
+.log-wrap { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.log-header { background: #1e293b; color: #94a3b8; font-size: 12px; font-weight: 700; padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+.log-body { background: #0f172a; color: #94a3b8; font-size: 12px; font-family: "SFMono-Regular", Consolas, monospace; white-space: pre-wrap; word-break: break-all; padding: 14px 16px; max-height: 480px; overflow-y: auto; line-height: 1.55; }
+.log-empty { background: #f9fafb; color: var(--dim); font-size: 13px; padding: 20px; text-align: center; }
 
-.log-wrap { background:#111827; border:1px solid #d1d5db; border-radius:13px; overflow:hidden; }
-.log-header { background:#0b1120; padding:10px 14px; font-size:10px; font-weight:900; letter-spacing:0.1em; text-transform:uppercase; color:#f97316; border-bottom:1px solid #1f2937; display:flex; justify-content:space-between; align-items:center; }
-.log-body { padding:14px; font-family:"SF Mono","Fira Code",monospace; font-size:11px; line-height:1.65; color:#a3e635; white-space:pre-wrap; word-break:break-word; max-height:400px; overflow-y:auto; }
-.log-empty { color:#94a3b8; padding:22px 14px; font-size:12px; }
+/* ── BILLING LINKS ── */
+.billing-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.billing-link {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 14px;
+    color: var(--orange);
+    text-decoration: none;
+    font-weight: 800;
+    box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+    display: block;
+    transition: border-color .12s, background .12s;
+}
+.billing-link:hover { border-color: #fed7aa; background: var(--orange-soft); }
+.billing-link .link-sub { font-size: 12px; color: var(--dim); font-weight: 500; margin-top: 3px; }
 
-.costs-placeholder { background:var(--card); border:1px solid var(--line); border-radius:13px; padding:28px; text-align:center; color:var(--soft); font-size:13px; }
-.billing-links { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:16px; }
-.billing-link { display:block; background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:14px 16px; text-decoration:none; color:var(--ink); font-weight:750; font-size:13px; }
-.billing-link:hover { border-color:#fed7aa; background:var(--orange-soft); }
-.billing-link .link-sub { font-size:11px; color:var(--soft); margin-top:3px; font-weight:600; }
+/* ── EMPTY STATES ── */
+.empty-state { color: var(--dim); font-size: 14px; padding: 24px; text-align: center; font-weight: 500; }
 
-.plan-badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:850; text-transform:uppercase; letter-spacing:0.06em; }
-.plan-solo { background:#f3f4f6; color:#374151; }
-.plan-pro { background:#dbeafe; color:#1d4ed8; }
-.plan-studio { background:#fef3c7; color:#92400e; }
-.plan-studio_plus,.plan-studio\+ { background:#ede9fe; color:#6d28d9; }
-
-.stat-value.red { color:var(--red); }
-
-@media (max-width:850px) { .tab-bar { overflow-x:auto; gap:0; } .tab-btn { white-space:nowrap; } }
-@media (max-width:560px) { .stat-grid { grid-template-columns:repeat(2,1fr); } .page { padding:18px 12px; } }
+@media (max-width: 850px) {
+    .tab-bar { overflow-x: auto; }
+    .tab-btn { white-space: nowrap; padding: 14px 14px; font-size: 13px; }
+    .page { padding: 20px 14px; }
+    .topbar { padding: 12px 16px; }
+}
 </style>
 </head>
 <body>
 
 <div class="topbar">
     <div>
-        <div class="topbar-title">EVOLUM Admin</div>
-        <div class="topbar-sub">Control room — internal only</div>
+        <div class="topbar-brand">EVOLUM <span>Admin</span></div>
+        <div class="topbar-sub">V1 — Deck Builder Platform</div>
     </div>
     <div class="topbar-links">
-        <a href="/" target="_blank">Main Site</a>
-        <a href="/debug-log" target="_blank">Pipeline Log</a>
-        <a href="/db-check" target="_blank">DB Check</a>
+        <a href="/admin/analytics" target="_blank">Analytics JSON</a>
+        <a href="/status" target="_blank">Status</a>
         <a class="logout" href="/admin/logout">Sign Out</a>
     </div>
 </div>
 
 <div class="tab-bar">
     <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
-    <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
     <button class="tab-btn" onclick="switchTab('users')">Users</button>
-    <button class="tab-btn" onclick="switchTab('feedback')">Feedback</button>
+    <button class="tab-btn" onclick="switchTab('projects')">Projects</button>
+    <button class="tab-btn" onclick="switchTab('messages')">Messages</button>
     <button class="tab-btn" onclick="switchTab('costs')">Costs</button>
-    <button class="tab-btn" onclick="switchTab('logs')">Logs</button>
+    <button class="tab-btn" onclick="switchTab('system')">System</button>
 </div>
+
 
 <!-- ===== TAB: OVERVIEW ===== -->
 <div id="tab-overview" class="tab-content active">
 <div class="page">
 
-    <div class="section-label">Site Health</div>
+    <div class="section-label">Platform Health</div>
     <div class="health-grid">
         <div class="health-card">
             <div class="health-dot {{ 'ok' if stats.db_ok else 'err' }}"></div>
@@ -181,27 +313,27 @@ tr:hover td { background:#fafafa; }
         <div class="health-card">
             <div class="health-dot {{ 'ok' if stats.api_key_set else 'err' }}"></div>
             <div>
-                <div class="health-text">Anthropic API Key</div>
-                <div class="health-sub">{{ 'Configured' if stats.api_key_set else 'Missing — AI features disabled' }}</div>
+                <div class="health-text">Anthropic API</div>
+                <div class="health-sub">{{ 'Key configured' if stats.api_key_set else 'Missing — AI disabled' }}</div>
             </div>
         </div>
         <div class="health-card">
-            <div class="health-dot {{ 'ok' if stats.fal_key_set else 'err' }}"></div>
+            <div class="health-dot {{ 'ok' if stats.fal_key_set else 'warn' }}"></div>
             <div>
-                <div class="health-text">FAL API Key</div>
-                <div class="health-sub">{{ 'Configured' if stats.fal_key_set else 'Missing — image generation disabled' }}</div>
+                <div class="health-text">FAL (Image Gen)</div>
+                <div class="health-sub">{{ 'Key configured' if stats.fal_key_set else 'Missing — images disabled' }}</div>
             </div>
         </div>
         <div class="health-card">
             <div class="health-dot {{ 'ok' if stats.admin_reset_key_set else 'warn' }}"></div>
             <div>
                 <div class="health-text">Admin Reset Key</div>
-                <div class="health-sub">{{ 'Set' if stats.admin_reset_key_set else 'Not set — password reset disabled' }}</div>
+                <div class="health-sub">{{ 'Set' if stats.admin_reset_key_set else 'Not set — PW reset disabled' }}</div>
             </div>
         </div>
     </div>
 
-    <div class="section-label">Snapshot</div>
+    <div class="section-label">Numbers</div>
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-label">Total Users</div>
@@ -216,51 +348,149 @@ tr:hover td { background:#fafafa; }
             <div class="stat-value orange"><span data-stat="deck-runs">…</span></div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Script Analyses</div>
-            <div class="stat-value"><span data-stat="script-analyses">…</span></div>
-        </div>
-        <div class="stat-card">
             <div class="stat-label">Sign-ins Today</div>
             <div class="stat-value green"><span data-stat="logins-today">…</span></div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Active 30 Min</div>
+            <div class="stat-label">Active (30 min)</div>
             <div class="stat-value green"><span data-stat="active-sessions">…</span></div>
         </div>
-    </div>
-
-    <div class="section-label">Quick Links</div>
-    <div class="quick-links">
-        <a class="quick-link" href="/status" target="_blank">Status JSON</a>
-        <a class="quick-link" href="/db-check" target="_blank">DB Check</a>
-        <a class="quick-link" href="/db-init" target="_blank">Init DB</a>
-        <a class="quick-link" href="/debug-log" target="_blank">Pipeline Log</a>
-    </div>
-
-</div>
-</div>
-
-<!-- ===== TAB: ANALYTICS ===== -->
-<div id="tab-analytics" class="tab-content">
-<div class="page">
-
-    <div class="section-label">User Activity</div>
-    <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-label">Sign-ins All Time</div>
             <div class="stat-value"><span data-stat="logins-total">…</span></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Sign-ins Today</div>
-            <div class="stat-value green"><span data-stat="logins-today">…</span></div>
+    </div>
+
+    <div class="section-label">Recent Activity</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Last 50 Events</div>
+            <div class="panel-count">{{ recent_activity | length }}</div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Active Last 30 Min</div>
-            <div class="stat-value green"><span data-stat="active-sessions">…</span></div>
+        <div class="scroll-panel">
+            {% if recent_activity %}
+            <table>
+                <thead><tr><th>User</th><th>Event</th><th>Route</th><th>Time</th></tr></thead>
+                <tbody>
+                {% for ev in recent_activity %}
+                <tr>
+                    <td class="email-cell">{{ ev.user_email or 'anon' }}</td>
+                    <td><span class="event-badge badge-{{ ev.event_type }} badge-default">{{ ev.event_type }}</span></td>
+                    <td style="color:var(--soft); font-size:13px;">{{ ev.route or '—' }}</td>
+                    <td class="time-cell">{{ ev.created_at.strftime('%m-%d %H:%M') if ev.created_at else '—' }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No activity logged yet.</div>
+            {% endif %}
         </div>
     </div>
 
-    <div class="section-label">Tool Funnel</div>
+</div>
+</div>
+
+
+<!-- ===== TAB: USERS ===== -->
+<div id="tab-users" class="tab-content">
+<div class="page">
+
+    <div class="section-label">All Users</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Beta Users</div>
+            <div class="panel-count">{{ users | length }}</div>
+        </div>
+        <div class="scroll-panel tall">
+            {% if users %}
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Email</th><th>Name</th><th>Plan</th><th>Projects</th><th>Deck Runs</th><th>Est. Cost</th><th>Last Login</th><th>Joined</th><th>Controls</th></tr>
+                </thead>
+                <tbody>
+                {% for u in users %}
+                {% set plan = u.plan or 'solo' %}
+                <tr id="user-row-{{ u.id }}">
+                    <td style="color:var(--dim); font-weight:700; font-size:13px;">{{ u.id }}</td>
+                    <td class="email-cell">{{ u.email or '—' }}</td>
+                    <td style="font-weight:600;">{{ u.name or '—' }}</td>
+                    <td><span class="plan-badge plan-{{ plan }}">{{ plan }}</span></td>
+                    <td style="font-weight:800; color:{% if u.project_count >= 6 %}var(--red){% else %}var(--ink){% endif %};">{{ u.project_count }}</td>
+                    <td style="font-weight:800;">{{ u.deck_run_count or 0 }}</td>
+                    <td style="font-weight:800; color:{% if (u.est_cost or 0) > 1 %}var(--red){% elif (u.est_cost or 0) > 0.25 %}var(--orange){% else %}var(--ink){% endif %};">${{ '%.2f'|format(u.est_cost or 0) }}</td>
+                    <td class="time-cell">{{ u.last_login.strftime('%m-%d %H:%M') if u.last_login else '—' }}</td>
+                    <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
+                    <td>
+                        <div class="user-actions">
+                            <button class="small-btn orange" onclick="copyText('{{ u.email or '' }}')">Copy</button>
+                            <button class="small-btn" onclick="toggleResetForm({{ u.id }})">Reset PW</button>
+                            <button class="small-btn red" onclick="deleteUser({{ u.id }}, '{{ u.email or '' }}')">Delete</button>
+                        </div>
+                        <div class="reset-form" id="reset-form-{{ u.id }}">
+                            <input type="password" id="reset-pw-{{ u.id }}" placeholder="New password" autocomplete="new-password">
+                            <button class="small-btn orange" onclick="doResetPw({{ u.id }}, '{{ u.email or '' }}')">Set</button>
+                            <button class="small-btn" onclick="toggleResetForm({{ u.id }})">Cancel</button>
+                            <div class="reset-msg" id="reset-msg-{{ u.id }}"></div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No users yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Geographic Breakdown</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">Users by Country</div>
+            <div class="panel-count" id="geo-count">…</div>
+        </div>
+        <div id="geo-table-container" class="scroll-panel">
+            <div class="empty-state">Loading…</div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+
+<!-- ===== TAB: PROJECTS ===== -->
+<div id="tab-projects" class="tab-content">
+<div class="page">
+
+    <div class="section-label">All Projects</div>
+    <div class="panel-card">
+        <div class="panel-head">
+            <div class="panel-title">V1 Projects</div>
+            <div class="panel-count">{{ projects_list | length }}</div>
+        </div>
+        <div class="scroll-panel tall">
+            {% if projects_list %}
+            <table>
+                <thead><tr><th>Title</th><th>Type</th><th>Owner</th><th>Created</th></tr></thead>
+                <tbody>
+                {% for p in projects_list %}
+                <tr>
+                    <td style="font-weight:700;">{{ p.title or 'Untitled' }}</td>
+                    <td style="color:var(--soft); font-size:13px;">{{ p.type or '—' }}</td>
+                    <td class="email-cell">{{ p.owner_email or p.owner_user_id or '—' }}</td>
+                    <td class="time-cell">{{ p.created_at.strftime('%Y-%m-%d') if p.created_at else '—' }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No projects yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Tool Funnel</div>
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-label">Deck Runs</div>
@@ -280,120 +510,18 @@ tr:hover td { background:#fafafa; }
             <div class="stat-label">Booked Reports</div>
             <div class="stat-value"><span data-stat="actor-booked">…</span></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Users</div>
-            <div class="stat-value blue">{{ stats.users }}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">Total Projects</div>
-            <div class="stat-value blue">{{ stats.projects }}</div>
-        </div>
-    </div>
-
-    <div class="section-label">Recent Activity Log</div>
-    <div class="panel-card">
-        <div class="panel-head">
-            <div class="panel-title">Last 50 Events</div>
-            <div class="panel-count">{{ recent_activity | length }}</div>
-        </div>
-        <div class="scroll-panel tall">
-            {% if recent_activity %}
-            <table>
-                <thead>
-                    <tr><th>User</th><th>Event</th><th>Route</th><th>Time</th></tr>
-                </thead>
-                <tbody>
-                    {% for ev in recent_activity %}
-                    <tr>
-                        <td class="email-cell">{{ ev.user_email or 'anon' }}</td>
-                        <td><span class="event-badge badge-{{ ev.event_type }} badge-default">{{ ev.event_type }}</span></td>
-                        <td style="color:#374151; font-size:12px;">{{ ev.route or '—' }}</td>
-                        <td class="time-cell">{{ ev.created_at.strftime('%m-%d %H:%M') if ev.created_at else '—' }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">No activity logged yet.</div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="section-label">Geographic Breakdown</div>
-    <div class="panel-card">
-        <div class="panel-head">
-            <div class="panel-title">Users by Country (from sign-ins)</div>
-            <div class="panel-count" id="geo-count">…</div>
-        </div>
-        <div id="geo-table-container" class="scroll-panel">
-            <div style="color:#94a3b8; padding:14px; font-size:13px;">Loading…</div>
-        </div>
     </div>
 
 </div>
 </div>
 
-<!-- ===== TAB: USERS ===== -->
-<div id="tab-users" class="tab-content">
-<div class="page">
 
-    <div class="section-label">Beta Users</div>
-    <div class="panel-card">
-        <div class="panel-head">
-            <div class="panel-title">All Users</div>
-            <div class="panel-count">{{ users | length }}</div>
-        </div>
-        <div class="scroll-panel tall">
-            {% if users %}
-            <table>
-                <thead>
-                    <tr><th>#</th><th>Email</th><th>Name</th><th>Plan</th><th>Projects</th><th>Deck Runs</th><th>Est. Cost</th><th>Last Login</th><th>Joined</th><th>Controls</th></tr>
-                </thead>
-                <tbody>
-                    {% for u in users %}
-                    {% set plan = u.plan or 'solo' %}
-                    <tr id="user-row-{{ u.id }}">
-                        <td style="color:#374151; font-weight:700;">{{ u.id }}</td>
-                        <td class="email-cell">{{ u.email or '—' }}</td>
-                        <td>{{ u.name or '—' }}</td>
-                        <td><span class="plan-badge plan-{{ plan }}">{{ plan }}</span></td>
-                        <td style="font-weight:700; color:{% if u.project_count >= 6 %}var(--red){% else %}var(--ink){% endif %};">{{ u.project_count }}</td>
-                        <td style="font-weight:700;">{{ u.deck_run_count or 0 }}</td>
-                        <td style="font-weight:700; color:{% if (u.est_cost or 0) > 1 %}var(--red){% elif (u.est_cost or 0) > 0.25 %}var(--orange){% else %}var(--ink){% endif %};">${{ '%.2f'|format(u.est_cost or 0) }}</td>
-                        <td class="time-cell">{{ u.last_login.strftime('%m-%d %H:%M') if u.last_login else '—' }}</td>
-                        <td class="time-cell">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '—' }}</td>
-                        <td>
-                            <div class="user-actions">
-                                <button class="small-btn orange" onclick="copyText('{{ u.email or '' }}')">Copy Email</button>
-                                <button class="small-btn" onclick="toggleResetForm({{ u.id }})">Reset PW</button>
-                                <button class="small-btn red" onclick="deleteUser({{ u.id }}, '{{ u.email or '' }}')">Delete</button>
-                            </div>
-                            <div class="reset-form" id="reset-form-{{ u.id }}">
-                                <input type="password" id="reset-pw-{{ u.id }}" placeholder="New password" autocomplete="new-password">
-                                <button class="small-btn orange" onclick="doResetPw({{ u.id }}, '{{ u.email or '' }}')">Set Password</button>
-                                <button class="small-btn" onclick="toggleResetForm({{ u.id }})">Cancel</button>
-                                <div class="reset-msg" id="reset-msg-{{ u.id }}"></div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">No users yet.</div>
-            {% endif %}
-        </div>
-    </div>
-
-</div>
-</div>
-
-<!-- ===== TAB: FEEDBACK ===== -->
-<div id="tab-feedback" class="tab-content">
+<!-- ===== TAB: MESSAGES ===== -->
+<div id="tab-messages" class="tab-content">
 <div class="page">
 
     <div class="section-label">Feedback</div>
-    <div class="panel-card" id="feedback-panel">
+    <div class="panel-card">
         <div class="panel-head">
             <div class="panel-title">Feedback Messages</div>
             <div class="panel-count" id="feedback-count">{{ messages | selectattr('event_type', 'equalto', 'feedback_message') | list | length }}</div>
@@ -406,15 +534,13 @@ tr:hover td { background:#fafafa; }
                 <tbody id="feedback-tbody">
                 {% for m in feedback_items %}
                 <tr id="msg-row-{{ m.id }}">
-                    <td class="email-cell" style="white-space:nowrap;">{{ m.user_email or '—' }}</td>
+                    <td class="email-cell">{{ m.user_email or '—' }}</td>
                     <td>
                         {% if m.metadata_json is mapping %}
                             {% if m.metadata_json.get('category') %}<span class="msg-cat">{{ m.metadata_json.category }}</span>{% else %}—{% endif %}
                         {% else %}—{% endif %}
                     </td>
-                    <td class="msg-body">
-                        {% if m.metadata_json is mapping %}{{ m.metadata_json.get('message','—') }}{% else %}—{% endif %}
-                    </td>
+                    <td class="msg-body">{% if m.metadata_json is mapping %}{{ m.metadata_json.get('message','—') }}{% else %}—{% endif %}</td>
                     <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
                     <td><button class="del-row-btn" onclick="deleteMessage({{ m.id }}, 'feedback')" title="Delete">×</button></td>
                 </tr>
@@ -441,10 +567,8 @@ tr:hover td { background:#fafafa; }
                 <tbody id="contact-tbody">
                 {% for m in contact_items %}
                 <tr id="msg-row-{{ m.id }}">
-                    <td class="email-cell" style="white-space:nowrap;">{{ m.user_email or '—' }}</td>
-                    <td class="msg-body">
-                        {% if m.metadata_json is mapping %}{{ m.metadata_json.get('message','—') }}{% else %}—{% endif %}
-                    </td>
+                    <td class="email-cell">{{ m.user_email or '—' }}</td>
+                    <td class="msg-body">{% if m.metadata_json is mapping %}{{ m.metadata_json.get('message','—') }}{% else %}—{% endif %}</td>
                     <td class="time-cell">{{ m.created_at.strftime('%m-%d %H:%M') if m.created_at else '—' }}</td>
                     <td><button class="del-row-btn" onclick="deleteMessage({{ m.id }}, 'contact')" title="Delete">×</button></td>
                 </tr>
@@ -460,216 +584,183 @@ tr:hover td { background:#fafafa; }
 </div>
 </div>
 
+
 <!-- ===== TAB: COSTS ===== -->
 <div id="tab-costs" class="tab-content">
 <div class="page">
 
-    <div class="section-label">Platform Spend (Tracked Decks)</div>
+    <div class="section-label">Platform Spend</div>
     <div class="stat-grid">
         <div class="stat-card">
-            <div class="stat-label">Total Spend (All Time)</div>
+            <div class="stat-label">Total Spend</div>
             <div class="stat-value red"><span data-stat="total-platform-cost">…</span></div>
-            <div class="stat-sub">Claude + FAL combined</div>
+            <div class="stat-sub">Claude + FAL all time</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Avg Cost / Deck</div>
+            <div class="stat-label">Avg / Deck Run</div>
             <div class="stat-value orange"><span data-stat="avg-cost-per-deck">…</span></div>
             <div class="stat-sub">From tracked runs</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">Claude (Brain) Spend</div>
+            <div class="stat-label">Claude Spend</div>
             <div class="stat-value"><span data-stat="total-brain-cost">…</span></div>
-            <div class="stat-sub">Sonnet 4.6 API calls</div>
+            <div class="stat-sub">Brain API calls</div>
         </div>
         <div class="stat-card">
-            <div class="stat-label">FAL (Images) Spend</div>
+            <div class="stat-label">FAL Spend</div>
             <div class="stat-value"><span data-stat="total-fal-cost">…</span></div>
-            <div class="stat-sub">Flux Schnell generations</div>
+            <div class="stat-sub">Image generations</div>
         </div>
         <div class="stat-card">
             <div class="stat-label">Images Generated</div>
             <div class="stat-value blue"><span data-stat="total-images">…</span></div>
-            <div class="stat-sub">FAL API calls total</div>
         </div>
     </div>
 
-    <div class="section-label">Live API Balances</div>
+    <div class="section-label" style="margin-top:20px;">Live Balances</div>
     <div class="health-grid">
         <div class="health-card">
             <div class="health-dot warn" id="falDot"></div>
             <div>
                 <div class="health-text">FAL AI Credits</div>
-                <div class="health-sub" id="falBalanceText" style="color:#666;">Loading...</div>
+                <div class="health-sub" id="falBalanceText">Loading…</div>
             </div>
         </div>
         <div class="health-card">
             <div class="health-dot {{ 'ok' if stats.api_key_set else 'err' }}"></div>
             <div>
                 <div class="health-text">Anthropic (Claude)</div>
-                <div class="health-sub">Balance not available via API — <a href="https://console.anthropic.com/settings/billing" target="_blank" style="color:#94a3b8;">check console ↗</a></div>
+                <div class="health-sub">No balance API — <a href="https://console.anthropic.com/settings/billing" target="_blank">check console ↗</a></div>
             </div>
         </div>
         <div class="health-card">
             <div class="health-dot ok"></div>
             <div>
                 <div class="health-text">Render Server</div>
-                <div class="health-sub"><a href="https://dashboard.render.com" target="_blank" style="color:#94a3b8;">View server costs ↗</a></div>
+                <div class="health-sub"><a href="https://dashboard.render.com" target="_blank">View server costs ↗</a></div>
             </div>
         </div>
     </div>
 
-    <div class="section-label">Per-User Cost Breakdown</div>
+    <div class="section-label" style="margin-top:20px;">Per-User Spend</div>
     <div class="panel-card">
         <div class="panel-head">
-            <div class="panel-title">Top Users by Spend</div>
+            <div class="panel-title">Top Users by Cost</div>
             <div class="panel-count" id="ucost-count">…</div>
         </div>
         <div id="user-cost-table-container" class="scroll-panel tall">
-            <div style="color:#94a3b8; padding:14px; font-size:13px;">Loading…</div>
+            <div class="empty-state">Loading…</div>
         </div>
     </div>
 
-    <div class="section-label" style="margin-top:8px;">Pricing Reference</div>
-    <div class="costs-placeholder" style="font-size:12px; line-height:1.8;">
+    <div class="section-label" style="margin-top:20px;">Pricing Reference</div>
+    <div class="panel-card" style="padding:16px 20px; font-size:14px; line-height:2; color:var(--ink);">
         <strong>Claude Sonnet 4.6:</strong> $3.00/1M input · $15.00/1M output · $0.30/1M cache read · $3.75/1M cache write<br>
-        <strong>FAL Flux Schnell:</strong> ~$0.003/image<br>
+        <strong>FAL Flux Schnell:</strong> ~$0.003 / image<br>
         <strong>Note:</strong> Cost tracking begins with new deck runs after this update is deployed.
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Billing Dashboards</div>
+    <div class="billing-links">
+        <a class="billing-link" href="https://dashboard.stripe.com" target="_blank">Stripe Dashboard ↗<div class="link-sub">Subscriptions, revenue, payouts</div></a>
+        <a class="billing-link" href="https://console.anthropic.com/settings/billing" target="_blank">Anthropic Console ↗<div class="link-sub">Claude API usage + billing</div></a>
+        <a class="billing-link" href="https://fal.ai/dashboard" target="_blank">FAL Dashboard ↗<div class="link-sub">Image generation credits</div></a>
+        <a class="billing-link" href="https://dashboard.render.com" target="_blank">Render Dashboard ↗<div class="link-sub">Server costs + logs</div></a>
     </div>
 
 </div>
 </div>
 
-<!-- ===== TAB: LOGS ===== -->
-<div id="tab-logs" class="tab-content">
+
+<!-- ===== TAB: SYSTEM ===== -->
+<div id="tab-system" class="tab-content">
 <div class="page">
 
-    <div class="section-label">App Log</div>
+    <div class="section-label">Environment Checks</div>
+    <div class="health-grid">
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.db_ok else 'err' }}"></div>
+            <div><div class="health-text">Database</div><div class="health-sub">{{ 'Connected' if stats.db_ok else ('Error: ' + stats.db_error) }}</div></div>
+        </div>
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.api_key_set else 'err' }}"></div>
+            <div><div class="health-text">ANTHROPIC_API_KEY</div><div class="health-sub">{{ 'Set' if stats.api_key_set else 'Missing' }}</div></div>
+        </div>
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.fal_key_set else 'warn' }}"></div>
+            <div><div class="health-text">FAL_API_KEY</div><div class="health-sub">{{ 'Set' if stats.fal_key_set else 'Missing' }}</div></div>
+        </div>
+        <div class="health-card">
+            <div class="health-dot {{ 'ok' if stats.admin_reset_key_set else 'warn' }}"></div>
+            <div><div class="health-text">ADMIN_RESET_KEY</div><div class="health-sub">{{ 'Set' if stats.admin_reset_key_set else 'Not set' }}</div></div>
+        </div>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">Debug Links</div>
+    <div class="quick-links">
+        <a class="quick-link" href="/status" target="_blank">Status JSON<div class="link-sub">Build pipeline state</div></a>
+        <a class="quick-link" href="/db-check" target="_blank">DB Check<div class="link-sub">Database connectivity</div></a>
+        <a class="quick-link" href="/db-init" target="_blank">Init DB<div class="link-sub">Run schema migrations</div></a>
+        <a class="quick-link" href="/debug-log" target="_blank">Pipeline Log<div class="link-sub">Raw build output</div></a>
+        <a class="quick-link" href="/admin/download-log" target="_blank">Download Log ↓<div class="link-sub">app.log file</div></a>
+    </div>
+
+    <div class="section-label" style="margin-top:20px;">App Log</div>
     <div class="log-wrap">
         <div class="log-header">
-            <span>app.log — last 100 lines (warnings &amp; errors)</span>
-            <a href="/admin/download-log" style="color:#f97316; font-size:11px; font-weight:700; text-decoration:none; border:1px solid rgba(249,115,22,0.35); padding:2px 8px; border-radius:4px;">Download ↓</a>
+            <span>app.log — last 100 lines</span>
         </div>
         {% if log_lines %}
         <div class="log-body" id="logBody">{{ log_lines | join('\n') }}</div>
         {% else %}
-        <div class="log-empty">No log entries yet — errors and warnings will appear here when they occur.</div>
+        <div class="log-empty">No log entries yet — errors and warnings will appear here.</div>
         {% endif %}
     </div>
 
-    <div class="section-label" style="margin-top:20px;">Server Logs</div>
-    <div class="billing-links">
-        <a class="billing-link" href="https://dashboard.render.com" target="_blank">
-            Render Logs ↗
-            <div class="link-sub">Full stdout/stderr from the live server</div>
-        </a>
-    </div>
+</div>
+</div>
 
-</div>
-</div>
 
 <script>
-// ── TAB SWITCHING ──────────────────────────────────────────
-const tabs = ['overview','analytics','users','feedback','costs','logs'];
+// ── TAB SWITCHING ──────────────────────────────────────────────
+const TABS = ['overview','users','projects','messages','costs','system'];
 function switchTab(name) {
-    tabs.forEach(t => {
+    TABS.forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('active', t === name);
     });
     document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', tabs[i] === name);
+        btn.classList.toggle('active', TABS[i] === name);
     });
-    if (name === 'logs') {
+    if (name === 'system') {
         const lb = document.getElementById('logBody');
         if (lb) lb.scrollTop = lb.scrollHeight;
     }
 }
 
-// ── USER CONTROLS ──────────────────────────────────────────
+// ── USER CONTROLS ──────────────────────────────────────────────
 function copyText(text) {
     if (!text) return;
-    navigator.clipboard?.writeText(text);
+    navigator.clipboard?.writeText(text).then(() => {
+        const el = document.createElement('div');
+        el.textContent = 'Copied';
+        Object.assign(el.style, { position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', background:'#1e293b', color:'#fff', fontSize:'13px', fontWeight:'700', padding:'8px 16px', borderRadius:'8px', zIndex:'9999', pointerEvents:'none' });
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1600);
+    });
 }
 
 function toggleResetForm(uid) {
     const f = document.getElementById('reset-form-' + uid);
     f.classList.toggle('open');
-    if (f.classList.contains('open')) document.getElementById('reset-pw-' + uid).focus();
+    if (f.classList.contains('open')) document.getElementById('reset-pw-' + uid)?.focus();
 }
 
-async function doResetPw(uid, email) {
-    const pw = (document.getElementById('reset-pw-' + uid).value || '').trim();
-    const msgEl = document.getElementById('reset-msg-' + uid);
-    if (!pw) { msgEl.textContent = 'Enter a password.'; msgEl.className = 'reset-msg err'; return; }
-    msgEl.textContent = 'Saving…'; msgEl.className = 'reset-msg';
-    try {
-        const fd = new FormData();
-        fd.append('admin_key', '{{ request.cookies.get("admin_key", "") }}');
-        fd.append('email', email);
-        fd.append('new_password', pw);
-        const res = await fetch('/admin/reset-password', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.ok) {
-            msgEl.textContent = 'Password updated.';
-            msgEl.className = 'reset-msg ok';
-            document.getElementById('reset-pw-' + uid).value = '';
-        } else {
-            msgEl.textContent = data.error || 'Failed.';
-            msgEl.className = 'reset-msg err';
-        }
-    } catch(e) {
-        msgEl.textContent = 'Error — try again.';
-        msgEl.className = 'reset-msg err';
-    }
-}
-
-async function deleteUser(uid, email) {
-    if (!confirm('Delete user ' + email + '? This cannot be undone.')) return;
-    try {
-        const res = await fetch('/admin/delete-user/' + uid, { method: 'POST' });
-        const data = await res.json();
-        if (data.ok) {
-            const row = document.getElementById('user-row-' + uid);
-            if (row) row.remove();
-        } else {
-            alert(data.error || 'Delete failed.');
-        }
-    } catch(e) { alert('Error — try again.'); }
-}
-
-// ── MESSAGE CONTROLS ───────────────────────────────────────
-async function deleteMessage(id, type) {
-    if (!confirm('Delete this message? This cannot be undone.')) return;
-    try {
-        const res = await fetch('/admin/delete-message/' + id, { method: 'POST' });
-        const data = await res.json();
-        if (data.ok) {
-            const row = document.getElementById('msg-row-' + id);
-            if (row) row.remove();
-            updateMessageCount(type);
-        } else {
-            alert(data.error || 'Delete failed.');
-        }
-    } catch(e) { alert('Error — try again.'); }
-}
-
-function updateMessageCount(type) {
-    const tbodyId = type === 'feedback' ? 'feedback-tbody' : 'contact-tbody';
-    const countId = type === 'feedback' ? 'feedback-count' : 'contact-count';
-    const tbody = document.getElementById(tbodyId);
-    const countEl = document.getElementById(countId);
-    if (tbody && countEl) countEl.textContent = tbody.querySelectorAll('tr').length;
-}
-
-// ── INIT ───────────────────────────────────────────────────
-const logBody = document.getElementById('logBody');
-if (logBody) logBody.scrollTop = logBody.scrollHeight;
-
-// password reset uses ADMIN_RESET_KEY — inject it server-side
 const ADMIN_RESET_KEY = '{{ admin_reset_key }}';
-async function doResetPwWithKey(uid, email) {
-    const pw = (document.getElementById('reset-pw-' + uid).value || '').trim();
+async function doResetPw(uid, email) {
+    const pw = (document.getElementById('reset-pw-' + uid)?.value || '').trim();
     const msgEl = document.getElementById('reset-msg-' + uid);
-    if (!pw) { msgEl.textContent = 'Enter a password.'; msgEl.className = 'reset-msg err'; return; }
-    msgEl.textContent = 'Saving…'; msgEl.className = 'reset-msg';
+    if (!pw) { if (msgEl) { msgEl.textContent = 'Enter a password.'; msgEl.className = 'reset-msg err'; } return; }
+    if (msgEl) { msgEl.textContent = 'Saving…'; msgEl.className = 'reset-msg'; }
     try {
         const fd = new FormData();
         fd.append('admin_key', ADMIN_RESET_KEY);
@@ -677,110 +768,126 @@ async function doResetPwWithKey(uid, email) {
         fd.append('new_password', pw);
         const res = await fetch('/admin/reset-password', { method: 'POST', body: fd });
         const data = await res.json();
-        if (data.ok) {
-            msgEl.textContent = 'Password updated.';
-            msgEl.className = 'reset-msg ok';
-            document.getElementById('reset-pw-' + uid).value = '';
-        } else {
-            msgEl.textContent = data.error || 'Failed.';
-            msgEl.className = 'reset-msg err';
+        if (msgEl) {
+            msgEl.textContent = data.ok ? 'Password updated.' : (data.error || 'Failed.');
+            msgEl.className = 'reset-msg ' + (data.ok ? 'ok' : 'err');
         }
+        if (data.ok) document.getElementById('reset-pw-' + uid).value = '';
     } catch(e) {
-        msgEl.textContent = 'Error — try again.';
-        msgEl.className = 'reset-msg err';
+        if (msgEl) { msgEl.textContent = 'Error — try again.'; msgEl.className = 'reset-msg err'; }
     }
 }
-// Override doResetPw to use the keyed version
-window.doResetPw = doResetPwWithKey;
 
-// ── ANALYTICS (async so admin page loads instantly) ────────
+async function deleteUser(uid, email) {
+    if (!confirm('Delete user ' + email + '?\nThis cannot be undone.')) return;
+    try {
+        const res = await fetch('/admin/delete-user/' + uid, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) { document.getElementById('user-row-' + uid)?.remove(); }
+        else alert(data.error || 'Delete failed.');
+    } catch(e) { alert('Error — try again.'); }
+}
+
+// ── MESSAGE CONTROLS ───────────────────────────────────────────
+async function deleteMessage(id, type) {
+    if (!confirm('Delete this message?')) return;
+    try {
+        const res = await fetch('/admin/delete-message/' + id, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+            document.getElementById('msg-row-' + id)?.remove();
+            const tbodyId = type === 'feedback' ? 'feedback-tbody' : 'contact-tbody';
+            const countId = type === 'feedback' ? 'feedback-count' : 'contact-count';
+            const tbody = document.getElementById(tbodyId);
+            const countEl = document.getElementById(countId);
+            if (tbody && countEl) countEl.textContent = tbody.querySelectorAll('tr').length;
+        } else alert(data.error || 'Delete failed.');
+    } catch(e) { alert('Error — try again.'); }
+}
+
+// ── ANALYTICS (async fetch on load) ───────────────────────────
 async function fetchAnalytics() {
     try {
         const r = await fetch('/admin/analytics');
         const d = await r.json();
-        const setAll = (key, val) => {
-            document.querySelectorAll(`[data-stat="${key}"]`).forEach(el => el.textContent = val);
-        };
-        setAll('logins-total',       d.logins_total      ?? '—');
-        setAll('logins-today',       d.logins_today      ?? '—');
-        setAll('active-sessions',    d.active_sessions   ?? '—');
-        setAll('deck-runs',          d.deck_runs         ?? '—');
-        setAll('script-analyses',    d.script_analyses   ?? '—');
-        setAll('actor-prep',         d.actor_prep        ?? '—');
-        setAll('actor-booked',       d.actor_booked      ?? '—');
-        setAll('total-platform-cost', d.total_platform_cost != null ? '$' + d.total_platform_cost.toFixed(2) : '—');
-        setAll('avg-cost-per-deck',   d.avg_cost_per_deck   != null ? '$' + d.avg_cost_per_deck.toFixed(3)   : '—');
-        setAll('total-brain-cost',    d.total_brain_cost    != null ? '$' + d.total_brain_cost.toFixed(2)    : '—');
-        setAll('total-fal-cost',      d.total_fal_cost      != null ? '$' + d.total_fal_cost.toFixed(2)      : '—');
-        setAll('total-images',        d.total_images_generated ?? '—');
+        const set = (key, val) => document.querySelectorAll(`[data-stat="${key}"]`).forEach(el => el.textContent = val);
+        set('logins-total',          d.logins_total       ?? '—');
+        set('logins-today',          d.logins_today       ?? '—');
+        set('active-sessions',       d.active_sessions    ?? '—');
+        set('deck-runs',             d.deck_runs          ?? '—');
+        set('script-analyses',       d.script_analyses    ?? '—');
+        set('actor-prep',            d.actor_prep         ?? '—');
+        set('actor-booked',          d.actor_booked       ?? '—');
+        set('total-platform-cost', d.total_platform_cost != null ? '$' + d.total_platform_cost.toFixed(2) : '—');
+        set('avg-cost-per-deck',   d.avg_cost_per_deck   != null ? '$' + d.avg_cost_per_deck.toFixed(3)   : '—');
+        set('total-brain-cost',    d.total_brain_cost    != null ? '$' + d.total_brain_cost.toFixed(2)    : '—');
+        set('total-fal-cost',      d.total_fal_cost      != null ? '$' + d.total_fal_cost.toFixed(2)      : '—');
+        set('total-images',          d.total_images_generated ?? '—');
 
         // Geo table
-        const geoContainer = document.getElementById('geo-table-container');
-        const geoCount = document.getElementById('geo-count');
-        if (geoContainer) {
-            if (!d.geo_breakdown || d.geo_breakdown.length === 0) {
-                geoContainer.innerHTML = '<div class="empty-state">No geographic data yet.</div>';
-                if (geoCount) geoCount.textContent = '0';
+        const geoC  = document.getElementById('geo-table-container');
+        const geoN  = document.getElementById('geo-count');
+        if (geoC) {
+            if (!d.geo_breakdown?.length) {
+                geoC.innerHTML = '<div class="empty-state">No geographic data yet.</div>';
+                if (geoN) geoN.textContent = '0';
             } else {
-                let html = '<table><thead><tr><th>Country</th><th>Code</th><th>Sign-ins</th></tr></thead><tbody>';
+                let h = '<table><thead><tr><th>Country</th><th>Code</th><th>Sign-ins</th></tr></thead><tbody>';
                 d.geo_breakdown.forEach(g => {
-                    html += `<tr><td style="font-weight:600;">${g.country||'—'}</td><td style="color:var(--soft);font-size:12px;">${g.country_code||''}</td><td style="font-weight:700;color:var(--orange);">${g.logins}</td></tr>`;
+                    h += `<tr><td style="font-weight:700;">${g.country||'—'}</td><td style="color:var(--dim);font-size:13px;">${g.country_code||''}</td><td style="font-weight:800;color:var(--orange);">${g.logins}</td></tr>`;
                 });
-                html += '</tbody></table>';
-                geoContainer.innerHTML = html;
-                if (geoCount) geoCount.textContent = d.geo_breakdown.length;
+                geoC.innerHTML = h + '</tbody></table>';
+                if (geoN) geoN.textContent = d.geo_breakdown.length;
             }
         }
 
         // Per-user cost table
-        const costContainer = document.getElementById('user-cost-table-container');
-        const costCount = document.getElementById('ucost-count');
-        if (costContainer) {
-            if (!d.user_cost_rows || d.user_cost_rows.length === 0) {
-                costContainer.innerHTML = '<div class="empty-state">No cost data yet — tracking starts on next deck run.</div>';
-                if (costCount) costCount.textContent = '0';
+        const costC = document.getElementById('user-cost-table-container');
+        const costN = document.getElementById('ucost-count');
+        if (costC) {
+            if (!d.user_cost_rows?.length) {
+                costC.innerHTML = '<div class="empty-state">No cost data yet — tracking starts on next deck run.</div>';
+                if (costN) costN.textContent = '0';
             } else {
-                let html = '<table><thead><tr><th>Email</th><th>Plan</th><th>Deck Runs</th><th>Images</th><th>Est. Spend</th><th>Avg / Deck</th></tr></thead><tbody>';
+                let h = '<table><thead><tr><th>Email</th><th>Plan</th><th>Deck Runs</th><th>Images</th><th>Est. Spend</th><th>Avg / Deck</th></tr></thead><tbody>';
                 d.user_cost_rows.forEach(r => {
                     const avg = r.deck_runs ? (r.total_cost||0) / r.deck_runs : 0;
-                    const cc = (r.total_cost||0) > 1 ? 'var(--red)' : (r.total_cost||0) > 0.25 ? 'var(--orange)' : 'var(--ink)';
-                    html += `<tr><td class="email-cell">${r.user_email||'—'}</td><td><span class="plan-badge plan-${r.plan||'solo'}">${r.plan||'solo'}</span></td><td style="font-weight:700;">${r.deck_runs}</td><td>${r.total_images||0}</td><td style="font-weight:700;color:${cc};">$${(r.total_cost||0).toFixed(3)}</td><td style="color:var(--soft);">$${avg.toFixed(3)}</td></tr>`;
+                    const cc  = (r.total_cost||0) > 1 ? 'var(--red)' : (r.total_cost||0) > 0.25 ? 'var(--orange)' : 'var(--ink)';
+                    h += `<tr><td class="email-cell">${r.user_email||'—'}</td><td><span class="plan-badge plan-${r.plan||'solo'}">${r.plan||'solo'}</span></td><td style="font-weight:800;">${r.deck_runs}</td><td>${r.total_images||0}</td><td style="font-weight:800;color:${cc};">$${(r.total_cost||0).toFixed(3)}</td><td style="color:var(--dim);">$${avg.toFixed(3)}</td></tr>`;
                 });
-                html += '</tbody></table>';
-                costContainer.innerHTML = html;
-                if (costCount) costCount.textContent = d.user_cost_rows.length;
+                costC.innerHTML = h + '</tbody></table>';
+                if (costN) costN.textContent = d.user_cost_rows.length;
             }
         }
     } catch(e) {
-        document.querySelectorAll('[data-stat]').forEach(el => {
-            if (el.textContent === '…') el.textContent = '—';
-        });
+        document.querySelectorAll('[data-stat]').forEach(el => { if (el.textContent === '…') el.textContent = '—'; });
     }
 }
 fetchAnalytics();
 
-// Load FAL balance async so it never blocks page render
+// ── FAL BALANCE ────────────────────────────────────────────────
 (async function() {
     try {
-        const r = await fetch("/admin/fal-balance");
+        const r = await fetch('/admin/fal-balance');
         const d = await r.json();
-        const dot = document.getElementById("falDot");
-        const txt = document.getElementById("falBalanceText");
+        const dot = document.getElementById('falDot');
+        const txt = document.getElementById('falBalanceText');
         if (d.available) {
-            dot.className = "health-dot ok";
-            txt.style.color = "var(--orange, #ff9944)";
-            txt.style.fontWeight = "700";
-            txt.textContent = "$" + (d.balance || 0).toFixed(4) + " remaining";
+            if (dot) dot.className = 'health-dot ok';
+            if (txt) { txt.style.fontWeight = '700'; txt.textContent = '$' + (d.balance || 0).toFixed(4) + ' remaining'; }
         } else {
-            dot.className = "health-dot warn";
-            txt.style.color = "";
-            txt.innerHTML = (d.reason || "Unavailable") + ' — <a href="https://fal.ai/dashboard" target="_blank" style="color:#94a3b8;">check dashboard ↗</a>';
+            if (dot) dot.className = 'health-dot warn';
+            if (txt) txt.innerHTML = (d.reason || 'Unavailable') + ' — <a href="https://fal.ai/dashboard" target="_blank">check dashboard ↗</a>';
         }
     } catch(e) {
-        const txt = document.getElementById("falBalanceText");
-        if (txt) txt.textContent = "Could not load";
+        const txt = document.getElementById('falBalanceText');
+        if (txt) txt.textContent = 'Could not load';
     }
 })();
+
+// Scroll log to bottom
+const logBody = document.getElementById('logBody');
+if (logBody) logBody.scrollTop = logBody.scrollHeight;
 </script>
 </body>
 </html>

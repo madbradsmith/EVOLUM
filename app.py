@@ -1633,6 +1633,7 @@ def admin():
         "admin_reset_key_set": bool(os.environ.get("ADMIN_RESET_KEY")),
     }
     users = []
+    projects_list = []
     recent_activity = []
     messages = []
 
@@ -1641,6 +1642,7 @@ def admin():
 
     if not DB_ENGINE:
         return render_template("admin.html", stats=stats, users=users,
+                               projects_list=projects_list,
                                recent_activity=recent_activity, messages=messages,
                                fal_balance=fal_balance)
 
@@ -1677,6 +1679,19 @@ def admin():
                 rows = []
             users = [dict(r) for r in rows]
 
+            # Projects with owner email
+            try:
+                proj_rows = conn.execute(text("""
+                    SELECT p.id, p.title, p.type, p.owner_user_id, p.created_at,
+                           u.email AS owner_email
+                    FROM projects p
+                    LEFT JOIN beta_users u ON CAST(u.id AS TEXT) = p.owner_user_id
+                    ORDER BY p.created_at DESC
+                """)).mappings().all()
+                projects_list = [dict(r) for r in proj_rows]
+            except Exception:
+                projects_list = []
+
             rows = conn.execute(text(
                 "SELECT id, user_email, event_type, route, created_at FROM activity_events "
                 "WHERE event_type NOT IN ('contact_message','feedback_message') "
@@ -1707,6 +1722,7 @@ def admin():
         pass
 
     return render_template("admin.html", stats=stats, users=users,
+                           projects_list=projects_list,
                            recent_activity=recent_activity, messages=messages,
                            log_lines=log_lines, fal_balance=fal_balance,
                            admin_reset_key=os.environ.get("ADMIN_RESET_KEY", ""))
