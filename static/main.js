@@ -2686,8 +2686,11 @@ async function pollStatus(){
 }
 
 refineSlides = fallbackSlides.map((slide, index) => normalizeSlideForRefine(slide, index));
-renderDeckPreview();
-renderCurrentRefineSlide();
+// Defer render for logged-in users — restoreSavedDeck() handles it to avoid COURT JESTER flash
+if (typeof userLoggedIn === "undefined" || !userLoggedIn) {
+    renderDeckPreview();
+    renderCurrentRefineSlide();
+}
 
 updateStatusUI("IDLE");
 
@@ -2967,7 +2970,12 @@ async function restoreSavedDeck() {
     } catch(e) {}
 }
 
-restoreSavedDeck();
+restoreSavedDeck().then(() => {
+    if (!_savedDeckRestored) {
+        renderDeckPreview();
+        renderCurrentRefineSlide();
+    }
+});
 // ===== SAVED DECK RESTORE END =================================
 
 // ===== EVIE AVATAR INIT =====

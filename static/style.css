@@ -845,12 +845,12 @@ body.active-build.complete-mode .complete-actions .secondary-button {
 
 /* PASS 2 — Vertical compression for deck-complete + refine workspace */
 body.active-build.complete-mode .container {
-    width: min(1320px, calc(100vw - 28px));
-    max-width: 1320px;
+    width: min(1200px, calc(100vw - 40px));
+    max-width: 1200px;
     padding: 6px 14px 4px;
 }
 body.active-build.complete-mode .shell {
-    max-width: 1280px;
+    max-width: 1160px;
 }
 body.active-build.complete-mode .card {
     padding: 10px 12px 8px;

@@ -280,8 +280,11 @@ def _get_or_create_referral_code(user_id: str) -> str:
 MAX_REFERRAL_WEEKS = 52
 
 
+_last_smtp_error: str = ""
+
 def _smtp_send(to: str, subject: str, body: str) -> bool:
     """Send a plain-text email via configured SMTP. Returns True on success."""
+    global _last_smtp_error
     import smtplib
     from email.mime.text import MIMEText
     smtp_host = os.environ.get("SMTP_HOST", "")
@@ -289,6 +292,7 @@ def _smtp_send(to: str, subject: str, body: str) -> bool:
     smtp_pass = os.environ.get("SMTP_PASS", "")
     from_email = os.environ.get("FROM_EMAIL", smtp_user) or smtp_user
     if not (smtp_host and smtp_user and smtp_pass and to):
+        _last_smtp_error = "Missing SMTP config (host/user/pass/to)"
         return False
     try:
         smtp_port = int(os.environ.get("SMTP_PORT", "587"))
@@ -301,8 +305,10 @@ def _smtp_send(to: str, subject: str, body: str) -> bool:
             server.login(smtp_user, smtp_pass)
             server.sendmail(from_email, [to], msg.as_string())
         print(f"📧 Email sent → {to}: {subject}", flush=True)
+        _last_smtp_error = ""
         return True
     except Exception as e:
+        _last_smtp_error = str(e)
         print(f"⚠️ Email failed → {to}: {e}", flush=True)
         return False
 
@@ -1847,7 +1853,7 @@ def admin_test_email():
         "EVOLUM Email Test",
         "This is a test email from EVOLUM Studio. SMTP is working correctly."
     )
-    return jsonify({"ok": ok})
+    return jsonify({"ok": ok, "error": _last_smtp_error})
 
 
 @app.route("/admin/fal-balance")
