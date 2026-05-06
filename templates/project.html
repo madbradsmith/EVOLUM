@@ -98,15 +98,20 @@
                 <div class="choice-title">Pitch Deck</div>
 
                 {% if has_deck %}
-                <div class="choices-row" style="grid-template-columns:repeat(2,1fr); gap:10px; margin-top:10px;">
+                <div class="choices-row" style="grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px;">
                     <a href="/project/{{ project.id }}/deck.pptx" style="text-decoration:none;">
                         <div class="choice" style="padding:10px; text-align:center;">
                             ↓ Download PPTX
                         </div>
                     </a>
                     <button type="button" onclick="openPreviewRefine()" class="choice" style="width:100%; padding:10px; text-align:center; background:rgba(255,122,0,0.1); border:1px solid rgba(255,122,0,0.4); border-radius:12px; color:#ff9944; cursor:pointer; font-size:14px; font-weight:700; font-family:inherit;">
-                        Preview &amp; Refine Slides
+                        Preview &amp; Refine
                     </button>
+                    <a href="/project/{{ project.id }}/deck/present" target="_blank" style="text-decoration:none;">
+                        <div class="choice" style="padding:10px; text-align:center; background:rgba(255,122,0,0.08); border:1px solid rgba(255,122,0,0.3); border-radius:12px; color:#ff9944; font-size:14px; font-weight:700;">
+                            &#9654; Present
+                        </div>
+                    </a>
                 </div>
 
                 <!-- PREVIEW & REFINE PANEL -->

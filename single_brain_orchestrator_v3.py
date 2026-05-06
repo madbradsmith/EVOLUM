@@ -1229,12 +1229,20 @@ def main():
         sys.exit(1)
 
     input_path = Path(sys.argv[1])
-    if input_path.suffix.lower() == ".pdf":
+    ext = input_path.suffix.lower()
+    if ext == ".pdf":
         try:
             reader = PdfReader(input_path)
             text = "\n\n".join((page.extract_text() or "") for page in reader.pages).strip()
         except Exception:
             text = ""
+    elif ext in (".docx", ".doc"):
+        try:
+            import docx as _docx
+            doc = _docx.Document(str(input_path))
+            text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        except Exception:
+            text = input_path.read_text(errors="ignore")
     else:
         text = input_path.read_text(errors="ignore")
     story_map = build_story_map(text)

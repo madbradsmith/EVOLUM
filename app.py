@@ -173,8 +173,10 @@ LATEST_ANALYSIS_JSON = OUTPUT_DIR / "latest_analysis_report.json"
 LATEST_ANALYSIS_PDF = OUTPUT_DIR / "latest_analysis_report.pdf"
 LATEST_ACTOR_PREP_PDF = OUTPUT_DIR / "latest_actor_prep_report.pdf"
 LATEST_ACTOR_PREP_JSON = OUTPUT_DIR / "latest_actor_prep_report.json"
+LATEST_ACTOR_PREP_META = OUTPUT_DIR / "latest_actor_prep_meta.json"
 LATEST_ACTOR_BOOKED_PDF = OUTPUT_DIR / "latest_actor_booked_report.pdf"
 LATEST_ACTOR_BOOKED_JSON = OUTPUT_DIR / "latest_actor_booked_report.json"
+LATEST_ACTOR_BOOKED_META = OUTPUT_DIR / "latest_actor_booked_meta.json"
 
 TMDB_API_KEY  = os.environ.get("TMDB_API_KEY", "")
 FOUNDER_KEY   = os.environ.get("FOUNDER_KEY", "")
@@ -462,17 +464,10 @@ def _extract_script_text(file_storage, ext: str) -> str:
             return ""
     if ext in (".docx", ".doc"):
         try:
+            import docx as _docx
             data = file_storage.read()
-            with ZipFile(io.BytesIO(data)) as z:
-                xml_bytes = z.read("word/document.xml")
-            root = ET.fromstring(xml_bytes)
-            ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-            paragraphs = []
-            for p in root.findall(".//w:p", ns):
-                texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
-                line = "".join(texts).strip()
-                if line:
-                    paragraphs.append(line)
+            doc = _docx.Document(io.BytesIO(data))
+            paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
             return "\n".join(paragraphs)
         except Exception:
             return ""
@@ -2785,13 +2780,27 @@ def analysis_report_html():
 def download_latest_analysis_report_pdf():
     uid = session.get("user_id", "")
     pid = session.get("active_project_id") or get_status_project_id(uid or "")
+    _dl_name = "analysis_report.pdf"
+    if uid and pid and DB_ENGINE:
+        try:
+            with DB_ENGINE.connect() as _conn:
+                _row = _conn.execute(
+                    text("SELECT title FROM projects WHERE id = :pid AND owner_user_id = :uid"),
+                    {"pid": int(pid), "uid": uid}
+                ).fetchone()
+                if _row and _row[0]:
+                    _safe = re.sub(r"[^\w\s-]", "", _row[0]).strip().replace(" ", "_")
+                    if _safe:
+                        _dl_name = f"{_safe}_analysis.pdf"
+        except Exception:
+            pass
     if uid and pid:
         proj_path = USER_DATA_DIR / str(uid) / str(pid) / "analysis_report.pdf"
         if proj_path.exists():
-            return send_file(proj_path, as_attachment=True, download_name="analysis_report.pdf")
+            return send_file(proj_path, as_attachment=True, download_name=_dl_name)
     if not LATEST_ANALYSIS_PDF.exists():
         abort(404)
-    return send_file(LATEST_ANALYSIS_PDF, as_attachment=True, download_name="analysis_report.pdf")
+    return send_file(LATEST_ANALYSIS_PDF, as_attachment=True, download_name=_dl_name)
 
 
 @app.route("/analyzer")
@@ -3222,6 +3231,13 @@ def actor_prep_pass():
         return jsonify({"error": "We encountered a problem generating this report. Please try again later."}), 500
 
     log_usage("actor_prep_complete", success=True, role=character_name)
+    try:
+        LATEST_ACTOR_PREP_META.write_text(
+            json.dumps({"character_name": character_name, "movie_title": movie_title}),
+            encoding="utf-8"
+        )
+    except Exception:
+        pass
 
     return jsonify({
         "summary_note": f"Your actor preparation packet for {character_name} is ready.",
@@ -3284,6 +3300,13 @@ def actor_booked_pass():
         return jsonify({"error": "We encountered a problem generating this report. Please try again later."}), 500
 
     log_usage("actor_booked_complete", success=True, role=character_name)
+    try:
+        LATEST_ACTOR_BOOKED_META.write_text(
+            json.dumps({"character_name": character_name, "movie_title": movie_title}),
+            encoding="utf-8"
+        )
+    except Exception:
+        pass
 
     return jsonify({
         "summary_note": f"Your booked role analysis for {character_name} is ready.",
@@ -3302,7 +3325,18 @@ def actor_booked_latest_pdf():
 def actor_booked_latest_download_pdf():
     if not LATEST_ACTOR_BOOKED_PDF.exists():
         abort(404)
-    return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=True)
+    _dl_name = "actor_booked_report.pdf"
+    try:
+        _meta = json.loads(LATEST_ACTOR_BOOKED_META.read_text(encoding="utf-8"))
+        _char = re.sub(r"[^\w\s-]", "", _meta.get("character_name", "")).strip().replace(" ", "_")
+        _title = re.sub(r"[^\w\s-]", "", _meta.get("movie_title", "")).strip().replace(" ", "_")
+        if _char and _title:
+            _dl_name = f"{_title}_{_char}_booked.pdf"
+        elif _char:
+            _dl_name = f"{_char}_booked.pdf"
+    except Exception:
+        pass
+    return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=True, download_name=_dl_name)
 
 
 @app.route("/output/latest_actor_prep_report.pdf")
@@ -3316,7 +3350,18 @@ def actor_prep_latest_pdf():
 def actor_prep_latest_download_pdf():
     if not LATEST_ACTOR_PREP_PDF.exists():
         abort(404)
-    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=True)
+    _dl_name = "actor_prep_report.pdf"
+    try:
+        _meta = json.loads(LATEST_ACTOR_PREP_META.read_text(encoding="utf-8"))
+        _char = re.sub(r"[^\w\s-]", "", _meta.get("character_name", "")).strip().replace(" ", "_")
+        _title = re.sub(r"[^\w\s-]", "", _meta.get("movie_title", "")).strip().replace(" ", "_")
+        if _char and _title:
+            _dl_name = f"{_title}_{_char}_prep.pdf"
+        elif _char:
+            _dl_name = f"{_char}_prep.pdf"
+    except Exception:
+        pass
+    return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=True, download_name=_dl_name)
 
 # ===== ACTOR PREP ROUTES END =========================
 

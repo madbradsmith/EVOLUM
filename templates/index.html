@@ -874,11 +874,11 @@
                 {% endif %}
 
                 <div class="auth-form-tabs">
-                    <button class="auth-tab active" onclick="switchAuthTab('signup', this)">Get Access</button>
-                    <button class="auth-tab" onclick="switchAuthTab('signin', this)">Sign In</button>
+                    <button class="auth-tab" onclick="switchAuthTab('signup', this)">Get Access</button>
+                    <button class="auth-tab active" onclick="switchAuthTab('signin', this)">Sign In</button>
                 </div>
 
-                <div class="auth-panel active" id="authPanel_signup">
+                <div class="auth-panel" id="authPanel_signup">
                     <div id="authPlanBadge" style="display:none; margin-bottom:16px; padding:14px 16px; background:rgba(255,122,0,0.12); border:2px solid rgba(255,122,0,0.45); border-radius:10px;">
                         <div style="font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#ff9944; margin-bottom:4px;">Your selected plan</div>
                         <div id="authPlanBadgeName" style="font-size:22px; font-weight:800; color:#fff; line-height:1.2;"></div>
@@ -897,7 +897,7 @@
                     <div style="font-size:11px; color:#888; text-align:center; margin-top:10px;">Stripe-secured checkout. By continuing you agree to our <a href="/terms" target="_blank" style="color:#aaa; text-decoration:none;">Terms &amp; Conditions</a>.</div>
                 </div>
 
-                <div class="auth-panel" id="authPanel_signin">
+                <div class="auth-panel active" id="authPanel_signin">
                     <div style="font-size:12px; color:#888; margin-bottom:14px;">Welcome back.</div>
                     <form method="POST" action="/sign-in">
                         <input type="email" name="email" placeholder="Email Address" autocomplete="email" required>
@@ -1245,7 +1245,7 @@
   <script src="{{ url_for('static', filename='main.js') }}?v=20260505d"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
-    {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal{% else %}showAuthModal{% endif %}());{% endif %}
+    {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal(){% else %}showAuthModal('signin'){% endif %});{% endif %}
   </script>
 </body>
 </html>

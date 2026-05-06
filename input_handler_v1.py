@@ -135,21 +135,24 @@ def extract_fdx_text(input_path: str) -> str:
     return normalize_extracted_text("\n".join(lines))
 
 def extract_docx_text(input_path: str) -> str:
-    paragraphs = []
+    try:
+        import docx as _docx
+        doc = _docx.Document(input_path)
+        paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
+        return normalize_extracted_text("\n".join(paragraphs))
+    except Exception:
+        pass
+    # ZipFile fallback
     with ZipFile(input_path) as docx_zip:
         xml_bytes = docx_zip.read("word/document.xml")
     root = ET.fromstring(xml_bytes)
-
     ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    paragraphs = []
     for p in root.findall(".//w:p", ns):
-        texts = []
-        for t in p.findall(".//w:t", ns):
-            if t.text:
-                texts.append(t.text)
+        texts = [t.text for t in p.findall(".//w:t", ns) if t.text]
         line = "".join(texts).strip()
         if line:
             paragraphs.append(line)
-
     return normalize_extracted_text("\n".join(paragraphs))
 
 
