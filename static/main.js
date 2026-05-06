@@ -3248,8 +3248,8 @@ function _renderPricingCards() {
     const featureList = [`<div class="plan-feature">${p.projects}</div>`,
         ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
     ].join("");
-    const betaCard = `
-    <div class="plan-card featured" id="planCard_solo" style="flex:0 0 220px">
+    container.innerHTML = `
+    <div class="plan-card featured" id="planCard_solo" style="width:260px;margin:0 auto">
         <div class="plan-badge">Beta Access</div>
         <div class="plan-name">${p.name}</div>
         <div class="plan-price"><span class="plan-price-cents">$</span>${p.monthly}</div>
@@ -3261,19 +3261,6 @@ function _renderPricingCards() {
             <button class="plan-btn plan-btn-primary" onclick="selectPlan('solo')">Get Started</button>
         </div>
     </div>`;
-    const lockedCards = _LOCKED_PLANS.map(lp => `
-    <div class="plan-card" style="flex:0 0 180px;opacity:0.45;pointer-events:none;filter:grayscale(0.4)">
-        <div class="plan-badge" style="background:#333;color:#888">Coming Soon</div>
-        <div class="plan-name">${lp.name}</div>
-        <div class="plan-price"><span class="plan-price-cents">$</span>${lp.monthly}</div>
-        <div class="plan-period">per month</div>
-        <div class="plan-billed">${lp.tagline}</div>
-        <div class="plan-divider"></div>
-        <div class="plan-cta">
-            <button class="plan-btn" style="background:#2a2a2a;color:#555;border:1px solid #333;cursor:default">Locked</button>
-        </div>
-    </div>`).join("");
-    container.innerHTML = betaCard + lockedCards;
 }
 
 function selectPlan(planId) {
