@@ -46,7 +46,7 @@
         <a class="top-nav-item" href="/logout" style="color:#e05555; display:block; text-decoration:none;">Sign Out</a>
         {% else %}
         <button class="top-nav-item" type="button" onclick="document.getElementById('topNavMenu').classList.remove('show'); showAuthModal('signin')">Sign In</button>
-        <button class="top-nav-item" type="button" onclick="document.getElementById('topNavMenu').classList.remove('show'); openPricingModal()" style="color:#ff9944;">See Plans</button>
+        <button class="top-nav-item" type="button" onclick="document.getElementById('topNavMenu').classList.remove('show'); openPricingModal()" style="color:#ff9944;">Join Beta — $10/mo</button>
         {% endif %}
         <button class="top-nav-item" type="button" onclick="openFeedbackModal()">Feedback</button>
         <button class="top-nav-item" type="button" onclick="openContactModal()">Contact</button>
@@ -132,9 +132,9 @@
 <div class="cta-banner" id="ctaBanner">
     <div class="cta-banner-left">
         <div class="cta-banner-label">Limited Beta Access</div>
-        <div class="cta-banner-text" id="ctaBannerText">Start your 3-day free trial — only $10/month</div>
+        <div class="cta-banner-text" id="ctaBannerText">Beta access — $10/month · cancel any time</div>
     </div>
-    <button class="cta-banner-btn" onclick="openPricingModal()">See Plans</button>
+    <button class="cta-banner-btn" onclick="openPricingModal()">Get Access</button>
 </div>
 {% endif %}
 
@@ -922,21 +922,17 @@
 <div class="pricing-modal-overlay" id="pricingModal">
     <div class="pricing-modal-box">
         <button class="pricing-modal-close" onclick="closePricingModal()">×</button>
-        <div class="pricing-title">Choose Your Plan</div>
-        <div class="pricing-sub">3-day free trial on every plan · Cancel any time</div>
+        <div class="pricing-title">EVOLUM Beta</div>
+        <div class="pricing-sub">One plan · $10/month · Cancel any time</div>
 
-        <div class="pricing-toggle">
-            <button class="ptog-btn active" id="ptogMonthly" onclick="setPricingBilling('monthly')">Monthly</button>
-            <button class="ptog-btn" id="ptogAnnual" onclick="setPricingBilling('annual')">Annual <span class="ptog-save">2 months free</span></button>
-        </div>
-
-        <div class="pricing-cards" id="pricingCards">
+        <div class="pricing-cards" id="pricingCards" style="justify-content:flex-start;gap:14px;overflow-x:auto;padding-bottom:8px">
             <!-- rendered by JS -->
         </div>
 
         <div class="pricing-note">
-            Solo includes a 3-day free trial. Annual plans billed upfront — cancel any time for a prorated refund of remaining months.<br>
-            Monthly plans can be cancelled at any time with no charge. Questions? <a onclick="closePricingModal(); openContactModal();" style="cursor:pointer;">Contact us</a>.
+            Beta access is $10/month, billed monthly. Buy boosts any time to generate additional decks.
+            More plans are coming — beta members get first access.<br>
+            Questions? <a onclick="closePricingModal(); openContactModal();" style="cursor:pointer;">Contact us</a>.
         </div>
     </div>
 </div>

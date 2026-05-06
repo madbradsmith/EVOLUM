@@ -3223,94 +3223,76 @@ function _rotateBannerText() {
     }
 })();
 
-const _PLANS = [
-    {
-        id: "solo", name: "Solo",
-        monthly: 10, annual: 100,
-        projects: "3 projects",
-        features: ["Pitch deck generator", "Script analyzer", "Actor prep tools", "3-day free trial"],
-        featured: false,
-    },
-    {
-        id: "writers-room", name: "Writer's Room",
-        monthly: 25, annual: 250,
-        projects: "10 projects",
-        features: ["All Solo features", "Team workspace", "Priority builds", "Project sharing"],
-        featured: true, badge: "Most Popular",
-    },
-    {
-        id: "production", name: "Production Co.",
-        monthly: 75, annual: 750,
-        projects: "20 projects",
-        features: ["All Writer's Room features", "Advanced analytics", "White-label exports", "Dedicated queue"],
-        featured: false,
-    },
-    {
-        id: "studio", name: "Studio",
-        monthly: 150, annual: 1500,
-        projects: "50 projects",
-        features: ["All Production features", "Custom branding", "Dedicated support", "API access"],
-        featured: false,
-    },
+const _BETA_PLAN = {
+    id: "solo", name: "Beta Access",
+    monthly: 10,
+    projects: "1 project",
+    features: ["Pitch deck generator", "Script analyzer", "Actor prep tools", "Buy boosts for more decks"],
+};
+
+const _LOCKED_PLANS = [
+    { name: "Writer's Room", monthly: 25, tagline: "Multiple projects + team workspace" },
+    { name: "Production Co.", monthly: 75, tagline: "20 projects + advanced tools" },
+    { name: "Studio", monthly: 150, tagline: "50 projects + custom branding + API" },
 ];
+
 let _pricingBilling = "monthly";
 let _selectedPlan = null;
 
-function setPricingBilling(mode) {
-    _pricingBilling = mode;
-    document.getElementById("ptogMonthly").classList.toggle("active", mode === "monthly");
-    document.getElementById("ptogAnnual").classList.toggle("active", mode === "annual");
-    _renderPricingCards();
-}
+function setPricingBilling(mode) { /* beta: single plan, no toggle needed */ }
 
 function _renderPricingCards() {
     const container = document.getElementById("pricingCards");
     if (!container) return;
-    const annual = _pricingBilling === "annual";
-    container.innerHTML = _PLANS.map(p => {
-        const price = annual ? Math.round(p.annual / 12) : p.monthly;
-        const billedNote = annual ? `$${p.annual}/yr billed annually` : "billed monthly";
-        const featured = p.featured ? " featured" : "";
-        const badge = p.badge ? `<div class="plan-badge">${p.badge}</div>` : "";
-        const featureList = [`<div class="plan-feature">${p.projects}</div>`,
-            ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
-        ].join("");
-        return `
-        <div class="plan-card${featured}" id="planCard_${p.id}">
-            ${badge}
-            <div class="plan-name">${p.name}</div>
-            <div class="plan-price"><span class="plan-price-cents">$</span>${price}</div>
-            <div class="plan-period">per month</div>
-            <div class="plan-billed">${annual ? billedNote : "billed monthly"}</div>
-            <div class="plan-divider"></div>
-            ${featureList}
-            <div class="plan-cta">
-                <button class="plan-btn plan-btn-primary" onclick="selectPlan('${p.id}')">Get Started</button>
-            </div>
-        </div>`;
-    }).join("");
+    const p = _BETA_PLAN;
+    const featureList = [`<div class="plan-feature">${p.projects}</div>`,
+        ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
+    ].join("");
+    const betaCard = `
+    <div class="plan-card featured" id="planCard_solo" style="flex:0 0 220px">
+        <div class="plan-badge">Beta Access</div>
+        <div class="plan-name">${p.name}</div>
+        <div class="plan-price"><span class="plan-price-cents">$</span>${p.monthly}</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-billed">billed monthly · cancel any time</div>
+        <div class="plan-divider"></div>
+        ${featureList}
+        <div class="plan-cta">
+            <button class="plan-btn plan-btn-primary" onclick="selectPlan('solo')">Get Started</button>
+        </div>
+    </div>`;
+    const lockedCards = _LOCKED_PLANS.map(lp => `
+    <div class="plan-card" style="flex:0 0 180px;opacity:0.45;pointer-events:none;filter:grayscale(0.4)">
+        <div class="plan-badge" style="background:#333;color:#888">Coming Soon</div>
+        <div class="plan-name">${lp.name}</div>
+        <div class="plan-price"><span class="plan-price-cents">$</span>${lp.monthly}</div>
+        <div class="plan-period">per month</div>
+        <div class="plan-billed">${lp.tagline}</div>
+        <div class="plan-divider"></div>
+        <div class="plan-cta">
+            <button class="plan-btn" style="background:#2a2a2a;color:#555;border:1px solid #333;cursor:default">Locked</button>
+        </div>
+    </div>`).join("");
+    container.innerHTML = betaCard + lockedCards;
 }
 
 function selectPlan(planId) {
-    const plan = _PLANS.find(p => p.id === planId);
-    _selectedPlan = plan || null;
+    const plan = planId === "solo" ? _BETA_PLAN : null;
+    _selectedPlan = plan;
     const badge = document.getElementById("authPlanBadge");
     if (badge && plan) {
-        const priceStr = _pricingBilling === "annual"
-            ? `$${Math.round(plan.annual / 12)}/mo · billed $${plan.annual}/yr`
-            : `$${plan.monthly}/month`;
         const nameEl = document.getElementById("authPlanBadgeName");
         const priceEl = document.getElementById("authPlanBadgePrice");
         const noteEl = document.getElementById("authNoPlanNote");
         if (nameEl) nameEl.textContent = plan.name;
-        if (priceEl) priceEl.textContent = priceStr;
+        if (priceEl) priceEl.textContent = `$${plan.monthly}/month`;
         if (noteEl) noteEl.style.display = "none";
         badge.style.display = "block";
     }
     const planInput = document.getElementById("signupPlanId");
-    if (planInput && plan) planInput.value = plan.id;
+    if (planInput) planInput.value = "solo";
     const billingInput = document.getElementById("signupBillingPeriod");
-    if (billingInput) billingInput.value = _pricingBilling;
+    if (billingInput) billingInput.value = "monthly";
     switchAuthTab("signup", document.querySelector(".auth-tab"));
     closePricingModal();
     showAuthModal();
