@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EVOLUM — Script Analysis Report Layouts</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --sans: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+  /* Warmer charcoal — script analysis palette: amber/rust on deep warm gray */
+  --bg: #16130f;
+  --surface: #1f1a14;
+  --surface-2: #28221a;
+  --amber: #d99a3f;
+  --amber-dim: #8a6427;
+  --rust: #b85c2c;
+  --green: #6a9a52;
+  --white: #f5efe4;
+  --muted: #cdc4b3;
+  --soft: #8a8275;
+  --rule: #2e2820;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { background: #2a2a2a; font-family: var(--sans); color: var(--muted); padding: 40px 20px; }
+.gallery-header { max-width: 8.5in; margin: 0 auto 40px; color: #ddd; font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+.gallery-header b { color: var(--amber); font-weight: 500; }
+.section-divider { max-width: 8.5in; margin: 36px auto 18px; padding: 14px 0; border-top: 1px solid #444; color: var(--amber); font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; }
+
+.page {
+  width: 8.5in; min-height: 11in; margin: 0 auto 32px;
+  background: var(--bg); color: var(--muted);
+  position: relative; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  page-break-after: always; font-size: 11pt; line-height: 1.45;
+}
+.page-pad { padding: 0.6in 0.7in; height: 100%; display: flex; flex-direction: column; }
+
+.label { font-family: var(--mono); font-size: 10pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--amber); }
+.eyebrow { font-family: var(--mono); font-size: 9pt; letter-spacing: 0.22em; text-transform: uppercase; color: var(--soft); }
+.amber-rule { height: 1px; background: var(--amber); width: 60px; margin: 12px 0; }
+.amber-rule.full { width: 100%; }
+.thin-rule { height: 1px; background: var(--rule); }
+
+.pill {
+  display: inline-block; padding: 5px 12px;
+  border: 1px solid var(--amber-dim); color: var(--amber);
+  font-family: var(--mono); font-size: 9pt; letter-spacing: 0.12em; text-transform: uppercase; border-radius: 2px;
+}
+.pill.green { color: var(--green); border-color: var(--green); }
+.pill.rust { color: var(--rust); border-color: var(--rust); }
+.pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.callout { background: var(--surface); border-left: 3px solid var(--amber); padding: 18px 22px; color: var(--white); font-size: 11pt; line-height: 1.55; }
+
+.bullet-list { list-style: none; padding: 0; margin: 0; }
+.bullet-list li { padding: 7px 0 7px 20px; position: relative; font-size: 10pt; line-height: 1.5; color: var(--muted); border-bottom: 1px solid var(--rule); }
+.bullet-list li:last-child { border-bottom: none; }
+.bullet-list li::before { content: ""; position: absolute; left: 0; top: 15px; width: 8px; height: 1px; background: var(--amber); }
+
+.page-foot { position: absolute; bottom: 0.4in; left: 0.7in; right: 0.7in; display: flex; justify-content: space-between; font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.15em; color: var(--soft); text-transform: uppercase; }
+
+.section-title { font-family: var(--serif); font-size: 30pt; color: var(--white); line-height: 1.05; margin: 8px 0 4px; }
+.section-title.lg { font-size: 36pt; }
+
+/* === COVER === */
+/* Cov-A: Editorial credit card */
+.cov-a .top { display: flex; justify-content: space-between; align-items: flex-start; }
+.cov-a .meta-stack { font-family: var(--mono); font-size: 9pt; color: var(--soft); text-align: right; line-height: 1.6; letter-spacing: 0.1em; text-transform: uppercase; }
+.cov-a .center { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 30px 0; }
+.cov-a .doc-mark { color: var(--amber); margin-bottom: 14px; }
+.cov-a .title { font-family: var(--serif); font-size: 84pt; line-height: 0.92; color: var(--white); margin: 0 0 18px; }
+.cov-a .logline { font-family: var(--serif); font-style: italic; font-size: 18pt; color: var(--muted); line-height: 1.35; max-width: 6in; margin-bottom: 26px; }
+.cov-a .pill-row { margin-bottom: 28px; }
+.cov-a .summary { color: var(--white); font-size: 11pt; line-height: 1.6; max-width: 5.5in; margin-bottom: 22px; }
+.cov-a .strength { display: flex; align-items: center; gap: 18px; margin-top: 10px; }
+.cov-a .meter-ring { width: 88px; height: 88px; border-radius: 50%; background: conic-gradient(var(--amber) 0 var(--p, 84%), var(--surface-2) var(--p, 84%) 100%); display: flex; align-items: center; justify-content: center; }
+.cov-a .meter-inner { width: 70px; height: 70px; border-radius: 50%; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cov-a .meter-inner b { font-family: var(--serif); font-size: 26pt; color: var(--white); line-height: 1; }
+.cov-a .meter-inner span { font-family: var(--mono); font-size: 7pt; color: var(--soft); letter-spacing: 0.15em; margin-top: 2px; }
+.cov-a .strength-label { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.18em; text-transform: uppercase; }
+.cov-a .strength-label .v { display: block; color: var(--white); font-family: var(--serif); font-size: 16pt; letter-spacing: 0; text-transform: none; margin-top: 4px; }
+
+/* Cov-B: Linear meter side */
+.cov-b .top-bar { display: flex; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid var(--amber); }
+.cov-b .body { flex: 1; display: grid; grid-template-columns: 1fr 1.6in; gap: 30px; padding-top: 26px; }
+.cov-b .title { font-family: var(--serif); font-size: 70pt; line-height: 0.93; color: var(--white); margin: 0 0 14px; }
+.cov-b .logline { font-family: var(--serif); font-style: italic; font-size: 16pt; color: var(--muted); line-height: 1.4; margin-bottom: 22px; }
+.cov-b .pill-row { margin-bottom: 22px; }
+.cov-b .callout { margin-bottom: 22px; }
+.cov-b .right-col { display: flex; flex-direction: column; gap: 18px; padding-top: 8px; }
+.cov-b .vmeter { background: var(--surface); padding: 16px; border-top: 2px solid var(--amber); }
+.cov-b .vmeter .k { font-family: var(--mono); font-size: 8.5pt; color: var(--soft); letter-spacing: 0.15em; text-transform: uppercase; }
+.cov-b .vmeter .num { font-family: var(--serif); font-size: 38pt; color: var(--white); line-height: 1; margin: 6px 0 8px; }
+.cov-b .vmeter .bar { height: 6px; background: var(--surface-2); position: relative; }
+.cov-b .vmeter .bar::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--p, 84%); background: var(--amber); }
+.cov-b .vmeter .lab { font-family: var(--mono); font-size: 8pt; color: var(--soft); margin-top: 6px; letter-spacing: 0.1em; }
+.cov-b .comp-card { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.cov-b .comp-card .k { font-family: var(--mono); font-size: 8.5pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 8px; }
+.cov-b .comp-card ul { list-style: none; padding: 0; margin: 0; }
+.cov-b .comp-card li { font-family: var(--serif); font-size: 12pt; color: var(--white); padding: 3px 0; }
+
+/* Cov-C: Centered manifesto */
+.cov-c .page-pad { align-items: center; text-align: center; padding: 1in 0.7in; }
+.cov-c .doc-mark { color: var(--amber); margin-bottom: 28px; }
+.cov-c .title { font-family: var(--serif); font-size: 92pt; line-height: 0.9; color: var(--white); margin: 0 0 18px; }
+.cov-c .amber-rule { margin: 0 auto 24px; }
+.cov-c .logline { font-family: var(--serif); font-style: italic; font-size: 17pt; color: var(--muted); line-height: 1.4; max-width: 5.4in; margin: 0 auto 28px; }
+.cov-c .pill-row { justify-content: center; margin: 0 0 28px; }
+.cov-c .strength-line { display: flex; align-items: center; gap: 18px; margin: 8px auto 22px; }
+.cov-c .strength-line .num { font-family: var(--serif); font-size: 56pt; color: var(--amber); line-height: 1; }
+.cov-c .strength-line .lab { font-family: var(--mono); font-size: 10pt; color: var(--soft); letter-spacing: 0.18em; text-transform: uppercase; text-align: left; }
+.cov-c .strength-line .lab b { display: block; color: var(--white); font-family: var(--serif); font-size: 16pt; letter-spacing: 0; text-transform: none; margin-top: 4px; font-weight: 400; }
+.cov-c .summary { color: var(--white); max-width: 5.4in; font-size: 11pt; line-height: 1.6; margin: 0 auto; }
+
+/* Cov-D: Coverage memo header */
+.cov-d .memo-head { border: 1px solid var(--amber); padding: 18px 22px; }
+.cov-d .memo-head .row { display: grid; grid-template-columns: 1in 1fr; gap: 6px 18px; font-family: var(--mono); font-size: 9.5pt; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 0; }
+.cov-d .memo-head .row .k { color: var(--soft); }
+.cov-d .memo-head .row .v { color: var(--white); }
+.cov-d .memo-head .row .v.amber { color: var(--amber); }
+.cov-d .body { flex: 1; padding-top: 24px; }
+.cov-d .title { font-family: var(--serif); font-size: 60pt; line-height: 0.95; color: var(--white); margin: 0 0 12px; }
+.cov-d .logline { font-family: var(--serif); font-style: italic; font-size: 16pt; color: var(--muted); line-height: 1.4; margin-bottom: 20px; }
+.cov-d .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 18px; }
+.cov-d .stat { background: var(--surface); padding: 16px 18px; border-top: 2px solid var(--amber); }
+.cov-d .stat .k { font-family: var(--mono); font-size: 8.5pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.cov-d .stat .num { font-family: var(--serif); font-size: 28pt; color: var(--white); line-height: 1; margin: 8px 0; }
+.cov-d .stat .v { font-size: 10pt; color: var(--muted); }
+
+/* === STORY ARCHITECTURE === */
+.sa-head { margin-bottom: 16px; }
+.sa-prose p { font-size: 10.5pt; line-height: 1.65; color: var(--muted); margin: 0 0 12px; }
+.sa-prose p.lead { font-family: var(--serif); font-size: 13pt; color: var(--white); font-style: italic; line-height: 1.5; }
+
+/* SA-A: Editorial column */
+.sa-a .lead-block { background: var(--surface); padding: 22px 24px; border-left: 3px solid var(--amber); margin-bottom: 18px; }
+.sa-a .lead-block .label { margin-bottom: 8px; }
+.sa-a .row-grid { display: grid; grid-template-columns: 1.4in 1fr; gap: 16px 22px; padding: 14px 0; border-top: 1px solid var(--rule); }
+.sa-a .row-grid:last-of-type { border-bottom: 1px solid var(--rule); }
+.sa-a .row-grid .k { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; padding-top: 4px; }
+.sa-a .row-grid .v { font-size: 10.5pt; color: var(--muted); line-height: 1.55; }
+
+/* SA-B: 2-column architecture */
+.sa-b .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.sa-b .col h3 { font-family: var(--serif); font-size: 18pt; color: var(--white); margin: 0 0 8px; font-weight: normal; }
+.sa-b .col .label { margin-bottom: 6px; display: block; }
+.sa-b .col p { margin: 0 0 14px; font-size: 10pt; line-height: 1.6; color: var(--muted); }
+.sa-b .pull { background: var(--surface); padding: 18px 22px; margin: 18px 0; border-top: 2px solid var(--amber); }
+.sa-b .pull .q { font-family: var(--serif); font-style: italic; font-size: 14pt; color: var(--white); line-height: 1.4; }
+
+/* SA-C: Beat strip + body */
+.sa-c .beats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+.sa-c .beat { background: var(--surface); padding: 12px 14px; border-top: 2px solid var(--amber); }
+.sa-c .beat .k { font-family: var(--mono); font-size: 8pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.sa-c .beat .v { font-size: 9.5pt; color: var(--white); margin-top: 6px; line-height: 1.4; }
+.sa-c .body-grid { display: grid; grid-template-columns: 1fr 2.2in; gap: 22px; }
+.sa-c .sidebar { background: var(--surface); padding: 16px 18px; }
+.sa-c .sidebar .label { margin-bottom: 10px; }
+.sa-c .sidebar p { font-size: 9.5pt; color: var(--muted); margin: 0 0 10px; line-height: 1.55; }
+
+/* SA-D: Architecture as numbered chapters */
+.sa-d .chap { padding: 16px 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 0.5in 1fr; gap: 22px; }
+.sa-d .chap:last-of-type { border-bottom: 1px solid var(--rule); }
+.sa-d .chap .num { font-family: var(--serif); font-size: 28pt; color: var(--amber); line-height: 1; }
+.sa-d .chap h3 { font-family: var(--mono); font-size: 10pt; color: var(--white); letter-spacing: 0.18em; text-transform: uppercase; margin: 6px 0 8px; }
+.sa-d .chap p { font-size: 10pt; color: var(--muted); margin: 0; line-height: 1.6; }
+
+/* === CHARACTER INTELLIGENCE === */
+/* CI-A: Hero + cards */
+.ci-a .hero { margin-bottom: 18px; }
+.ci-a .hero .name { font-family: var(--serif); font-size: 48pt; color: var(--white); line-height: 0.95; margin: 6px 0 12px; }
+.ci-a .hero .summary { font-family: var(--serif); font-style: italic; font-size: 14pt; color: var(--muted); max-width: 6in; line-height: 1.4; }
+.ci-a .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.ci-a .leverage-card, .ci-a .objective-card { background: var(--surface); padding: 16px 18px; border-left: 2px solid var(--amber); }
+.ci-a .leverage-card .label, .ci-a .objective-card .label { margin-bottom: 8px; }
+.ci-a .leverage-card p, .ci-a .objective-card p { margin: 0; font-size: 10pt; color: var(--white); line-height: 1.5; }
+.ci-a .top-chars { margin-top: 8px; }
+.ci-a .top-chars .label { margin-bottom: 12px; }
+.ci-a .top-chars .row { display: grid; grid-template-columns: 1.4in 1.4in 1fr; gap: 18px; padding: 12px 18px; background: var(--surface); margin-bottom: 6px; align-items: baseline; }
+.ci-a .top-chars .row .nm { font-family: var(--serif); font-size: 14pt; color: var(--white); }
+.ci-a .top-chars .row .fn { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.1em; text-transform: uppercase; }
+.ci-a .top-chars .row .lv { font-size: 10pt; color: var(--muted); }
+
+/* CI-B: Side portrait + stack */
+.ci-b .grid { display: grid; grid-template-columns: 2.4in 1fr; gap: 24px; }
+.ci-b .portrait { background: var(--surface-2); height: 3in; border: 1px solid var(--rule); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 8pt; color: var(--soft); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 14px; }
+.ci-b .meta { font-family: var(--mono); font-size: 9pt; line-height: 1.7; color: var(--muted); }
+.ci-b .meta b { color: var(--amber); display: block; font-size: 8.5pt; letter-spacing: 0.15em; text-transform: uppercase; margin-top: 8px; }
+.ci-b .right .name { font-family: var(--serif); font-size: 44pt; color: var(--white); line-height: 0.95; margin: 0 0 10px; }
+.ci-b .right p.summary { font-size: 11pt; color: var(--muted); line-height: 1.6; margin: 0 0 14px; }
+.ci-b .right .label { display: block; margin: 14px 0 8px; }
+.ci-b .top-chars-stack .row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--rule); align-items: baseline; gap: 18px; }
+.ci-b .top-chars-stack .row:last-child { border-bottom: none; }
+.ci-b .top-chars-stack .nm { font-family: var(--serif); font-size: 13pt; color: var(--white); flex: 0 0 1.4in; }
+.ci-b .top-chars-stack .fn { font-family: var(--mono); font-size: 9pt; color: var(--amber); flex: 0 0 1.4in; letter-spacing: 0.1em; text-transform: uppercase; }
+.ci-b .top-chars-stack .lv { font-size: 9.5pt; color: var(--muted); flex: 1; }
+
+/* CI-C: Cards row */
+.ci-c .head { margin-bottom: 14px; }
+.ci-c .name { font-family: var(--serif); font-size: 42pt; color: var(--white); line-height: 0.95; margin: 6px 0 8px; }
+.ci-c .summary { font-size: 11pt; color: var(--muted); line-height: 1.6; max-width: 6.5in; margin-bottom: 16px; }
+.ci-c .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.ci-c .card { background: var(--surface); padding: 14px 16px; border-top: 2px solid var(--amber); }
+.ci-c .card .k { font-family: var(--mono); font-size: 8.5pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.ci-c .card .v { font-family: var(--serif); font-size: 16pt; color: var(--white); margin: 8px 0 6px; line-height: 1.2; }
+.ci-c .card .x { font-size: 9.5pt; color: var(--muted); line-height: 1.5; }
+.ci-c .leverage-band { background: var(--surface); padding: 16px 20px; border-left: 3px solid var(--amber); }
+.ci-c .leverage-band .label { margin-bottom: 8px; }
+.ci-c .leverage-band p { margin: 0; font-size: 11pt; color: var(--white); line-height: 1.55; }
+
+/* CI-D: Dossier two-column */
+.ci-d .name-bar { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid var(--amber); margin-bottom: 16px; }
+.ci-d .name-bar .name { font-family: var(--serif); font-size: 38pt; color: var(--white); line-height: 1; }
+.ci-d .name-bar .role { font-family: var(--mono); font-size: 10pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.ci-d .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.ci-d .col h4 { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; margin: 0 0 8px; }
+.ci-d .col p { font-size: 10pt; color: var(--muted); line-height: 1.6; margin: 0 0 14px; }
+.ci-d .top-table { margin-top: 16px; }
+.ci-d .top-table .row { display: grid; grid-template-columns: 1.3in 1.3in 1fr; gap: 16px; padding: 8px 0; border-top: 1px solid var(--rule); align-items: baseline; }
+.ci-d .top-table .row.hdr { color: var(--amber); font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.15em; text-transform: uppercase; border-top: none; }
+.ci-d .top-table .nm { font-family: var(--serif); font-size: 13pt; color: var(--white); }
+.ci-d .top-table .fn { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.1em; text-transform: uppercase; }
+.ci-d .top-table .lv { font-size: 9.5pt; color: var(--muted); }
+
+/* === MARKET INTELLIGENCE === */
+/* MK-A: Stats panel + comps */
+.mk-a .head { margin-bottom: 14px; }
+.mk-a .data-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+.mk-a .data-card { background: var(--surface); padding: 14px 16px; border-top: 2px solid var(--amber); }
+.mk-a .data-card .k { font-family: var(--mono); font-size: 8.5pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.mk-a .data-card .v { font-family: var(--serif); font-size: 18pt; color: var(--white); margin-top: 6px; line-height: 1.15; }
+.mk-a .comps-row { background: var(--surface); padding: 16px 20px; margin-bottom: 14px; }
+.mk-a .comps-row .label { margin-bottom: 12px; }
+.mk-a .comps-list { display: flex; gap: 10px; flex-wrap: wrap; }
+.mk-a .comp { font-family: var(--serif); font-size: 16pt; color: var(--white); padding: 6px 14px; border: 1px solid var(--amber-dim); }
+.mk-a .below { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mk-a .below .card { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.mk-a .below .label { margin-bottom: 8px; }
+.mk-a .below p { font-size: 10pt; color: var(--muted); line-height: 1.55; margin: 0; }
+
+/* MK-B: Numbered comps + financial readout */
+.mk-b .head { margin-bottom: 14px; }
+.mk-b .comps-num { margin-bottom: 18px; }
+.mk-b .comps-num .label { margin-bottom: 14px; }
+.mk-b .comps-num ol { list-style: none; counter-reset: c; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.mk-b .comps-num li { counter-increment: c; padding: 14px 16px; background: var(--surface); position: relative; }
+.mk-b .comps-num li::before { content: counter(c, decimal-leading-zero); font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.15em; }
+.mk-b .comps-num li .ttl { font-family: var(--serif); font-size: 16pt; color: var(--white); display: block; margin-top: 6px; line-height: 1.2; }
+.mk-b .ledger { border: 1px solid var(--rule); margin-bottom: 14px; }
+.mk-b .ledger .row { display: grid; grid-template-columns: 1.6in 1fr; gap: 22px; padding: 11px 18px; border-bottom: 1px solid var(--rule); align-items: baseline; }
+.mk-b .ledger .row:last-child { border-bottom: none; }
+.mk-b .ledger .k { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.mk-b .ledger .v { font-size: 10.5pt; color: var(--white); }
+.mk-b .ledger .v.lg { font-family: var(--serif); font-size: 16pt; }
+.mk-b .below { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mk-b .below .card { background: var(--surface); padding: 14px 16px; border-top: 2px solid var(--amber); }
+.mk-b .below .label { margin-bottom: 8px; }
+.mk-b .below p { font-size: 10pt; color: var(--muted); line-height: 1.55; margin: 0; }
+
+/* MK-C: Horizontal stat bar + writeups */
+.mk-c .head { margin-bottom: 14px; }
+.mk-c .stat-bar { display: flex; padding: 0; margin-bottom: 18px; border-top: 2px solid var(--amber); border-bottom: 1px solid var(--rule); }
+.mk-c .stat-bar .cell { flex: 1; padding: 14px 14px; border-right: 1px solid var(--rule); }
+.mk-c .stat-bar .cell:last-child { border-right: none; }
+.mk-c .stat-bar .cell .k { font-family: var(--mono); font-size: 8pt; color: var(--soft); letter-spacing: 0.15em; text-transform: uppercase; }
+.mk-c .stat-bar .cell .v { font-family: var(--serif); font-size: 17pt; color: var(--white); margin-top: 5px; line-height: 1.15; }
+.mk-c .comps-card { background: var(--surface); padding: 16px 20px; margin-bottom: 14px; }
+.mk-c .comps-card .label { margin-bottom: 10px; }
+.mk-c .comps-card .list { display: flex; gap: 14px; flex-wrap: wrap; }
+.mk-c .comps-card .list .item { font-family: var(--serif); font-size: 14pt; color: var(--white); }
+.mk-c .comps-card .list .item + .item::before { content: "·"; color: var(--amber); margin-right: 14px; }
+.mk-c .write-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.mk-c .write-grid .card { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.mk-c .write-grid .label { margin-bottom: 8px; }
+.mk-c .write-grid p { font-size: 9.5pt; color: var(--muted); line-height: 1.55; margin: 0; }
+
+/* MK-D: Waterfall projections */
+.mk-d .head { margin-bottom: 14px; }
+.mk-d .waterfall .row { display: grid; grid-template-columns: 1.6in 1fr 1.2in; gap: 18px; padding: 12px 18px; align-items: center; background: var(--surface); margin-bottom: 4px; }
+.mk-d .waterfall .row .k { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.mk-d .waterfall .row .bar { height: 14px; background: var(--surface-2); position: relative; }
+.mk-d .waterfall .row .bar::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--p, 60%); background: var(--amber); }
+.mk-d .waterfall .row .v { font-family: var(--serif); font-size: 14pt; color: var(--white); text-align: right; }
+.mk-d .body { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+.mk-d .body .card { background: var(--surface); padding: 14px 16px; border-top: 2px solid var(--amber); }
+.mk-d .body .label { margin-bottom: 8px; }
+.mk-d .body p { font-size: 10pt; color: var(--muted); line-height: 1.55; margin: 0; }
+.mk-d .comps-line { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.mk-d .comps-line .label { margin-bottom: 8px; }
+.mk-d .comps-line .pill-row .pill { font-family: var(--serif); font-size: 11pt; letter-spacing: 0; text-transform: none; padding: 4px 14px; }
+
+/* === ANALYSIS GRID === */
+.ag-head { margin-bottom: 14px; }
+/* AG-A: Two-column strengths/risks */
+.ag-a .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.ag-a .card { background: var(--surface); padding: 18px 20px; }
+.ag-a .card.green { border-top: 3px solid var(--green); }
+.ag-a .card.rust { border-top: 3px solid var(--rust); }
+.ag-a .card .label { color: var(--green); margin-bottom: 12px; }
+.ag-a .card.rust .label { color: var(--rust); }
+.ag-a .card .bullet-list li::before { background: currentColor; }
+.ag-a .card.green .bullet-list li::before { background: var(--green); }
+.ag-a .card.rust .bullet-list li::before { background: var(--rust); }
+.ag-a .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ag-a .lower .card2 { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.ag-a .lower .label { margin-bottom: 8px; }
+
+/* AG-B: 4-card balanced */
+.ag-b .quad { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ag-b .quad .card { background: var(--surface); padding: 16px 18px; border-top: 2px solid var(--amber); }
+.ag-b .quad .card.green { border-top-color: var(--green); }
+.ag-b .quad .card.rust { border-top-color: var(--rust); }
+.ag-b .quad .card .label { margin-bottom: 10px; }
+.ag-b .quad .card.green .label { color: var(--green); }
+.ag-b .quad .card.rust .label { color: var(--rust); }
+.ag-b .quad .card.green .bullet-list li::before { background: var(--green); }
+.ag-b .quad .card.rust .bullet-list li::before { background: var(--rust); }
+
+/* AG-C: Diagnostic columns */
+.ag-c .columns { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+.ag-c .col { background: var(--surface); padding: 14px 14px; min-height: 6in; }
+.ag-c .col.green { border-top: 2px solid var(--green); }
+.ag-c .col.rust { border-top: 2px solid var(--rust); }
+.ag-c .col .label { font-size: 9pt; margin-bottom: 10px; }
+.ag-c .col.green .label { color: var(--green); }
+.ag-c .col.rust .label { color: var(--rust); }
+.ag-c .col .bullet-list li { font-size: 9pt; padding: 5px 0 5px 14px; }
+.ag-c .col .bullet-list li::before { top: 11px; width: 6px; }
+.ag-c .col.green .bullet-list li::before { background: var(--green); }
+.ag-c .col.rust .bullet-list li::before { background: var(--rust); }
+
+/* AG-D: Stacked rows */
+.ag-d .row { padding: 16px 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 1.6in 1fr; gap: 22px; }
+.ag-d .row:last-of-type { border-bottom: 1px solid var(--rule); }
+.ag-d .row .k { font-family: var(--mono); font-size: 10pt; letter-spacing: 0.15em; text-transform: uppercase; padding-top: 4px; color: var(--amber); }
+.ag-d .row.green .k { color: var(--green); }
+.ag-d .row.rust .k { color: var(--rust); }
+.ag-d .row .v .bullet-list li { padding: 5px 0 5px 18px; border-bottom: none; }
+.ag-d .row.green .bullet-list li::before { background: var(--green); }
+.ag-d .row.rust .bullet-list li::before { background: var(--rust); }
+
+/* === ACTOR INTELLIGENCE (mirrors Playbook 4-card) === */
+.ai-head { margin-bottom: 14px; }
+.ai-objective { background: var(--surface); padding: 16px 20px; margin-bottom: 16px; border-left: 3px solid var(--amber); }
+.ai-objective .label { margin-bottom: 6px; }
+.ai-objective p { margin: 0; font-size: 11pt; color: var(--white); line-height: 1.55; }
+
+/* AI-A: 2x2 grid */
+.ai-a .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ai-a .card { background: var(--surface); padding: 16px 18px; border-top: 2px solid var(--amber); }
+.ai-a .card .label { margin-bottom: 10px; }
+
+/* AI-B: 4 stripes */
+.ai-b .stripes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.ai-b .col { background: var(--surface); padding: 14px; min-height: 6in; }
+.ai-b .col .label { font-size: 9pt; display: block; margin-bottom: 8px; }
+.ai-b .col .bullet-list li { font-size: 9pt; padding: 5px 0 5px 14px; }
+.ai-b .col .bullet-list li::before { top: 11px; width: 6px; }
+
+/* AI-C: 2-col with hero left */
+.ai-c .grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+.ai-c .lead { background: var(--surface); padding: 22px 24px; border-top: 3px solid var(--amber); }
+.ai-c .lead .label { font-size: 11pt; margin-bottom: 14px; }
+.ai-c .lead .bullet-list li { font-size: 10.5pt; padding: 9px 0 9px 22px; }
+.ai-c .right-col { display: flex; flex-direction: column; gap: 12px; }
+.ai-c .small { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.ai-c .small .label { font-size: 9pt; margin-bottom: 8px; }
+.ai-c .small .bullet-list li { font-size: 9.5pt; padding: 5px 0 5px 16px; }
+
+/* AI-D: Dossier rows */
+.ai-d .row { padding: 14px 0; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 1.6in 1fr; gap: 22px; }
+.ai-d .row:last-of-type { border-bottom: 1px solid var(--rule); }
+.ai-d .row .k { font-family: var(--mono); font-size: 10pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; padding-top: 4px; }
+.ai-d .row .v .bullet-list li { padding: 5px 0 5px 18px; border-bottom: none; font-size: 10pt; }
+
+/* === ARC MAP === */
+/* AM-A: 3-step + ladder + relationships */
+.am-a .arc-flow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.am-a .arc-flow .step { background: var(--surface); padding: 16px 18px; border-top: 2px solid var(--amber); }
+.am-a .arc-flow .num { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.am-a .arc-flow .nm { font-family: var(--serif); font-size: 18pt; color: var(--white); margin: 6px 0 6px; }
+.am-a .arc-flow .tx { font-size: 9.5pt; color: var(--muted); line-height: 1.5; }
+.am-a .ladder { background: var(--surface); padding: 14px 18px; margin-bottom: 14px; }
+.am-a .ladder .label { margin-bottom: 8px; }
+.am-a .ladder .rung { display: grid; grid-template-columns: 28px 1fr 60px; gap: 12px; align-items: center; padding: 4px 0; }
+.am-a .ladder .rung .n { font-family: var(--mono); font-size: 9pt; color: var(--amber); }
+.am-a .ladder .rung .t { font-size: 9.5pt; color: var(--muted); }
+.am-a .ladder .rung .bar { height: 8px; background: var(--amber); }
+.am-a .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.am-a .lower .card { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.am-a .lower .label { margin-bottom: 8px; }
+.am-a .lower .bullet-list li { padding: 5px 0 5px 16px; border-bottom: none; font-size: 9.5pt; }
+
+/* AM-B: Relationships table-led */
+.am-b .table { background: var(--surface); margin-bottom: 16px; }
+.am-b .table .hdr, .am-b .table .row { display: grid; grid-template-columns: 1.4in 1.4in 1fr; gap: 18px; padding: 11px 18px; border-bottom: 1px solid var(--rule); }
+.am-b .table .hdr { font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.18em; color: var(--amber); text-transform: uppercase; }
+.am-b .table .row .nm { color: var(--white); font-family: var(--serif); font-size: 14pt; }
+.am-b .table .row .dyn { color: var(--amber); font-family: var(--mono); font-size: 9.5pt; text-transform: uppercase; letter-spacing: 0.1em; }
+.am-b .table .row .fn { font-size: 10pt; color: var(--muted); }
+.am-b .triple { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+.am-b .triple .card { background: var(--surface); padding: 14px 16px; border-top: 2px solid var(--amber); }
+.am-b .triple .label { font-size: 9pt; margin-bottom: 10px; }
+.am-b .triple .bullet-list li { font-size: 9pt; padding: 5px 0 5px 14px; border-bottom: none; }
+.am-b .footer-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.am-b .footer-row .card { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.am-b .footer-row .label { margin-bottom: 8px; }
+.am-b .footer-row .bullet-list li { padding: 5px 0 5px 16px; border-bottom: none; font-size: 9.5pt; }
+
+/* AM-C: Six-card grid */
+.am-c .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.am-c .card { background: var(--surface); padding: 14px 16px; border-top: 2px solid var(--amber); }
+.am-c .card .label { font-size: 9pt; margin-bottom: 8px; }
+.am-c .card .bullet-list li { font-size: 9pt; padding: 5px 0 5px 14px; border-bottom: none; }
+
+/* AM-D: Vertical timeline + checklist */
+.am-d .timeline { padding-left: 18px; border-left: 2px solid var(--amber); margin-bottom: 16px; }
+.am-d .timeline .step { padding: 8px 0 8px 14px; position: relative; }
+.am-d .timeline .step::before { content: ""; position: absolute; left: -25px; top: 16px; width: 12px; height: 12px; background: var(--amber); border-radius: 50%; }
+.am-d .timeline .step .lab { font-family: var(--mono); font-size: 9pt; color: var(--amber); letter-spacing: 0.15em; text-transform: uppercase; }
+.am-d .timeline .step .nm { font-family: var(--serif); font-size: 16pt; color: var(--white); margin: 4px 0; line-height: 1.2; }
+.am-d .timeline .step .tx { font-size: 9.5pt; color: var(--muted); line-height: 1.5; }
+.am-d .below { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.am-d .below .card { background: var(--surface); padding: 14px 16px; border-left: 2px solid var(--amber); }
+.am-d .below .label { margin-bottom: 8px; }
+.am-d .below .bullet-list li { padding: 5px 0 5px 16px; border-bottom: none; font-size: 9.5pt; }
+
+@media print {
+  body { background: white; padding: 0; }
+  .gallery-header, .section-divider { display: none; }
+  .page { box-shadow: none; margin: 0; page-break-after: always; }
+  @page { size: letter; margin: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="gallery-header">EVOLUM Studio &nbsp;·&nbsp; Script Analysis Report &nbsp;·&nbsp; <b>7 page types × 4 variants = 28 layouts</b> &nbsp;·&nbsp; US Letter, print-ready</div>
+
+<!-- ============================================================ PAGE TYPE 1 — COVER ============================================================ -->
+<div class="section-divider">PAGE TYPE 1 — COVER</div>
+
+<!-- VARIANT A: Editorial credit card with circular strength meter -->
+<div class="page cov-a">
+  <div class="page-pad">
+    <div class="top">
+      <div class="label doc-mark" data-slot="doc_type_label">SCRIPT ANALYSIS REPORT</div>
+      <div class="meta-stack">
+        <div data-slot="report_id">SAR-2026-0421</div>
+        <div data-slot="report_date">21 APRIL 2026</div>
+        <div data-slot="confidential">CONFIDENTIAL · COVERAGE</div>
+      </div>
+    </div>
+    <div class="center">
+      <h1 class="title" data-slot="title">NIGHT SHIFT</h1>
+      <div class="logline" data-slot="logline">A homicide detective returns from forced leave to find her unit compromised, her partner dead, and the only witness a man she once put away.</div>
+      <div class="pill-row">
+        <span class="pill" data-slot="genre">NEO-NOIR THRILLER</span>
+        <span class="pill" data-slot="tone">TENSE · MORALLY AMBIGUOUS</span>
+        <span class="pill" data-slot="time_frame">72 HOURS</span>
+      </div>
+      <div class="callout" data-slot="executive_summary">A muscular, contained thriller with a protagonist worth a marquee name. The script's commercial instincts are sharp, its moral architecture intact. Act II loses momentum twice, and the antagonist's interior life is underdrawn — both fixable. Strong streamer fit; awards-lane viable with the right director.</div>
+      <div class="strength">
+        <div class="meter-ring" style="--p: 84%"><div class="meter-inner"><b data-slot="strength_index">84</b><span>STRENGTH</span></div></div>
+        <div class="strength-label">STRENGTH INDEX <span class="v" data-slot="strength_label">High commercial · awards viable</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span data-slot="powered_by">EVOLUM STUDIO · ANALYSIS ENGINE</span><span>01</span></div>
+</div>
+
+<!-- VARIANT B: Linear meter side -->
+<div class="page cov-b">
+  <div class="page-pad">
+    <div class="top-bar">
+      <div class="label doc-mark" data-slot="doc_type_label">SCRIPT ANALYSIS REPORT</div>
+      <div class="eyebrow" data-slot="report_id">SAR-2026-0421 · CONFIDENTIAL</div>
+    </div>
+    <div class="body">
+      <div>
+        <h1 class="title" data-slot="title">NIGHT SHIFT</h1>
+        <div class="logline" data-slot="logline">A homicide detective returns from forced leave to find her unit compromised, her partner dead, and the only witness a man she once put away.</div>
+        <div class="pill-row">
+          <span class="pill" data-slot="genre">NEO-NOIR THRILLER</span>
+          <span class="pill" data-slot="tone">TENSE · MORALLY AMBIGUOUS</span>
+        </div>
+        <div class="callout" data-slot="executive_summary">A muscular, contained thriller with a protagonist worth a marquee name. Act II loses momentum twice; the antagonist's interior life is underdrawn — both fixable. Strong streamer fit; awards-lane viable with the right director attached.</div>
+        <div class="eyebrow" data-slot="setting">URBAN · CLAUSTROPHOBIC · 1980s HONG KONG</div>
+      </div>
+      <div class="right-col">
+        <div class="vmeter" style="--p: 84%">
+          <div class="k">STRENGTH</div>
+          <div class="num" data-slot="strength_index">84</div>
+          <div class="bar"></div>
+          <div class="lab" data-slot="strength_label">HIGH COMMERCIAL</div>
+        </div>
+        <div class="comp-card">
+          <div class="k">COMPARABLES</div>
+          <ul data-slot="comparables">
+            <li>Infernal Affairs</li>
+            <li>L.A. Confidential</li>
+            <li>Chinatown</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span data-slot="powered_by">EVOLUM STUDIO</span><span data-slot="report_date">21 APR 2026</span></div>
+</div>
+
+<!-- VARIANT C: Centered manifesto -->
+<div class="page cov-c">
+  <div class="page-pad">
+    <div class="label doc-mark" data-slot="doc_type_label">SCRIPT ANALYSIS REPORT</div>
+    <h1 class="title" data-slot="title">NIGHT SHIFT</h1>
+    <div class="amber-rule"></div>
+    <div class="logline" data-slot="logline">A homicide detective returns to find her unit compromised, her partner dead, and the only witness a man she once put away.</div>
+    <div class="pill-row">
+      <span class="pill" data-slot="genre">NEO-NOIR THRILLER</span>
+      <span class="pill" data-slot="tone">TENSE · MORALLY AMBIGUOUS</span>
+    </div>
+    <div class="strength-line">
+      <div class="num" data-slot="strength_index">84</div>
+      <div class="lab">STRENGTH INDEX<b data-slot="strength_label">High commercial · awards viable</b></div>
+    </div>
+    <p class="summary" data-slot="executive_summary">A muscular, contained thriller with a protagonist worth a marquee name. The script's commercial instincts are sharp, its moral architecture intact. Act II loses momentum twice; the antagonist's interior life is underdrawn — both fixable.</p>
+  </div>
+  <div class="page-foot"><span data-slot="powered_by">EVOLUM STUDIO</span><span data-slot="confidential">CONFIDENTIAL</span></div>
+</div>
+
+<!-- VARIANT D: Coverage memo header -->
+<div class="page cov-d">
+  <div class="page-pad">
+    <div class="memo-head">
+      <div class="row"><div class="k">RE:</div><div class="v amber" data-slot="title">NIGHT SHIFT</div></div>
+      <div class="row"><div class="k">GENRE</div><div class="v" data-slot="genre">Neo-noir thriller</div></div>
+      <div class="row"><div class="k">DRAFT</div><div class="v" data-slot="draft">v3 · April 2026</div></div>
+      <div class="row"><div class="k">COVERAGE</div><div class="v" data-slot="report_date">21 April 2026</div></div>
+      <div class="row"><div class="k">RECOMMENDATION</div><div class="v amber" data-slot="recommendation">CONSIDER · STRONG WITH NOTES</div></div>
+    </div>
+    <div class="body">
+      <h1 class="title" data-slot="title_2">NIGHT SHIFT</h1>
+      <div class="logline" data-slot="logline">A homicide detective returns to find her unit compromised, her partner dead, and the only witness a man she once put away.</div>
+      <div class="grid">
+        <div class="stat">
+          <div class="k">STRENGTH INDEX</div>
+          <div class="num" data-slot="strength_index">84 / 100</div>
+          <div class="v" data-slot="strength_label">High commercial · awards viable</div>
+        </div>
+        <div class="stat">
+          <div class="k">COMPARABLES</div>
+          <div class="num" style="font-size:18pt">3 strong matches</div>
+          <div class="v" data-slot="comparables_inline">Infernal Affairs · L.A. Confidential · Chinatown</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span data-slot="powered_by">EVOLUM STUDIO · COVERAGE</span><span data-slot="confidential">CONFIDENTIAL</span></div>
+</div>
+
+<!-- ============================================================ PAGE TYPE 2 — STORY ARCHITECTURE ============================================================ -->
+<div class="section-divider">PAGE TYPE 2 — STORY ARCHITECTURE</div>
+
+<!-- VARIANT A: Editorial column with synopsis lead -->
+<div class="page sa-a">
+  <div class="page-pad">
+    <div class="sa-head">
+      <div class="label">II · STORY ARCHITECTURE</div>
+      <h2 class="section-title">The shape of the story.</h2>
+    </div>
+    <div class="lead-block">
+      <div class="label">SYNOPSIS</div>
+      <div class="sa-prose" data-slot="synopsis"><p class="lead">Hong Kong, 1985. Detective Julia Chen returns from forced administrative leave to a precinct that no longer trusts her.</p><p>Her partner — the only colleague who'd vouch for her — is dead. The case file connecting his murder to a series of waterfront killings has gone missing. The one witness who can place the killer at the scene is Marcus Ng, a man she put away seven years ago and who now refuses to speak to anyone but her.</p><p>Over seventy-two hours, Julia must decide whether to play by the rules of a system she no longer believes in, or break them in a way she can't take back.</p></div>
+    </div>
+    <div class="row-grid"><div class="k">THEME</div><div class="v" data-slot="theme">Trust is a weapon wielded by the desperate.</div></div>
+    <div class="row-grid"><div class="k">CORE CONFLICT</div><div class="v" data-slot="core_conflict">A detective's loyalty to a system that has stopped protecting her, set against her need to solve the murder of someone who did.</div></div>
+    <div class="row-grid"><div class="k">STORY ENGINE</div><div class="v" data-slot="story_engine">A 72-hour ticking clock — the witness will only speak to Julia, and only for as long as her badge holds.</div></div>
+    <div class="row-grid"><div class="k">REVERSAL</div><div class="v" data-slot="reversal">The captain who reinstated her is the architect of the cover-up. The one person she trusted to bring her back is the one she has to take down.</div></div>
+    <div class="row-grid"><div class="k">WORLD · TIME · SETTING</div><div class="v"><span data-slot="world">1980s Hong Kong police precinct</span> · <span data-slot="time_frame">72 hours</span> · <span data-slot="setting">Urban, claustrophobic</span></div></div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">02 / 07</span></div>
+</div>
+
+<!-- VARIANT B: 2-column with pull quote -->
+<div class="page sa-b">
+  <div class="page-pad">
+    <div class="sa-head">
+      <div class="label">II · STORY ARCHITECTURE</div>
+      <h2 class="section-title">The architecture, in two columns.</h2>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <span class="label">SYNOPSIS</span>
+        <h3>What the story is.</h3>
+        <div data-slot="synopsis"><p>Hong Kong, 1985. Detective Julia Chen returns from forced administrative leave to a precinct that no longer trusts her.</p><p>Her partner is dead. The case file is missing. The witness will only talk to her — a man she put away seven years ago.</p></div>
+      </div>
+      <div class="col">
+        <span class="label">CORE CONFLICT</span>
+        <p data-slot="core_conflict">A detective's loyalty to a system that has stopped protecting her, set against her need to solve the murder of someone who did.</p>
+        <span class="label">STORY ENGINE</span>
+        <p data-slot="story_engine">A 72-hour ticking clock — the witness will only speak to Julia, and only for as long as her badge holds.</p>
+        <span class="label">REVERSAL</span>
+        <p data-slot="reversal">The captain who reinstated her is the architect of the cover-up.</p>
+      </div>
+    </div>
+    <div class="pull"><div class="q" data-slot="theme">"Trust is a weapon wielded by the desperate."</div></div>
+    <div class="grid">
+      <div class="col"><span class="label">WORLD</span><p data-slot="world">1980s Hong Kong — police precinct, waterfront, hospital morgues. The city is a character; humidity and fluorescence are scene partners.</p></div>
+      <div class="col"><span class="label">SETTING / TIMEFRAME</span><p><span data-slot="setting">Urban, claustrophobic.</span> <span data-slot="time_frame">72 hours from reinstatement to resolution.</span></p></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">02 / 07</span></div>
+</div>
+
+<!-- VARIANT C: Beat strip + body sidebar -->
+<div class="page sa-c">
+  <div class="page-pad">
+    <div class="sa-head">
+      <div class="label">II · STORY ARCHITECTURE</div>
+      <h2 class="section-title">Beats, then the body.</h2>
+    </div>
+    <div class="beats">
+      <div class="beat"><div class="k">THEME</div><div class="v" data-slot="theme">Trust as a weapon wielded by the desperate.</div></div>
+      <div class="beat"><div class="k">ENGINE</div><div class="v" data-slot="story_engine">72-hour clock; witness only talks to her.</div></div>
+      <div class="beat"><div class="k">CONFLICT</div><div class="v" data-slot="core_conflict">Loyalty to a system that has stopped protecting her.</div></div>
+      <div class="beat"><div class="k">REVERSAL</div><div class="v" data-slot="reversal">The captain who reinstated her is the architect of the cover-up.</div></div>
+    </div>
+    <div class="body-grid">
+      <div class="sa-prose" data-slot="synopsis">
+        <p class="lead">Hong Kong, 1985. Detective Julia Chen returns from forced administrative leave to a precinct that no longer trusts her.</p>
+        <p>Her partner — the only colleague who'd vouch for her — is dead. The case file connecting his murder to a series of waterfront killings has gone missing. The one witness who can place the killer at the scene is Marcus Ng, a man she put away seven years ago and who now refuses to speak to anyone but her.</p>
+        <p>Over seventy-two hours, Julia must decide whether to play by the rules of a system she no longer believes in, or break them in a way she can't take back.</p>
+      </div>
+      <div class="sidebar">
+        <div class="label">WORLD &amp; TIME</div>
+        <p><b style="color:var(--white)" data-slot="world">1980s Hong Kong</b><br/>Police precinct, waterfront, morgues.</p>
+        <p><b style="color:var(--white)" data-slot="setting">Urban, claustrophobic</b><br/>The city is a character; fluorescence as scene partner.</p>
+        <p><b style="color:var(--white)" data-slot="time_frame">72 hours</b><br/>Ticking clock; one woman, one badge.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">02 / 07</span></div>
+</div>
+
+<!-- VARIANT D: Numbered chapters -->
+<div class="page sa-d">
+  <div class="page-pad">
+    <div class="sa-head">
+      <div class="label">II · STORY ARCHITECTURE</div>
+      <h2 class="section-title">In five movements.</h2>
+    </div>
+    <div class="chap"><div class="num">01</div><div><h3>SYNOPSIS</h3><p data-slot="synopsis">Hong Kong, 1985. A detective returns from leave to find her partner dead, the case file missing, and the only witness a man she once put away. Over 72 hours she must choose between the rules and what's left of her.</p></div></div>
+    <div class="chap"><div class="num">02</div><div><h3>THEME</h3><p data-slot="theme">Trust is a weapon wielded by the desperate. The story tests the proposition that institutions can be reformed from inside. The script's answer is qualified.</p></div></div>
+    <div class="chap"><div class="num">03</div><div><h3>CORE CONFLICT</h3><p data-slot="core_conflict">A detective's loyalty to a system that has stopped protecting her, set against her need to solve the murder of someone who did.</p></div></div>
+    <div class="chap"><div class="num">04</div><div><h3>STORY ENGINE</h3><p data-slot="story_engine">A 72-hour ticking clock — the witness will only speak to Julia, and only for as long as her badge holds.</p></div></div>
+    <div class="chap"><div class="num">05</div><div><h3>REVERSAL · WORLD · TIME</h3><p><b data-slot="reversal">The captain who reinstated her is the architect of the cover-up.</b> · <span data-slot="world">1980s Hong Kong precinct</span> · <span data-slot="time_frame">72 hours</span> · <span data-slot="setting">Urban, claustrophobic.</span></p></div></div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">02 / 07</span></div>
+</div>
+
+<!-- ============================================================ PAGE TYPE 3 — CHARACTER INTELLIGENCE ============================================================ -->
+<div class="section-divider">PAGE TYPE 3 — CHARACTER INTELLIGENCE</div>
+
+<!-- VARIANT A: Hero name + cards + top-chars rows -->
+<div class="page ci-a">
+  <div class="page-pad">
+    <div class="hero">
+      <div class="label">III · CHARACTER INTELLIGENCE</div>
+      <h2 class="name" data-slot="lead_character">JULIA CHEN</h2>
+      <div class="summary" data-slot="protagonist_summary">A homicide detective who wears authority like armor. She returned to a precinct that no longer recognizes her authority, and is forced to investigate a case that requires her to break the rules of the only institution she believes in.</div>
+    </div>
+    <div class="twocol">
+      <div class="leverage-card">
+        <div class="label">CHARACTER LEVERAGE</div>
+        <p data-slot="character_leverage">Julia is the only person Marcus Ng will speak to. That single fact — a debt owed across seven years — is the asset every other character is trying to use.</p>
+      </div>
+      <div class="objective-card">
+        <div class="label">ACTOR OBJECTIVE</div>
+        <p data-slot="actor_objective">Find the read between certainty and grief. She knows everything she's doing is right; she also knows she's already lost.</p>
+      </div>
+    </div>
+    <div class="top-chars">
+      <div class="label">SUPPORTING ARCHITECTURE</div>
+      <div data-slot="top_chars">
+        <div class="row"><div class="nm">MARCUS NG</div><div class="fn">ANTAGONIST</div><div class="lv">Holds the only testimony that closes the case. A debt seven years deep.</div></div>
+        <div class="row"><div class="nm">CAPT. WONG</div><div class="fn">FALSE ALLY</div><div class="lv">The architect of the cover-up; reinstated her to control her.</div></div>
+        <div class="row"><div class="nm">LIA</div><div class="fn">UNRESOLVED DEBT</div><div class="lv">Her partner's widow. Knows what was in the missing file.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">03 / 07</span></div>
+</div>
+
+<!-- VARIANT B: Side portrait + meta -->
+<div class="page ci-b">
+  <div class="page-pad">
+    <div class="hero" style="margin-bottom:18px"><div class="label">III · CHARACTER INTELLIGENCE</div></div>
+    <div class="grid">
+      <div class="left">
+        <div class="portrait" data-slot="portrait_img">[ PORTRAIT · 4:5 ]</div>
+        <div class="meta" data-slot="char_meta">
+          <b>ROLE</b>Lead, Homicide Detective<b>AGE RANGE</b>34–42<b>ARC</b>Closed → Cracked → Open<b>SCENES</b>34 of 47 beats<b>DIALECT</b>Cantonese-inflected English</div>
+      </div>
+      <div class="right">
+        <div class="name" data-slot="lead_character">JULIA CHEN</div>
+        <p class="summary" data-slot="protagonist_summary">A homicide detective who wears authority like armor. Returns to a precinct that no longer recognizes her, and is forced to break the rules of the only institution she believes in.</p>
+        <span class="label">CHARACTER LEVERAGE</span>
+        <p data-slot="character_leverage">She is the only person the witness will speak to. A debt seven years deep — every other character is trying to use it.</p>
+        <span class="label">ACTOR OBJECTIVE</span>
+        <p data-slot="actor_objective">Find the read between certainty and grief. She knows everything she's doing is right; she also knows she's already lost.</p>
+        <span class="label">TOP CHARACTERS</span>
+        <div class="top-chars-stack" data-slot="top_chars">
+          <div class="row"><span class="nm">MARCUS NG</span><span class="fn">ANTAGONIST</span><span class="lv">The only testimony that closes the case.</span></div>
+          <div class="row"><span class="nm">CAPT. WONG</span><span class="fn">FALSE ALLY</span><span class="lv">Architect of the cover-up; reinstated her to control her.</span></div>
+          <div class="row"><span class="nm">LIA</span><span class="fn">UNRESOLVED DEBT</span><span class="lv">Partner's widow; knows what was in the missing file.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">03 / 07</span></div>
+</div>
+
+<!-- VARIANT C: Cards row -->
+<div class="page ci-c">
+  <div class="page-pad">
+    <div class="head">
+      <div class="label">III · CHARACTER INTELLIGENCE</div>
+      <div class="name" data-slot="lead_character">JULIA CHEN</div>
+      <div class="summary" data-slot="protagonist_summary">A homicide detective who wears authority like armor. Returns to a precinct that no longer recognizes her, and is forced to break the rules of the only institution she believes in.</div>
+    </div>
+    <div class="cards" data-slot="top_chars">
+      <div class="card"><div class="k">ANTAGONIST</div><div class="v">MARCUS NG</div><div class="x">The only person whose testimony closes the case. A debt seven years deep.</div></div>
+      <div class="card"><div class="k">FALSE ALLY</div><div class="v">CAPT. WONG</div><div class="x">Architect of the cover-up. Reinstated her precisely to control her.</div></div>
+      <div class="card"><div class="k">UNRESOLVED DEBT</div><div class="v">LIA</div><div class="x">Her partner's widow. Knows what was in the missing file.</div></div>
+    </div>
+    <div class="leverage-band">
+      <div class="label">CHARACTER LEVERAGE · ACTOR OBJECTIVE</div>
+      <p><b style="color:var(--amber)" data-slot="character_leverage">Julia is the only person Marcus Ng will speak to.</b> <span data-slot="actor_objective">Find the read between certainty and grief — she knows everything she's doing is right and that she's already lost.</span></p>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">03 / 07</span></div>
+</div>
+
+<!-- VARIANT D: Dossier two-column -->
+<div class="page ci-d">
+  <div class="page-pad">
+    <div class="name-bar">
+      <div class="name" data-slot="lead_character">JULIA CHEN</div>
+      <div class="role" data-slot="char_role">LEAD · HOMICIDE DETECTIVE</div>
+    </div>
+    <div class="grid">
+      <div class="col">
+        <h4>SUMMARY</h4>
+        <p data-slot="protagonist_summary">A homicide detective who wears authority like armor. Returns to a precinct that no longer recognizes her authority, and is forced to break the rules of the only institution she believes in.</p>
+        <h4>CHARACTER LEVERAGE</h4>
+        <p data-slot="character_leverage">Julia is the only person Marcus Ng will speak to. A debt seven years deep that every other character is trying to use.</p>
+      </div>
+      <div class="col">
+        <h4>ACTOR OBJECTIVE</h4>
+        <p data-slot="actor_objective">Find the read between certainty and grief. She knows everything she's doing is right; she also knows she's already lost.</p>
+        <h4>SCENE FOOTPRINT</h4>
+        <p data-slot="scene_footprint">Present in 34 of 47 beats. Carries the entire investigative spine and most of the moral weight. Off-screen for both major reversals.</p>
+      </div>
+    </div>
+    <div class="top-table">
+      <div class="row hdr"><div>CHARACTER</div><div>FUNCTION</div><div>LEVERAGE</div></div>
+      <div data-slot="top_chars">
+        <div class="row"><div class="nm">MARCUS NG</div><div class="fn">ANTAGONIST</div><div class="lv">The only testimony that closes the case.</div></div>
+        <div class="row"><div class="nm">CAPT. WONG</div><div class="fn">FALSE ALLY</div><div class="lv">Architect of the cover-up; reinstated her to control her.</div></div>
+        <div class="row"><div class="nm">LIA</div><div class="fn">UNRESOLVED DEBT</div><div class="lv">Partner's widow; knows what was in the missing file.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">03 / 07</span></div>
+</div>
+
+<!-- ============================================================ PAGE TYPE 4 — MARKET INTELLIGENCE ============================================================ -->
+<div class="section-divider">PAGE TYPE 4 — MARKET INTELLIGENCE</div>
+
+<!-- VARIANT A: Stats panel + comps row -->
+<div class="page mk-a">
+  <div class="page-pad">
+    <div class="head">
+      <div class="label">IV · MARKET INTELLIGENCE</div>
+      <h2 class="section-title">The market read.</h2>
+    </div>
+    <div class="data-grid">
+      <div class="data-card"><div class="k">BUDGET RANGE</div><div class="v" data-slot="budget_range">$8M – $15M</div></div>
+      <div class="data-card"><div class="k">STREAMER FIT</div><div class="v" data-slot="streamer_fit">Netflix · Prime · A24</div></div>
+      <div class="data-card"><div class="k">AWARDS LANE</div><div class="v" data-slot="awards_lane">Strong — crime drama with moral complexity</div></div>
+      <div class="data-card"><div class="k">FRANCHISE</div><div class="v" data-slot="franchise_potential">Limited sequel · strong IP</div></div>
+    </div>
+    <div class="comps-row">
+      <div class="label">COMPARABLES</div>
+      <div class="comps-list" data-slot="comparables">
+        <div class="comp">Infernal Affairs</div>
+        <div class="comp">L.A. Confidential</div>
+        <div class="comp">Chinatown</div>
+      </div>
+    </div>
+    <div class="below">
+      <div class="card"><div class="label">COMMERCIAL POSITIONING</div><p data-slot="commercial_positioning">A prestige thriller with festival-circuit credibility and streamer reach. Sits in the lane between A24 character drama and tightly-budgeted genre.</p></div>
+      <div class="card"><div class="label">SALES HOOK</div><p data-slot="sales_hook">"A 72-hour pressure cooker — Hong Kong, 1985, a detective the system tried to bury."</p></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">04 / 07</span></div>
+</div>
+
+<!-- VARIANT B: Numbered comps + ledger -->
+<div class="page mk-b">
+  <div class="page-pad">
+    <div class="head">
+      <div class="label">IV · MARKET INTELLIGENCE</div>
+      <h2 class="section-title">Comparables and lanes.</h2>
+    </div>
+    <div class="comps-num">
+      <div class="label">COMPARABLE TITLES</div>
+      <ol data-slot="comparables">
+        <li><span class="ttl">Infernal Affairs</span></li>
+        <li><span class="ttl">L.A. Confidential</span></li>
+        <li><span class="ttl">Chinatown</span></li>
+      </ol>
+    </div>
+    <div class="ledger">
+      <div class="row"><div class="k">BUDGET RANGE</div><div class="v lg" data-slot="budget_range">$8M – $15M</div></div>
+      <div class="row"><div class="k">STREAMER FIT</div><div class="v" data-slot="streamer_fit">Netflix · Prime · A24 / Apple competitive</div></div>
+      <div class="row"><div class="k">AWARDS LANE</div><div class="v" data-slot="awards_lane">Strong — crime drama with moral complexity. Director-driven festival viable.</div></div>
+      <div class="row"><div class="k">FRANCHISE POTENTIAL</div><div class="v" data-slot="franchise_potential">Limited sequel potential, strong IP for limited-series adaptation.</div></div>
+    </div>
+    <div class="below">
+      <div class="card"><div class="label">COMMERCIAL POSITIONING</div><p data-slot="commercial_positioning">Prestige thriller with festival credibility and streamer reach. Sits between A24 character drama and tightly-budgeted genre.</p></div>
+      <div class="card"><div class="label">AUDIENCE PROFILE</div><p data-slot="audience_profile">Adult viewers 28–54, prestige TV crossover, international skew toward Asia-Pacific markets.</p></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">04 / 07</span></div>
+</div>
+
+<!-- VARIANT C: Horizontal stat bar + writeups -->
+<div class="page mk-c">
+  <div class="page-pad">
+    <div class="head">
+      <div class="label">IV · MARKET INTELLIGENCE</div>
+      <h2 class="section-title">A horizontal read.</h2>
+    </div>
+    <div class="stat-bar">
+      <div class="cell"><div class="k">BUDGET</div><div class="v" data-slot="budget_range">$8M–$15M</div></div>
+      <div class="cell"><div class="k">STREAMER</div><div class="v" data-slot="streamer_fit">Netflix · Prime</div></div>
+      <div class="cell"><div class="k">AWARDS</div><div class="v" data-slot="awards_lane">Strong</div></div>
+      <div class="cell"><div class="k">FRANCHISE</div><div class="v" data-slot="franchise_potential">Limited</div></div>
+    </div>
+    <div class="comps-card">
+      <div class="label">COMPARABLES</div>
+      <div class="list" data-slot="comparables">
+        <div class="item">Infernal Affairs</div>
+        <div class="item">L.A. Confidential</div>
+        <div class="item">Chinatown</div>
+      </div>
+    </div>
+    <div class="write-grid">
+      <div class="card"><div class="label">COMMERCIAL POSITIONING</div><p data-slot="commercial_positioning">Prestige thriller with festival credibility and streamer reach. A24-adjacent.</p></div>
+      <div class="card"><div class="label">AUDIENCE PROFILE</div><p data-slot="audience_profile">Adult viewers 28–54, prestige-TV crossover, international skew Asia-Pacific.</p></div>
+      <div class="card"><div class="label">PACKAGING POTENTIAL</div><p data-slot="packaging_potential">Mid-budget, marquee-actor-led, female protagonist — packaging window is open.</p></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">04 / 07</span></div>
+</div>
+
+<!-- VARIANT D: Waterfall projections -->
+<div class="page mk-d">
+  <div class="page-pad">
+    <div class="head">
+      <div class="label">IV · MARKET INTELLIGENCE</div>
+      <h2 class="section-title">Lane fit, plotted.</h2>
+    </div>
+    <div class="waterfall">
+      <div class="row"><div class="k">STREAMER FIT</div><div class="bar" style="--p: 88%"></div><div class="v" data-slot="streamer_fit">Netflix · Prime</div></div>
+      <div class="row"><div class="k">AWARDS LANE</div><div class="bar" style="--p: 78%"></div><div class="v" data-slot="awards_lane">Strong</div></div>
+      <div class="row"><div class="k">THEATRICAL</div><div class="bar" style="--p: 54%"></div><div class="v" data-slot="theatrical_fit">Limited Plat.</div></div>
+      <div class="row"><div class="k">FRANCHISE</div><div class="bar" style="--p: 36%"></div><div class="v" data-slot="franchise_potential">Limited</div></div>
+      <div class="row"><div class="k">INT'L SALES</div><div class="bar" style="--p: 80%"></div><div class="v" data-slot="intl_sales">Asia-Pac strong</div></div>
+    </div>
+    <div class="body">
+      <div class="card"><div class="label">BUDGET RANGE</div><p data-slot="budget_range">$8M – $15M. Production-friendly with one period-correct location anchor.</p></div>
+      <div class="card"><div class="label">SALES HOOK</div><p data-slot="sales_hook">"A 72-hour pressure cooker — Hong Kong, 1985, a detective the system tried to bury."</p></div>
+    </div>
+    <div class="comps-line">
+      <div class="label">COMPARABLES</div>
+      <div class="pill-row" data-slot="comparables">
+        <span class="pill">Infernal Affairs</span>
+        <span class="pill">L.A. Confidential</span>
+        <span class="pill">Chinatown</span>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">04 / 07</span></div>
+</div>
+
+<!-- ============================================================ PAGE TYPE 5 — ANALYSIS GRID ============================================================ -->
+<div class="section-divider">PAGE TYPE 5 — ANALYSIS GRID</div>
+
+<!-- VARIANT A: Two-column strengths/risks + lower insights -->
+<div class="page ag-a">
+  <div class="page-pad">
+    <div class="ag-head">
+      <div class="label">V · ANALYSIS GRID</div>
+      <h2 class="section-title">Strengths versus risks.</h2>
+    </div>
+    <div class="grid">
+      <div class="card green">
+        <div class="label">STRENGTHS</div>
+        <ul class="bullet-list" data-slot="strengths">
+          <li>Protagonist with marquee scale — built for a film actor crossing in.</li>
+          <li>Tight 72-hour engine; no flab in Act I or Act III.</li>
+          <li>Period world is specific without being archeological.</li>
+          <li>Theme lands without exposition. The script trusts the audience.</li>
+        </ul>
+      </div>
+      <div class="card rust">
+        <div class="label">RISKS</div>
+        <ul class="bullet-list" data-slot="risks">
+          <li>Act II loses momentum twice — pages 52–58 and 71–76.</li>
+          <li>Antagonist's interior life is underdrawn; he reads as plot device.</li>
+          <li>One supporting role (LIA) is structurally critical but dramatically thin.</li>
+          <li>The reversal lands a beat too early — recover with one new scene.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="lower">
+      <div class="card2"><div class="label">STORY INSIGHTS</div><ul class="bullet-list" data-slot="story_insights"><li>The grief is structural — the case is a vehicle for what the script is actually about.</li><li>Trust is the only currency in the world; every scene is a transaction.</li></ul></div>
+      <div class="card2"><div class="label">REWRITE PRIORITIES</div><ul class="bullet-list" data-slot="rewrite_priorities"><li>Pages 52–58: tighten or replace.</li><li>Add one antagonist solo scene before Act III.</li><li>Give LIA a goal of her own.</li></ul></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">05 / 07</span></div>
+</div>
+
+<!-- VARIANT B: 4-card balanced quad -->
+<div class="page ag-b">
+  <div class="page-pad">
+    <div class="ag-head">
+      <div class="label">V · ANALYSIS GRID</div>
+      <h2 class="section-title">Four reads, one diagnosis.</h2>
+    </div>
+    <div class="quad">
+      <div class="card green">
+        <div class="label">STRENGTHS</div>
+        <ul class="bullet-list" data-slot="strengths">
+          <li>Marquee-scale protagonist.</li>
+          <li>Tight 72-hour engine.</li>
+          <li>Specific period without archeology.</li>
+          <li>Theme lands without exposition.</li>
+        </ul>
+      </div>
+      <div class="card rust">
+        <div class="label">RISKS</div>
+        <ul class="bullet-list" data-slot="risks">
+          <li>Act II loses momentum twice.</li>
+          <li>Antagonist interior life underdrawn.</li>
+          <li>LIA structurally critical but thin.</li>
+          <li>Reversal lands a beat early.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="label">STORY INSIGHTS</div>
+        <ul class="bullet-list" data-slot="story_insights">
+          <li>Grief is structural — the case is a vehicle.</li>
+          <li>Trust is the only currency.</li>
+          <li>Every scene is a transaction.</li>
+          <li>The system is the third act's antagonist.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="label">REWRITE PRIORITIES</div>
+        <ul class="bullet-list" data-slot="rewrite_priorities">
+          <li>Tighten pages 52–58.</li>
+          <li>Add one antagonist solo scene.</li>
+          <li>Give LIA a goal of her own.</li>
+          <li>Push the reversal one beat later.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">05 / 07</span></div>
+</div>
+
+<!-- VARIANT C: Diagnostic 4 columns -->
+<div class="page ag-c">
+  <div class="page-pad">
+    <div class="ag-head">
+      <div class="label">V · ANALYSIS GRID</div>
+      <h2 class="section-title">Diagnosis in four columns.</h2>
+    </div>
+    <div class="columns">
+      <div class="col green">
+        <span class="label">STRENGTHS</span>
+        <ul class="bullet-list" data-slot="strengths"><li>Marquee-scale protagonist.</li><li>Tight 72-hour engine.</li><li>Specific period.</li><li>Theme lands.</li><li>No flab Acts I or III.</li></ul>
+      </div>
+      <div class="col rust">
+        <span class="label">RISKS</span>
+        <ul class="bullet-list" data-slot="risks"><li>Act II momentum dip.</li><li>Antagonist underdrawn.</li><li>LIA thin.</li><li>Reversal lands early.</li></ul>
+      </div>
+      <div class="col">
+        <span class="label">INSIGHTS</span>
+        <ul class="bullet-list" data-slot="story_insights"><li>Grief is structural.</li><li>Trust = currency.</li><li>System is the third antagonist.</li><li>The clock is the protagonist's only ally.</li></ul>
+      </div>
+      <div class="col">
+        <span class="label">REWRITES</span>
+        <ul class="bullet-list" data-slot="rewrite_priorities"><li>Tighten 52–58.</li><li>Add antagonist solo.</li><li>Give LIA a goal.</li><li>Push reversal later.</li></ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">05 / 07</span></div>
+</div>
+
+<!-- VARIANT D: Stacked rows dossier -->
+<div class="page ag-d">
+  <div class="page-pad">
+    <div class="ag-head">
+      <div class="label">V · ANALYSIS GRID</div>
+      <h2 class="section-title">A dossier of strengths and risks.</h2>
+    </div>
+    <div class="row green"><div class="k">STRENGTHS</div><div class="v"><ul class="bullet-list" data-slot="strengths"><li>Protagonist with marquee scale.</li><li>Tight 72-hour engine; no flab in Act I or Act III.</li><li>Period world specific without archeology.</li><li>Theme lands without exposition.</li></ul></div></div>
+    <div class="row rust"><div class="k">RISKS</div><div class="v"><ul class="bullet-list" data-slot="risks"><li>Act II loses momentum twice — pages 52–58 and 71–76.</li><li>Antagonist's interior life is underdrawn.</li><li>LIA is structurally critical but dramatically thin.</li><li>The reversal lands a beat too early.</li></ul></div></div>
+    <div class="row"><div class="k">INSIGHTS</div><div class="v"><ul class="bullet-list" data-slot="story_insights"><li>Grief is structural — the case is a vehicle.</li><li>Trust is the only currency in the world; every scene is a transaction.</li></ul></div></div>
+    <div class="row"><div class="k">REWRITES</div><div class="v"><ul class="bullet-list" data-slot="rewrite_priorities"><li>Pages 52–58: tighten or replace.</li><li>Add one antagonist solo scene before Act III.</li><li>Give LIA a goal of her own.</li></ul></div></div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">05 / 07</span></div>
+</div>
+
+<!-- ============================================================ PAGE TYPE 6 — ACTOR INTELLIGENCE ============================================================ -->
+<div class="section-divider">PAGE TYPE 6 — ACTOR INTELLIGENCE</div>
+
+<!-- VARIANT A: 2x2 grid + objective banner -->
+<div class="page ai-a">
+  <div class="page-pad">
+    <div class="ai-head">
+      <div class="label">VI · ACTOR INTELLIGENCE</div>
+      <h2 class="section-title">The actor's read.</h2>
+    </div>
+    <div class="ai-objective"><div class="label">ACTOR OBJECTIVE</div><p data-slot="actor_objective">Find the read between certainty and grief. She knows everything she's doing is right; she also knows she's already lost.</p></div>
+    <div class="grid">
+      <div class="card"><div class="label">PLAYABLE TACTICS</div><ul class="bullet-list" data-slot="playable_tactics"><li>Use stillness as pressure.</li><li>Let the hands betray what the face won't.</li><li>One object per scene as anchor.</li><li>Choose when to break eye contact.</li></ul></div>
+      <div class="card"><div class="label">EMOTIONAL TRIGGERS</div><ul class="bullet-list" data-slot="emotional_triggers"><li>Mentions of her partner.</li><li>Being underestimated.</li><li>The smell of the precinct after rain.</li><li>"I knew your father."</li></ul></div>
+      <div class="card"><div class="label">AUDITION DANGER ZONES</div><ul class="bullet-list" data-slot="audition_danger_zones"><li>Don't play "tough cop."</li><li>Avoid ironic distance.</li><li>Don't telegraph the grief.</li><li>Resist explaining the silences.</li></ul></div>
+      <div class="card"><div class="label">READER CHEMISTRY TIPS</div><ul class="bullet-list" data-slot="reader_chemistry_tips"><li>Listen at half-volume; respond at full.</li><li>Hold the read on the reader's wrong answer.</li><li>Make them earn the next line.</li></ul></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">06 / 07</span></div>
+</div>
+
+<!-- VARIANT B: 4 stripes -->
+<div class="page ai-b">
+  <div class="page-pad">
+    <div class="ai-head">
+      <div class="label">VI · ACTOR INTELLIGENCE</div>
+      <h2 class="section-title">Four columns of craft.</h2>
+    </div>
+    <div class="ai-objective"><div class="label">ACTOR OBJECTIVE</div><p data-slot="actor_objective">Find the read between certainty and grief. She knows everything she's doing is right and that she's already lost.</p></div>
+    <div class="stripes">
+      <div class="col"><span class="label">PLAYABLE TACTICS</span><ul class="bullet-list" data-slot="playable_tactics"><li>Stillness as pressure.</li><li>Hands betray the face.</li><li>One object per scene.</li><li>Choose eye contact carefully.</li></ul></div>
+      <div class="col"><span class="label">TRIGGERS</span><ul class="bullet-list" data-slot="emotional_triggers"><li>Mentions of partner.</li><li>Underestimation.</li><li>Precinct after rain.</li><li>"I knew your father."</li></ul></div>
+      <div class="col"><span class="label">DANGER ZONES</span><ul class="bullet-list" data-slot="audition_danger_zones"><li>Don't play tough cop.</li><li>Avoid ironic distance.</li><li>Don't telegraph grief.</li><li>Resist explaining silences.</li></ul></div>
+      <div class="col"><span class="label">CHEMISTRY</span><ul class="bullet-list" data-slot="reader_chemistry_tips"><li>Listen half, respond full.</li><li>Hold on wrong answers.</li><li>Make them earn next line.</li></ul></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">06 / 07</span></div>
+</div>
+
+<!-- VARIANT C: Hero left -->
+<div class="page ai-c">
+  <div class="page-pad">
+    <div class="ai-head">
+      <div class="label">VI · ACTOR INTELLIGENCE</div>
+      <h2 class="section-title">The lead read.</h2>
+    </div>
+    <div class="grid">
+      <div class="lead">
+        <div class="label">PLAYABLE TACTICS</div>
+        <ul class="bullet-list" data-slot="playable_tactics"><li>Use stillness as pressure.</li><li>Let the hands betray what the face won't.</li><li>One object per scene as anchor.</li><li>Choose when to break eye contact, not when to hold it.</li><li>A read that feels earned, never performed.</li></ul>
+      </div>
+      <div class="right-col">
+        <div class="small"><span class="label">EMOTIONAL TRIGGERS</span><ul class="bullet-list" data-slot="emotional_triggers"><li>Mentions of partner.</li><li>Being underestimated.</li><li>"I knew your father."</li></ul></div>
+        <div class="small"><span class="label">DANGER ZONES</span><ul class="bullet-list" data-slot="audition_danger_zones"><li>Don't play tough cop.</li><li>Avoid ironic distance.</li><li>Don't telegraph grief.</li></ul></div>
+        <div class="small"><span class="label">READER CHEMISTRY</span><ul class="bullet-list" data-slot="reader_chemistry_tips"><li>Listen half, respond full.</li><li>Hold on wrong answers.</li></ul></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">06 / 07</span></div>
+</div>
+
+<!-- VARIANT D: Dossier rows -->
+<div class="page ai-d">
+  <div class="page-pad">
+    <div class="ai-head">
+      <div class="label">VI · ACTOR INTELLIGENCE</div>
+      <h2 class="section-title">Classified — the actor's brief.</h2>
+    </div>
+    <div class="ai-objective"><div class="label">ACTOR OBJECTIVE</div><p data-slot="actor_objective">Find the read between certainty and grief. She knows everything she's doing is right and that she's already lost.</p></div>
+    <div class="row"><div class="k">PLAYABLE TACTICS</div><div class="v"><ul class="bullet-list" data-slot="playable_tactics"><li>Use stillness as pressure.</li><li>Let the hands betray what the face won't.</li><li>One object per scene as anchor.</li></ul></div></div>
+    <div class="row"><div class="k">EMOTIONAL TRIGGERS</div><div class="v"><ul class="bullet-list" data-slot="emotional_triggers"><li>Mentions of her partner — micro-fracture, not collapse.</li><li>Being underestimated by men in the room.</li><li>"I knew your father."</li></ul></div></div>
+    <div class="row"><div class="k">AUDITION DANGER ZONES</div><div class="v"><ul class="bullet-list" data-slot="audition_danger_zones"><li>Don't play "tough cop." She's tired, not hard.</li><li>Avoid ironic distance.</li><li>Don't telegraph the grief.</li></ul></div></div>
+    <div class="row"><div class="k">READER CHEMISTRY</div><div class="v"><ul class="bullet-list" data-slot="reader_chemistry_tips"><li>Listen at half-volume; respond at full.</li><li>Hold on the reader's wrong answer.</li></ul></div></div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">06 / 07</span></div>
+</div>
+
+<!-- ============================================================ PAGE TYPE 7 — ARC MAP ============================================================ -->
+<div class="section-divider">PAGE TYPE 7 — ARC MAP</div>
+
+<!-- VARIANT A: 3-step + ladder + lower cards -->
+<div class="page am-a">
+  <div class="page-pad">
+    <div class="ai-head" style="margin-bottom:14px">
+      <div class="label">VII · ARC MAP</div>
+      <h2 class="section-title">The full role architecture.</h2>
+    </div>
+    <div class="arc-flow" data-slot="role_arc_map">
+      <div class="step"><div class="num">01 · BEGINS</div><div class="nm">Closed</div><div class="tx">Hyper-controlled. Distrusts everyone. Reads the room before she enters it.</div></div>
+      <div class="step"><div class="num">02 · TRANSFORMS</div><div class="nm">Cracked</div><div class="tx">Forced to rely on someone she can't read. Certainty starts costing more than it returns.</div></div>
+      <div class="step"><div class="num">03 · ENDS</div><div class="nm">Open</div><div class="tx">Certainty replaced with something riskier. She can be wrong now. She can be hurt.</div></div>
+    </div>
+    <div class="ladder">
+      <div class="label">PRESSURE LADDER</div>
+      <div data-slot="pressure_ladder">
+        <div class="rung"><span class="n">01</span><span class="t">Returns to a precinct that no longer trusts her.</span><span class="bar" style="width:30%"></span></div>
+        <div class="rung"><span class="n">02</span><span class="t">Discovers her partner's last case file is missing.</span><span class="bar" style="width:50%"></span></div>
+        <div class="rung"><span class="n">03</span><span class="t">The witness she once jailed asks for her by name.</span><span class="bar" style="width:70%"></span></div>
+        <div class="rung"><span class="n">04</span><span class="t">The new captain offers her a way out — for a price.</span><span class="bar" style="width:90%"></span></div>
+      </div>
+    </div>
+    <div class="lower">
+      <div class="card"><div class="label">EMOTIONAL CONTINUITY</div><ul class="bullet-list" data-slot="emotional_continuity"><li>Grief as a low fever — present in every scene, named in none.</li><li>Trust degrades scene by scene; never resets.</li></ul></div>
+      <div class="card"><div class="label">SET-READY CHECKLIST</div><ul class="bullet-list" data-slot="set_ready_checklist"><li>Lines locked through Act II.</li><li>Wardrobe fitting confirmed.</li><li>Dialect coach review on Mon.</li></ul></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">07 / 07</span></div>
+</div>
+
+<!-- VARIANT B: Relationship table-led -->
+<div class="page am-b">
+  <div class="page-pad">
+    <div class="ai-head" style="margin-bottom:14px">
+      <div class="label">VII · ARC MAP</div>
+      <h2 class="section-title">The map of leverage.</h2>
+    </div>
+    <div class="table">
+      <div class="hdr"><div>CHARACTER</div><div>DYNAMIC</div><div>FUNCTION</div></div>
+      <div data-slot="relationship_leverage_map">
+        <div class="row"><div class="nm">MARCUS</div><div class="dyn">VOLATILE TRUST</div><div class="fn">Information source, former rival, the witness she once put away.</div></div>
+        <div class="row"><div class="nm">CAPT. WONG</div><div class="dyn">CONDITIONAL ALLY</div><div class="fn">Holds her badge; will return it for the right confession.</div></div>
+        <div class="row"><div class="nm">LIA</div><div class="dyn">UNRESOLVED DEBT</div><div class="fn">The partner's widow. Knows what was in the missing file.</div></div>
+        <div class="row"><div class="nm">DET. KAI</div><div class="dyn">SHADOW SELF</div><div class="fn">Younger, hungrier — what she could have been if she'd stayed clean.</div></div>
+      </div>
+    </div>
+    <div class="triple">
+      <div class="card"><div class="label">ROLE ARC MAP</div><ul class="bullet-list" data-slot="role_arc_map"><li>Open: closed off, hyper-controlled.</li><li>Mid: forced to rely on someone she can't read.</li><li>End: certainty replaced by something riskier.</li></ul></div>
+      <div class="card"><div class="label">PRESSURE LADDER</div><ul class="bullet-list" data-slot="pressure_ladder"><li>Returns to a hostile precinct.</li><li>Partner's case file missing.</li><li>Witness asks for her by name.</li></ul></div>
+      <div class="card"><div class="label">MEMORIZATION BEATS</div><ul class="bullet-list" data-slot="memorization_beats"><li>Scene 14 — "I knew him before he knew me."</li><li>Scene 22 — the elevator beat. No words.</li></ul></div>
+    </div>
+    <div class="footer-row">
+      <div class="card"><div class="label">EMOTIONAL CONTINUITY</div><ul class="bullet-list" data-slot="emotional_continuity"><li>Grief as a low fever — present, named in none.</li></ul></div>
+      <div class="card"><div class="label">COSTUME · BEHAVIOR</div><ul class="bullet-list" data-slot="costume_behavior_clues"><li>Badge on the inside of her jacket — never visible.</li><li>Cuffs always rolled once.</li></ul></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">07 / 07</span></div>
+</div>
+
+<!-- VARIANT C: Six-card grid -->
+<div class="page am-c">
+  <div class="page-pad">
+    <div class="ai-head" style="margin-bottom:14px">
+      <div class="label">VII · ARC MAP</div>
+      <h2 class="section-title">Six panels, one role.</h2>
+    </div>
+    <div class="grid">
+      <div class="card"><div class="label">ROLE ARC MAP</div><ul class="bullet-list" data-slot="role_arc_map"><li>Closed → Cracked → Open.</li><li>Reads the room before she enters.</li><li>Ends able to be wrong.</li></ul></div>
+      <div class="card"><div class="label">PRESSURE LADDER</div><ul class="bullet-list" data-slot="pressure_ladder"><li>Hostile precinct.</li><li>Missing case file.</li><li>Witness names her.</li><li>Captain's offer.</li></ul></div>
+      <div class="card"><div class="label">EMOTIONAL CONTINUITY</div><ul class="bullet-list" data-slot="emotional_continuity"><li>Grief as a low fever.</li><li>Trust degrades; never resets.</li></ul></div>
+      <div class="card"><div class="label">MEMORIZATION BEATS</div><ul class="bullet-list" data-slot="memorization_beats"><li>Scene 14 — "I knew him before…"</li><li>Scene 22 — the elevator. No words.</li></ul></div>
+      <div class="card"><div class="label">COSTUME · BEHAVIOR</div><ul class="bullet-list" data-slot="costume_behavior_clues"><li>Badge inside the jacket.</li><li>Cuffs rolled once.</li></ul></div>
+      <div class="card"><div class="label">SET-READY CHECKLIST</div><ul class="bullet-list" data-slot="set_ready_checklist"><li>Lines locked through Act II.</li><li>Wardrobe Wed.</li><li>Dialect Mon.</li></ul></div>
+    </div>
+    <div style="margin-top:14px" class="card" data-slot="relationship_leverage_map_inline">
+      <div class="label" style="margin-bottom:8px">RELATIONSHIPS · LEVERAGE</div>
+      <ul class="bullet-list">
+        <li>MARCUS — volatile trust / information source.</li>
+        <li>CAPT. WONG — conditional ally / holds her badge.</li>
+        <li>LIA — unresolved debt / partner's widow.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">07 / 07</span></div>
+</div>
+
+<!-- VARIANT D: Vertical timeline -->
+<div class="page am-d">
+  <div class="page-pad">
+    <div class="ai-head" style="margin-bottom:14px">
+      <div class="label">VII · ARC MAP</div>
+      <h2 class="section-title">The vertical read.</h2>
+    </div>
+    <div class="timeline" data-slot="role_arc_map">
+      <div class="step"><div class="lab">01 · BEGINS</div><div class="nm">Closed</div><div class="tx">Hyper-controlled. Distrusts everyone. Reads the room before she enters.</div></div>
+      <div class="step"><div class="lab">02 · TRANSFORMS</div><div class="nm">Cracked</div><div class="tx">Forced to rely on someone she can't read.</div></div>
+      <div class="step"><div class="lab">03 · ENDS</div><div class="nm">Open</div><div class="tx">Certainty replaced with something riskier. She can be wrong. She can be hurt.</div></div>
+    </div>
+    <div class="below">
+      <div class="card"><div class="label">PRESSURE LADDER</div><ul class="bullet-list" data-slot="pressure_ladder"><li>Hostile precinct.</li><li>Missing case file.</li><li>Witness names her.</li></ul></div>
+      <div class="card"><div class="label">MEMORIZATION BEATS</div><ul class="bullet-list" data-slot="memorization_beats"><li>Scene 14, p.12 — "I knew him before he knew me."</li><li>Scene 22 — the elevator. No words.</li></ul></div>
+      <div class="card"><div class="label">EMOTIONAL CONTINUITY</div><ul class="bullet-list" data-slot="emotional_continuity"><li>Grief as a low fever.</li><li>Trust degrades; never resets.</li></ul></div>
+      <div class="card"><div class="label">SET-READY CHECKLIST</div><ul class="bullet-list" data-slot="set_ready_checklist"><li>Lines locked through Act II.</li><li>Wardrobe fitting confirmed.</li></ul></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SCRIPT ANALYSIS</span><span data-slot="page_number">07 / 07</span></div>
+</div>
+
+<!--
+SLOT WIRING TABLE
+=================
+slot name                      | content                                          | data type
+───────────────────────────────┼──────────────────────────────────────────────────┼───────────
+─── COVER ─────────────────────┼──────────────────────────────────────────────────┼───────────
+doc_type_label                 | Document title (e.g. "SCRIPT ANALYSIS REPORT")   | string
+report_id                      | Report ID code                                   | string
+report_date                    | Generation date                                  | string
+confidential                   | Confidentiality stamp text                       | string
+title                          | Project title (hero)                             | string
+title_2                        | Project title (alt slot in cov-d body)           | string
+genre                          | Genre pill (e.g. "neo-noir thriller")            | string
+tone                           | Tone pill                                        | string
+time_frame                     | Time-frame pill (e.g. "72 HOURS")                | string
+draft                          | Draft version label                              | string
+recommendation                 | Coverage recommendation (memo cover)             | string
+logline                        | One-sentence story logline                       | string
+executive_summary              | 3-5 sentence overall read                        | text
+strength_index                 | Numeric strength score (0-100)                   | string
+strength_label                 | Strength descriptor                              | string
+comparables                    | Comp titles list                                 | <ul>/<ol>/.comp/.pill
+comparables_inline             | Inline comp list as text                         | string
+setting                        | Setting descriptor                               | string
+powered_by                     | Footer credit                                    | string
+─── STORY ARCHITECTURE ────────┼──────────────────────────────────────────────────┼───────────
+synopsis                       | 2-3 paragraph synopsis                           | innerHTML w/ <p> tags
+theme                          | Theme statement                                  | string
+core_conflict                  | Core conflict description                        | string
+story_engine                   | Story engine description                         | string
+reversal                       | Key plot turn                                    | string
+world                          | World description                                | string
+─── CHARACTER INTELLIGENCE ────┼──────────────────────────────────────────────────┼───────────
+lead_character                 | Lead character name                              | string
+protagonist_summary            | Protagonist 2-3 sentence summary                 | string
+character_leverage             | What the protagonist has others want             | string
+actor_objective                | What the role needs from the actor               | string
+char_role                      | Role descriptor (e.g. "LEAD · DETECTIVE")        | string
+char_meta                      | Meta key/value (innerHTML)                       | innerHTML <b>/text
+scene_footprint                | How the character functions across the script    | string
+top_chars                      | Supporting characters                            | replace innerHTML w/ .row or .card
+portrait_img                   | Character portrait image                         | replace innerHTML w/ <img>
+─── MARKET INTELLIGENCE ───────┼──────────────────────────────────────────────────┼───────────
+budget_range                   | Budget range string                              | string
+streamer_fit                   | Streamer/buyer fit                               | string
+awards_lane                    | Awards-lane assessment                           | string
+franchise_potential            | Franchise/IP potential                           | string
+sales_hook                     | One-sentence sales hook                          | string
+commercial_positioning         | Commercial positioning paragraph                 | string
+audience_profile               | Audience profile                                 | string
+packaging_potential            | Packaging note                                   | string
+theatrical_fit                 | Theatrical assessment                            | string
+intl_sales                     | International sales note                         | string
+─── ANALYSIS GRID ─────────────┼──────────────────────────────────────────────────┼───────────
+strengths                      | Script strengths                                 | <ul> of <li>
+risks                          | Script risks                                     | <ul> of <li>
+story_insights                 | Cross-cutting story observations                 | <ul> of <li>
+rewrite_priorities             | Rewrite priorities                               | <ul> of <li>
+─── ACTOR INTELLIGENCE ────────┼──────────────────────────────────────────────────┼───────────
+playable_tactics               | In-scene tools                                   | <ul> of <li>
+emotional_triggers             | What moves the character                         | <ul> of <li>
+audition_danger_zones          | Traps to avoid in audition                       | <ul> of <li>
+reader_chemistry_tips          | Tips for working with reader                     | <ul> of <li>
+─── ARC MAP ───────────────────┼──────────────────────────────────────────────────┼───────────
+role_arc_map                   | Arc beats list / 3-step structure                | replace innerHTML
+pressure_ladder                | Escalating scene pressure                        | replace innerHTML w/ .rung or <ul>
+relationship_leverage_map      | Relationship rows                                | replace innerHTML w/ .row or <ul>
+relationship_leverage_map_inline | Compact inline relationship list               | innerHTML
+memorization_beats             | Lines/moments to lock in                         | <ul> of <li>
+emotional_continuity           | Continuity threads                               | <ul> of <li>
+costume_behavior_clues         | Wardrobe-driven behavior                         | <ul> of <li>
+set_ready_checklist            | Production-ready items                           | <ul> of <li>
+page_number                    | Footer page number                               | string
+───────────────────────────────┴──────────────────────────────────────────────────┴───────────
+
+USAGE
+=====
+- 7 page types × 4 variants = 28 layouts.
+- Each <div class="page ..."> is one US-Letter page.
+- Python engine: pick a variant per page type per generation for visual rotation.
+- Inject content via querySelectorAll('[data-slot=...]'); set innerHTML/textContent.
+- For nested structures (.row, .rung, .step, .card), use innerHTML replacement.
+- Strength meter: set CSS var --p on .meter-ring or .vmeter (e.g. style="--p: 84%").
+- Waterfall bars: set --p on .waterfall .row .bar.
+- @media print preserves dark backgrounds; render to PDF at 96dpi.
+-->
+
+</body>
+</html>

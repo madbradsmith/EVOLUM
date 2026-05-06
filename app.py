@@ -2726,6 +2726,22 @@ def actor_prep_report_page():
     return send_file(LATEST_ACTOR_PREP_PDF, as_attachment=False)
 
 
+@app.route("/actor-prep-report/html")
+@require_login
+def actor_prep_report_html():
+    if not LATEST_ACTOR_PREP_JSON.exists():
+        return redirect("/actor-prep-report") if LATEST_ACTOR_PREP_PDF.exists() else redirect("/")
+    try:
+        import report_renderer
+        data = json.loads(LATEST_ACTOR_PREP_JSON.read_text(encoding="utf-8"))
+        html_content = report_renderer.render_actor_prep_html(data, back_url="/my-studio")
+        from flask import Response
+        return Response(html_content, mimetype="text/html")
+    except Exception as e:
+        print(f"Actor prep HTML render error: {e}", flush=True)
+        return redirect("/actor-prep-report")
+
+
 @app.route("/actor-booked-report")
 def actor_booked_report_page():
     if not LATEST_ACTOR_BOOKED_PDF.exists():
@@ -2747,6 +2763,22 @@ def analysis_report_latest_pdf():
     if not LATEST_ANALYSIS_PDF.exists():
         abort(404)
     return send_file(LATEST_ANALYSIS_PDF, as_attachment=False)
+
+
+@app.route("/analysis-report/latest.html")
+@require_login
+def analysis_report_html():
+    if not LATEST_ANALYSIS_JSON.exists():
+        return redirect("/analysis-report/latest.pdf") if LATEST_ANALYSIS_PDF.exists() else redirect("/")
+    try:
+        import report_renderer
+        data = json.loads(LATEST_ANALYSIS_JSON.read_text(encoding="utf-8"))
+        html_content = report_renderer.render_script_analysis_html(data, back_url="/my-studio")
+        from flask import Response
+        return Response(html_content, mimetype="text/html")
+    except Exception as e:
+        print(f"Analysis HTML render error: {e}", flush=True)
+        return redirect("/analysis-report/latest.pdf")
 
 
 @app.route("/download/latest_analysis_report.pdf")
@@ -3400,6 +3432,48 @@ def project_slides(project_id):
         return jsonify({"error": "No manifest found"}), 404
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/project/<project_id>/deck/present")
+@require_login
+def project_deck_present(project_id):
+    uid = session.get("user_id", "")
+    if not uid or not DB_ENGINE:
+        return redirect("/")
+    ensure_projects_table()
+    slides = []
+    project_meta = {}
+    try:
+        with DB_ENGINE.connect() as conn:
+            row = conn.execute(text(
+                "SELECT id, output_dir, title, project_type FROM projects WHERE id = :id AND owner_user_id = :uid"
+            ), {"id": int(project_id), "uid": uid}).mappings().first()
+        if not row:
+            return redirect("/my-studio")
+        r = dict(row)
+        pid = str(r["id"])
+        project_meta = {"id": pid, "title": r.get("title", ""), "project_type": r.get("project_type", "")}
+        for proj_dir in filter(None, [
+            BASE_DIR / r["output_dir"] if r.get("output_dir") else None,
+            USER_DATA_DIR / uid / pid,
+        ]):
+            manifest = proj_dir / "deck_manifest.json"
+            if manifest.exists():
+                slides = json.loads(manifest.read_text(encoding="utf-8"))
+                break
+        if not slides:
+            user_manifest = user_manifest_path(uid)
+            if user_manifest.exists():
+                slides = json.loads(user_manifest.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"Deck present error: {e}", flush=True)
+        return redirect("/my-studio")
+    if not slides:
+        return redirect("/my-studio")
+    import deck_renderer
+    html_content = deck_renderer.render_deck_html(slides, project_meta, back_url="/my-studio")
+    from flask import Response
+    return Response(html_content, mimetype="text/html")
 
 
 @app.route("/project/<project_id>/delete", methods=["POST"])
