@@ -1838,9 +1838,9 @@ function _stopBuildQuotes() {
 
 // ===== EVIE WAIT CHAT =====
 const _evieWait = {
-    stage: "idle",       // idle | greeting | asked_name | got_name | insight_done
-    callName: "",
+    stage: "idle",
     _previewPollTimer: null,
+    _contextTimer: null,
 };
 
 function _evieWaitMsg(text, who) {
@@ -1876,31 +1876,35 @@ function startEvieWaitChat() {
     const shell = document.getElementById("evieWaitShell");
     if (!shell) return;
     shell.style.display = "flex";
-    _evieWait.stage = "greeting";
+    _evieWait.stage = "watching";
 
-    // Inject avatar
     const avatarEl = document.getElementById("evieWaitAvatar");
     if (avatarEl && typeof EvieAvatar !== "undefined") {
         avatarEl.innerHTML = EvieAvatar.inline(28, "idea", "thinking");
     }
 
-    const signupName = (window.EVOLUM_USER_NAME || "").trim();
-    const namePhrase = signupName
-        ? `I see you signed up as ${signupName} — what would you like me to call you?`
-        : "What's your name?";
-
+    // First message: ambient check-in, uses signup name if we have it
+    const firstName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
+    const greeting = firstName ? `Hey ${firstName} —` : "Hey —";
     setTimeout(() => {
-        _evieWaitMsg(`Hey — I'm Evie. I'll be your guide while your deck builds. ${namePhrase}`, "evie");
-        _evieWait.stage = "asked_name";
-        _evieWaitSetStatus("waiting for you");
-        _evieWaitShowInput(true);
-    }, 1800);
+        _evieWaitMsg(`${greeting} I'm here. Your deck's almost ready.`, "evie");
+        _evieWaitSetStatus("building...");
+    }, 1000);
+
+    // Second message at 35s: use script context if still building
+    _evieWait._contextTimer = setTimeout(() => {
+        if (_evieWait.stage === "watching") _evieWaitFetchContext();
+    }, 35000);
 }
 
 function stopEvieWaitChat() {
     if (_evieWait._previewPollTimer) {
         clearTimeout(_evieWait._previewPollTimer);
         _evieWait._previewPollTimer = null;
+    }
+    if (_evieWait._contextTimer) {
+        clearTimeout(_evieWait._contextTimer);
+        _evieWait._contextTimer = null;
     }
     _evieWaitShowInput(false);
     _evieWait.stage = "idle";
@@ -1914,55 +1918,44 @@ function evieWaitReply() {
     input.value = "";
     _evieWaitMsg(val, "user");
     _evieWaitShowInput(false);
-
-    if (_evieWait.stage === "asked_name") {
-        _evieWait.callName = val.split(" ")[0];
-        _evieWait.stage = "got_name";
-        _evieWaitSetStatus("reading your script...");
-        _evieWaitMsg(`Nice to meet you, ${_evieWait.callName}. Give me a second — I'm reading your script now.`, "evie");
-        _evieWaitPollForInsight();
-    } else if (_evieWait.stage === "chatting") {
-        _evieWait.stage = "done";
-        const _echo = val.length < 40 ? `${val.charAt(0).toUpperCase() + val.slice(1)} — ` : "";
-        setTimeout(() => {
-            _evieWaitMsg(`${_echo}love it. Your deck should be ready any second now.`, "evie");
-            _evieWaitSetStatus("deck incoming");
-        }, 400);
-    }
+    setTimeout(() => {
+        _evieWaitMsg("Love it. Your deck should be ready any second now.", "evie");
+        _evieWaitSetStatus("almost there");
+    }, 400);
 }
 
-function _evieWaitPollForInsight(attempt) {
+function _evieWaitFetchContext(attempt) {
     attempt = attempt || 0;
-    if (attempt > 20) {
-        _evieWaitMsg("Still building — I'll catch up with you in a bit.", "evie");
-        return;
-    }
+    if (attempt > 4) return;
     fetch("/api/build-preview")
         .then(r => r.json())
         .then(data => {
             if (!data.ready) {
-                _evieWait._previewPollTimer = setTimeout(() => _evieWaitPollForInsight(attempt + 1), 3000);
+                _evieWait._previewPollTimer = setTimeout(() => _evieWaitFetchContext(attempt + 1), 5000);
                 return;
             }
-            _evieWait.stage = "insight_done";
-            const name = _evieWait.callName;
-            const insight = data.insight || `${data.title || "This script"} has some strong angles to work with.`;
-            _evieWaitMsg(`Okay ${name} — ${insight}.`, "evie");
-
-            // One casual follow-up question
-            setTimeout(() => {
-                const protagonist = data.protagonist;
-                const q = protagonist
-                    ? `How long have you been working on ${protagonist}'s story?`
-                    : "How long have you been working on this one?";
-                _evieWaitMsg(q, "evie");
-                _evieWaitSetStatus("here when you need me");
-                _evieWaitShowInput(true);
-                _evieWait.stage = "chatting";
-            }, 900);
+            if (_evieWait.stage !== "watching") return;
+            _evieWait.stage = "context_shown";
+            const insight = data.insight || null;
+            const title   = data.title || null;
+            const protagonist = data.protagonist || null;
+            let line = insight
+                ? insight
+                : protagonist
+                    ? `I was just reading about ${protagonist} — this one has something.`
+                    : title
+                        ? `${title} — I can already see why you're excited about this.`
+                        : null;
+            if (line) {
+                _evieWaitMsg(line, "evie");
+                setTimeout(() => {
+                    _evieWaitSetStatus("here if you need me");
+                    _evieWaitShowInput(true);
+                }, 800);
+            }
         })
         .catch(() => {
-            _evieWait._previewPollTimer = setTimeout(() => _evieWaitPollForInsight(attempt + 1), 4000);
+            _evieWait._previewPollTimer = setTimeout(() => _evieWaitFetchContext(attempt + 1), 6000);
         });
 }
 // ===== EVIE WAIT CHAT END =====
