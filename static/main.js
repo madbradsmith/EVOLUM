@@ -3083,7 +3083,7 @@ function _syncShowTyping() {
     const t = document.createElement("div");
     t.className = "sync-typing";
     t.id = "syncTyping";
-    t.textContent = "Sync is thinking…";
+    t.textContent = "Evie is thinking…";
     el.appendChild(t);
     el.scrollTop = el.scrollHeight;
 }
