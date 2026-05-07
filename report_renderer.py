@@ -34,6 +34,13 @@ _SCRIPT_ANALYSIS_PAGES = [
     ("am",  ["am-a",  "am-b",  "am-c",  "am-d"]),
 ]
 
+_ACTOR_BOOKED_PAGES = [
+    ("cov", ["cov-a", "cov-b", "cov-c", "cov-d"]),
+    ("ri",  ["ri-a",  "ri-b",  "ri-c",  "ri-d"]),
+    ("dna", ["dna-a", "dna-b", "dna-c", "dna-d"]),
+    ("bfm", ["bfm-a", "bfm-b", "bfm-c", "bfm-d"]),
+]
+
 
 # ── Layout file parsing ───────────────────────────────────────────────────────
 
@@ -329,3 +336,90 @@ def _strength_label(score: int | str) -> str:
     if n >= 55:
         return "Solid · rewrites recommended"
     return "Developing · significant work needed"
+
+
+def _booked_arc_slots(character_arcs: dict, character_name: str) -> dict:
+    """Extract arc begin/mid/end from character_arcs dict keyed by name."""
+    arc = None
+    name_upper = (character_name or "").upper()
+    for k, v in (character_arcs or {}).items():
+        if isinstance(v, dict) and k.upper() == name_upper:
+            arc = v
+            break
+    if not arc:
+        # Fall back to first arc if name doesn't match
+        for v in (character_arcs or {}).values():
+            if isinstance(v, dict):
+                arc = v
+                break
+    if not arc:
+        return {}
+    return {
+        "arc_begin_name": "BEGINS",
+        "arc_begin_text": arc.get("begin") or arc.get("start") or "",
+        "arc_mid_name": "TRANSFORMS",
+        "arc_mid_text": arc.get("transform") or arc.get("mid") or arc.get("middle") or "",
+        "arc_end_name": "ENDS",
+        "arc_end_text": arc.get("end") or arc.get("resolution") or "",
+    }
+
+
+def _beat_groups_to_list(groups) -> list:
+    if not groups:
+        return []
+    lines = []
+    for g in groups:
+        if isinstance(g, dict):
+            bt = g.get("beat_type", "")
+            count = g.get("count", 0)
+            coaching = g.get("coaching", "")
+            line = f"{bt} ({count}): {coaching}" if coaching else f"{bt} ({count})"
+            lines.append(line)
+        elif isinstance(g, str) and g.strip():
+            lines.append(g.strip())
+    return lines
+
+
+def render_actor_booked_html(data: dict, back_url: str = "/") -> str:
+    """Build a complete HTML Actor Booked Report from the AI JSON data."""
+    layout_path = LAYOUTS_DIR / "actor-booked-layouts.html"
+    css, pages = _parse_layout_file(layout_path)
+
+    intel = data.get("intelligence") or {}
+    char_name = data.get("character_name") or "THE CHARACTER"
+    beat_count = data.get("beat_count", 0)
+    scene_count = data.get("scene_count", 0)
+
+    slots: dict = {
+        "doc_type_label": "BOOKED ROLE REPORT",
+        "report_date": "PRINCIPAL PHOTOGRAPHY",
+        "confidential": "CONFIDENTIAL · EVOLUM STUDIO",
+        "role_label": "THE ROLE",
+        "page_number": "",
+        "character_name": char_name.upper(),
+        "title": data.get("title") or "",
+        "genre": (data.get("genre") or "").upper(),
+        "tone": (data.get("tone") or "").upper(),
+        "world": data.get("world") or "",
+        "beat_count": f"{beat_count} BEATS",
+        "scene_count": f"{scene_count} SCENES",
+        "intelligence_summary": intel.get("summary") or "",
+        "booked_continuity": intel.get("booked_continuity") or [],
+        "scene_priorities": intel.get("scene_priorities") or [],
+        "emotional_triggers": intel.get("emotional_triggers") or [],
+        "look_presence": intel.get("look_presence") or [],
+        "emotional_continuity": data.get("emotional_continuity") or [],
+        "costume_behavior_clues": data.get("costume_behavior_clues") or [],
+        "relationship_leverage_map": _rel_map_to_list(data.get("relationship_leverage_map")),
+        "beat_groups": _beat_groups_to_list(data.get("beat_groups")),
+        "set_ready_checklist": data.get("set_ready_checklist") or [],
+        **_booked_arc_slots(data.get("character_arcs") or {}, char_name),
+    }
+
+    els = _select_pages(pages, _ACTOR_BOOKED_PAGES)
+    for el in els:
+        _fill_slots(el, slots)
+    serialized = [_serialize(el) for el in els]
+
+    title_str = f"{char_name} — Booked Role Report"
+    return _assemble(css, serialized, title_str, back_url)

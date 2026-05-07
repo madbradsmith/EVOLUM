@@ -1504,6 +1504,10 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
             "beat_count": len(beats),
             "scene_count": scene_count,
             "intelligence": intelligence,
+            "character_arcs": character_arcs,
+            "emotional_continuity": emotional_continuity,
+            "costume_behavior_clues": costume_clues,
+            "relationship_leverage_map": relationship_map,
             "beat_groups": [
                 {
                     "beat_type": g["beat_type"],

@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EVOLUM — Actor Booked Report Layouts</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --sans: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+  --bg-dark: #111111;
+  --surface: #1b1f23;
+  --surface-2: #232830;
+  --surface-3: #191d22;
+  --gold: #f0c15d;
+  --gold-dim: #8a7140;
+  --gold-bar: #c8962a;
+  --white: #ffffff;
+  --muted: #d8d8d8;
+  --soft: #8f8f8f;
+  --rule: #2a2f36;
+  --set-green: #4caf82;
+  --set-green-dim: #2a5c43;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: #2a2a2a;
+  font-family: var(--sans);
+  color: var(--muted);
+  padding: 40px 20px;
+}
+
+.gallery-header {
+  max-width: 8.5in; margin: 0 auto 40px; color: #ddd;
+  font-family: var(--mono); font-size: 13px; letter-spacing: 0.1em;
+  text-transform: uppercase; opacity: 0.7;
+}
+.gallery-header b { color: var(--gold); font-weight: 500; }
+
+.page {
+  width: 8.5in;
+  min-height: 11in;
+  margin: 0 auto 32px;
+  background: var(--bg-dark);
+  color: var(--muted);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  page-break-after: always;
+  font-size: 11pt;
+  line-height: 1.45;
+}
+.page-pad { padding: 0.6in 0.7in; height: 100%; display: flex; flex-direction: column; }
+
+/* === SHARED ATOMS === */
+.label {
+  font-family: var(--mono);
+  font-size: 10pt;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.label.dim { color: var(--soft); }
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 9pt;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+.gold-rule { height: 1px; background: var(--gold); width: 60px; margin: 12px 0; }
+.gold-rule.full { width: 100%; }
+.thin-rule { height: 1px; background: var(--rule); }
+
+.pill {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-family: var(--mono);
+  font-size: 9pt;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+.pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill.green { border-color: var(--set-green-dim); color: var(--set-green); }
+
+.callout {
+  background: var(--surface);
+  border-left: 3px solid var(--gold);
+  padding: 18px 22px;
+  color: var(--white);
+  font-size: 11pt;
+  line-height: 1.55;
+}
+
+.bullet-list { list-style: none; padding: 0; margin: 0; }
+.bullet-list li {
+  padding: 8px 0 8px 22px;
+  position: relative;
+  font-size: 10.5pt;
+  line-height: 1.5;
+  color: var(--muted);
+  border-bottom: 1px solid var(--rule);
+}
+.bullet-list li:last-child { border-bottom: none; }
+.bullet-list li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 16px;
+  width: 8px; height: 1px;
+  background: var(--gold);
+}
+
+.corner-id {
+  position: absolute; top: 0.4in; right: 0.7in;
+  font-family: var(--mono); font-size: 9pt;
+  letter-spacing: 0.15em; color: var(--soft);
+  text-transform: uppercase;
+}
+.page-foot {
+  position: absolute; bottom: 0.4in; left: 0.7in; right: 0.7in;
+  display: flex; justify-content: space-between;
+  font-family: var(--mono); font-size: 8.5pt;
+  letter-spacing: 0.15em; color: var(--soft);
+  text-transform: uppercase;
+}
+
+/* === COVER COMMON === */
+.cover-mark {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 10pt;
+  letter-spacing: 0.2em; color: var(--gold);
+  text-transform: uppercase;
+}
+.cover-mark .dot { width: 6px; height: 6px; background: var(--gold); border-radius: 50%; }
+
+/* ============== COVER VARIANT A — Vault credit card ============== */
+.cov-a .top { display: flex; justify-content: space-between; align-items: flex-start; }
+.cov-a .meta-stack { font-family: var(--mono); font-size: 9pt; color: var(--soft); text-align: right; line-height: 1.6; letter-spacing: 0.1em; text-transform: uppercase; }
+.cov-a .center { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 0; }
+.cov-a .role-tag { color: var(--gold); margin-bottom: 14px; }
+.cov-a .name { font-family: var(--serif); font-size: 88pt; line-height: 0.92; color: var(--white); letter-spacing: -0.01em; margin: 0 0 22px; }
+.cov-a .project-row { display: flex; align-items: baseline; gap: 18px; margin-bottom: 28px; }
+.cov-a .project-row .in { font-family: var(--serif); font-style: italic; font-size: 14pt; color: var(--soft); }
+.cov-a .project-row .title { font-family: var(--serif); font-size: 28pt; color: var(--gold); }
+.cov-a .pill-row { margin: 18px 0 26px; }
+.cov-a .summary { color: var(--white); font-size: 11pt; line-height: 1.55; max-width: 5.5in; }
+.cov-a .bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+.cov-a .footer-mark { font-family: var(--mono); font-size: 9pt; letter-spacing: 0.2em; text-transform: uppercase; color: var(--soft); }
+.cov-a .portrait-thumb {
+  width: 1.4in; height: 1.8in; background: var(--surface-2);
+  border: 1px solid var(--gold-dim);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 8pt; color: var(--soft);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+
+/* ============== COVER VARIANT B — Hero portrait left ============== */
+.cov-b .page-pad { padding: 0; flex-direction: row; }
+.cov-b .left {
+  width: 3.6in; background: var(--surface-2);
+  display: flex; flex-direction: column; justify-content: space-between;
+  padding: 0.5in 0.4in;
+  border-right: 1px solid var(--gold-dim);
+}
+.cov-b .left .portrait-fill {
+  flex: 1;
+  background: linear-gradient(135deg, var(--surface-2) 0%, #2c333c 100%);
+  background-image: repeating-linear-gradient(135deg, transparent 0 18px, rgba(240,193,93,0.05) 18px 19px);
+  margin: 12px 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 9pt; color: var(--soft);
+  letter-spacing: 0.15em; text-transform: uppercase;
+}
+.cov-b .right { flex: 1; padding: 0.6in 0.5in; display: flex; flex-direction: column; justify-content: space-between; }
+.cov-b .right .top-line { display: flex; justify-content: space-between; align-items: center; }
+.cov-b .name { font-family: var(--serif); font-size: 64pt; line-height: 0.95; color: var(--white); margin: 16px 0; }
+.cov-b .as { font-family: var(--serif); font-style: italic; font-size: 13pt; color: var(--gold); margin-bottom: 8px; }
+.cov-b .title { font-family: var(--serif); font-size: 26pt; color: var(--white); }
+.cov-b .summary { color: var(--muted); font-size: 10.5pt; line-height: 1.6; margin-top: 24px; }
+
+/* ============== COVER VARIANT C — Centered call sheet ============== */
+.cov-c .page-pad { align-items: center; text-align: center; padding: 1in 0.7in; }
+.cov-c .top-mark { color: var(--gold); margin-bottom: 28px; }
+.cov-c .name { font-family: var(--serif); font-size: 96pt; line-height: 0.9; color: var(--white); margin: 0 0 18px; }
+.cov-c .gold-rule { margin: 0 auto 18px; }
+.cov-c .as { font-family: var(--serif); font-style: italic; font-size: 16pt; color: var(--soft); }
+.cov-c .as b { color: var(--gold); font-weight: 400; font-style: normal; }
+.cov-c .pill-row { justify-content: center; margin: 30px 0; }
+.cov-c .summary { color: var(--white); max-width: 5.4in; font-size: 11.5pt; line-height: 1.6; margin: 16px auto 0; }
+.cov-c .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; max-width: 5.4in; margin: 36px auto 0; }
+.cov-c .meta-grid .k { font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.18em; color: var(--soft); text-transform: uppercase; margin-bottom: 4px; }
+.cov-c .meta-grid .v { font-family: var(--serif); font-size: 14pt; color: var(--white); }
+
+/* ============== COVER VARIANT D — Set dossier ============== */
+.cov-d .top-bar { display: flex; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid var(--gold); }
+.cov-d .slate { display: grid; grid-template-columns: 1in 1fr; gap: 6px 22px; font-family: var(--mono); font-size: 9.5pt; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 22px; }
+.cov-d .slate .k { color: var(--soft); }
+.cov-d .slate .v { color: var(--white); }
+.cov-d .body { flex: 1; display: flex; gap: 26px; margin-top: 28px; align-items: flex-start; }
+.cov-d .portrait {
+  width: 2.6in; height: 3.2in; background: var(--surface);
+  border: 1px solid var(--rule);
+  display: flex; align-items: flex-end; justify-content: flex-start;
+  font-family: var(--mono); font-size: 8pt; color: var(--soft);
+  padding: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.cov-d .body-right { flex: 1; }
+.cov-d .name { font-family: var(--serif); font-size: 56pt; line-height: 0.92; color: var(--white); margin: 0 0 8px; }
+.cov-d .as { font-family: var(--serif); font-style: italic; font-size: 14pt; color: var(--gold); margin-bottom: 14px; }
+.cov-d .summary { color: var(--white); font-size: 10.5pt; line-height: 1.55; margin-top: 14px; }
+.cov-d .pill-row { margin-top: 20px; }
+
+/* ============== ROLE INTELLIGENCE COMMON ============== */
+.intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 14px;
+}
+.intel-card {
+  background: var(--surface);
+  padding: 18px 20px 20px;
+  border-top: 2px solid var(--gold);
+  display: flex;
+  flex-direction: column;
+}
+.intel-card .label { color: var(--gold); margin-bottom: 14px; }
+.intel-card .bullet-list li { font-size: 10pt; padding: 6px 0 6px 18px; border-bottom: 1px solid var(--rule); }
+.intel-card .bullet-list li::before { top: 13px; }
+
+/* RI-A: 2x2 grid + summary banner */
+.ri-a .page-title { font-family: var(--serif); font-size: 30pt; color: var(--white); line-height: 1.05; margin: 8px 0 4px; }
+.ri-a .summary-banner { background: var(--surface-3); border-left: 3px solid var(--gold); padding: 14px 18px; color: var(--white); font-size: 10.5pt; line-height: 1.5; margin-bottom: 14px; }
+
+/* RI-B: stacked cards with wide labels */
+.ri-b .stack-card { background: var(--surface); padding: 16px 20px; border-left: 2px solid var(--gold); margin-bottom: 10px; display: flex; gap: 20px; align-items: flex-start; }
+.ri-b .stack-card .card-label { font-family: var(--mono); font-size: 9pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); width: 1.4in; flex-shrink: 0; padding-top: 2px; }
+.ri-b .stack-card .card-body { flex: 1; }
+.ri-b .stack-card .bullet-list li { font-size: 10pt; padding: 5px 0 5px 18px; }
+.ri-b .stack-card .bullet-list li::before { top: 12px; }
+
+/* RI-C: magazine 2-col with pull summary */
+.ri-c .pull-summary { font-family: var(--serif); font-style: italic; font-size: 15pt; color: var(--gold); line-height: 1.4; border-top: 1px solid var(--gold-dim); border-bottom: 1px solid var(--gold-dim); padding: 16px 0; margin: 12px 0 18px; }
+.ri-c .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.ri-c .col-card { }
+.ri-c .col-card .label { color: var(--gold); margin-bottom: 10px; }
+
+/* RI-D: dark-panel block layout */
+.ri-d .panel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.ri-d .panel { background: var(--surface-2); padding: 18px 20px; position: relative; overflow: hidden; }
+.ri-d .panel::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--gold); }
+.ri-d .panel .label { color: var(--gold); margin-bottom: 12px; }
+
+/* ============== CHARACTER DNA COMMON ============== */
+.arc-track {
+  display: flex; gap: 0; margin: 14px 0;
+}
+.arc-node {
+  flex: 1;
+  background: var(--surface);
+  padding: 20px 18px;
+  position: relative;
+}
+.arc-node + .arc-node { border-left: 1px solid var(--rule); }
+.arc-node .arc-label { font-family: var(--mono); font-size: 9pt; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; }
+.arc-node .arc-state { font-family: var(--serif); font-size: 13pt; color: var(--white); line-height: 1.35; }
+.arc-connector { width: 24px; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 16pt; flex-shrink: 0; }
+
+/* DNA-A: arc track + two secondary panels */
+.dna-a .arc-track { margin-bottom: 16px; }
+.dna-a .secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+.dna-a .sec-panel { background: var(--surface); padding: 16px 18px; border-left: 2px solid var(--gold-dim); }
+.dna-a .sec-panel .label { color: var(--gold); margin-bottom: 10px; }
+
+/* DNA-B: full-width arc + relationship table */
+.dna-b .rel-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 10pt; }
+.dna-b .rel-table th { font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); border-bottom: 1px solid var(--gold-dim); padding: 8px 12px 8px 0; text-align: left; }
+.dna-b .rel-table td { padding: 10px 12px 10px 0; color: var(--muted); border-bottom: 1px solid var(--rule); }
+.dna-b .rel-table tr:last-child td { border-bottom: none; }
+.dna-b .rel-table .char-name { color: var(--white); font-weight: 500; }
+
+/* DNA-C: side-by-side arc + intel column */
+.dna-c .layout { display: flex; gap: 22px; flex: 1; }
+.dna-c .arc-col { flex: 1.2; }
+.dna-c .intel-col { flex: 1; }
+.dna-c .arc-stack { display: flex; flex-direction: column; gap: 10px; }
+.dna-c .arc-stack .node { background: var(--surface); padding: 16px 18px; border-top: 2px solid var(--gold); }
+.dna-c .arc-stack .node .node-label { font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+.dna-c .arc-stack .node .node-text { font-family: var(--serif); font-size: 12pt; color: var(--white); line-height: 1.35; }
+.dna-c .intel-col .block { margin-bottom: 16px; }
+.dna-c .intel-col .block .label { color: var(--gold); margin-bottom: 8px; }
+
+/* DNA-D: noir notebook — handwritten-feel accent */
+.dna-d .notebook-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; }
+.dna-d .notebook-head .char { font-family: var(--serif); font-size: 42pt; color: var(--white); line-height: 1; }
+.dna-d .notebook-head .project { font-family: var(--serif); font-style: italic; font-size: 16pt; color: var(--gold); }
+.dna-d .arc-row { display: flex; gap: 0; border: 1px solid var(--rule); margin: 14px 0; }
+.dna-d .arc-row .node { flex: 1; padding: 16px 18px; border-right: 1px solid var(--rule); }
+.dna-d .arc-row .node:last-child { border-right: none; }
+.dna-d .arc-row .node .node-label { font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--soft); margin-bottom: 8px; }
+.dna-d .arc-row .node .node-text { font-family: var(--serif); font-size: 12pt; color: var(--white); line-height: 1.3; }
+.dna-d .lower { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.dna-d .lower .block .label { color: var(--gold); margin-bottom: 8px; }
+
+/* ============== BEAT FREQUENCY MAP COMMON ============== */
+.beat-row {
+  background: var(--surface);
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.beat-row .beat-meta { flex-shrink: 0; width: 1.6in; }
+.beat-row .beat-type { font-family: var(--mono); font-size: 9.5pt; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); }
+.beat-row .beat-count { font-family: var(--serif); font-size: 28pt; color: var(--white); line-height: 1; margin: 4px 0; }
+.beat-row .beat-pages { font-family: var(--mono); font-size: 8.5pt; color: var(--soft); letter-spacing: 0.1em; }
+.beat-row .beat-body { flex: 1; }
+.beat-row .beat-bar-wrap { height: 4px; background: var(--rule); border-radius: 2px; margin-bottom: 10px; }
+.beat-row .beat-bar { height: 4px; background: var(--gold); border-radius: 2px; }
+.beat-row .beat-coaching { font-size: 10pt; color: var(--muted); line-height: 1.5; margin-bottom: 8px; }
+.beat-row .beat-sample { font-family: var(--serif); font-style: italic; font-size: 10pt; color: var(--soft); border-left: 2px solid var(--gold-dim); padding-left: 12px; line-height: 1.45; }
+
+/* BFM-A: vertical stack + checklist sidebar */
+.bfm-a .layout { display: flex; gap: 20px; flex: 1; }
+.bfm-a .beats-col { flex: 1.6; }
+.bfm-a .checklist-col { flex: 1; }
+.bfm-a .checklist-col .label { color: var(--gold); margin-bottom: 12px; }
+.bfm-a .check-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--rule); font-size: 10pt; color: var(--muted); line-height: 1.4; }
+.bfm-a .check-item:last-child { border-bottom: none; }
+.bfm-a .check-item .box { width: 14px; height: 14px; border: 1px solid var(--gold-dim); flex-shrink: 0; margin-top: 2px; }
+
+/* BFM-B: frequency bars only — data visualization */
+.bfm-b .freq-grid { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.bfm-b .freq-row { display: grid; grid-template-columns: 1.8in auto 1fr 0.8in; gap: 14px; align-items: center; }
+.bfm-b .freq-label { font-family: var(--mono); font-size: 9pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+.bfm-b .freq-n { font-family: var(--serif); font-size: 22pt; color: var(--white); line-height: 1; text-align: right; }
+.bfm-b .freq-bar-wrap { height: 8px; background: var(--rule); border-radius: 4px; }
+.bfm-b .freq-bar { height: 8px; background: linear-gradient(90deg, var(--gold-bar), var(--gold)); border-radius: 4px; }
+.bfm-b .freq-pages { font-family: var(--mono); font-size: 8pt; color: var(--soft); text-align: right; }
+.bfm-b .coaching-strip { background: var(--surface); border-left: 2px solid var(--gold); padding: 10px 14px; margin-top: 10px; font-size: 10pt; color: var(--muted); line-height: 1.5; }
+
+/* BFM-C: beat cards + dialogue excerpts */
+.bfm-c .beat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.bfm-c .beat-card { background: var(--surface); padding: 16px 18px; border-top: 2px solid var(--gold); }
+.bfm-c .beat-card .bc-type { font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+.bfm-c .beat-card .bc-count { font-family: var(--serif); font-size: 38pt; color: var(--white); line-height: 1; }
+.bfm-c .beat-card .bc-pages { font-family: var(--mono); font-size: 8pt; color: var(--soft); margin-top: 4px; }
+.bfm-c .beat-card .bc-coaching { font-size: 9.5pt; color: var(--muted); margin-top: 10px; line-height: 1.45; border-top: 1px solid var(--rule); padding-top: 10px; }
+.bfm-c .checklist-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.bfm-c .check-pill { background: var(--surface); border: 1px solid var(--gold-dim); padding: 6px 14px; font-family: var(--mono); font-size: 8.5pt; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border-radius: 2px; }
+
+/* BFM-D: rehearsal score layout */
+.bfm-d .score-head { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.bfm-d .score-stat { background: var(--surface-2); padding: 16px 18px; text-align: center; border-bottom: 2px solid var(--gold); }
+.bfm-d .score-stat .n { font-family: var(--serif); font-size: 42pt; color: var(--white); line-height: 1; }
+.bfm-d .score-stat .k { font-family: var(--mono); font-size: 8pt; letter-spacing: 0.18em; text-transform: uppercase; color: var(--soft); margin-top: 4px; }
+.bfm-d .beat-list { flex: 1; }
+.bfm-d .beat-entry { padding: 12px 0; border-bottom: 1px solid var(--rule); display: flex; gap: 14px; align-items: baseline; }
+.bfm-d .beat-entry:last-child { border-bottom: none; }
+.bfm-d .beat-entry .be-type { font-family: var(--mono); font-size: 9pt; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); width: 1.6in; flex-shrink: 0; }
+.bfm-d .beat-entry .be-bar-wrap { flex: 1; height: 6px; background: var(--rule); border-radius: 3px; align-self: center; }
+.bfm-d .beat-entry .be-bar { height: 6px; background: var(--gold); border-radius: 3px; }
+.bfm-d .beat-entry .be-n { font-family: var(--serif); font-size: 18pt; color: var(--white); width: 40px; text-align: right; }
+.bfm-d .beat-entry .be-coaching { font-size: 9pt; color: var(--soft); flex: 1.2; }
+
+@media print {
+  body { background: none; padding: 0; }
+  .gallery-header { display: none; }
+  .page {
+    box-shadow: none;
+    margin: 0;
+    width: 8.5in;
+    min-height: 11in;
+  }
+  .page-pad { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .intel-card, .beat-row, .arc-node, .sec-panel, .panel { -webkit-print-color-adjust: exact; print-color-adjust: exact; background: var(--surface) !important; }
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<div class="gallery-header">
+  EVOLUM &nbsp;·&nbsp; <b>Actor Booked Report</b> &nbsp;·&nbsp; Layout Library &nbsp;·&nbsp; 4 Page Types × 4 Variants = 16 Layouts
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE TYPE 1: COVER — 4 variants                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- VARIANT A: Vault credit card -->
+<div class="page cov-a">
+  <div class="page-pad">
+    <div class="top">
+      <div class="cover-mark"><div class="dot"></div><span data-slot="doc_type_label">BOOKED ROLE REPORT</span></div>
+      <div class="meta-stack">
+        <div data-slot="report_id">RPT-2026-B</div>
+        <div data-slot="report_date">PRINCIPAL PHOTOGRAPHY</div>
+        <div data-slot="confidential">CONFIDENTIAL</div>
+      </div>
+    </div>
+    <div class="center">
+      <div class="eyebrow role-tag" data-slot="role_label">THE ROLE</div>
+      <div class="name" data-slot="character_name">JULIA CHEN</div>
+      <div class="project-row">
+        <span class="in">in</span>
+        <span class="title" data-slot="title">NIGHT SHIFT</span>
+      </div>
+      <div class="pill-row">
+        <span class="pill" data-slot="genre">THRILLER</span>
+        <span class="pill" data-slot="tone">NEO-NOIR</span>
+        <span class="pill green" data-slot="beat_count">47 BEATS</span>
+        <span class="pill green" data-slot="scene_count">12 SCENES</span>
+      </div>
+      <div class="callout" data-slot="intelligence_summary">Closed off and hyper-controlled, Julia returns to a precinct that treats her survival as a liability. Every relationship she trusted has been restructured around her absence. She must decide whether to protect what's left of her cover — or finally let something matter.</div>
+    </div>
+    <div class="bottom">
+      <div class="footer-mark">EVOLUM · BOOKED PREP</div>
+      <div class="portrait-thumb" data-slot="portrait_img">PORTRAIT</div>
+    </div>
+  </div>
+</div>
+
+<!-- VARIANT B: Hero portrait left -->
+<div class="page cov-b">
+  <div class="page-pad">
+    <div class="left">
+      <div class="cover-mark"><div class="dot"></div><span data-slot="doc_type_label">BOOKED ROLE REPORT</span></div>
+      <div class="portrait-fill" data-slot="portrait_img">CHARACTER PORTRAIT</div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:6px" data-slot="world">1980s HONG KONG PRECINCT</div>
+        <div class="eyebrow" data-slot="report_date">PRINCIPAL PHOTOGRAPHY</div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="top-line">
+        <div class="label">EVOLUM</div>
+        <div class="eyebrow" data-slot="confidential">CONFIDENTIAL</div>
+      </div>
+      <div>
+        <div class="as">The role of</div>
+        <div class="name" data-slot="character_name">JULIA CHEN</div>
+        <div class="title" data-slot="title">NIGHT SHIFT</div>
+        <div class="pill-row" style="margin-top:18px">
+          <span class="pill" data-slot="genre">THRILLER</span>
+          <span class="pill green" data-slot="scene_count">12 SCENES</span>
+        </div>
+        <div class="summary" data-slot="intelligence_summary">Closed off and hyper-controlled, Julia returns to a precinct that treats her survival as a liability. Every relationship she trusted has been restructured around her absence.</div>
+      </div>
+      <div class="eyebrow">EVOLUM · SET DAY INTELLIGENCE</div>
+    </div>
+  </div>
+</div>
+
+<!-- VARIANT C: Centered call sheet -->
+<div class="page cov-c">
+  <div class="page-pad">
+    <div class="top-mark">
+      <div class="cover-mark" style="justify-content:center"><div class="dot"></div><span data-slot="doc_type_label">BOOKED ROLE REPORT</span></div>
+    </div>
+    <div class="name" data-slot="character_name">JULIA CHEN</div>
+    <div class="gold-rule"></div>
+    <div class="as">The role of <b data-slot="character_name">JULIA CHEN</b> in <b data-slot="title">NIGHT SHIFT</b></div>
+    <div class="pill-row">
+      <span class="pill" data-slot="genre">THRILLER</span>
+      <span class="pill" data-slot="tone">NEO-NOIR</span>
+      <span class="pill green" data-slot="beat_count">47 BEATS</span>
+      <span class="pill green" data-slot="scene_count">12 SCENES</span>
+    </div>
+    <div class="summary" data-slot="intelligence_summary">Closed off and hyper-controlled, Julia returns to a precinct that treats her survival as a liability. Every relationship she trusted has been restructured around her absence. She must decide whether to protect what's left of her cover — or finally let something matter.</div>
+    <div class="meta-grid">
+      <div><div class="k">World</div><div class="v" data-slot="world">1980s HK</div></div>
+      <div><div class="k">Tone</div><div class="v" data-slot="tone">Neo-Noir</div></div>
+      <div><div class="k">Scenes</div><div class="v" data-slot="scene_count">12</div></div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SET DAY INTELLIGENCE</span><span data-slot="report_date">PRINCIPAL PHOTOGRAPHY</span></div>
+</div>
+
+<!-- VARIANT D: Set dossier -->
+<div class="page cov-d">
+  <div class="page-pad">
+    <div class="top-bar">
+      <div class="cover-mark"><div class="dot"></div><span data-slot="doc_type_label">BOOKED ROLE REPORT</span></div>
+      <div class="eyebrow" data-slot="confidential">CONFIDENTIAL · EVOLUM STUDIO</div>
+    </div>
+    <div class="slate">
+      <span class="k">Project</span><span class="v" data-slot="title">NIGHT SHIFT</span>
+      <span class="k">Role</span><span class="v" data-slot="character_name">JULIA CHEN</span>
+      <span class="k">Genre</span><span class="v" data-slot="genre">THRILLER</span>
+      <span class="k">Tone</span><span class="v" data-slot="tone">NEO-NOIR</span>
+      <span class="k">Beats</span><span class="v" data-slot="beat_count">47</span>
+      <span class="k">Scenes</span><span class="v" data-slot="scene_count">12</span>
+    </div>
+    <div class="body">
+      <div class="portrait" data-slot="portrait_img">PORTRAIT</div>
+      <div class="body-right">
+        <div class="name" data-slot="character_name">JULIA CHEN</div>
+        <div class="as">in <span data-slot="title">Night Shift</span></div>
+        <div class="gold-rule"></div>
+        <div class="summary" data-slot="intelligence_summary">Closed off and hyper-controlled, Julia returns to a precinct that treats her survival as a liability. Every relationship she trusted has been restructured around her absence.</div>
+        <div class="pill-row" style="margin-top:20px">
+          <span class="pill" data-slot="genre">THRILLER</span>
+          <span class="pill green" data-slot="scene_count">12 SCENES</span>
+          <span class="pill green" data-slot="beat_count">47 BEATS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · SET DAY INTELLIGENCE</span><span data-slot="report_date">PRINCIPAL PHOTOGRAPHY</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE TYPE 2: ROLE INTELLIGENCE — 4 variants            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- VARIANT A: 2x2 grid + summary banner -->
+<div class="page ri-a">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Role Intelligence</div>
+    <div class="page-title" data-slot="character_name">JULIA CHEN</div>
+    <div class="gold-rule full"></div>
+    <div class="summary-banner" data-slot="intelligence_summary">Closed off and hyper-controlled, Julia returns to a precinct that treats her survival as a liability. Every relationship she trusted has been restructured. She must decide whether to protect her cover — or let something matter.</div>
+    <div class="intel-grid">
+      <div class="intel-card">
+        <div class="label">Booked Continuity</div>
+        <ul class="bullet-list" data-slot="booked_continuity">
+          <li>Track how guardedness softens under real pressure.</li>
+          <li>Protect the physical stillness — it's her power.</li>
+          <li>Every scene, she knows more than she lets on.</li>
+          <li>The moment trust breaks is the arc's turning point.</li>
+          <li>Her exit from each scene carries the scene's weight.</li>
+        </ul>
+      </div>
+      <div class="intel-card">
+        <div class="label">Scene Priorities</div>
+        <ul class="bullet-list" data-slot="scene_priorities">
+          <li>INT. PRECINCT — establish the distance before the connection.</li>
+          <li>Scene 14 — the reveal lands only if the preceding silence holds.</li>
+          <li>Scene 22 — elevator. No words. All weight.</li>
+          <li>Scene 31 — the ask. She wants to say yes. She can't.</li>
+          <li>INT. ARCHIVE — the physical discovery triggers the emotional one.</li>
+          <li>Final scene — she's changed. Show it in the walk, not the face.</li>
+        </ul>
+      </div>
+      <div class="intel-card">
+        <div class="label">Emotional Triggers</div>
+        <ul class="bullet-list" data-slot="emotional_triggers">
+          <li>Being trusted before she's earned it.</li>
+          <li>Evidence of what she cost someone.</li>
+          <li>A room that looks like it did before she left.</li>
+          <li>Someone who knows what she did and says nothing.</li>
+        </ul>
+      </div>
+      <div class="intel-card">
+        <div class="label">Look &amp; Presence</div>
+        <ul class="bullet-list" data-slot="look_presence">
+          <li>One physical choice held consistently through the shoot.</li>
+          <li>Let the body carry the weight before the words do.</li>
+          <li>Economy of movement under pressure reads as authority.</li>
+          <li>Stay rooted, not rigid — she controls space, not people.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">02 / 04</span></div>
+</div>
+
+<!-- VARIANT B: stacked cards with wide labels -->
+<div class="page ri-b">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Role Intelligence</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 16px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="gold-rule full" style="margin-bottom:18px"></div>
+    <div class="stack-card">
+      <div class="card-label">Booked Continuity</div>
+      <div class="card-body">
+        <ul class="bullet-list" data-slot="booked_continuity">
+          <li>Track how guardedness softens under real pressure.</li>
+          <li>Protect the physical stillness — it's her power.</li>
+          <li>Every scene, she knows more than she lets on.</li>
+          <li>The moment trust breaks is the arc's turning point.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="card-label">Scene Priorities</div>
+      <div class="card-body">
+        <ul class="bullet-list" data-slot="scene_priorities">
+          <li>Scene 14 — the reveal lands only if the preceding silence holds.</li>
+          <li>Scene 22 — elevator. No words. All weight.</li>
+          <li>Scene 31 — the ask. She wants to say yes. She can't.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="card-label">Emotional Triggers</div>
+      <div class="card-body">
+        <ul class="bullet-list" data-slot="emotional_triggers">
+          <li>Being trusted before she's earned it.</li>
+          <li>Evidence of what she cost someone.</li>
+          <li>A room that looks like it did before she left.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack-card">
+      <div class="card-label">Look &amp; Presence</div>
+      <div class="card-body">
+        <ul class="bullet-list" data-slot="look_presence">
+          <li>One physical choice held consistently through the shoot.</li>
+          <li>Economy of movement under pressure reads as authority.</li>
+          <li>Stay rooted, not rigid — she controls space, not people.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">02 / 04</span></div>
+</div>
+
+<!-- VARIANT C: magazine 2-col with pull summary -->
+<div class="page ri-c">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Role Intelligence</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 4px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="pull-summary" data-slot="intelligence_summary">"Closed off and hyper-controlled — a character who knows that trust is the most expensive thing she can afford."</div>
+    <div class="two-col">
+      <div>
+        <div class="col-card">
+          <div class="label">Booked Continuity</div>
+          <ul class="bullet-list" data-slot="booked_continuity">
+            <li>Track how guardedness softens under pressure.</li>
+            <li>Protect the physical stillness.</li>
+            <li>She knows more than she shows every scene.</li>
+            <li>The trust break is the arc's pivot.</li>
+          </ul>
+        </div>
+        <div class="thin-rule" style="margin:16px 0"></div>
+        <div class="col-card">
+          <div class="label">Emotional Triggers</div>
+          <ul class="bullet-list" data-slot="emotional_triggers">
+            <li>Being trusted before she's earned it.</li>
+            <li>Evidence of what she cost someone.</li>
+            <li>A familiar room.</li>
+            <li>Someone who knows and says nothing.</li>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <div class="col-card">
+          <div class="label">Scene Priorities</div>
+          <ul class="bullet-list" data-slot="scene_priorities">
+            <li>Scene 14 — silence before the reveal.</li>
+            <li>Scene 22 — elevator. No words. All weight.</li>
+            <li>Scene 31 — the ask she can't answer.</li>
+            <li>Final scene — show change in the walk.</li>
+          </ul>
+        </div>
+        <div class="thin-rule" style="margin:16px 0"></div>
+        <div class="col-card">
+          <div class="label">Look &amp; Presence</div>
+          <ul class="bullet-list" data-slot="look_presence">
+            <li>One physical choice held through the shoot.</li>
+            <li>Economy of movement = authority.</li>
+            <li>Let the body carry before the words.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">02 / 04</span></div>
+</div>
+
+<!-- VARIANT D: dark-panel block layout -->
+<div class="page ri-d">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Role Intelligence</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 4px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="callout" style="margin:12px 0" data-slot="intelligence_summary">Closed off and hyper-controlled, Julia returns to a precinct that treats her survival as a liability. Every relationship she trusted has been restructured. She must decide whether to protect her cover — or let something matter.</div>
+    <div class="panel-row">
+      <div class="panel">
+        <div class="label">Booked Continuity</div>
+        <ul class="bullet-list" data-slot="booked_continuity">
+          <li>Track how guardedness softens under pressure.</li>
+          <li>Protect the physical stillness.</li>
+          <li>Every scene — she knows more than she shows.</li>
+          <li>Trust break is the arc pivot.</li>
+          <li>Exit each scene carrying its weight.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="label">Scene Priorities</div>
+        <ul class="bullet-list" data-slot="scene_priorities">
+          <li>Precinct arrival — distance before connection.</li>
+          <li>Scene 14 — silence before the reveal.</li>
+          <li>Scene 22 — no words, all weight.</li>
+          <li>Scene 31 — the ask she can't answer.</li>
+          <li>Archive — physical discovery → emotional.</li>
+          <li>Final scene — change in the walk, not the face.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="label">Emotional Triggers</div>
+        <ul class="bullet-list" data-slot="emotional_triggers">
+          <li>Being trusted before she's earned it.</li>
+          <li>Evidence of what she cost someone.</li>
+          <li>A room that looks like it did before.</li>
+          <li>Someone who knows and says nothing.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <div class="label">Look &amp; Presence</div>
+        <ul class="bullet-list" data-slot="look_presence">
+          <li>One physical choice held consistently.</li>
+          <li>Body carries weight before words.</li>
+          <li>Economy of movement = authority.</li>
+          <li>Rooted, not rigid.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">02 / 04</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE TYPE 3: CHARACTER DNA — 4 variants                -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- VARIANT A: arc track + secondary panels -->
+<div class="page dna-a">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Character DNA</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 4px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="gold-rule full" style="margin-bottom:14px"></div>
+    <div class="arc-track">
+      <div class="arc-node">
+        <div class="arc-label" data-slot="arc_begin_name">BEGINS</div>
+        <div class="arc-state" data-slot="arc_begin_text">Closed off, hyper-controlled, distrusts everyone in the room.</div>
+      </div>
+      <div class="arc-connector">→</div>
+      <div class="arc-node">
+        <div class="arc-label" data-slot="arc_mid_name">TRANSFORMS</div>
+        <div class="arc-state" data-slot="arc_mid_text">Forced to rely on someone she can't read — trust becomes survival.</div>
+      </div>
+      <div class="arc-connector">→</div>
+      <div class="arc-node">
+        <div class="arc-label" data-slot="arc_end_name">ENDS</div>
+        <div class="arc-state" data-slot="arc_end_text">Cracked open — certainty replaced by something riskier.</div>
+      </div>
+    </div>
+    <div class="secondary">
+      <div class="sec-panel">
+        <div class="label">Emotional Continuity</div>
+        <ul class="bullet-list" data-slot="emotional_continuity">
+          <li>The controlled mask is the performance — protect it.</li>
+          <li>What she cares about must never be stated directly.</li>
+        </ul>
+      </div>
+      <div class="sec-panel">
+        <div class="label">Costume &amp; Behavior Clues</div>
+        <ul class="bullet-list" data-slot="costume_behavior_clues">
+          <li>Her uniform carries the weight of a rank she didn't ask for.</li>
+          <li>She adjusts her collar when she's about to lie.</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="label" style="margin-bottom:10px">Relationship Leverage Map</div>
+      <table class="dna-b rel-table" style="width:100%">
+        <thead>
+          <tr><th>Character</th><th>Dynamic</th><th>Function</th></tr>
+        </thead>
+        <tbody data-slot="relationship_leverage_map">
+          <tr><td class="char-name">MARCUS</td><td>Volatile trust</td><td>Information source — she needs him more than he knows</td></tr>
+          <tr><td class="char-name">CAPTAIN LEE</td><td>Institutional threat</td><td>Controls her access — he's the obstacle and the key</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">03 / 04</span></div>
+</div>
+
+<!-- VARIANT B: full-width arc + relationship table -->
+<div class="page dna-b">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Character DNA</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 4px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="arc-track" style="margin-bottom:16px">
+      <div class="arc-node">
+        <div class="arc-label" data-slot="arc_begin_name">BEGINS</div>
+        <div class="arc-state" data-slot="arc_begin_text">Closed off, hyper-controlled, distrusts everyone in the room.</div>
+      </div>
+      <div class="arc-connector">→</div>
+      <div class="arc-node">
+        <div class="arc-label" data-slot="arc_mid_name">TRANSFORMS</div>
+        <div class="arc-state" data-slot="arc_mid_text">Forced to rely on someone she can't read.</div>
+      </div>
+      <div class="arc-connector">→</div>
+      <div class="arc-node">
+        <div class="arc-label" data-slot="arc_end_name">ENDS</div>
+        <div class="arc-state" data-slot="arc_end_text">Cracked open — certainty replaced by something riskier.</div>
+      </div>
+    </div>
+    <div class="gold-rule full" style="margin-bottom:16px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:16px">
+      <div>
+        <div class="label" style="margin-bottom:10px">Emotional Continuity</div>
+        <ul class="bullet-list" data-slot="emotional_continuity">
+          <li>The controlled mask is the performance — protect it.</li>
+          <li>What she cares about must never be stated directly.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="label" style="margin-bottom:10px">Costume &amp; Behavior</div>
+        <ul class="bullet-list" data-slot="costume_behavior_clues">
+          <li>Her uniform carries the weight of a rank she didn't ask for.</li>
+          <li>She adjusts her collar when she's about to lie.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="label" style="margin-bottom:10px">Relationship Leverage Map</div>
+    <table class="rel-table">
+      <thead><tr><th>Character</th><th>Dynamic</th><th>Function</th></tr></thead>
+      <tbody data-slot="relationship_leverage_map">
+        <tr><td class="char-name">MARCUS</td><td>Volatile trust</td><td>Information source — she needs him more than he knows</td></tr>
+        <tr><td class="char-name">CAPTAIN LEE</td><td>Institutional threat</td><td>Controls access — obstacle and key</td></tr>
+        <tr><td class="char-name">WITNESS</td><td>Unknown alignment</td><td>Asked for her by name — she doesn't know why yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">03 / 04</span></div>
+</div>
+
+<!-- VARIANT C: side-by-side arc + intel column -->
+<div class="page dna-c">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Character DNA</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 12px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="layout">
+      <div class="arc-col">
+        <div class="label" style="margin-bottom:10px">Arc</div>
+        <div class="arc-stack">
+          <div class="node">
+            <div class="node-label" data-slot="arc_begin_name">Begins</div>
+            <div class="node-text" data-slot="arc_begin_text">Closed off, hyper-controlled, distrusts everyone in the room.</div>
+          </div>
+          <div class="node">
+            <div class="node-label" data-slot="arc_mid_name">Transforms</div>
+            <div class="node-text" data-slot="arc_mid_text">Forced to rely on someone she can't read — trust becomes survival.</div>
+          </div>
+          <div class="node">
+            <div class="node-label" data-slot="arc_end_name">Ends</div>
+            <div class="node-text" data-slot="arc_end_text">Cracked open — certainty replaced by something riskier.</div>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <div class="label" style="margin-bottom:8px">Relationship Map</div>
+          <ul class="bullet-list" data-slot="relationship_leverage_map">
+            <li>MARCUS — volatile trust — information source</li>
+            <li>CAPTAIN LEE — institutional threat — obstacle and key</li>
+          </ul>
+        </div>
+      </div>
+      <div class="intel-col">
+        <div class="block">
+          <div class="label">Emotional Continuity</div>
+          <ul class="bullet-list" data-slot="emotional_continuity">
+            <li>The controlled mask is the performance — protect it.</li>
+            <li>What she cares about must never be stated directly.</li>
+          </ul>
+        </div>
+        <div class="block">
+          <div class="label">Costume &amp; Behavior</div>
+          <ul class="bullet-list" data-slot="costume_behavior_clues">
+            <li>Her uniform carries the weight of a rank she didn't ask for.</li>
+            <li>She adjusts her collar when she's about to lie.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">03 / 04</span></div>
+</div>
+
+<!-- VARIANT D: Noir notebook -->
+<div class="page dna-d">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Character DNA</div>
+    <div class="notebook-head">
+      <div class="char" data-slot="character_name">JULIA CHEN</div>
+      <div class="project">in <span data-slot="title">Night Shift</span></div>
+    </div>
+    <div class="arc-row">
+      <div class="node">
+        <div class="node-label" data-slot="arc_begin_name">BEGINS</div>
+        <div class="node-text" data-slot="arc_begin_text">Closed off, hyper-controlled, distrusts everyone.</div>
+      </div>
+      <div class="node">
+        <div class="node-label" data-slot="arc_mid_name">TRANSFORMS</div>
+        <div class="node-text" data-slot="arc_mid_text">Forced to rely on someone she can't read.</div>
+      </div>
+      <div class="node">
+        <div class="node-label" data-slot="arc_end_name">ENDS</div>
+        <div class="node-text" data-slot="arc_end_text">Cracked open — certainty replaced by something riskier.</div>
+      </div>
+    </div>
+    <div class="lower">
+      <div class="block">
+        <div class="label">Emotional Continuity</div>
+        <ul class="bullet-list" data-slot="emotional_continuity">
+          <li>The mask is the performance — protect it.</li>
+          <li>What she cares about is never stated.</li>
+        </ul>
+      </div>
+      <div class="block">
+        <div class="label">Costume &amp; Behavior</div>
+        <ul class="bullet-list" data-slot="costume_behavior_clues">
+          <li>Uniform carries unasked-for rank.</li>
+          <li>Collar adjustment = about to lie.</li>
+        </ul>
+      </div>
+      <div class="block">
+        <div class="label">Relationship Map</div>
+        <ul class="bullet-list" data-slot="relationship_leverage_map">
+          <li>MARCUS — volatile trust</li>
+          <li>CAPTAIN LEE — obstacle/key</li>
+          <li>WITNESS — unknown alignment</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">03 / 04</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE TYPE 4: BEAT FREQUENCY MAP — 4 variants           -->
+<!-- ═══════════════════════════════════════════════════════ -->
+
+<!-- VARIANT A: vertical stack + checklist sidebar -->
+<div class="page bfm-a">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Beat Frequency Map</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 4px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="gold-rule full" style="margin-bottom:14px"></div>
+    <div class="layout">
+      <div class="beats-col" data-slot="beat_groups">
+        <div class="beat-row">
+          <div class="beat-meta">
+            <div class="beat-type">CONFRONTATION</div>
+            <div class="beat-count">8</div>
+            <div class="beat-pages">pp. 12, 34, 67</div>
+          </div>
+          <div class="beat-body">
+            <div class="beat-bar-wrap"><div class="beat-bar" style="width:80%"></div></div>
+            <div class="beat-coaching">Lead with what she needs, not what she feels. The confrontation is tactical.</div>
+            <div class="beat-sample">"I knew him before he knew me." — Scene 14, p.12</div>
+          </div>
+        </div>
+        <div class="beat-row">
+          <div class="beat-meta">
+            <div class="beat-type">PURSUIT</div>
+            <div class="beat-count">6</div>
+            <div class="beat-pages">pp. 22, 45</div>
+          </div>
+          <div class="beat-body">
+            <div class="beat-bar-wrap"><div class="beat-bar" style="width:60%"></div></div>
+            <div class="beat-coaching">Physical urgency, internal stillness. She moves fast but thinks slow.</div>
+            <div class="beat-sample">"The elevator beat. No words." — Scene 22, p.38</div>
+          </div>
+        </div>
+        <div class="beat-row">
+          <div class="beat-meta">
+            <div class="beat-type">REVELATION</div>
+            <div class="beat-count">4</div>
+            <div class="beat-pages">pp. 56, 89</div>
+          </div>
+          <div class="beat-body">
+            <div class="beat-bar-wrap"><div class="beat-bar" style="width:40%"></div></div>
+            <div class="beat-coaching">Don't play the information — play what the information costs her.</div>
+            <div class="beat-sample">"The file wasn't missing. It was moved." — Scene 31</div>
+          </div>
+        </div>
+      </div>
+      <div class="checklist-col">
+        <div class="label">Set-Day Checklist</div>
+        <div data-slot="set_ready_checklist">
+          <div class="check-item"><div class="box"></div>Know the scene pressure level before the first take.</div>
+          <div class="check-item"><div class="box"></div>Track what changed from the previous scene.</div>
+          <div class="check-item"><div class="box"></div>Protect body language and listening continuity.</div>
+          <div class="check-item"><div class="box"></div>Mark where status rises, slips, or resets.</div>
+          <div class="check-item"><div class="box"></div>Keep novelty second to continuity.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">04 / 04</span></div>
+</div>
+
+<!-- VARIANT B: frequency bar visualization -->
+<div class="page bfm-b">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Beat Frequency Map</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 4px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="gold-rule full" style="margin-bottom:18px"></div>
+    <div class="freq-grid" data-slot="beat_groups">
+      <div class="freq-row">
+        <div class="freq-label">CONFRONTATION</div>
+        <div class="freq-n">8</div>
+        <div class="freq-bar-wrap"><div class="freq-bar" style="width:80%"></div></div>
+        <div class="freq-pages">pp. 12, 34, 67</div>
+      </div>
+      <div class="coaching-strip">Lead with what she needs, not what she feels. The confrontation is tactical.</div>
+      <div class="freq-row">
+        <div class="freq-label">PURSUIT</div>
+        <div class="freq-n">6</div>
+        <div class="freq-bar-wrap"><div class="freq-bar" style="width:60%"></div></div>
+        <div class="freq-pages">pp. 22, 45</div>
+      </div>
+      <div class="coaching-strip">Physical urgency, internal stillness. She moves fast but thinks slow.</div>
+      <div class="freq-row">
+        <div class="freq-label">REVELATION</div>
+        <div class="freq-n">4</div>
+        <div class="freq-bar-wrap"><div class="freq-bar" style="width:40%"></div></div>
+        <div class="freq-pages">pp. 56, 89</div>
+      </div>
+      <div class="coaching-strip">Don't play the information — play what the information costs her.</div>
+      <div class="freq-row">
+        <div class="freq-label">SURRENDER</div>
+        <div class="freq-n">3</div>
+        <div class="freq-bar-wrap"><div class="freq-bar" style="width:30%"></div></div>
+        <div class="freq-pages">pp. 71, 94</div>
+      </div>
+      <div class="coaching-strip">The hardest beat. She's not giving up — she's choosing to trust. Find the difference.</div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="label" style="margin-bottom:10px">Set-Day Checklist</div>
+      <ul class="bullet-list" data-slot="set_ready_checklist">
+        <li>Know the scene pressure level before the first take.</li>
+        <li>Track what changed from the previous scene.</li>
+        <li>Protect body language and listening continuity.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">04 / 04</span></div>
+</div>
+
+<!-- VARIANT C: beat cards + dialogue excerpts -->
+<div class="page bfm-c">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Beat Frequency Map</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 12px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="beat-cards" data-slot="beat_groups">
+      <div class="beat-card">
+        <div class="bc-type">CONFRONTATION</div>
+        <div class="bc-count">8</div>
+        <div class="bc-pages">pp. 12, 34, 67</div>
+        <div class="bc-coaching">Lead with what she needs, not what she feels. The confrontation is tactical.</div>
+      </div>
+      <div class="beat-card">
+        <div class="bc-type">PURSUIT</div>
+        <div class="bc-count">6</div>
+        <div class="bc-pages">pp. 22, 45</div>
+        <div class="bc-coaching">Physical urgency, internal stillness. She moves fast but thinks slow.</div>
+      </div>
+      <div class="beat-card">
+        <div class="bc-type">REVELATION</div>
+        <div class="bc-count">4</div>
+        <div class="bc-pages">pp. 56, 89</div>
+        <div class="bc-coaching">Don't play the information — play what it costs her.</div>
+      </div>
+      <div class="beat-card">
+        <div class="bc-type">SURRENDER</div>
+        <div class="bc-count">3</div>
+        <div class="bc-pages">pp. 71, 94</div>
+        <div class="bc-coaching">She's not giving up — she's choosing to trust. Find the difference.</div>
+      </div>
+    </div>
+    <div class="label" style="margin-bottom:10px">Set-Day Checklist</div>
+    <div class="checklist-row" data-slot="set_ready_checklist">
+      <div class="check-pill">Scene pressure check</div>
+      <div class="check-pill">Scene delta — what changed</div>
+      <div class="check-pill">Body continuity</div>
+      <div class="check-pill">Status tracking</div>
+      <div class="check-pill">Continuity over novelty</div>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">04 / 04</span></div>
+</div>
+
+<!-- VARIANT D: rehearsal score -->
+<div class="page bfm-d">
+  <div class="page-pad">
+    <div class="corner-id" data-slot="doc_type_label">BOOKED ROLE REPORT</div>
+    <div class="label">Beat Frequency Map</div>
+    <div style="font-family:var(--serif);font-size:30pt;color:var(--white);margin:8px 0 12px;" data-slot="character_name">JULIA CHEN</div>
+    <div class="score-head">
+      <div class="score-stat"><div class="n" data-slot="beat_count">47</div><div class="k">Total Beats</div></div>
+      <div class="score-stat"><div class="n" data-slot="scene_count">12</div><div class="k">Scenes</div></div>
+      <div class="score-stat"><div class="n">4</div><div class="k">Beat Types</div></div>
+      <div class="score-stat"><div class="n">8</div><div class="k">Peak Beat</div></div>
+    </div>
+    <div class="beat-list" data-slot="beat_groups">
+      <div class="beat-entry">
+        <div class="be-type">CONFRONTATION</div>
+        <div class="be-bar-wrap"><div class="be-bar" style="width:80%"></div></div>
+        <div class="be-n">8</div>
+        <div class="be-coaching">Lead with the need, not the feeling.</div>
+      </div>
+      <div class="beat-entry">
+        <div class="be-type">PURSUIT</div>
+        <div class="be-bar-wrap"><div class="be-bar" style="width:60%"></div></div>
+        <div class="be-n">6</div>
+        <div class="be-coaching">Fast body, slow mind. Physical urgency, internal stillness.</div>
+      </div>
+      <div class="beat-entry">
+        <div class="be-type">REVELATION</div>
+        <div class="be-bar-wrap"><div class="be-bar" style="width:40%"></div></div>
+        <div class="be-n">4</div>
+        <div class="be-coaching">Play what the information costs, not the information itself.</div>
+      </div>
+      <div class="beat-entry">
+        <div class="be-type">SURRENDER</div>
+        <div class="be-bar-wrap"><div class="be-bar" style="width:30%"></div></div>
+        <div class="be-n">3</div>
+        <div class="be-coaching">Not giving up — choosing to trust. Find the line between them.</div>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div class="label" style="margin-bottom:10px">Set-Day Checklist</div>
+      <ul class="bullet-list" data-slot="set_ready_checklist">
+        <li>Know the scene pressure level before the first take.</li>
+        <li>Track what changed from the previous scene.</li>
+        <li>Protect body language and listening continuity.</li>
+        <li>Mark where status rises, slips, or resets.</li>
+        <li>Keep novelty second to continuity.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="page-foot"><span>EVOLUM · BOOKED PREP</span><span data-slot="page_number">04 / 04</span></div>
+</div>
+
+<!--
+SLOT WIRING TABLE
+=================
+slot name                    | content                                        | data type
+─────────────────────────────┼────────────────────────────────────────────────┼───────────
+doc_type_label               | "BOOKED ROLE REPORT"                           | string
+report_id                    | Report ID code                                 | string
+report_date                  | "PRINCIPAL PHOTOGRAPHY" or date string         | string
+confidential                 | Confidentiality stamp text                     | string
+role_label                   | Eyebrow above name (e.g. "THE ROLE")           | string
+character_name               | Lead character name                            | string
+title                        | Project title                                  | string
+genre                        | Genre pill                                     | string
+tone                         | Tone pill                                      | string
+beat_count                   | Beat count (e.g. "47 BEATS")                   | string
+scene_count                  | Scene count (e.g. "12 SCENES")                 | string
+world                        | World/setting label                            | string
+intelligence_summary         | 2-4 sentence role snapshot                     | text
+portrait_img                 | Character portrait image area                  | replace innerHTML with <img>
+page_number                  | Footer page number                             | string
+─── ROLE INTELLIGENCE ───────┼────────────────────────────────────────────────┼───────────
+booked_continuity            | What to protect through the whole shoot        | <ul> of <li>
+scene_priorities             | What matters most in each key scene            | <ul> of <li>
+emotional_triggers           | What moves this character                      | <ul> of <li>
+look_presence                | Physical/behavioral read for the role          | <ul> of <li>
+─── CHARACTER DNA ───────────┼────────────────────────────────────────────────┼───────────
+arc_begin_name               | Arc step 1 label (e.g. "BEGINS")               | string
+arc_begin_text               | Arc step 1 description                         | string
+arc_mid_name                 | Arc step 2 label (e.g. "TRANSFORMS")           | string
+arc_mid_text                 | Arc step 2 description                         | string
+arc_end_name                 | Arc step 3 label (e.g. "ENDS")                 | string
+arc_end_text                 | Arc step 3 description                         | string
+emotional_continuity         | What to protect emotionally across the shoot   | <ul> of <li>
+costume_behavior_clues       | Wardrobe-driven behavior notes                 | <ul> of <li>
+relationship_leverage_map    | Relationship rows (character/dynamic/function) | replace <tbody> or <ul>
+─── BEAT FREQUENCY MAP ──────┼────────────────────────────────────────────────┼───────────
+beat_groups                  | Beat type blocks with count/pages/coaching     | replace innerHTML with .beat-row divs
+set_ready_checklist          | Pre-scene production checklist                 | replace innerHTML with .check-item or <li>
+─────────────────────────────┴────────────────────────────────────────────────┴───────────
+
+USAGE
+=====
+- 4 page types × 4 variants = 16 layouts total.
+- Python engine: pick one random variant per page type per generation.
+- Page types: cov (cover) · ri (role intelligence) · dna (character DNA) · bfm (beat frequency map)
+- Variant classes: cov-a/b/c/d  ri-a/b/c/d  dna-a/b/c/d  bfm-a/b/c/d
+- Inject via querySelectorAll('[data-slot=...]') setting innerHTML or textContent.
+- For beat_groups: replace the data-slot container innerHTML with one .beat-row div per group.
+- For relationship_leverage_map: replace <tbody> innerHTML with one <tr> per relationship.
+- @media print included — renders cleanly to PDF at 96dpi.
+-->
+
+</body>
+</html>

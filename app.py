@@ -2750,6 +2750,18 @@ def actor_booked_report_page():
     return send_file(LATEST_ACTOR_BOOKED_PDF, as_attachment=False)
 
 
+@app.route("/actor-booked-report/html")
+@require_login
+def actor_booked_report_html():
+    if not LATEST_ACTOR_BOOKED_JSON.exists():
+        return redirect("/actor-booked-report") if LATEST_ACTOR_BOOKED_PDF.exists() else redirect("/")
+    import report_renderer
+    from flask import Response
+    data = json.loads(LATEST_ACTOR_BOOKED_JSON.read_text(encoding="utf-8"))
+    html_content = report_renderer.render_actor_booked_html(data, back_url="/my-studio")
+    return Response(html_content, mimetype="text/html")
+
+
 @app.route("/analysis-report/latest.json")
 def analysis_report_latest_json():
     if not LATEST_ANALYSIS_JSON.exists():
