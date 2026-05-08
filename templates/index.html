@@ -13,7 +13,7 @@
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="icon" href="/static/logo.png" type="image/png">
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260508d">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260508e">
 <script src="{{ url_for('static', filename='evie-avatar.js') }}"></script>
 </head>
 
@@ -204,18 +204,16 @@
                     <div class="build-right-col">
                         <div class="build-quote-card" id="buildQuoteCard">
                             <div class="build-video-wrap" id="buildVideoWrap">
-                                <video id="buildVideo" loop muted playsinline autoplay
-                                    style="width:100%;border-radius:8px;display:block;background:#000;">
-                                    <source src="/static/evolum_ad1.mp4" type="video/mp4">
-                                </video>
-                                <div class="build-video-controls">
-                                    <button class="bvc-btn" id="buildVideoPlayBtn" onclick="toggleBuildVideo()" title="Play / Pause">⏸</button>
-                                    <button class="bvc-btn-sound" id="buildVideoMuteBtn" onclick="toggleBuildVideoMute()" title="Sound">🔊 Sound On</button>
-                                </div>
+                                <iframe id="buildVideo"
+                                    src="https://www.youtube.com/embed/8oWaHO8xqIg?autoplay=1&mute=0&rel=0&modestbranding=1"
+                                    allow="autoplay; encrypted-media; fullscreen"
+                                    allowfullscreen
+                                    style="width:100%;aspect-ratio:16/9;border-radius:8px;display:block;border:none;background:#000;">
+                                </iframe>
                             </div>
-                            <div class="quote-label" id="quoteLabel" style="margin-top:10px;">SCREENPLAY</div>
-                            <div class="quote-text" id="quoteText" style="font-size:13px;">"Here's looking at you, kid."</div>
-                            <div class="quote-attribution" id="quoteAttribution">— Casablanca</div>
+                            <span id="quoteLabel" style="display:none;">SCREENPLAY</span>
+                            <span id="quoteText" style="display:none;">"Here's looking at you, kid."</span>
+                            <span id="quoteAttribution" style="display:none;">— Casablanca</span>
                         </div>
 
                         <!-- Evie FAB handles all chat — no baked-in wait panel -->
