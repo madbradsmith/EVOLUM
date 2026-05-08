@@ -1880,28 +1880,11 @@ function _evieWaitFetchContext(attempt) {
 // ===== EVIE WAIT CHAT END =====
 
 function startBuildVideo() {
-    const v = document.getElementById("buildVideo");
-    if (!v) return;
-    const muteBtn = document.getElementById("buildVideoMuteBtn");
-    const playBtn = document.getElementById("buildVideoPlayBtn");
-    v.volume = 0.35;
-    v.muted = false;
-    v.play().then(() => {
-        if (muteBtn) { muteBtn.textContent = "🔊 Sound On"; muteBtn.classList.remove("sound-off"); }
-    }).catch(() => {
-        v.muted = true;
-        v.play().catch(() => {});
-        if (muteBtn) { muteBtn.textContent = "🔈 Tap for Sound"; muteBtn.classList.add("sound-off"); }
-    });
-    if (playBtn) playBtn.textContent = "⏸";
+    // YouTube iframe autoplays via URL param — no JS control needed
 }
 
 function stopBuildVideo() {
-    const v = document.getElementById("buildVideo");
-    if (!v) return;
-    v.pause();
-    const playBtn = document.getElementById("buildVideoPlayBtn");
-    if (playBtn) playBtn.textContent = "▶";
+    // YouTube iframe — no JS control needed
 }
 
 function toggleBuildVideo() {

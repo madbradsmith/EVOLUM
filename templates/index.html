@@ -13,7 +13,7 @@
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <link rel="icon" href="/static/logo.png" type="image/png">
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260505">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20260508d">
 <script src="{{ url_for('static', filename='evie-avatar.js') }}"></script>
 </head>
 
@@ -209,10 +209,11 @@
                     <div class="workspace-copy" id="buildCopy" style="margin-top:4px; display:none;"></div>
                 </div>
 
-                <!-- Hidden quote elements — kept for JS compatibility -->
+                <!-- Hidden elements kept for JS compatibility -->
                 <span id="quoteLabel" style="display:none;"></span>
                 <span id="quoteText" style="display:none;"></span>
                 <span id="quoteAttribution" style="display:none;"></span>
+                <div id="buildMeta" style="display:none;"></div>
 
                 
 <div class="complete-panel" id="completePanel">
