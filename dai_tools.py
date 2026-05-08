@@ -1000,11 +1000,30 @@ def _world_value(brain_data: Dict) -> str:
     return _safe(brain_data.get("world") or brain_data.get("genre") or brain_data.get("setting"), "Script world")
 
 
-def _actor_ai_json(character_name: str, title: str, mode: str, brain_data: Dict, beats: List[BeatEntry]) -> Dict:
+def _character_mentions_from_script(script_text: str, character_name: str) -> str:
+    """When 0 beats found, extract all lines that mention the character by name."""
+    target = character_name.upper()
+    lines = script_text.split("\n")
+    mentions = []
+    for line in lines:
+        upper = line.strip().upper()
+        if target in upper and line.strip():
+            mentions.append(line.strip()[:200])
+        if len(mentions) >= 30:
+            break
+    return "\n".join(mentions)
+
+
+def _actor_ai_json(character_name: str, title: str, mode: str, brain_data: Dict, beats: List[BeatEntry], script_text: str = "") -> Dict:
     """Returns actor-specific copy blocks. Uses API when available; otherwise strong local fallbacks."""
     logline = _safe(brain_data.get("logline"))
     synopsis = _safe(brain_data.get("synopsis"))[:1800]
     top_dialogue = [f"{b.scene_heading}: {b.dialogue[:160]}" for b in beats[:8]]
+    # When 0 beats, use script mentions so Haiku can still generate character-specific content
+    if not beats and script_text:
+        mentions = _character_mentions_from_script(script_text, character_name)
+        if mentions:
+            top_dialogue = [f"Script mentions of {character_name}:\n{mentions[:1200]}"]
     system = (
         "You create premium, practical actor preparation reports from screenplay data. "
         "Be specific to the role and script. Do not use generic filler. Do not mention AI. "
@@ -1284,12 +1303,66 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
     title = _project_title(brain_data)
     tone = _safe(brain_data.get("tone"), "Performance-driven")
     world = _world_value(brain_data)
-    intelligence = _actor_ai_json(character_name, title, "audition", brain_data, beats)
+    intelligence = _actor_ai_json(character_name, title, "audition", brain_data, beats, script_text)
     image_path = _find_actor_report_image(brain_data, "actor_prep", character_name, title)
+
+    emotional_continuity_prep = [str(x).strip() for x in (brain_data.get("emotional_continuity") or []) if str(x).strip()]
+    costume_clues_prep = [str(x).strip() for x in (brain_data.get("costume_behavior_clues") or []) if str(x).strip()]
+    relationship_map_prep = brain_data.get("relationship_leverage_map") or []
+    role_arc_map_prep = brain_data.get("role_arc_map") or []
+    pressure_ladder_prep = brain_data.get("pressure_ladder") or []
+    set_ready_prep = _as_list(brain_data.get("set_ready_checklist"), [
+        "Know the scene pressure level before the first take.",
+        "Track what changed from the previous scene.",
+        "Protect body language and listening continuity.",
+        "Mark where status rises, slips, or resets.",
+        "Keep novelty second to continuity.",
+    ])
+    character_arcs_prep = brain_data.get("character_arcs") or {}
+
+    # When 0 beats, brain_data fields are script-wide — generate character-specific via AI
+    if not beats and script_text:
+        mentions = _character_mentions_from_script(script_text, character_name)
+        if mentions:
+            char_sys = (
+                "You generate specific, practical actor preparation data from screenplay context. "
+                "Be specific to this character. Do not use generic filler. Return only valid JSON."
+            )
+            char_prompt = f"""
+Character: {character_name} in {title}
+Script mentions of this character:
+{mentions[:1400]}
+
+Return JSON with these keys (each a list of 3-4 short, specific bullets):
+emotional_continuity: emotional thread this character carries across scenes
+costume_behavior_clues: physical/costume details that reveal character state
+relationship_leverage_map: strings like "Character A and Character B — dynamic — story function"
+set_ready_checklist: things the actor must confirm before each take
+"""
+            raw_char = _call_text_ai(char_sys, char_prompt, max_tokens=600)
+            if raw_char:
+                try:
+                    cleaned_char = raw_char.strip()
+                    if cleaned_char.startswith("```"):
+                        cleaned_char = re.sub(r"^```(?:json)?", "", cleaned_char).strip()
+                        cleaned_char = re.sub(r"```$", "", cleaned_char).strip()
+                    char_fields = json.loads(cleaned_char)
+                    if isinstance(char_fields, dict):
+                        if char_fields.get("emotional_continuity"):
+                            emotional_continuity_prep = [str(x) for x in char_fields["emotional_continuity"]]
+                        if char_fields.get("costume_behavior_clues"):
+                            costume_clues_prep = [str(x) for x in char_fields["costume_behavior_clues"]]
+                        if char_fields.get("relationship_leverage_map"):
+                            relationship_map_prep = [str(x) for x in char_fields["relationship_leverage_map"]]
+                        if char_fields.get("set_ready_checklist"):
+                            set_ready_prep = [str(x) for x in char_fields["set_ready_checklist"]]
+                except Exception:
+                    pass
 
     # Save JSON for HTML report page
     try:
         json_path = output_path.with_suffix(".json")
+        groups = group_beats_by_type(beats)
         json_path.write_text(json.dumps({
             "character_name": character_name,
             "title": title,
@@ -1298,6 +1371,22 @@ def build_actor_prep_pdf(script_text: str, character_name: str, output_path: str
             "genre": _safe(brain_data.get("genre"), ""),
             "beat_count": len(beats),
             "intelligence": intelligence,
+            "character_arcs": character_arcs_prep,
+            "emotional_continuity": emotional_continuity_prep,
+            "costume_behavior_clues": costume_clues_prep,
+            "relationship_leverage_map": relationship_map_prep,
+            "role_arc_map": role_arc_map_prep,
+            "pressure_ladder": pressure_ladder_prep,
+            "set_ready_checklist": set_ready_prep,
+            "beat_groups": [
+                {
+                    "beat_type": g["beat_type"],
+                    "coaching": g["coaching"],
+                    "count": g["count"],
+                    "scenes": g["scenes"][:4],
+                }
+                for g in groups[:10]
+            ],
         }, indent=2), encoding="utf-8")
     except Exception:
         pass
@@ -1470,7 +1559,7 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
     title = _project_title(brain_data)
     world = _world_value(brain_data)
     tone = _safe(brain_data.get("tone"), "")
-    intelligence = _actor_ai_json(character_name, title, "booked", brain_data, beats)
+    intelligence = _actor_ai_json(character_name, title, "booked", brain_data, beats, script_text)
     image_path = _find_actor_report_image(brain_data, "actor_booked", character_name, title)
     scene_count = len(_unique_scenes(beats)) or 1
 
@@ -1491,6 +1580,45 @@ def build_actor_booked_pdf(script_text: str, character_name: str, output_path: s
         "Mark where status rises, slips, or resets.",
         "Keep novelty second to continuity.",
     ])
+
+    # When 0 beats found, brain_data fields are script-wide (wrong character). Generate character-specific via AI.
+    if not beats and script_text:
+        mentions = _character_mentions_from_script(script_text, character_name)
+        if mentions:
+            char_sys = (
+                "You generate specific, practical actor preparation data from screenplay context. "
+                "Be specific to this character. Do not use generic filler. Return only valid JSON."
+            )
+            char_prompt = f"""
+Character: {character_name} in {title}
+Script mentions of this character:
+{mentions[:1400]}
+
+Return JSON with these keys (each a list of 3-4 short, specific bullets):
+emotional_continuity: emotional thread this character carries across scenes
+costume_behavior_clues: physical/costume details that reveal character state
+relationship_leverage_map: strings like "Character A and Character B — dynamic — story function"
+set_ready_checklist: things the actor must confirm before each take
+"""
+            raw_char = _call_text_ai(char_sys, char_prompt, max_tokens=600)
+            if raw_char:
+                try:
+                    cleaned_char = raw_char.strip()
+                    if cleaned_char.startswith("```"):
+                        cleaned_char = re.sub(r"^```(?:json)?", "", cleaned_char).strip()
+                        cleaned_char = re.sub(r"```$", "", cleaned_char).strip()
+                    char_fields = json.loads(cleaned_char)
+                    if isinstance(char_fields, dict):
+                        if char_fields.get("emotional_continuity"):
+                            emotional_continuity = [str(x) for x in char_fields["emotional_continuity"]]
+                        if char_fields.get("costume_behavior_clues"):
+                            costume_clues = [str(x) for x in char_fields["costume_behavior_clues"]]
+                        if char_fields.get("relationship_leverage_map"):
+                            relationship_map = [str(x) for x in char_fields["relationship_leverage_map"]]
+                        if char_fields.get("set_ready_checklist"):
+                            set_ready = [str(x) for x in char_fields["set_ready_checklist"]]
+                except Exception:
+                    pass
 
     # Save JSON for HTML report page
     try:
