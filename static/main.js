@@ -3169,8 +3169,19 @@ function _renderPricingCards() {
     const featureList = [`<div class="plan-feature">${p.projects}</div>`,
         ...p.features.map(f => `<div class="plan-feature">${f}</div>`)
     ].join("");
+    const lockedCards = _LOCKED_PLANS.map(lp => `
+    <div class="plan-card locked">
+        <div class="plan-lock-badge">🔒 Coming Soon</div>
+        <div class="plan-name">${lp.name}</div>
+        <div class="plan-billed" style="margin-bottom:12px;">${lp.tagline}</div>
+        <div class="plan-divider"></div>
+        <div class="plan-cta" style="margin-top:auto;">
+            <button class="plan-btn plan-btn-muted" disabled>Coming Soon</button>
+        </div>
+    </div>`).join("");
+    container.style.justifyContent = "";
     container.innerHTML = `
-    <div class="plan-card featured" id="planCard_solo" style="width:260px;margin:0 auto">
+    <div class="plan-card featured" id="planCard_solo">
         <div class="plan-badge">Beta Access</div>
         <div class="plan-name">${p.name}</div>
         <div class="plan-price"><span class="plan-price-cents">$</span>${p.monthly}</div>
@@ -3181,7 +3192,8 @@ function _renderPricingCards() {
         <div class="plan-cta">
             <button class="plan-btn plan-btn-primary" onclick="selectPlan('solo')">Get Started</button>
         </div>
-    </div>`;
+    </div>
+    ${lockedCards}`;
 }
 
 function selectPlan(planId) {
