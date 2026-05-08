@@ -811,13 +811,7 @@ function resetCreateProject(){
 function newDeck() {
     _savedDeckRestored = false;
     closeModal('welcomeModal');
-    // Hide and reset Evie wait chat for the new build
-    const _ews = document.getElementById("evieWaitShell");
-    if (_ews) { _ews.style.display = "none"; _ews.classList.remove("minimized"); }
-    const _ewm = document.getElementById("evieWaitMessages");
-    if (_ewm) _ewm.innerHTML = "";
     _evieWait.stage = "idle";
-    _evieWait.callName = "";
     resetCreateProject();
     startDeckFlow();
 }
@@ -1771,7 +1765,7 @@ function returnToPreviewStage(){
     activeCompleteView = "preview";
     document.getElementById("refinementStage").style.display = "none";
     document.getElementById("previewStage").style.display = "block";
-    _setSyncFabVisible(false);
+    _setSyncFabVisible(true);
     renderDeckPreview();
 }
 
@@ -1905,6 +1899,16 @@ function toggleEvieVoicePicker(rowId, toggleBtn) {
     if (toggleBtn) toggleBtn.classList.toggle('active', open);
 }
 
+function toggleEviePanelVoice() {
+    const row = document.getElementById("syncVoiceRow");
+    if (!row) return;
+    if (!row.innerHTML) row.innerHTML = renderEvieVoicePicker("syncPanelVoiceRow");
+    const open = row.style.display === "none" || row.style.display === "";
+    row.style.display = open ? "block" : "none";
+    const btn = document.querySelector(".sync-panel-voice-btn");
+    if (btn) btn.style.opacity = open ? "1" : "";
+}
+
 function startEvieMic(inputId, sendFn, btnEl) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { alert('Voice input requires Chrome or Edge'); return null; }
@@ -1944,156 +1948,56 @@ const _evieWait = {
 };
 
 function _evieWaitMsg(text, who) {
-    const box = document.getElementById("evieWaitMessages");
-    if (!box) return;
-    const el = document.createElement("div");
-    el.className = "evie-msg evie-msg--" + (who === "user" ? "user" : "evie");
-    el.textContent = text;
-    box.appendChild(el);
-    box.scrollTop = box.scrollHeight;
-    if (who !== "user") speakWithEvieVoice(text);
+    // Routes to persistent syncPanel — evieWait shell removed
+    if (who !== "user") {
+        _syncAppendBubble("sync", text);
+        _syncShowBadge();
+        speakWithEvieVoice(text);
+    }
 }
 
-function _evieWaitSetStatus(txt) {
-    const el = document.getElementById("evieWaitStatus");
-    if (el) el.textContent = txt;
-}
-
-function _evieWaitShowInput(show) {
-    const row = document.getElementById("evieWaitInputRow");
-    if (row) row.style.display = show ? "flex" : "none";
-    if (show) setTimeout(() => document.getElementById("evieWaitInput")?.focus(), 50);
-}
-
-function toggleEvieWait() {
-    const shell = document.getElementById("evieWaitShell");
-    if (!shell) return;
-    const minBtn = document.getElementById("evieWaitMinBtn");
-    shell.classList.toggle("minimized");
-    if (minBtn) minBtn.textContent = shell.classList.contains("minimized") ? "+" : "—";
-}
+function _evieWaitSetStatus() {} // no-op — evieWait panel removed
+function _evieWaitShowInput()  {} // no-op — evieWait panel removed
+function toggleEvieWait()      {} // no-op — evieWait panel removed
 
 function startEvieWaitChat() {
-    const shell = document.getElementById("evieWaitShell");
-    if (!shell) return;
-    shell.style.display = "flex";
     _evieWait.stage = "watching";
-
-    const avatarEl = document.getElementById("evieWaitAvatar");
-    if (avatarEl && typeof EvieAvatar !== "undefined") {
-        avatarEl.innerHTML = EvieAvatar.inline(28, "idea", "thinking");
-    }
-
-    // Inject voice picker row below header on first open
-    if (!document.getElementById("evieWaitVoiceRow")) {
-        const header = shell.querySelector(".evie-wait-header");
-        if (header) {
-            const wrap = document.createElement("div");
-            wrap.innerHTML = renderEvieVoicePicker("evieWaitVoiceRow");
-            header.insertAdjacentElement("afterend", wrap.firstChild);
-        }
-    }
-
-    // First message: ambient check-in, uses signup name if we have it
+    _setSyncFabVisible(true);
+    // Greet via persistent panel — show badge so user notices
     const firstName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
-    const greeting = firstName ? `Hey ${firstName} —` : "Hey —";
+    const nameClause = firstName ? ` Address them as ${firstName}.` : "";
     setTimeout(() => {
-        _evieWaitMsg(`${greeting} I'm here. Your deck's almost ready.`, "evie");
-        _evieWaitSetStatus("building...");
-    }, 1000);
-
-    // Second message at 35s: use script context if still building
+        _syncFetch(null, `The user just submitted their script and their pitch deck is now being generated. Greet them warmly in 1-2 sentences — tell them it takes 1-2 minutes and you're here when they need you.${nameClause}`);
+        _syncShowBadge();
+    }, 1500);
+    // Context insight after 35s
     _evieWait._contextTimer = setTimeout(() => {
         if (_evieWait.stage === "watching") _evieWaitFetchContext();
     }, 35000);
 }
 
 function stopEvieWaitChat() {
-    if (_evieWait._previewPollTimer) {
-        clearTimeout(_evieWait._previewPollTimer);
-        _evieWait._previewPollTimer = null;
-    }
-    if (_evieWait._contextTimer) {
-        clearTimeout(_evieWait._contextTimer);
-        _evieWait._contextTimer = null;
-    }
-    _evieWaitShowInput(false);
+    if (_evieWait._previewPollTimer) { clearTimeout(_evieWait._previewPollTimer); _evieWait._previewPollTimer = null; }
+    if (_evieWait._contextTimer)     { clearTimeout(_evieWait._contextTimer);     _evieWait._contextTimer = null; }
     _evieWait.stage = "idle";
 }
 
 function evieWaitComplete() {
-    // Cancel any pending context timers — deck is done
     if (_evieWait._previewPollTimer) { clearTimeout(_evieWait._previewPollTimer); _evieWait._previewPollTimer = null; }
     if (_evieWait._contextTimer)     { clearTimeout(_evieWait._contextTimer);     _evieWait._contextTimer = null; }
-
     _evieWait.stage = "deck_done";
-    _evieWaitSetStatus("your deck is ready");
-
-    // Acknowledge the moment, then move into first-meeting
+    _setSyncFabVisible(true);
     setTimeout(() => {
-        _evieWaitMsg("Your deck is ready.", "evie");
-    }, 600);
-
-    setTimeout(() => {
-        // Use signup name if we have it, otherwise ask fresh
         const savedName = localStorage.getItem("evie_call_name") || "";
         const signupName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
-        if (savedName) {
-            // Already know their name — skip the ask
-            _evieWait.callName = savedName;
-            _evieWait.stage = "chatting";
-            _evieWaitMsg(`Good to see you again, ${savedName}. Take a look — let me know if you want to change anything.`, "evie");
-            _evieWaitSetStatus("here when you need me");
-            _evieWaitShowInput(true);
-        } else if (signupName) {
-            _evieWaitMsg(`I'm Evie — I'll be with you from here. Is ${signupName} what you'd like me to call you, or do you go by something else?`, "evie");
-            _evieWait.stage = "asked_callname";
-            _evieWaitSetStatus("waiting for you");
-            _evieWaitShowInput(true);
-        } else {
-            _evieWaitMsg("I'm Evie — I'll be with you from here. What would you like me to call you?", "evie");
-            _evieWait.stage = "asked_callname";
-            _evieWaitSetStatus("waiting for you");
-            _evieWaitShowInput(true);
-        }
-    }, 2200);
+        const name = savedName || signupName;
+        const nameClause = name ? ` Call them ${name}.` : "";
+        _syncFetch(null, `The user's pitch deck just finished generating. Tell them in 1-2 sentences: their deck is ready, scroll through it, and they can click Refine Deck to edit any slide.${nameClause}`);
+        _syncShowBadge();
+    }, 800);
 }
 
-function evieWaitReply() {
-    const input = document.getElementById("evieWaitInput");
-    if (!input) return;
-    const val = input.value.trim();
-    if (!val) return;
-    input.value = "";
-    _evieWaitMsg(val, "user");
-    _evieWaitShowInput(false);
-
-    if (_evieWait.stage === "asked_callname") {
-        // User confirmed or corrected their name
-        const signupName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
-        // If they replied with something that sounds like "yes"/"yeah"/"that's fine", use signup name
-        const yesWords = /^(yes|yeah|yep|yup|sure|that'?s? ?(fine|good|right|me)|correct|that works)/i;
-        _evieWait.callName = yesWords.test(val) ? signupName : val.split(" ")[0];
-        // Save automatically — this is her profile update
-        localStorage.setItem("evie_call_name", _evieWait.callName);
-        _evieWait.stage = "chatting";
-        _evieWaitSetStatus("here when you need me");
-        setTimeout(() => {
-            _evieWaitMsg(`Great — ${_evieWait.callName} it is. Take a look at your deck.`, "evie");
-        }, 400);
-        setTimeout(() => {
-            _evieWaitMsg("And you don't have to use me at all — minimize me and I'll be right here whenever you need me.", "evie");
-            _evieWaitShowInput(true);
-        }, 2800);
-    } else {
-        // General chat after first-meeting
-        setTimeout(() => {
-            _evieWaitMsg("Got it. Your deck is yours — make it exactly what you need.", "evie");
-            _evieWaitSetStatus("here when you need me");
-            _evieWaitShowInput(true);
-        }, 400);
-    }
-}
+function evieWaitReply() {} // no-op — evieWait panel removed
 
 function _evieWaitFetchContext(attempt) {
     attempt = attempt || 0;
@@ -2630,7 +2534,7 @@ function updateStatusUI(status){
         } else {
             document.getElementById("previewStage").style.display = "block";
             document.getElementById("refinementStage").style.display = "none";
-            _setSyncFabVisible(false);
+            _setSyncFabVisible(true);
             if (previousStatus !== "COMPLETE" || !latestSlidesLoadedForComplete) {
                 syncLatestSlidesForPreview();
             }
@@ -2808,7 +2712,7 @@ async function loadProjectFromPanel(projectId) {
             document.getElementById("completePanel").style.display = "block";
             document.getElementById("previewStage").style.display = "block";
             document.getElementById("refinementStage").style.display = "none";
-            _setSyncFabVisible(false);
+            _setSyncFabVisible(true);
 
             latestSlidesLoadedForComplete = false;
             await syncLatestSlidesForPreview();
@@ -3072,6 +2976,15 @@ function _syncAppendBubble(role, text) {
     inner.className = "sync-bubble-text";
     inner.textContent = text;
     bubble.appendChild(inner);
+    if (role === "sync") {
+        const spk = document.createElement("button");
+        spk.className = "sync-bubble-speak";
+        spk.title = "Play";
+        spk.textContent = "🔊";
+        const captured = text;
+        spk.onclick = () => speakWithEvieVoice(captured);
+        bubble.appendChild(spk);
+    }
     el.appendChild(bubble);
     el.scrollTop = el.scrollHeight;
     _syncState.history.push({ role, text });

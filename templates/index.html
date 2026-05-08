@@ -75,8 +75,10 @@
             <div class="sync-panel-name">Evie</div>
             <div class="sync-panel-status">AI Studio Guide</div>
         </div>
+        <button class="sync-panel-voice-btn" onclick="toggleEviePanelVoice()" title="Voice">🎙</button>
         <button class="sync-panel-close" onclick="toggleSyncPanel()">×</button>
     </div>
+    <div class="sync-panel-voice-row" id="syncVoiceRow" style="display:none;"></div>
     <div class="sync-messages" id="syncMessages"></div>
     <div class="sync-input-row">
         <textarea class="sync-input" id="syncInput" rows="1" placeholder="Ask Evie anything…" onkeydown="syncInputKeydown(event)"></textarea>
@@ -216,27 +218,7 @@
                             <div class="quote-attribution" id="quoteAttribution">— Casablanca</div>
                         </div>
 
-                        <!-- Evie wait chat -->
-                        <div class="evie-wait-shell" id="evieWaitShell" style="display:none;">
-                            <div class="evie-wait-header">
-                                <div class="evie-wait-avatar" id="evieWaitAvatar">✦</div>
-                                <div style="flex:1;">
-                                    <div class="evie-wait-name">Evie</div>
-                                    <div class="evie-wait-status" id="evieWaitStatus">thinking...</div>
-                                </div>
-                                <button class="evie-wait-minimize" id="evieVoiceToggleBtn" onclick="toggleEvieVoicePicker('evieWaitVoiceRow', this)" title="Voice">🎙</button>
-                                <button class="evie-wait-minimize" id="evieWaitMinBtn" onclick="toggleEvieWait()" title="Minimize">—</button>
-                            </div>
-                            <div class="evie-wait-body" id="evieWaitBody">
-                                <div class="evie-wait-messages" id="evieWaitMessages"></div>
-                                <div class="evie-wait-input-row" id="evieWaitInputRow" style="display:none;">
-                                    <input class="evie-wait-input" id="evieWaitInput" type="text" placeholder="Type here…" maxlength="60"
-                                        onkeydown="if(event.key==='Enter'){ event.preventDefault(); evieWaitReply(); }">
-                                    <button class="evie-wait-mic" id="evieWaitMicBtn" onclick="startEvieMic('evieWaitInput', evieWaitReply, this)" title="Voice input">🎤</button>
-                                    <button class="evie-wait-send" onclick="evieWaitReply()">&#8594;</button>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- Evie FAB handles all chat — no baked-in wait panel -->
                     </div>
                 </div>
 
@@ -271,19 +253,7 @@
                     <button class="primary-button preview-action-btn" type="button" onclick="newDeck()">New Deck</button>
                 </div>
 
-                <div class="evie-preview-bar">
-                    <div class="evie-preview-bar-left">
-                        <div class="evie-preview-avatar" id="eviePreviewAvatar">✦</div>
-                        <div>
-                            <div class="evie-preview-name">Evie</div>
-                            <div class="evie-preview-hint">Your deck is ready — want to refine it?</div>
-                        </div>
-                    </div>
-                    <div class="evie-preview-bar-btns">
-                        <button class="evie-nav-btn" onclick="toggleSyncPanel()">Ask Evie</button>
-                        <button class="evie-nav-btn evie-nav-btn--primary" onclick="openRefinementStage()">Refine Deck &#8594;</button>
-                    </div>
-                </div>
+                <!-- Evie FAB is always visible — no baked-in preview bar needed -->
             </div>
 
         </div>
