@@ -186,34 +186,41 @@
 </div>
 
             <div class="workspace-panel" id="analyzerPanel">
+                <div class="workspace-title">Building Your Pitch Deck</div>
+                <div class="workspace-copy" id="buildCopy">Your deck is being generated. This takes 1–2 minutes.</div>
 
-                <!-- YouTube tutorial video — hero -->
-                <div class="build-video-hero">
-                    <iframe id="buildVideo"
-                            src="https://www.youtube.com/embed/8oWaHO8xqIg?autoplay=1&mute=0"
-                            allow="autoplay; encrypted-media"
-                            allowfullscreen>
-                    </iframe>
-                </div>
-
-                <!-- Build progress — secondary strip -->
-                <div class="build-progress-strip">
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-                        <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
-                        <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
+                <div class="build-two-col">
+                    <div>
+                        <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
+                        <div class="progress-bar" id="buildProgressBar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="build-meta bottom-build-meta" id="buildMeta">
+                            <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
+                            <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
+                        </div>
                     </div>
-                    <div class="progress-bar" id="buildProgressBar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="terminal-log" id="liveProcessLog" style="margin-top:8px;"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
-                    <div class="workspace-copy" id="buildCopy" style="margin-top:4px; display:none;"></div>
-                </div>
 
-                <!-- Hidden elements kept for JS compatibility -->
-                <span id="quoteLabel" style="display:none;"></span>
-                <span id="quoteText" style="display:none;"></span>
-                <span id="quoteAttribution" style="display:none;"></span>
-                <div id="buildMeta" style="display:none;"></div>
+                    <div class="build-right-col">
+                        <div class="build-quote-card" id="buildQuoteCard">
+                            <div class="build-video-wrap" id="buildVideoWrap">
+                                <video id="buildVideo" loop muted playsinline autoplay
+                                    style="width:100%;border-radius:8px;display:block;background:#000;">
+                                    <source src="/static/evolum_ad1.mp4" type="video/mp4">
+                                </video>
+                                <div class="build-video-controls">
+                                    <button class="bvc-btn" id="buildVideoPlayBtn" onclick="toggleBuildVideo()" title="Play / Pause">⏸</button>
+                                    <button class="bvc-btn-sound" id="buildVideoMuteBtn" onclick="toggleBuildVideoMute()" title="Sound">🔊 Sound On</button>
+                                </div>
+                            </div>
+                            <div class="quote-label" id="quoteLabel" style="margin-top:10px;">SCREENPLAY</div>
+                            <div class="quote-text" id="quoteText" style="font-size:13px;">"Here's looking at you, kid."</div>
+                            <div class="quote-attribution" id="quoteAttribution">— Casablanca</div>
+                        </div>
+
+                        <!-- Evie FAB handles all chat — no baked-in wait panel -->
+                    </div>
+                </div>
 
                 
 <div class="complete-panel" id="completePanel">

@@ -1805,8 +1805,17 @@ function _evieWaitShowInput()  {} // no-op — evieWait panel removed
 function toggleEvieWait()      {} // no-op — evieWait panel removed
 
 function startEvieWaitChat() {
-    // Video is the waiting experience — Evie stays quiet during the build
     _evieWait.stage = "watching";
+    _setSyncFabVisible(true);
+    const firstName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
+    const nameClause = firstName ? ` Address them as ${firstName}.` : "";
+    setTimeout(() => {
+        _syncFetch(null, `The user just submitted their script and their pitch deck is now being generated. Greet them warmly in 1-2 sentences — tell them it takes 1-2 minutes and you're here when they need you.${nameClause}`);
+        _syncShowBadge();
+    }, 1500);
+    _evieWait._contextTimer = setTimeout(() => {
+        if (_evieWait.stage === "watching") _evieWaitFetchContext();
+    }, 35000);
 }
 
 function stopEvieWaitChat() {
@@ -1869,11 +1878,28 @@ function _evieWaitFetchContext(attempt) {
 // ===== EVIE WAIT CHAT END =====
 
 function startBuildVideo() {
-    // YouTube iframe autoplays via URL param — no JS control needed
+    const v = document.getElementById("buildVideo");
+    if (!v) return;
+    const muteBtn = document.getElementById("buildVideoMuteBtn");
+    const playBtn = document.getElementById("buildVideoPlayBtn");
+    v.volume = 0.35;
+    v.muted = false;
+    v.play().then(() => {
+        if (muteBtn) { muteBtn.textContent = "🔊 Sound On"; muteBtn.classList.remove("sound-off"); }
+    }).catch(() => {
+        v.muted = true;
+        v.play().catch(() => {});
+        if (muteBtn) { muteBtn.textContent = "🔈 Tap for Sound"; muteBtn.classList.add("sound-off"); }
+    });
+    if (playBtn) playBtn.textContent = "⏸";
 }
 
 function stopBuildVideo() {
-    // YouTube iframe — no JS control needed
+    const v = document.getElementById("buildVideo");
+    if (!v) return;
+    v.pause();
+    const playBtn = document.getElementById("buildVideoPlayBtn");
+    if (playBtn) playBtn.textContent = "▶";
 }
 
 function toggleBuildVideo() {
