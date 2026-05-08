@@ -1869,7 +1869,10 @@ function _evieWaitFetchContext(attempt) {
 // ===== EVIE WAIT CHAT END =====
 
 function startBuildVideo() {
-    // YouTube iframe handles its own playback via autoplay param
+    const iframe = document.getElementById("buildVideo");
+    if (iframe && iframe.tagName === "IFRAME" && !iframe.src.includes("youtube")) {
+        iframe.src = "https://www.youtube.com/embed/8oWaHO8xqIg?autoplay=1&mute=0&rel=0&modestbranding=1&start=77";
+    }
 }
 
 function stopBuildVideo() {
