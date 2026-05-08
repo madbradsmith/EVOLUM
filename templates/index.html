@@ -186,41 +186,33 @@
 </div>
 
             <div class="workspace-panel" id="analyzerPanel">
-                <div class="workspace-title">Building Your Pitch Deck</div>
-                <div class="workspace-copy" id="buildCopy">Your deck is being generated. This takes 1–2 minutes.</div>
 
-                <div class="build-two-col">
-                    <div>
-                        <div class="terminal-log" id="liveProcessLog"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
-                        <div class="progress-bar" id="buildProgressBar">
-                            <div class="progress-fill" id="progressFill"></div>
-                        </div>
-                        <div class="build-meta bottom-build-meta" id="buildMeta">
-                            <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
-                            <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
-                        </div>
-                    </div>
-
-                    <div class="build-right-col">
-                        <div class="build-quote-card" id="buildQuoteCard">
-                            <div class="build-video-wrap" id="buildVideoWrap">
-                                <video id="buildVideo" loop muted playsinline autoplay
-                                    style="width:100%;border-radius:8px;display:block;background:#000;">
-                                    <source src="/static/evolum_ad1.mp4" type="video/mp4">
-                                </video>
-                                <div class="build-video-controls">
-                                    <button class="bvc-btn" id="buildVideoPlayBtn" onclick="toggleBuildVideo()" title="Play / Pause">⏸</button>
-                                    <button class="bvc-btn-sound" id="buildVideoMuteBtn" onclick="toggleBuildVideoMute()" title="Sound">🔊 Sound On</button>
-                                </div>
-                            </div>
-                            <div class="quote-label" id="quoteLabel" style="margin-top:10px;">SCREENPLAY</div>
-                            <div class="quote-text" id="quoteText" style="font-size:13px;">"Here's looking at you, kid."</div>
-                            <div class="quote-attribution" id="quoteAttribution">— Casablanca</div>
-                        </div>
-
-                        <!-- Evie FAB handles all chat — no baked-in wait panel -->
-                    </div>
+                <!-- YouTube tutorial video — hero -->
+                <div class="build-video-hero">
+                    <iframe id="buildVideo"
+                            src="https://www.youtube.com/embed/8oWaHO8xqIg?autoplay=1&mute=0"
+                            allow="autoplay; encrypted-media"
+                            allowfullscreen>
+                    </iframe>
                 </div>
+
+                <!-- Build progress — secondary strip -->
+                <div class="build-progress-strip">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                        <div class="build-stage-line" id="inlineStageValue">Awaiting input...</div>
+                        <div class="build-status-line" id="inlineStatusValue">IDLE • 00:00</div>
+                    </div>
+                    <div class="progress-bar" id="buildProgressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="terminal-log" id="liveProcessLog" style="margin-top:8px;"><span class="terminal-prompt">[system]</span> waiting for deck generation...</div>
+                    <div class="workspace-copy" id="buildCopy" style="margin-top:4px; display:none;"></div>
+                </div>
+
+                <!-- Hidden quote elements — kept for JS compatibility -->
+                <span id="quoteLabel" style="display:none;"></span>
+                <span id="quoteText" style="display:none;"></span>
+                <span id="quoteAttribution" style="display:none;"></span>
 
                 
 <div class="complete-panel" id="completePanel">
@@ -401,48 +393,46 @@
 
 <div class="modal" id="personModal">
     <div class="modal-content" style="max-width:480px;">
-        <div class="modal-close" onclick="closeModal('personModal')">×</div>
+        <div class="modal-close" onclick="closeModal('personModal'); resetPersonModal()">×</div>
+        <h3 style="margin:0 0 16px;">Attach Talent</h3>
 
-        <!-- Evie header -->
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
-            <div id="personModalAvatar" style="flex-shrink:0;">✦</div>
-            <div>
-                <div style="font-size:12px; font-weight:800; color:#ff9944; letter-spacing:0.06em; text-transform:uppercase;">Evie</div>
-                <div style="font-size:11px; color:#666;" id="personModalStatus">Let's attach some talent</div>
-            </div>
+        <!-- Headshot -->
+        <label style="font-size:11px; font-weight:700; letter-spacing:0.1em; color:#888; text-transform:uppercase; display:block; margin-bottom:6px;">Headshot</label>
+        <div id="personHeadshotPreview" style="display:none; margin-bottom:10px; display:flex; align-items:center; gap:12px;">
+            <img id="personHeadshotImg" src="" alt="" style="width:64px; height:64px; object-fit:cover; border-radius:50%; border:2px solid rgba(255,153,68,0.35);">
+            <span id="personHeadshotName" style="font-size:12px; color:#888;"></span>
         </div>
+        <input type="file" id="personHeadshotFile" accept="image/*" onchange="handlePersonHeadshotChange(this)" style="margin-bottom:14px; width:100%;">
 
-        <!-- Evie chat messages -->
-        <div id="personModalMessages" style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px; min-height:48px;"></div>
+        <!-- Name -->
+        <label style="font-size:11px; font-weight:700; letter-spacing:0.1em; color:#888; text-transform:uppercase; display:block; margin-bottom:6px;">Name</label>
+        <input type="text" id="personNameInput" placeholder="Full name"
+            style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px; margin-bottom:12px;">
 
-        <!-- Input row -->
-        <div id="personModalInputRow" style="display:flex; gap:8px; margin-bottom:14px;">
-            <input type="text" id="personSearchInput"
-                placeholder="Name or IMDb link..."
-                onkeydown="if(event.key==='Enter'){ event.preventDefault(); personModalSubmit(); }"
-                style="flex:1; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px;">
-            <button type="button" onclick="personModalSubmit()" class="primary-button" style="padding:10px 18px; font-size:13px; white-space:nowrap;">&#8594;</button>
-        </div>
+        <!-- IMDb / Website -->
+        <label style="font-size:11px; font-weight:700; letter-spacing:0.1em; color:#888; text-transform:uppercase; display:block; margin-bottom:6px;">IMDb or Website <span style="color:#555; font-weight:400; text-transform:none;">(optional)</span></label>
+        <input type="text" id="personImdbInput" placeholder="imdb.com/name/nm... or website URL"
+            style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px; margin-bottom:12px;">
 
-        <!-- Confirmed person card + role select + credits (hidden until confirmed) -->
-        <div id="personSelectedDetail" style="display:none;">
-            <div id="personSelectedCard" style="display:flex; align-items:center; gap:12px; background:rgba(255,153,68,0.08); border:1px solid rgba(255,153,68,0.25); border-radius:12px; padding:12px; margin-bottom:14px;"></div>
-            <label style="font-size:11px; color:#888; display:block; margin-bottom:4px;">Their role on this project</label>
-            <select id="personRoleInput" style="width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px; margin-bottom:14px;">
-                <option value="Director">Director</option>
-                <option value="Executive Producer">Executive Producer</option>
-                <option value="Producer">Producer</option>
-                <option value="Lead Actor">Lead Actor</option>
-                <option value="Supporting Actor">Supporting Actor</option>
-                <option value="Screenwriter">Screenwriter</option>
-                <option value="Composer">Composer</option>
-                <option value="Cinematographer">Cinematographer</option>
-            </select>
-            <label style="font-size:11px; color:#888; display:block; margin-bottom:4px;">Credits line <span style="color:#555;">(auto-generated, editable)</span></label>
-            <div id="personCreditsLoader" style="display:none; font-size:12px; color:#888; padding:8px 0;">Generating credits...</div>
-            <textarea id="personCreditsInput" rows="2" placeholder="e.g. Academy Award winner — directed Braveheart and The Patriot." style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:13px; resize:vertical; margin-bottom:16px;"></textarea>
-            <button type="button" onclick="addPersonToDecK()" class="primary-button" style="width:100%; padding:13px;">Add to Deck</button>
-        </div>
+        <!-- Role -->
+        <label style="font-size:11px; font-weight:700; letter-spacing:0.1em; color:#888; text-transform:uppercase; display:block; margin-bottom:6px;">Role on this project</label>
+        <select id="personRoleInput" style="width:100%; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:14px; margin-bottom:12px;">
+            <option value="Director">Director</option>
+            <option value="Executive Producer">Executive Producer</option>
+            <option value="Producer">Producer</option>
+            <option value="Lead Actor">Lead Actor</option>
+            <option value="Supporting Actor">Supporting Actor</option>
+            <option value="Screenwriter">Screenwriter</option>
+            <option value="Composer">Composer</option>
+            <option value="Cinematographer">Cinematographer</option>
+        </select>
+
+        <!-- Credits line -->
+        <label style="font-size:11px; color:#888; display:block; margin-bottom:4px;">Credits line <span style="color:#555;">(optional)</span></label>
+        <textarea id="personCreditsInput" rows="2" placeholder="e.g. Award-winning director — known for Braveheart and The Patriot." style="width:100%; box-sizing:border-box; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; border-radius:10px; padding:10px 14px; font-size:13px; resize:vertical; margin-bottom:14px;"></textarea>
+
+        <div id="personNameError" style="display:none; font-size:12px; color:#ff8a8a; margin-bottom:8px;">Please enter a name.</div>
+        <button type="button" onclick="addPersonToDecK()" class="primary-button" style="width:100%; padding:13px;">Add to Deck</button>
     </div>
 </div>
 
@@ -517,7 +507,7 @@
             DIME puts Zena at the center of a high-pressure world where identity, ambition, and competition collide. There is strong emotional weight here, along with the kind of grounded sports drama energy that can connect with an audience.
         </div>
         <div class="complete-actions" style="flex-wrap:wrap;">
-            <button class="primary-button" type="button" onclick="window.open('/analysis-report','_blank')">View Report</button>
+            <button class="primary-button" type="button" onclick="window.open('/analysis-report/latest.html','_blank')">View Report</button>
             <button class="primary-button" type="button" onclick="window.location.href='/download/latest_analysis_report.pdf'">Download PDF</button>
             <button class="primary-button" type="button" onclick="analyzeToDecFlow()">Create Pitch Deck</button>
             <button class="primary-button" type="button" onclick="startAnalyzeFlow()">Run Another</button>
@@ -572,37 +562,6 @@
 @media (max-width: 540px) {
     #inlineSyncEntry { display: none; }
     div:has(> #regenPromptArea) { grid-template-columns: 1fr !important; }
-}
-.welcome-choice-card {
-    background: #1a1a1a;
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 14px;
-    padding: 24px 20px;
-    width: 180px;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    text-align: center;
-}
-.welcome-choice-card:hover {
-    background: #222;
-    border-color: #e8630a;
-}
-.welcome-choice-icon {
-    font-size: 28px;
-    margin-bottom: 10px;
-}
-.welcome-choice-label {
-    font-size: 15px;
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 4px;
-}
-.welcome-choice-sub {
-    font-size: 12px;
-    color: #888;
-}
-@media (max-width: 480px) {
-    .welcome-choice-card { width: 140px; padding: 18px 12px; }
 }
 </style>
 
@@ -692,6 +651,12 @@
 }
 .pricing-note { text-align:center; font-size:11px; color:#777; margin-top:18px; line-height:1.7; }
 .pricing-note a { color:#666; text-decoration:underline; cursor:pointer; }
+.plan-card.locked { opacity:0.45; pointer-events:none; filter:grayscale(0.4); }
+.plan-lock-badge {
+    position:absolute; top:-11px; left:50%; transform:translateX(-50%);
+    background:#2a2a2a; color:#888; font-size:10px; font-weight:700; letter-spacing:0.1em;
+    padding:3px 10px; border-radius:10px; white-space:nowrap; border:1px solid rgba(255,255,255,0.1);
+}
 
 /* Referral modal */
 .referral-modal-box {
@@ -1063,29 +1028,6 @@
         </div>
     </div>
 </div>
-    
-<div class="modal" id="welcomeModal">
-    <div class="modal-content" style="max-width:520px; text-align:center;">
-        <div class="modal-close" onclick="closeModal('welcomeModal'); resetWelcomeModal()">×</div>
-        <div id="welcomeChoices">
-            <h2 id="welcomeModalHeading" style="margin-bottom:6px;">Welcome to EVOLUM</h2>
-            <p id="welcomeModalSubtext" style="color:#aaa; font-size:14px; margin-bottom:28px;">Ready when you are.</p>
-            <div style="display:flex; gap:16px; justify-content:center; flex-wrap:wrap;">
-                <div class="welcome-choice-card" onclick="newDeck()">
-                    <div class="welcome-choice-icon">✦</div>
-                    <div class="welcome-choice-label">New Project</div>
-                    <div class="welcome-choice-sub">Start with a new script</div>
-                </div>
-            </div>
-        </div>
-        <div id="welcomeProjectsList" style="display:none; text-align:left;">
-            <button onclick="resetWelcomeModal()" style="background:none; border:none; color:#aaa; cursor:pointer; font-size:13px; margin-bottom:16px; padding:0;">← Back</button>
-            <div style="font-weight:600; font-size:15px; margin-bottom:14px; color:#fff;">My Projects</div>
-            <div id="welcomeProjectsItems" style="max-height:260px; overflow-y:auto;"></div>
-        </div>
-    </div>
-</div>
-
 <div class="modal" id="contactModal">
     <div class="modal-content">
         <div class="modal-close" onclick="closeModal('contactModal')">×</div>
@@ -1218,7 +1160,7 @@
 </div>
 
   <script>window.BASE_PATH_PREFIX = "{{ base_path_prefix }}"; window.EVOLUM_USER_NAME = {{ (user_name or "")|tojson }};</script>
-  <script src="{{ url_for('static', filename='main.js') }}?v=20260505d"></script>
+  <script src="{{ url_for('static', filename='main.js') }}?v=20260508c"></script>
   <script>
     const userLoggedIn = {{ user_logged_in | tojson }};
     {% if show_auth %}window.addEventListener('DOMContentLoaded', () => {% if ref_code %}openPricingModal(){% else %}showAuthModal('signin'){% endif %});{% endif %}

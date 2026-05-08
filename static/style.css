@@ -367,6 +367,24 @@ input::-webkit-input-placeholder, textarea::-webkit-input-placeholder {
     border: 1px solid rgba(82,168,255,0.18);
     border-radius: 12px;
 }
+.build-video-hero {
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto 14px;
+}
+.build-video-hero iframe {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: none;
+    border-radius: 8px;
+    display: block;
+}
+.build-progress-strip {
+    max-width: 680px;
+    margin: 0 auto;
+}
+body.active-build .sync-fab,
+body.active-build .sync-panel { display: none !important; }
 .build-two-col {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
