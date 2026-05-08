@@ -1873,7 +1873,8 @@ function startBuildVideo() {
 }
 
 function stopBuildVideo() {
-    // YouTube iframe handles its own playback
+    const iframe = document.getElementById("buildVideo");
+    if (iframe && iframe.tagName === "IFRAME") iframe.src = "";
 }
 
 function toggleBuildVideo() {
