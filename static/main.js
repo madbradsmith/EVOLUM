@@ -1805,19 +1805,8 @@ function _evieWaitShowInput()  {} // no-op — evieWait panel removed
 function toggleEvieWait()      {} // no-op — evieWait panel removed
 
 function startEvieWaitChat() {
+    // Video is the waiting experience — Evie stays quiet during the build
     _evieWait.stage = "watching";
-    _setSyncFabVisible(true);
-    // Greet via persistent panel — show badge so user notices
-    const firstName = (window.EVOLUM_USER_NAME || "").trim().split(" ")[0];
-    const nameClause = firstName ? ` Address them as ${firstName}.` : "";
-    setTimeout(() => {
-        _syncFetch(null, `The user just submitted their script and their pitch deck is now being generated. Greet them warmly in 1-2 sentences — tell them it takes 1-2 minutes and you're here when they need you.${nameClause}`);
-        _syncShowBadge();
-    }, 1500);
-    // Context insight after 35s
-    _evieWait._contextTimer = setTimeout(() => {
-        if (_evieWait.stage === "watching") _evieWaitFetchContext();
-    }, 35000);
 }
 
 function stopEvieWaitChat() {

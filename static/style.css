@@ -805,9 +805,9 @@ body.active-build.complete-mode #analyzerPanel {
     max-height: none;
     overflow: hidden;
 }
-body.active-build.complete-mode .build-two-col {
-    display: none;
-}
+body.active-build.complete-mode .build-two-col,
+body.active-build.complete-mode .build-video-hero,
+body.active-build.complete-mode .build-progress-strip { display: none; }
 body.active-build.complete-mode .complete-panel {
     flex: 1;
     max-height: none;
