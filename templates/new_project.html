@@ -101,10 +101,10 @@
 <!-- Progress overlay shown during build -->
 <div id="progressOverlay">
 
-    <!-- Short film via Google Drive -->
+    <!-- Tutorial video -->
     <iframe id="tutorialVideo"
-            src="https://drive.google.com/file/d/0B3sr5eT00Tv4LWE3U3RRSWxfcDA/preview"
-            allow="autoplay"
+            src="https://www.youtube.com/embed/8oWaHO8xqIg?autoplay=1&mute=0"
+            allow="autoplay; encrypted-media"
             allowfullscreen>
     </iframe>
 
@@ -317,7 +317,7 @@ async function pollForCompletion() {
 }
 
 function _startTutorialVideo() {
-    // Google Drive iframe reloads itself on display — nothing extra needed
+    // YouTube iframe autoplays via ?autoplay=1 param — nothing extra needed
 }
 </script>
 
