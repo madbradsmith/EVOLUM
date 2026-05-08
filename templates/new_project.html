@@ -25,33 +25,10 @@
     width: 100%;
     max-width: 620px;
     aspect-ratio: 16 / 9;
-    background: #000;
+    border: none;
     border-radius: 4px;
     display: block;
 }
-.video-controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    max-width: 620px;
-    width: 100%;
-    padding: 10px 4px 14px;
-}
-.vc-btn {
-    background: none;
-    border: 1px solid rgba(255,122,0,0.3);
-    color: rgba(255,255,255,0.75);
-    font-size: 12px;
-    font-family: monospace;
-    letter-spacing: 0.04em;
-    padding: 6px 16px;
-    border-radius: 2px;
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-}
-.vc-btn:hover { background: rgba(255,122,0,0.15); color: #ff9944; border-color: rgba(255,122,0,0.7); }
-.vc-btn.vc-primary { border-color: rgba(255,122,0,0.7); color: #ff9944; min-width: 80px; }
 
 /* ── Build progress (compact) ── */
 .build-progress-wrap {
@@ -124,18 +101,12 @@
 <!-- Progress overlay shown during build -->
 <div id="progressOverlay">
 
-    <!-- Tutorial video — replace src with your HeyGen MP4 URL when ready -->
-    <video id="tutorialVideo" playsinline preload="auto"
-           src="https://YOUR_HEYGEN_VIDEO_URL_HERE.mp4">
-    </video>
-
-    <!-- Custom video controls -->
-    <div class="video-controls">
-        <button class="vc-btn" onclick="vcSkip(-10)">− 10s</button>
-        <button class="vc-btn vc-primary" id="vcPlayBtn" onclick="vcTogglePlay()">▶ Play</button>
-        <button class="vc-btn" onclick="vcSkip(10)">+ 10s</button>
-        <button class="vc-btn" id="vcMuteBtn" onclick="vcToggleMute()">🔊 Sound</button>
-    </div>
+    <!-- Short film via Google Drive -->
+    <iframe id="tutorialVideo"
+            src="https://drive.google.com/file/d/0B3sr5eT00Tv4LWE3U3RRSWxfcDA/preview"
+            allow="autoplay"
+            allowfullscreen>
+    </iframe>
 
     <!-- Build progress (compact strip) -->
     <div class="build-progress-wrap">
@@ -345,49 +316,8 @@ async function pollForCompletion() {
     pollTimer = setTimeout(pollForCompletion, 1500);
 }
 
-// ── Tutorial video controls ────────────────────────────────────────────────
-const _vid = () => document.getElementById("tutorialVideo");
-
-function vcTogglePlay() {
-    const v = _vid();
-    const btn = document.getElementById("vcPlayBtn");
-    if (v.paused) {
-        v.play().catch(() => {});
-        btn.textContent = "⏸ Pause";
-    } else {
-        v.pause();
-        btn.textContent = "▶ Play";
-    }
-}
-
-function vcToggleMute() {
-    const v = _vid();
-    v.muted = !v.muted;
-    document.getElementById("vcMuteBtn").textContent = v.muted ? "🔇" : "🔊";
-}
-
-function vcSkip(sec) {
-    const v = _vid();
-    v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + sec));
-}
-
-// Wire up video events
-document.addEventListener("DOMContentLoaded", () => {
-    const v = document.getElementById("tutorialVideo");
-    if (!v) return;
-    v.addEventListener("ended", () => { document.getElementById("vcPlayBtn").textContent = "▶ Play"; });
-    v.addEventListener("pause",  () => { document.getElementById("vcPlayBtn").textContent = "▶ Play"; });
-    v.addEventListener("play",   () => { document.getElementById("vcPlayBtn").textContent = "⏸ Pause"; });
-});
-
-// Auto-play video when overlay opens
-const _origSubmit = window.submitNewProject;
 function _startTutorialVideo() {
-    const v = _vid();
-    if (!v) return;
-    v.currentTime = 0;
-    v.muted = false;
-    v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+    // Google Drive iframe reloads itself on display — nothing extra needed
 }
 </script>
 
