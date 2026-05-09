@@ -63,8 +63,31 @@ def _img_frame(url: str, label: str = "") -> str:
     )
 
 
-def _render_title(title, subtitle, body, image_url, project_type, genre_tag):
-    """T2 — Hero left: image fills left half, metadata and title on right."""
+def _render_title(title, subtitle, body, image_url, project_type, genre_tag, variant="t2"):
+    """T2 (default) — Hero left: image fills left half, metadata and title on right.
+       T4 — Poster-style slate with metadata stack."""
+    if variant == "t4":
+        img_block = _img_frame(image_url, "poster")
+        logline = subtitle or body or ""
+        fmt = esc(project_type or "FEATURE FILM").upper()
+        genre = esc(genre_tag or "").upper()
+        return f"""<section data-label="Title">
+  <div class="slide-pad t4">
+    <div class="top-row">
+      <div class="slate">
+        <div class="row"><span class="k">FORMAT</span><span class="v">{fmt}</span></div>
+        {'<div class="row"><span class="k">GENRE</span><span class="v">' + genre + '</span></div>' if genre else ''}
+      </div>
+    </div>
+    <div class="center">
+      <div class="poster">{img_block}</div>
+      <div class="right-block">
+        <h1 class="display title">{esc(title)}</h1>
+        {f'<p class="logline">{esc(logline)}</p>' if logline else ''}
+      </div>
+    </div>
+  </div>
+</section>"""
     img_block = _img_frame(image_url, "hero image")
     logline = subtitle or body or ""
     fmt = esc(project_type or "FEATURE FILM").upper()
@@ -88,8 +111,9 @@ def _render_title(title, subtitle, body, image_url, project_type, genre_tag):
 </section>"""
 
 
-def _render_logline(title, subtitle, body, image_url, project_title, genre_tag):
-    """L1 — Centered serif logline."""
+def _render_logline(title, subtitle, body, image_url, project_title, genre_tag, variant="l1"):
+    """L1 (default) — Massive centered serif logline.
+       L2 — Accent rule, asymmetric left."""
     logline = body or subtitle or ""
     if not logline:
         logline = title
@@ -97,6 +121,14 @@ def _render_logline(title, subtitle, body, image_url, project_title, genre_tag):
     else:
         display_title = project_title or title
     genre = esc((genre_tag or "").upper())
+    if variant == "l2":
+        return f"""<section data-label="Logline">
+  <div class="slide-pad l2">
+    <div class="accent-rule"></div>
+    <div class="label">{esc(display_title)}</div>
+    <p class="logline">{esc(logline)}</p>
+  </div>
+</section>"""
     return f"""<section data-label="Logline">
   <div class="slide-pad l1">
     <div class="label-row">
@@ -121,8 +153,9 @@ def _render_synopsis(title, subtitle, body, image_url):
 </section>"""
 
 
-def _render_protagonist(title, subtitle, body, image_url):
-    """P1 — Half portrait: image left, name + bio right."""
+def _render_protagonist(title, subtitle, body, image_url, variant="p1"):
+    """P1 (default) — Half portrait: image left, name + bio right.
+       P3 — Editorial spread with multiple images."""
     img_block = _img_frame(image_url, "character portrait")
     char_name = title or "THE PROTAGONIST"
     char_role = subtitle or "PROTAGONIST"
@@ -139,8 +172,10 @@ def _render_protagonist(title, subtitle, body, image_url):
 </section>"""
 
 
-def _render_world(title, subtitle, body, image_url):
-    """W3 — Full-bleed image with caption overlay."""
+def _render_world(title, subtitle, body, image_url, variant="w3"):
+    """W3 (default) — Full-bleed image with caption overlay.
+       W4 — Split: image left, text details right.
+       W2 — Mosaic image grid."""
     world_name = title or "THE WORLD"
     world_desc = body or subtitle or ""
     if image_url:
@@ -168,8 +203,9 @@ def _render_world(title, subtitle, body, image_url):
 </section>"""
 
 
-def _render_comps(title, subtitle, body, image_url):
-    """C4 — Reference list with titles and notes."""
+def _render_comps(title, subtitle, body, image_url, variant="c4"):
+    """C4 (default) — Reference list with titles and notes.
+       C1 — Two big poster comps side by side."""
     section_title = title or "COMPARABLES"
     lines = [l.strip() for l in (body or subtitle or "").split("\n") if l.strip()]
     items_html = ""
@@ -244,10 +280,27 @@ def _render_generic(stage, title, subtitle, body, image_url):
 </section>"""
 
 
+# ── Layout hint → CSS variant map ─────────────────────────────────────────────
+#
+# layout_engine.py writes a `layout` field on each slide. We map that hint
+# to the best CSS variant for each stage type. Falls back to the default
+# variant if the hint is unrecognized or absent.
+#
+# layout_engine values:
+#   hero_full_bleed, split_left_text, split_right_text,
+#   bottom_story_card, character_focus, quote_overlay, clean_grid
+
+_FULL_BLEED_LAYOUTS = {"hero_full_bleed", "bottom_story_card", "quote_overlay"}
+_SPLIT_LAYOUTS      = {"split_left_text", "split_right_text"}
+_GRID_LAYOUTS       = {"clean_grid"}
+_CHAR_LAYOUTS       = {"character_focus"}
+
+
 # ── Stage → renderer dispatch ─────────────────────────────────────────────────
 
 def render_slide(slide: dict, project: dict) -> str:
     stage = (slide.get("stage") or "").upper().strip()
+    layout = (slide.get("layout") or "").lower().strip()
     title = slide.get("title") or ""
     subtitle = slide.get("subtitle") or ""
     body = slide.get("body") or ""
@@ -261,18 +314,36 @@ def render_slide(slide: dict, project: dict) -> str:
     genre_tag = genre_or_world
 
     if stage == "TITLE":
-        return _render_title(title, subtitle, body, image_url, project_type, genre_tag)
+        # hero_full_bleed → t2 (default); split → t4 (poster-style)
+        variant = "t4" if layout in _SPLIT_LAYOUTS else "t2"
+        return _render_title(title, subtitle, body, image_url, project_type, genre_tag, variant)
     elif stage == "LOGLINE":
         project_title = project.get("title") or ""
-        return _render_logline(title, subtitle, body, image_url, project_title, genre_tag)
+        # quote_overlay → l1 (massive centered); split → l2 (accent rule); default → l1
+        variant = "l2" if layout in _SPLIT_LAYOUTS else "l1"
+        return _render_logline(title, subtitle, body, image_url, project_title, genre_tag, variant)
     elif stage in ("SYNOPSIS", "OVERVIEW", "PREMISE"):
         return _render_synopsis(title, subtitle, body, image_url)
     elif stage in ("CHARACTERS", "PROTAGONIST", "CHARACTER", "CAST"):
-        return _render_protagonist(title, subtitle, body, image_url)
-    elif stage in ("WORLD", "SETTING", "TONE"):
-        return _render_world(title, subtitle, body, image_url)
-    elif stage in ("COMPS", "COMPARABLES", "REFERENCES", "COMP"):
-        return _render_comps(title, subtitle, body, image_url)
+        # character_focus / split → p1 (half portrait); clean_grid → p3 (editorial)
+        variant = "p3" if layout in _GRID_LAYOUTS else "p1"
+        return _render_protagonist(title, subtitle, body, image_url, variant)
+    elif stage in ("WORLD", "SETTING", "TONE", "THEME", "THEMES",
+                   "HOOK", "SETUP", "ESCALATION", "TURN", "AFTERMATH",
+                   "CONFLICT", "STAKES", "ENGINE", "WHY_NOW", "STORY_CORE",
+                   "VISUAL_INTEL", "PERFORMANCE", "SCENE_INTEL"):
+        # quote_overlay / full_bleed → w3 (full-bleed scrim); split → w4; grid → w2
+        if layout in _GRID_LAYOUTS:
+            variant = "w2"
+        elif layout in _SPLIT_LAYOUTS:
+            variant = "w4"
+        else:
+            variant = "w3"
+        return _render_world(title, subtitle, body, image_url, variant)
+    elif stage in ("COMPS", "COMPARABLES", "REFERENCES", "COMP", "MARKET", "PRODUCER_READ"):
+        # grid → c4 (list, default); split → c1 (two posters)
+        variant = "c1" if layout in _SPLIT_LAYOUTS else "c4"
+        return _render_comps(title, subtitle, body, image_url, variant)
     elif stage in ("SEASON", "ARC", "EPISODES", "BREAKDOWN", "EPISODE"):
         return _render_season(title, subtitle, body, image_url)
     else:
