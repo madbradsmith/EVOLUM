@@ -1461,6 +1461,119 @@ def payment_success():
 
 
 # ===== CORE ROUTES START =============================
+
+# ── Studio rooms ──────────────────────────────────────────────────────────────
+# CD redesign: each room is a React/Babel SPA loaded from static/rooms/*.jsx
+# All JSX nav links point to these routes (no more "Evolum Script.html" paths).
+
+_ROOM_CACHE_BUST = "20260523a"
+
+def _render_room(room_title, scripts, courier_font=False):
+    return render_template(
+        "studio_room.html",
+        room_title=room_title,
+        room_scripts=scripts,
+        courier_font=courier_font,
+        cache_bust=_ROOM_CACHE_BUST,
+    )
+
+@app.route("/studio")
+@require_login
+def studio_workspace():
+    log_activity_event("page_view", route="/studio", user_email=get_current_user_email())
+    return _render_room("Workspace", ["panels.jsx", "content.jsx", "shell.jsx", "workspace.jsx"])
+
+@app.route("/my-studio")
+@require_login
+def my_studio():
+    return redirect("/studio")
+
+@app.route("/studio/idea")
+@require_login
+def studio_idea():
+    log_activity_event("page_view", route="/studio/idea", user_email=get_current_user_email())
+    return _render_room("Idea", ["panels.jsx", "content.jsx", "idea.jsx", "idea-app.jsx"])
+
+@app.route("/studio/script")
+@require_login
+def studio_script():
+    log_activity_event("page_view", route="/studio/script", user_email=get_current_user_email())
+    return _render_room("Script", ["panels.jsx", "content.jsx", "script.jsx", "script-app.jsx"], courier_font=True)
+
+@app.route("/studio/pitch")
+@require_login
+def studio_pitch():
+    log_activity_event("page_view", route="/studio/pitch", user_email=get_current_user_email())
+    return _render_room("Pitch", ["panels.jsx", "content.jsx", "pitch.jsx", "pitch-app.jsx"])
+
+@app.route("/studio/poster")
+@require_login
+def studio_poster():
+    log_activity_event("page_view", route="/studio/poster", user_email=get_current_user_email())
+    return _render_room("Poster", ["panels.jsx", "content.jsx", "poster.jsx", "poster-app.jsx"])
+
+@app.route("/studio/casting")
+@require_login
+def studio_casting():
+    log_activity_event("page_view", route="/studio/casting", user_email=get_current_user_email())
+    return _render_room("Casting", ["panels.jsx", "content.jsx", "casting.jsx", "casting-app.jsx"])
+
+@app.route("/studio/audition")
+@require_login
+def studio_audition():
+    log_activity_event("page_view", route="/studio/audition", user_email=get_current_user_email())
+    return _render_room("Audition", ["panels.jsx", "content.jsx", "casting.jsx", "audition-app.jsx"], courier_font=True)
+
+@app.route("/studio/self-tape")
+@require_login
+def studio_self_tape():
+    log_activity_event("page_view", route="/studio/self-tape", user_email=get_current_user_email())
+    return _render_room("Self-Tape", ["panels.jsx", "content.jsx", "casting.jsx", "casting-app.jsx"], courier_font=True)
+
+@app.route("/studio/budget")
+@require_login
+def studio_budget():
+    log_activity_event("page_view", route="/studio/budget", user_email=get_current_user_email())
+    return _render_room("Budget", ["panels.jsx", "content.jsx", "budget.jsx", "budget-app.jsx"])
+
+@app.route("/studio/deliverables")
+@require_login
+def studio_deliverables():
+    log_activity_event("page_view", route="/studio/deliverables", user_email=get_current_user_email())
+    return _render_room("Deliverables", ["panels.jsx", "content.jsx", "deliverables.jsx", "deliverables-app.jsx"])
+
+@app.route("/studio/investor")
+@require_login
+def studio_investor():
+    log_activity_event("page_view", route="/studio/investor", user_email=get_current_user_email())
+    return _render_room("Investor", ["panels.jsx", "content.jsx", "invest.jsx", "invest-app.jsx"])
+
+@app.route("/studio/outreach")
+@require_login
+def studio_outreach():
+    log_activity_event("page_view", route="/studio/outreach", user_email=get_current_user_email())
+    return _render_room("Outreach", ["panels.jsx", "content.jsx", "outreach-app.jsx"])
+
+@app.route("/studio/press")
+@require_login
+def studio_press():
+    log_activity_event("page_view", route="/studio/press", user_email=get_current_user_email())
+    return _render_room("Press", ["panels.jsx", "content.jsx", "press.jsx", "press-app.jsx"])
+
+@app.route("/studio/sizzle")
+@require_login
+def studio_sizzle():
+    log_activity_event("page_view", route="/studio/sizzle", user_email=get_current_user_email())
+    return _render_room("Sizzle", ["panels.jsx", "content.jsx", "sizzle.jsx", "sizzle-app.jsx"])
+
+@app.route("/studio/admin")
+@require_login
+def studio_admin():
+    log_activity_event("page_view", route="/studio/admin", user_email=get_current_user_email())
+    return _render_room("Admin", ["panels.jsx", "content.jsx", "admin-app.jsx"])
+
+# ── End studio rooms ──────────────────────────────────────────────────────────
+
 @app.route("/sw.js")
 def service_worker():
     return send_file(BASE_DIR / "static" / "sw.js", mimetype="application/javascript")
