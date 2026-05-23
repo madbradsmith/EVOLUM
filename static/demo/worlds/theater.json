@@ -1,0 +1,301 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "The Theater",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "stage",
+      "label": "Main Stage",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 420,
+      "height": 220,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1f1c2a",
+        "pack": "pack_floor",
+        "raised": 6
+      }
+    },
+    {
+      "id": "backstage",
+      "label": "Backstage",
+      "global_x": 0,
+      "global_y": 250,
+      "width": 360,
+      "height": 120,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1a1726",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "wings_l",
+      "label": "Wings (L)",
+      "global_x": -260,
+      "global_y": 0,
+      "width": 80,
+      "height": 220,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1c1924",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "wings_r",
+      "label": "Wings (R)",
+      "global_x": 260,
+      "global_y": 0,
+      "width": 80,
+      "height": 220,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1c1924",
+        "pack": "pack_floor"
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_house_out",
+      "direction": "out",
+      "destination": "house_station",
+      "width": 90,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -180
+        },
+        {
+          "x": 180,
+          "y": -456
+        },
+        {
+          "x": 180,
+          "y": -824
+        },
+        {
+          "x": 0,
+          "y": -1100
+        }
+      ],
+      "length": 972
+    },
+    {
+      "id": "road_house_back",
+      "direction": "back",
+      "destination": "house_station",
+      "width": 90,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -1100
+        },
+        {
+          "x": -214.49,
+          "y": -847.28
+        },
+        {
+          "x": -262.49,
+          "y": -479.28
+        },
+        {
+          "x": -120,
+          "y": -180
+        }
+      ],
+      "length": 980
+    },
+    {
+      "id": "road_dock_out",
+      "direction": "out",
+      "destination": "dock_station",
+      "width": 70,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 260,
+          "y": 330
+        },
+        {
+          "x": 463.04,
+          "y": 563.32
+        },
+        {
+          "x": 799.04,
+          "y": 671.32
+        },
+        {
+          "x": 1100,
+          "y": 600
+        }
+      ],
+      "length": 926
+    },
+    {
+      "id": "road_dock_back",
+      "direction": "back",
+      "destination": "dock_station",
+      "width": 70,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 1100,
+          "y": 600
+        },
+        {
+          "x": 928.06,
+          "y": 340.39
+        },
+        {
+          "x": 606.75,
+          "y": 186.69
+        },
+        {
+          "x": 296.72,
+          "y": 215.76
+        }
+      ],
+      "length": 933
+    }
+  ],
+  "ring_road": null,
+  "stops": [
+    {
+      "id": "house_stop_1",
+      "road": "road_house_out",
+      "t": 0.3,
+      "poi": "notice_board",
+      "lighting": {
+        "color": "#f5b86b",
+        "intensity": 1,
+        "type": "pool"
+      },
+      "audio": "distant_chatter"
+    },
+    {
+      "id": "house_stop_2",
+      "road": "road_house_out",
+      "t": 0.65,
+      "poi": "bench_cluster",
+      "lighting": {
+        "color": "#ffd28a",
+        "intensity": 1.1,
+        "type": "pool"
+      },
+      "audio": "wind_low"
+    },
+    {
+      "id": "dock_stop_1",
+      "road": "road_dock_out",
+      "t": 0.5,
+      "poi": "parked_vehicle",
+      "lighting": {
+        "color": "#f59a4a",
+        "intensity": 0.7,
+        "type": "flicker"
+      },
+      "audio": "engine_idle"
+    }
+  ],
+  "stations": [
+    {
+      "id": "house_station",
+      "position": {
+        "x": 0,
+        "y": -1100
+      },
+      "target_pack": "lobby",
+      "label": "THE LOBBY"
+    },
+    {
+      "id": "dock_station",
+      "position": {
+        "x": 1100,
+        "y": 600
+      },
+      "target_pack": "shop",
+      "label": "SCENE SHOP"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_audience",
+      "x": 0,
+      "y": -480,
+      "w": 520,
+      "h": 240,
+      "color": "#1a1a2e",
+      "kind": "theater"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_south",
+      "position": {
+        "x": 0,
+        "y": -1400
+      }
+    },
+    {
+      "id": "egg_east",
+      "position": {
+        "x": 1500,
+        "y": 0
+      }
+    }
+  ],
+  "boundary": {
+    "north": 1200,
+    "south": -1400,
+    "east": 1500,
+    "west": -1200
+  },
+  "cast": [
+    {
+      "name": "Kit",
+      "role": "Actor",
+      "type": "creative",
+      "color": "#ffe066",
+      "spawn": "stage"
+    },
+    {
+      "name": "Greta",
+      "role": "Director",
+      "type": "anchor",
+      "color": "#e84a6f",
+      "spawn": "stage"
+    },
+    {
+      "name": "Bea",
+      "role": "Storyteller",
+      "type": "creative",
+      "color": "#e879c8",
+      "spawn": "wings_l"
+    },
+    {
+      "name": "Design",
+      "role": "Designer",
+      "type": "creative",
+      "color": "#c279ff",
+      "spawn": "backstage"
+    },
+    {
+      "name": "Vera",
+      "role": "Steady",
+      "type": "anchor",
+      "color": "#f0e6cc",
+      "spawn": "wings_r"
+    }
+  ]
+}

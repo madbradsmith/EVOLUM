@@ -1,0 +1,578 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "The Lab",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "core",
+      "label": "Core",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 200,
+      "height": 200,
+      "flags": {
+        "walled": true,
+        "floor_color": "#181e28",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "wet_lab",
+      "label": "Wet Lab",
+      "global_x": 0,
+      "global_y": 260,
+      "width": 240,
+      "height": 140,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1a2230",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "dry_lab",
+      "label": "Dry Lab",
+      "global_x": 0,
+      "global_y": -260,
+      "width": 240,
+      "height": 140,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1a2230",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "east_lab",
+      "label": "East Lab",
+      "global_x": 260,
+      "global_y": 0,
+      "width": 140,
+      "height": 240,
+      "flags": {
+        "walled": true,
+        "floor_color": "#181e28",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "west_lab",
+      "label": "West Lab",
+      "global_x": -260,
+      "global_y": 0,
+      "width": 140,
+      "height": 240,
+      "flags": {
+        "walled": true,
+        "floor_color": "#181e28",
+        "pack": "pack_floor"
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_n_out",
+      "direction": "out",
+      "destination": "n_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 0,
+          "y": 340
+        },
+        {
+          "x": -180,
+          "y": 598
+        },
+        {
+          "x": -180,
+          "y": 942
+        },
+        {
+          "x": 0,
+          "y": 1200
+        }
+      ],
+      "length": 915
+    },
+    {
+      "id": "road_n_back",
+      "direction": "back",
+      "destination": "n_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 0,
+          "y": 1200
+        },
+        {
+          "x": 214.27,
+          "y": 966.88
+        },
+        {
+          "x": 262.27,
+          "y": 622.88
+        },
+        {
+          "x": 120,
+          "y": 340
+        }
+      ],
+      "length": 923
+    },
+    {
+      "id": "road_s_out",
+      "direction": "out",
+      "destination": "s_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -340
+        },
+        {
+          "x": -180,
+          "y": -598
+        },
+        {
+          "x": -180,
+          "y": -942
+        },
+        {
+          "x": 0,
+          "y": -1200
+        }
+      ],
+      "length": 915
+    },
+    {
+      "id": "road_s_back",
+      "direction": "back",
+      "destination": "s_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -1200
+        },
+        {
+          "x": 142.27,
+          "y": -917.12
+        },
+        {
+          "x": 94.27,
+          "y": -573.12
+        },
+        {
+          "x": -120,
+          "y": -340
+        }
+      ],
+      "length": 923
+    },
+    {
+      "id": "road_e_out",
+      "direction": "out",
+      "destination": "e_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 340,
+          "y": 0
+        },
+        {
+          "x": 598,
+          "y": -180
+        },
+        {
+          "x": 942,
+          "y": -180
+        },
+        {
+          "x": 1200,
+          "y": 0
+        }
+      ],
+      "length": 915
+    },
+    {
+      "id": "road_e_back",
+      "direction": "back",
+      "destination": "e_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 1200,
+          "y": 0
+        },
+        {
+          "x": 917.12,
+          "y": 142.27
+        },
+        {
+          "x": 573.12,
+          "y": 94.27
+        },
+        {
+          "x": 340,
+          "y": -120
+        }
+      ],
+      "length": 923
+    },
+    {
+      "id": "road_w_out",
+      "direction": "out",
+      "destination": "w_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": -340,
+          "y": 0
+        },
+        {
+          "x": -598,
+          "y": -180
+        },
+        {
+          "x": -942,
+          "y": -180
+        },
+        {
+          "x": -1200,
+          "y": 0
+        }
+      ],
+      "length": 915
+    },
+    {
+      "id": "road_w_back",
+      "direction": "back",
+      "destination": "w_station",
+      "width": 70,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": -1200,
+          "y": 0
+        },
+        {
+          "x": -966.88,
+          "y": 214.27
+        },
+        {
+          "x": -622.88,
+          "y": 262.27
+        },
+        {
+          "x": -340,
+          "y": 120
+        }
+      ],
+      "length": 923
+    }
+  ],
+  "ring_road": {
+    "id": "ring_road",
+    "radius": 800,
+    "width": 50,
+    "intersections": [
+      {
+        "id": "ix_road_n_out",
+        "road_id": "road_n_out",
+        "x": -135,
+        "y": 788,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_n_back",
+        "road_id": "road_n_back",
+        "x": 195,
+        "y": 775,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_s_out",
+        "road_id": "road_s_out",
+        "x": -135,
+        "y": -788,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_s_back",
+        "road_id": "road_s_back",
+        "x": 79,
+        "y": -797,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_e_out",
+        "road_id": "road_e_out",
+        "x": 788,
+        "y": -135,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_e_back",
+        "road_id": "road_e_back",
+        "x": 797,
+        "y": 79,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_w_out",
+        "road_id": "road_w_out",
+        "x": -788,
+        "y": -135,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_w_back",
+        "road_id": "road_w_back",
+        "x": -775,
+        "y": 195,
+        "traffic_light": true
+      }
+    ]
+  },
+  "stops": [
+    {
+      "id": "n_stop_1",
+      "road": "road_n_out",
+      "t": 0.3,
+      "poi": "observation_post",
+      "lighting": {
+        "color": "#6dd8ff",
+        "intensity": 0.9,
+        "type": "pulse"
+      },
+      "audio": "sensor_ping"
+    },
+    {
+      "id": "n_stop_2",
+      "road": "road_n_out",
+      "t": 0.7,
+      "poi": "covered_alcove",
+      "lighting": {
+        "color": "#9ae8ff",
+        "intensity": 1,
+        "type": "steady"
+      },
+      "audio": "wind_reeds"
+    },
+    {
+      "id": "s_stop_1",
+      "road": "road_s_out",
+      "t": 0.3,
+      "poi": "rock_bench",
+      "lighting": {
+        "color": "#46d9c5",
+        "intensity": 0.8,
+        "type": "steady"
+      },
+      "audio": "insect_chirps"
+    },
+    {
+      "id": "s_stop_2",
+      "road": "road_s_out",
+      "t": 0.7,
+      "poi": "observation_post",
+      "lighting": {
+        "color": "#6dd8ff",
+        "intensity": 0.9,
+        "type": "pulse"
+      },
+      "audio": "sensor_ping"
+    },
+    {
+      "id": "e_stop_1",
+      "road": "road_e_out",
+      "t": 0.3,
+      "poi": "notice_board",
+      "lighting": {
+        "color": "#9ae8ff",
+        "intensity": 0.9,
+        "type": "pool"
+      },
+      "audio": "wind_low"
+    },
+    {
+      "id": "e_stop_2",
+      "road": "road_e_out",
+      "t": 0.7,
+      "poi": "rock_bench",
+      "lighting": {
+        "color": "#6dd8ff",
+        "intensity": 0.7,
+        "type": "flicker"
+      },
+      "audio": "wind_high"
+    },
+    {
+      "id": "w_stop_1",
+      "road": "road_w_out",
+      "t": 0.3,
+      "poi": "bench_cluster",
+      "lighting": {
+        "color": "#46d9c5",
+        "intensity": 1,
+        "type": "pool"
+      },
+      "audio": "distant_chatter"
+    },
+    {
+      "id": "w_stop_2",
+      "road": "road_w_out",
+      "t": 0.7,
+      "poi": "observation_post",
+      "lighting": {
+        "color": "#9ae8ff",
+        "intensity": 0.9,
+        "type": "pulse"
+      },
+      "audio": "sensor_ping"
+    }
+  ],
+  "stations": [
+    {
+      "id": "n_station",
+      "position": {
+        "x": 0,
+        "y": 1200
+      },
+      "target_pack": "archive",
+      "label": "ARCHIVE"
+    },
+    {
+      "id": "s_station",
+      "position": {
+        "x": 0,
+        "y": -1200
+      },
+      "target_pack": "field",
+      "label": "THE FIELD"
+    },
+    {
+      "id": "e_station",
+      "position": {
+        "x": 1200,
+        "y": 0
+      },
+      "target_pack": "compute",
+      "label": "COMPUTE"
+    },
+    {
+      "id": "w_station",
+      "position": {
+        "x": -1200,
+        "y": 0
+      },
+      "target_pack": "samples",
+      "label": "SAMPLES"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_field",
+      "x": 0,
+      "y": 900,
+      "w": 360,
+      "h": 240,
+      "color": "#181e1a",
+      "kind": "field"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_north",
+      "position": {
+        "x": 0,
+        "y": 1400
+      }
+    },
+    {
+      "id": "egg_south",
+      "position": {
+        "x": 0,
+        "y": -1400
+      }
+    },
+    {
+      "id": "egg_east",
+      "position": {
+        "x": 1400,
+        "y": 0
+      }
+    },
+    {
+      "id": "egg_west",
+      "position": {
+        "x": -1400,
+        "y": 0
+      }
+    }
+  ],
+  "boundary": {
+    "north": 1400,
+    "south": -1400,
+    "east": 1400,
+    "west": -1400
+  },
+  "cast": [
+    {
+      "name": "Florence",
+      "role": "Analyst",
+      "type": "thinker",
+      "color": "#ff7da6",
+      "spawn": "core"
+    },
+    {
+      "name": "Nora",
+      "role": "Researcher",
+      "type": "thinker",
+      "color": "#46d9c5",
+      "spawn": "wet_lab"
+    },
+    {
+      "name": "Leo",
+      "role": "Editor",
+      "type": "thinker",
+      "color": "#7ec87e",
+      "spawn": "dry_lab"
+    },
+    {
+      "name": "Theo",
+      "role": "Historian",
+      "type": "thinker",
+      "color": "#d4a85a",
+      "spawn": "east_lab"
+    },
+    {
+      "name": "Wren",
+      "role": "Note-Taker",
+      "type": "thinker",
+      "color": "#aab8cc",
+      "spawn": "west_lab"
+    },
+    {
+      "name": "Clem",
+      "role": "Strategist",
+      "type": "thinker",
+      "color": "#9b7fe8",
+      "spawn": "core"
+    }
+  ]
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simutum — Press Kit</title>
+<style>
+:root {
+  --s-bg:#06070b;--s-bg-2:#0a0c12;--s-panel:#0e1018;--s-panel-2:#141826;
+  --s-border:rgba(184,196,224,0.14);--s-border-2:rgba(184,196,224,0.22);
+  --s-text-1:#d8dde9;--s-text-2:#b9c4e0;--s-text-3:rgba(184,196,224,0.55);
+  --s-text-4:rgba(184,196,224,0.32);--s-accent:#46d9c5;--s-warn:#ff9d6d;
+  --s-font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --s-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--s-bg);color:var(--s-text-1);font-family:var(--s-font-sans);min-height:100%}
+a{color:var(--s-accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.nav{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--s-border);font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.nav strong{color:var(--s-accent);font-weight:700}
+.nav .sep{color:var(--s-border-2);margin:0 6px}
+.btn{display:inline-block;background:transparent;border:1px solid var(--s-border-2);color:var(--s-text-2);padding:8px 14px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s ease}
+.btn:hover{border-color:var(--s-accent);color:var(--s-accent);text-decoration:none}
+.btn.primary{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.08)}
+.btn.primary:hover{background:rgba(70,217,197,0.18)}
+
+.wrap{max-width:920px;margin:0 auto;padding:32px 24px 80px}
+h1{margin:8px 0 4px;font-size:34px;font-weight:600;letter-spacing:-0.01em}
+.sub{color:var(--s-text-3);font-family:var(--s-font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 24px}
+.section{margin:28px 0}
+.section h2{font-family:var(--s-font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--s-accent);margin:0 0 10px}
+.section p{color:var(--s-text-2);font-size:14.5px;line-height:1.6;margin:0 0 10px}
+.facts{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.facts li{padding:10px 14px;background:rgba(6,7,11,0.5);border:1px solid var(--s-border);border-radius:6px;font-size:13.5px}
+.facts li::before{content:"·· ";color:var(--s-accent)}
+.quote{padding:18px 22px;background:rgba(70,217,197,0.05);border-left:2px solid var(--s-accent);font-style:italic;color:var(--s-text-1);font-size:15px;line-height:1.5}
+.quote .who{display:block;margin-top:10px;font-family:var(--s-font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-style:normal;color:var(--s-text-3)}
+.shots{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px}
+.shot{aspect-ratio:16/9;background:#0c0e16;border:1px solid var(--s-border);border-radius:6px;position:relative;overflow:hidden;color:var(--s-text-4);font-family:var(--s-font-mono);font-size:10px;display:flex;align-items:flex-end;padding:8px;letter-spacing:.06em}
+.shot svg{position:absolute;inset:0;width:100%;height:100%}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{padding:14px;background:var(--s-panel);border:1px solid var(--s-border);border-radius:6px;text-align:center}
+.stat .n{font-family:var(--s-font-mono);font-size:24px;color:var(--s-accent);font-weight:700}
+.stat .l{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--s-text-3);margin-top:4px}
+.contact{font-family:var(--s-font-mono);font-size:13px;line-height:1.7;margin-top:18px}
+.contact a{color:var(--s-accent)}
+</style></head>
+<body>
+<div class="nav"><div><strong>SIMUTUM</strong><span class="sep">/</span> press kit</div><div><a class="btn" href="#download">Download full kit</a></div></div>
+<div class="wrap">
+<h1>Press kit.</h1>
+<div class="sub">Last updated · 2026-05-23</div>
+
+<div class="section">
+  <h2>The pitch</h2>
+  <p>Simutum is a living 3D workspace. Six AI entities boot with agendas, walk a curved road system, and run real conversations in real time. Every session goes differently.</p>
+  <p>This is not a product tour. It is a world you visit.</p>
+</div>
+
+<div class="section">
+  <h2>Five facts</h2>
+  <ul class="facts">
+    <li>Each session is genuinely unscripted — entities make their own decisions every refresh.</li>
+    <li>Operators can build and ship their own worlds in five minutes through the map editor wizard.</li>
+    <li>25-character roster, six native-language dialogue tracks (EN/ES/PT-BR/FR/KO/JA), zero translation layer.</li>
+    <li>Runs entirely client-side: single HTML file, CDN Babylon.js, no install, no backend.</li>
+    <li>Hidden boundary terminals reward exploration with the founder's chair next to the cast.</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Founder quote</h2>
+  <div class="quote">
+    "We're not building a product tour. We're building the thing the tour would describe. The cast is real. The decisions are real. The replay is the receipt."
+    <span class="who">— MadBrad · founder, Evolum</span>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Screenshots</h2>
+  <div class="shots">
+    <div class="shot"><svg viewBox="0 0 200 113"><rect width="200" height="113" fill="#0a0c12"/><circle cx="100" cy="56" r="22" fill="none" stroke="#46d9c5" stroke-width="0.7"/><rect x="86" y="42" width="28" height="28" fill="#1c1a28" stroke="rgba(184,196,224,0.3)" stroke-width="0.5"/><circle cx="100" cy="56" r="2" fill="#6db8ff"/></svg>standup_01.png</div>
+    <div class="shot"><svg viewBox="0 0 200 113"><rect width="200" height="113" fill="#0a0c12"/><path d="M0,80 Q60,40 120,90 T200,70" fill="none" stroke="#46d9c5" stroke-width="0.7"/><circle cx="140" cy="80" r="2" fill="#ffd28a"/><circle cx="170" cy="76" r="3" fill="#46d9c5"/></svg>theater_road.png</div>
+    <div class="shot"><svg viewBox="0 0 200 113"><rect width="200" height="113" fill="#0a0c12"/><circle cx="100" cy="56" r="40" fill="none" stroke="rgba(184,196,224,0.18)" stroke-width="6"/><circle cx="100" cy="56" r="40" fill="none" stroke="#46d9c5" stroke-width="0.5"/><circle cx="60" cy="56" r="2.5" fill="#46d9c5"/><circle cx="100" cy="96" r="2.5" fill="#46d9c5"/></svg>ring_road.png</div>
+    <div class="shot"><svg viewBox="0 0 200 113"><rect width="200" height="113" fill="#06070b"/><circle cx="180" cy="22" r="4" fill="#00ff41"/><rect x="170" y="32" width="14" height="14" fill="rgba(0,255,65,0.15)" stroke="#00ff41" stroke-width="0.6"/></svg>tribe_finder.png</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Key stats</h2>
+  <div class="stats">
+    <div class="stat"><div class="n">25</div><div class="l">Characters</div></div>
+    <div class="stat"><div class="n">6</div><div class="l">Languages</div></div>
+    <div class="stat"><div class="n">12</div><div class="l">Map packs</div></div>
+    <div class="stat"><div class="n">0</div><div class="l">Install steps</div></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Logo + assets</h2>
+  <p>Download the full press kit (logo SVG + PNG, 16 screenshots, fact sheet PDF) at the link below.</p>
+  <div id="download" style="margin-top:14px"><a class="btn primary" href="#" onclick="alert('Wire to S3 / Drive link.');return false;">↓ Download Full Press Kit (12MB ZIP)</a></div>
+</div>
+
+<div class="section">
+  <h2>Contact</h2>
+  <div class="contact">
+    Press inquiries: <a href="mailto:press@evolumstudio.com">press@evolumstudio.com</a><br/>
+    General: <a href="mailto:hello@evolumstudio.com">hello@evolumstudio.com</a><br/>
+    Studio: Evolum · evolumstudio.com
+  </div>
+</div>
+</div>
+</body></html>

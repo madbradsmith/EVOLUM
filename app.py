@@ -1462,6 +1462,15 @@ def payment_success():
 
 # ===== CORE ROUTES START =============================
 
+# ── Simutum Demo ──────────────────────────────────────────────────────────────
+@app.route('/demo')
+def simutum_demo():
+    return send_file('static/demo/index.html')
+
+@app.route('/demo/<path:filename>')
+def simutum_demo_static(filename):
+    return send_file(f'static/demo/{filename}')
+
 # ── Studio rooms ──────────────────────────────────────────────────────────────
 # CD redesign: each room is a React/Babel SPA loaded from static/rooms/*.jsx
 # All JSX nav links point to these routes (no more "Evolum Script.html" paths).

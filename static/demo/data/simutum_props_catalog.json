@@ -1,0 +1,191 @@
+{
+  "meta": {
+    "version": 1,
+    "description": "Prop catalog. Geometry described in Babylon primitives, readable top-down at Y=320."
+  },
+  "props": [
+    {
+      "type": "desk",
+      "name": "Desk",
+      "dims": {
+        "w": 80,
+        "h": 26,
+        "d": 35
+      },
+      "geometry": "box",
+      "material": "#3a3050",
+      "compatible": [
+        "office",
+        "analysis",
+        "audit",
+        "studio"
+      ]
+    },
+    {
+      "type": "chair",
+      "name": "Chair",
+      "dims": {
+        "w": 14,
+        "h": 18,
+        "d": 14
+      },
+      "geometry": "box",
+      "material": "#3a3050",
+      "compatible": [
+        "*"
+      ]
+    },
+    {
+      "type": "table",
+      "name": "Long Table",
+      "dims": {
+        "w": 160,
+        "h": 26,
+        "d": 40
+      },
+      "geometry": "box",
+      "material": "#3a3050",
+      "compatible": [
+        "writers",
+        "meeting",
+        "pit"
+      ]
+    },
+    {
+      "type": "whiteboard",
+      "name": "Whiteboard",
+      "dims": {
+        "w": 100,
+        "h": 60,
+        "d": 4
+      },
+      "geometry": "box",
+      "material": "#e8e8ec",
+      "compatible": [
+        "office",
+        "meeting",
+        "writers"
+      ]
+    },
+    {
+      "type": "camera",
+      "name": "Camera Rig",
+      "dims": {
+        "w": 14,
+        "h": 60,
+        "d": 14
+      },
+      "geometry": "composite",
+      "material": "#1a1a22",
+      "compatible": [
+        "stage",
+        "studio",
+        "newsroom"
+      ]
+    },
+    {
+      "type": "scripts",
+      "name": "Script Pile",
+      "dims": {
+        "w": 18,
+        "h": 8,
+        "d": 22
+      },
+      "geometry": "box",
+      "material": "#d4c08a",
+      "compatible": [
+        "writers",
+        "office",
+        "studio"
+      ]
+    },
+    {
+      "type": "lamp",
+      "name": "Floor Lamp",
+      "dims": {
+        "w": 6,
+        "h": 64,
+        "d": 6
+      },
+      "geometry": "composite",
+      "material": "#3a3050",
+      "emissive": "#ffd9a0",
+      "compatible": [
+        "*"
+      ]
+    },
+    {
+      "type": "cork",
+      "name": "Cork Wall",
+      "dims": {
+        "w": 200,
+        "h": 60,
+        "d": 4
+      },
+      "geometry": "box",
+      "material": "#3c2c1a",
+      "compatible": [
+        "writers",
+        "studio"
+      ]
+    },
+    {
+      "type": "shelf",
+      "name": "Shelf",
+      "dims": {
+        "w": 120,
+        "h": 40,
+        "d": 16
+      },
+      "geometry": "box",
+      "material": "#3a3050",
+      "compatible": [
+        "*"
+      ]
+    },
+    {
+      "type": "pillar",
+      "name": "Tall Pillar",
+      "dims": {
+        "w": 8,
+        "h": 28,
+        "d": 8
+      },
+      "geometry": "box",
+      "material": "#3a3050",
+      "compatible": [
+        "square"
+      ]
+    },
+    {
+      "type": "filing",
+      "name": "Filing Stack",
+      "dims": {
+        "w": 20,
+        "h": 50,
+        "d": 20
+      },
+      "geometry": "box",
+      "material": "#2a2438",
+      "compatible": [
+        "audit",
+        "office"
+      ]
+    },
+    {
+      "type": "platform",
+      "name": "Raised Platform",
+      "dims": {
+        "w": 100,
+        "h": 6,
+        "d": 80
+      },
+      "geometry": "box",
+      "material": "#252230",
+      "compatible": [
+        "stage",
+        "desk"
+      ]
+    }
+  ]
+}

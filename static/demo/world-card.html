@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simutum World Card</title>
+<style>
+:root{--s-bg:#06070b;--s-bg-2:#0a0c12;--s-panel:#0e1018;--s-panel-2:#141826;
+--s-border:rgba(184,196,224,0.14);--s-border-2:rgba(184,196,224,0.22);
+--s-text-1:#d8dde9;--s-text-2:#b9c4e0;--s-text-3:rgba(184,196,224,0.55);
+--s-text-4:rgba(184,196,224,0.32);--s-accent:#46d9c5;--s-warn:#ff9d6d;
+--s-font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+--s-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--s-bg);color:var(--s-text-1);font-family:var(--s-font-sans);min-height:100%}
+a{color:var(--s-accent);text-decoration:none}a:hover{text-decoration:underline}
+.nav{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--s-border);font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.nav strong{color:var(--s-accent);font-weight:700}.nav .sep{color:var(--s-border-2);margin:0 6px}
+.btn{display:inline-block;background:transparent;border:1px solid var(--s-border-2);color:var(--s-text-2);padding:8px 14px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s ease}
+.btn:hover{border-color:var(--s-accent);color:var(--s-accent);text-decoration:none}
+.btn.primary{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.08)}
+.btn.primary:hover{background:rgba(70,217,197,0.18)}
+
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px}
+.input-row{display:flex;gap:8px;margin-bottom:14px;font-family:var(--s-font-mono)}
+.input-row input[type=file]{color:var(--s-text-2);font-family:inherit;font-size:11px}
+.card{width:800px;max-width:100%;aspect-ratio:16/9;background:#06070b;border:1px solid var(--s-border-2);border-radius:10px;position:relative;overflow:hidden;margin-bottom:18px}
+.card canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.card .ttl{position:absolute;top:18px;left:24px;font-family:var(--s-font-mono);font-size:18px;letter-spacing:.08em;text-transform:uppercase;color:var(--s-text-1);font-weight:700;text-shadow:0 0 12px rgba(0,0,0,0.7)}
+.card .creator{position:absolute;top:42px;left:24px;font-family:var(--s-font-mono);font-size:11px;letter-spacing:.10em;text-transform:uppercase;color:var(--s-text-3)}
+.card .brand{position:absolute;bottom:14px;right:18px;font-family:var(--s-font-mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--s-accent);text-shadow:0 0 8px rgba(70,217,197,0.4)}
+textarea{width:800px;max-width:100%;height:120px;background:rgba(6,7,11,0.7);border:1px solid var(--s-border);color:var(--s-text-1);font-family:var(--s-font-mono);font-size:11px;padding:10px;border-radius:6px;margin-bottom:10px}
+</style></head>
+<body>
+<div class="nav" style="width:100%"><div><strong>SIMUTUM</strong><span class="sep">/</span> world card</div><div><a class="btn primary" href="#" onclick="saveAsPNG();return false;">↓ Save as PNG</a></div></div>
+<div style="padding:24px;width:100%;max-width:840px;margin:0 auto">
+<div class="input-row">
+  <input type="file" id="fileIn" accept="application/json" />
+  <a class="btn" href="#" onclick="loadFromTextarea();return false;">Use Pasted JSON</a>
+  <a class="btn" href="#" onclick="loadExample();return false;">Use Example</a>
+</div>
+<textarea id="jsonIn" placeholder='Paste world JSON here or upload a file above…'></textarea>
+<div class="card" id="card">
+  <canvas id="cv"></canvas>
+  <div class="ttl" id="lblTtl">Untitled World</div>
+  <div class="creator" id="lblWho">by anonymous</div>
+  <div class="brand">·· SIMUTUM ··</div>
+</div>
+</div>
+
+<script>
+const params = new URLSearchParams(location.search);
+let title = params.get('title') || 'Untitled World';
+let creator = params.get('creator') || 'anonymous';
+document.getElementById('lblTtl').textContent = title;
+document.getElementById('lblWho').textContent = 'by ' + creator;
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W = 800, H = 450;
+function resize() {
+  const r = cv.parentElement.getBoundingClientRect();
+  W = cv.width = r.width * (devicePixelRatio || 1);
+  H = cv.height = r.height * (devicePixelRatio || 1);
+  if (currentWorld) draw(currentWorld);
+}
+addEventListener('resize', resize);
+let currentWorld = null;
+
+function draw(world) {
+  ctx.fillStyle = '#06070b'; ctx.fillRect(0, 0, W, H);
+  // boundary scale: world is roughly ±1700; map to canvas
+  const sx = W / 3600, sy = H / 3600;
+  const s = Math.min(sx, sy);
+  function w2sX(x) { return W/2 + x*s; }
+  function w2sY(y) { return H/2 - y*s; }
+  // Boundary
+  const b = world.boundary || { north:1600, south:-1600, east:1600, west:-1600 };
+  ctx.strokeStyle = 'rgba(70,217,197,0.25)'; ctx.lineWidth = 1.2 * (devicePixelRatio||1);
+  ctx.strokeRect(w2sX(b.west), w2sY(b.north), (b.east-b.west)*s, (b.north-b.south)*s);
+  // Ring
+  if (world.ring_road) {
+    ctx.beginPath();
+    ctx.arc(w2sX(0), w2sY(0), world.ring_road.radius*s, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(184,196,224,0.18)'; ctx.lineWidth = world.ring_road.width*s; ctx.stroke();
+    ctx.lineWidth = 0.8*(devicePixelRatio||1); ctx.strokeStyle = 'rgba(70,217,197,0.5)'; ctx.stroke();
+  }
+  // Roads
+  for (const r of (world.roads || [])) {
+    if (!r.bezier) continue;
+    ctx.beginPath();
+    for (let i = 0; i <= 36; i++) {
+      const t = i/36;
+      const u = 1 - t;
+      const p = {
+        x: u*u*u*r.bezier[0].x + 3*u*u*t*r.bezier[1].x + 3*u*t*t*r.bezier[2].x + t*t*t*r.bezier[3].x,
+        y: u*u*u*r.bezier[0].y + 3*u*u*t*r.bezier[1].y + 3*u*t*t*r.bezier[2].y + t*t*t*r.bezier[3].y,
+      };
+      const X = w2sX(p.x), Y = w2sY(p.y);
+      if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+    ctx.strokeStyle = r.direction === 'out' ? 'rgba(70,217,197,0.65)' : 'rgba(255,157,109,0.5)';
+    ctx.lineWidth = Math.max(2, r.width*s);
+    ctx.stroke();
+  }
+  // Sections
+  for (const sec of (world.sections || [])) {
+    const x1 = w2sX(sec.global_x - sec.width/2);
+    const y1 = w2sY(sec.global_y + sec.height/2);
+    ctx.fillStyle = (sec.flags && sec.flags.floor_color) || '#1c1a28';
+    ctx.fillRect(x1, y1, sec.width*s, sec.height*s);
+    ctx.strokeStyle = 'rgba(184,196,224,0.4)';
+    ctx.lineWidth = 1*(devicePixelRatio||1);
+    ctx.strokeRect(x1, y1, sec.width*s, sec.height*s);
+  }
+  // Stops
+  for (const stop of (world.stops || [])) {
+    const r = (world.roads || []).find(rr => rr.id === stop.road);
+    if (!r || !r.bezier) continue;
+    const t = stop.t, u = 1 - t;
+    const p = {
+      x: u*u*u*r.bezier[0].x + 3*u*u*t*r.bezier[1].x + 3*u*t*t*r.bezier[2].x + t*t*t*r.bezier[3].x,
+      y: u*u*u*r.bezier[0].y + 3*u*u*t*r.bezier[1].y + 3*u*t*t*r.bezier[2].y + t*t*t*r.bezier[3].y,
+    };
+    // approximate offset
+    const tg = { x: 3*u*u*(r.bezier[1].x-r.bezier[0].x)+6*u*t*(r.bezier[2].x-r.bezier[1].x)+3*t*t*(r.bezier[3].x-r.bezier[2].x),
+                 y: 3*u*u*(r.bezier[1].y-r.bezier[0].y)+6*u*t*(r.bezier[2].y-r.bezier[1].y)+3*t*t*(r.bezier[3].y-r.bezier[2].y) };
+    const tl = Math.hypot(tg.x, tg.y) || 1;
+    const nx = -tg.y/tl, ny = tg.x/tl;
+    const px = p.x + nx*70, py = p.y + ny*70;
+    ctx.beginPath(); ctx.arc(w2sX(px), w2sY(py), 4*(devicePixelRatio||1), 0, Math.PI*2);
+    ctx.fillStyle = (stop.lighting && stop.lighting.color) || '#f5b86b';
+    ctx.fill();
+  }
+  // Stations
+  for (const st of (world.stations || [])) {
+    const X = w2sX(st.position.x), Y = w2sY(st.position.y);
+    ctx.fillStyle = '#46d9c5';
+    ctx.fillRect(X-6, Y-6, 12, 12);
+  }
+  // Title overlay top-left already drawn
+  currentWorld = world;
+}
+
+document.getElementById('fileIn').addEventListener('change', (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => { try { draw(JSON.parse(fr.result)); } catch(e) { alert(e.message); } };
+  fr.readAsText(f);
+});
+function loadFromTextarea() {
+  const t = document.getElementById('jsonIn').value.trim();
+  if (!t) return;
+  try { draw(JSON.parse(t)); } catch(e) { alert(e.message); }
+}
+function loadExample() {
+  fetch('worlds/simutum_demo_world.json').then(r => r.json()).then(draw).catch(e => alert(e.message));
+}
+loadExample();
+
+async function saveAsPNG() {
+  if (!currentWorld) return;
+  const out = document.createElement('canvas');
+  out.width = 1600; out.height = 900;
+  const octx = out.getContext('2d');
+  // black background
+  octx.fillStyle = '#06070b'; octx.fillRect(0, 0, 1600, 900);
+  // draw the existing canvas content into the high-res output
+  const src = cv;
+  octx.drawImage(src, 0, 0, src.width, src.height, 0, 0, 1600, 900);
+  // overlay title
+  octx.fillStyle = '#d8dde9'; octx.font = 'bold 36px ui-monospace';
+  octx.fillText(title.toUpperCase(), 48, 60);
+  octx.fillStyle = 'rgba(184,196,224,0.55)'; octx.font = '18px ui-monospace';
+  octx.fillText(('by ' + creator).toLowerCase(), 48, 90);
+  octx.fillStyle = '#46d9c5'; octx.font = 'bold 18px ui-monospace';
+  octx.textAlign = 'right'; octx.fillText('·· SIMUTUM ··', 1556, 870);
+  const url = out.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url; a.download = 'world-card-' + title.toLowerCase().replace(/\W+/g,'-') + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+resize();
+</script>
+</body></html>

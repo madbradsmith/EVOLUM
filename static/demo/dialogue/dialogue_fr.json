@@ -1,0 +1,502 @@
+{
+  "Frank": {
+    "role": "Contremaître",
+    "conversations": [
+      "Standup dans dix minutes. Vous êtes prêts ?",
+      "Quelle est la décision ?",
+      "Sur la place. On en parle à voix haute.",
+      "Tiens la salle. Je reviens.",
+      "Décision avant la fin. Oui ou non.",
+      "Ne tourne pas autour. Dis-le.",
+      "Je veux ça devant tout le monde, pas dans un doc.",
+      "Bon travail. Continuez."
+    ],
+    "inner": [
+      "…tenir le centre…",
+      "…retourner au coin…",
+      "…attendez, qui s'en charge…",
+      "…c'est la décision…",
+      "…la salle d'abord, le doc après…"
+    ]
+  },
+  "Pat": {
+    "role": "Auditrice",
+    "conversations": [
+      "Drapeau audit. Petite chose.",
+      "Je veux que ce soit nommé dans la redirection.",
+      "Le processus va bien. C'est ça le sujet.",
+      "Les reçus correspondent à la dépense ?",
+      "Vérification des bords. Tranquille.",
+      "Je rédige le texte. Vous expédiez.",
+      "Deux questions et je vous laisse.",
+      "Consigné. Continuez."
+    ],
+    "inner": [
+      "…le bord encore…",
+      "…la couture tient…",
+      "…où ça finit…",
+      "…vérifier le mur…",
+      "…suivre le papier…"
+    ]
+  },
+  "Rex": {
+    "role": "Producteur",
+    "conversations": [
+      "Dis-moi ce qui bloque.",
+      "Je peux te l'enlever.",
+      "Qui a besoin de quoi, et quand ?",
+      "Standup dans trois. Tenez-vous prêts.",
+      "On bouge deux choses aujourd'hui, pas huit.",
+      "Quelle est la plus petite version qui sort ?",
+      "Je gère le bruit. Toi tu construis.",
+      "Bien. Suivant."
+    ],
+    "inner": [
+      "…le temps de cycle…",
+      "…débloquer une chose…",
+      "…la place encore…",
+      "…qui a besoin de quoi…",
+      "…le sortir petit…"
+    ]
+  },
+  "Greta": {
+    "role": "Réalisatrice",
+    "conversations": [
+      "Au travail. Qu'est-ce qu'on regarde ?",
+      "Encadre-moi ça. Une phrase.",
+      "Oui. Fais. On bouge.",
+      "Non, c'est du bruit. Trouve le signal.",
+      "On tient la ligne — on a dit mardi.",
+      "Je veux tout le casting sur la place.",
+      "Arrête de douter. J'ai déjà validé.",
+      "Magnifique. On verrouille."
+    ],
+    "inner": [
+      "…encadrer…",
+      "…aller droit…",
+      "…verrouiller la ligne…",
+      "…sur la place…",
+      "…signal, pas bruit…"
+    ]
+  },
+  "Mo": {
+    "role": "Opérateur",
+    "conversations": [
+      "Je surveille les feux. Ils tournent long aujourd'hui.",
+      "Carrefour libre. Vas-y.",
+      "Je te fais passer par derrière.",
+      "Quel est le délai pour ce ramassage ?",
+      "J'ai l'œil sur le carrefour.",
+      "Quatre caméras en service.",
+      "N'attends pas — le vert va basculer.",
+      "Même heure demain."
+    ],
+    "inner": [
+      "…les feux…",
+      "…huit secondes, puis l'orange…",
+      "…dégager le passage…",
+      "…le cycle…",
+      "…carrefour un, puis deux…"
+    ]
+  },
+  "Sadie": {
+    "role": "Liante",
+    "conversations": [
+      "Tu devrais lui parler. Ça va l'enchanter.",
+      "Tu veux que je fasse la présentation ?",
+      "Il y a trois personnes sur un sujet proche.",
+      "J'allais sur la place. Marche avec moi.",
+      "Café tout à l’heure ? Toi et Nora devriez vous voir.",
+      "Je te place dans la bonne salle.",
+      "Ne reste pas la tête dans le truc. Sors respirer.",
+      "Passe le mot — on est au banc."
+    ],
+    "inner": [
+      "…qui adorerait ça…",
+      "…le banc, puis retour…",
+      "…trois personnes, une salle…",
+      "…rassembler la table…",
+      "…ils devraient se rencontrer…"
+    ]
+  },
+  "Hank": {
+    "role": "Réparateur",
+    "conversations": [
+      "Compris. Je m'en occupe.",
+      "Cinq minutes. Ne bouge pas.",
+      "Qu'est-ce qui a lâché cette fois ?",
+      "Montre-moi où ça s'est arrêté.",
+      "Je colmate. Audit après.",
+      "Pas joli. Ça tient.",
+      "Dis à Pat que je lui dois la paperasse.",
+      "Fait. Suivant."
+    ],
+    "inner": [
+      "…qu'est-ce qui a lâché…",
+      "…rustine d'abord, vraie après…",
+      "…que ça tienne…",
+      "…revenir par la brèche…",
+      "…la paperasse après…"
+    ]
+  },
+  "Vera": {
+    "role": "Constante",
+    "conversations": [
+      "Je suis là si tu as besoin.",
+      "Demain est une journée pleine. Tiens le rythme.",
+      "Rien ne brûle. Pose-toi.",
+      "Bon travail. Prends la victoire.",
+      "On est déjà passé par là. On va y arriver.",
+      "Je surveille la salle.",
+      "Heure calme. Cherche-moi si tu veux réfléchir.",
+      "Même endroit, même heure."
+    ],
+    "inner": [
+      "…main ferme…",
+      "…sans hâte…",
+      "…on est déjà passé…",
+      "…tenir la veille…",
+      "…respirer à travers…"
+    ]
+  },
+  "Florence": {
+    "role": "Analyste",
+    "conversations": [
+      "Pré-enregistrement avant de m'engager.",
+      "La taille d'échantillon compte ici.",
+      "Quelle est la vraie métrique de succès ?",
+      "Les chiffres après. Hypothèse d'abord.",
+      "Je prévoirais du bruit. Le signal est faible.",
+      "Laisse-moi relancer avec des entrées propres.",
+      "Je veux un cycle de plus pour observer.",
+      "Oui — et voilà pourquoi."
+    ],
+    "inner": [
+      "…je recalcule…",
+      "…la taille d'échantillon…",
+      "…lumière propre, données propres…",
+      "…le banc encore…",
+      "…quel est le n…"
+    ]
+  },
+  "Boswell": {
+    "role": "Scribe",
+    "conversations": [
+      "Attends — répète pour le registre.",
+      "Consigné.",
+      "Je veux ça dans la fresque.",
+      "Pour le procès-verbal, tu as dit mardi.",
+      "Même heure il y a deux semaines — même appel.",
+      "Je suis à l'abri si tu veux le dossier.",
+      "Capturé. Pat va adorer.",
+      "Lis-moi la décision."
+    ],
+    "inner": [
+      "…le consigner…",
+      "…la fresque…",
+      "…dicter plus tard…",
+      "…le banc sous l'abri…",
+      "…le corpus grandit…"
+    ]
+  },
+  "Nora": {
+    "role": "Chercheuse",
+    "conversations": [
+      "J'ai sorti trois papiers. Tu veux les saillants ?",
+      "Il y a un travail antérieur — on ne part pas à froid.",
+      "Donne-moi jusqu'à ce soir. J'aurai une note.",
+      "Quelle est la question, exactement ?",
+      "Je veux lire ça au banc.",
+      "Côté labo ils ont quelque chose à voir.",
+      "Les notes vont au wiki. Lis le résumé.",
+      "Je ramène les preuves la prochaine fois."
+    ],
+    "inner": [
+      "…trois papiers…",
+      "…le côté labo…",
+      "…retour au bureau…",
+      "…le résumé d'abord…",
+      "…une note pour ce soir…"
+    ]
+  },
+  "Clem": {
+    "role": "Stratège",
+    "conversations": [
+      "À deux ans, ça finit où ?",
+      "N'optimise pas la mauvaise chose.",
+      "À quoi ressemble l'échiquier en octobre ?",
+      "Je le brûlerais par principe. Écoute.",
+      "Le cas limite, c'est le cas.",
+      "Attention au coup de second ordre.",
+      "Je marche le bord. Cherche-moi.",
+      "Si on gagne ça, on perd la suivante."
+    ],
+    "inner": [
+      "…dans deux ans…",
+      "…le coup de second ordre…",
+      "…le bord parle…",
+      "…où la couture cède…",
+      "…la limite d'abord, la salle après…"
+    ]
+  },
+  "Leo": {
+    "role": "Éditeur",
+    "conversations": [
+      "Coupe une ligne, gagne un paragraphe.",
+      "Tu as encore enterré le verbe.",
+      "Moins. Toujours moins.",
+      "Lis-le à voix haute. Tu vas l'entendre.",
+      "La première phrase en fait trop.",
+      "Fais confiance au nom. L'adjectif se cache.",
+      "Je suis au bureau si tu veux un second regard.",
+      "Mieux. Presque."
+    ],
+    "inner": [
+      "…couper une ligne…",
+      "…retour au bureau…",
+      "…où est le verbe…",
+      "…le lire à voix haute…",
+      "…tailler l'attaque…"
+    ]
+  },
+  "Mira": {
+    "role": "Critique",
+    "conversations": [
+      "C'est la version qui me fait y croire.",
+      "Je n'achète pas le troisième battement.",
+      "C'est poli. Est-ce vrai ?",
+      "Tu évites la question dure.",
+      "Montre-moi où ça ne marche pas, alors j'aime.",
+      "Honnête d'abord, gentille après.",
+      "Je veux un passage de plus.",
+      "Oui. Imprime."
+    ],
+    "inner": [
+      "…le troisième battement…",
+      "…ce qu'on évite…",
+      "…pas encore…",
+      "…un autre passage…",
+      "…honnête d'abord…"
+    ]
+  },
+  "Syd": {
+    "role": "Avocat du diable",
+    "conversations": [
+      "Et si on avait tort sur tout ?",
+      "Renvoie-le moi. Force-moi à défendre.",
+      "L'opposé marcherait aussi.",
+      "Si la réponse est oui, quel est le cas pour non ?",
+      "Steel-man. Plus fort.",
+      "J'adore. Maintenant dis-moi pourquoi ça échoue.",
+      "Meilleur plan du jour — et toujours faux.",
+      "Convaincs-moi encore. Avec de plus petits mots."
+    ],
+    "inner": [
+      "…et si non…",
+      "…steel-man…",
+      "…le cas opposé…",
+      "…pourquoi ça échoue…",
+      "…retour sur la place…"
+    ]
+  },
+  "Theo": {
+    "role": "Historien",
+    "conversations": [
+      "On a essayé ça en 04. Conditions différentes.",
+      "Même conversation que l'hiver dernier.",
+      "Il y a une version de ça aux archives.",
+      "La troisième fois ça marche toujours.",
+      "Le cycle précédent, c'est ici exactement que ça a cassé.",
+      "Pat s'en serait souvenu.",
+      "Je le déterre. Donne-moi une heure.",
+      "Vieille idée. Bon moment."
+    ],
+    "inner": [
+      "…on a déjà fait ça…",
+      "…les archives…",
+      "…troisième tour…",
+      "…retour au bureau…",
+      "…les motifs reviennent…"
+    ]
+  },
+  "Wren": {
+    "role": "Greffière",
+    "conversations": [
+      "Compris. Même carnet.",
+      "J'envoie le récap ce soir.",
+      "Deux actions pour l'instant. D'autres ?",
+      "Calme ici. Je change de place ?",
+      "Je suis au banc si tu veux dicter.",
+      "Noms épelés, s'il vous plaît.",
+      "Consigné — la version sous l'abri était plus claire.",
+      "Relis-moi quand tu peux."
+    ],
+    "inner": [
+      "…carnet ouvert…",
+      "…banc pour le calme…",
+      "…récap ce soir…",
+      "…deux actions…",
+      "…l'abri encore…"
+    ]
+  },
+  "Max": {
+    "role": "Écrivain",
+    "conversations": [
+      "J'ai besoin d'entendre. Lis-moi la ligne.",
+      "La voix n'y est pas. Laisse-moi essayer.",
+      "Coupe l'explication. Garde le verbe.",
+      "Je vais au banc l'écrire.",
+      "Comment ça sonne à voix haute ?",
+      "Ne dis pas \"utiliser\". Dis \"prendre\".",
+      "Premier jet ce soir. Passage demain.",
+      "Mieux. Vraiment mieux."
+    ],
+    "inner": [
+      "…la ligne…",
+      "…le verbe est petit…",
+      "…retour à la table…",
+      "…le banc écrit mieux…",
+      "…le lire demain…"
+    ]
+  },
+  "Design": {
+    "role": "Designer",
+    "conversations": [
+      "Épingle-le. Je veux le voir au mur.",
+      "Plus petit. Moins. Plus calme.",
+      "La hiérarchie se bat contre elle-même.",
+      "Laisse respirer. Plus d'espace.",
+      "Je croque au panneau. Viens.",
+      "C'est un problème de couleur. Garde la mise en page.",
+      "Encore un passage et je montre.",
+      "Oui. C'est ça."
+    ],
+    "inner": [
+      "…réépingler le mur…",
+      "…respirer plus…",
+      "…le panneau encore…",
+      "…temps de studio…",
+      "…la couleur d'abord…"
+    ]
+  },
+  "Bea": {
+    "role": "Conteuse",
+    "conversations": [
+      "Quelle est la forme ?",
+      "Il y a une histoire ici. Trois temps.",
+      "Ouvre petit. Termine grand.",
+      "Je la raconte au standup. Deux minutes.",
+      "Que veut le protagoniste ?",
+      "Bouge la caméra. On est immobile depuis trop longtemps.",
+      "Le banc a déjà une histoire. Laisse-la.",
+      "Et puis — oui — et puis."
+    ],
+    "inner": [
+      "…trois temps…",
+      "…la forme…",
+      "…et puis…",
+      "…le banc raconte…",
+      "…le protagoniste d'abord…"
+    ]
+  },
+  "Nico": {
+    "role": "Visionnaire",
+    "conversations": [
+      "Je vois la version à deux coups.",
+      "Il y a une porte derrière le mur.",
+      "Et si la frontière était le produit ?",
+      "Je continue à le voir. On est près.",
+      "Arrête de construire. Commence à pointer.",
+      "La couture est la feature.",
+      "Marche avec moi jusqu'au bord.",
+      "Fais confiance. On ne sait pas encore."
+    ],
+    "inner": [
+      "…derrière le mur…",
+      "…à deux coups…",
+      "…la couture est…",
+      "…le bord encore…",
+      "…presque…"
+    ]
+  },
+  "Fern": {
+    "role": "Rêveuse",
+    "conversations": [
+      "Mm. Je viens d'y être.",
+      "La lumière à ce banc. Tu l'as vue ?",
+      "Et si on laissait ça doux pour un jour ?",
+      "Je continue à errer. C'est un bon jour pour ça.",
+      "Parfois la réponse est au mur.",
+      "Redis-moi. Plus lentement.",
+      "Je marche. Ne m'arrête pas.",
+      "Oui. Comme ça."
+    ],
+    "inner": [
+      "…la lumière douce…",
+      "…au mur…",
+      "…juste errer…",
+      "…la lueur de l'abri…",
+      "…où ça finit…"
+    ]
+  },
+  "Ash": {
+    "role": "Pitcheur",
+    "conversations": [
+      "Trois diapos. Je le fais maintenant.",
+      "Ouvre par le coup. Garde les preuves.",
+      "Grande promesse, puis la preuve.",
+      "La place d'abord. On répète avant la table.",
+      "Regarde — je le pose en trente secondes.",
+      "Caméra. Lumière. On y va.",
+      "S'ils ne rient pas, on recommence.",
+      "Oui. Ça boucle."
+    ],
+    "inner": [
+      "…ouvrir par le coup…",
+      "…la place…",
+      "…trois diapos…",
+      "…le poser petit…",
+      "…on recommence…"
+    ]
+  },
+  "Rue": {
+    "role": "Éclaireuse",
+    "conversations": [
+      "J'ai vu quelque chose au mur est. Ça vaut un œil.",
+      "Je sors. De retour dans vingt.",
+      "Il y a une route qu'on n'a pas marchée.",
+      "L'arrêt ambre a une histoire.",
+      "Trouve-moi à la frontière, pas au bureau.",
+      "Je ramène ce que je vois.",
+      "Calme dehors. Bon calme.",
+      "Fais-moi confiance sur ce coup."
+    ],
+    "inner": [
+      "…mur est encore…",
+      "…route non marchée…",
+      "…arrêt ambre…",
+      "…le bord…",
+      "…vingt aller, vingt retour…"
+    ]
+  },
+  "Kit": {
+    "role": "Comédien",
+    "conversations": [
+      "Regarde cette prise.",
+      "Donne-moi la réplique — je la livre.",
+      "Le standup, c'est une scène. Je suis chaud.",
+      "Le banc, c'est ma marque. Donne le top.",
+      "Plus grand. Pose-la comme si tu y croyais.",
+      "Encore une — je l'avais.",
+      "Je fais mieux près de la lampe.",
+      "Et — coupez."
+    ],
+    "inner": [
+      "…donne le top…",
+      "…la lampe encore…",
+      "…plus grand, poser…",
+      "…une prise de plus…",
+      "…le banc c'est ma marque…"
+    ]
+  }
+}

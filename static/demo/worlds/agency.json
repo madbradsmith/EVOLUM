@@ -1,0 +1,429 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "The Agency",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "lobby",
+      "label": "Lobby",
+      "global_x": 0,
+      "global_y": 220,
+      "width": 220,
+      "height": 90,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1c1a26",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "team_pit",
+      "label": "Team Pit",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 240,
+      "height": 180,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1d1b2a",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "creative",
+      "label": "Creative Wing",
+      "global_x": -260,
+      "global_y": 0,
+      "width": 160,
+      "height": 200,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1f1c2e",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "strategy",
+      "label": "Strategy",
+      "global_x": 260,
+      "global_y": 0,
+      "width": 160,
+      "height": 200,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1c1a26",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "client_room",
+      "label": "Client Room",
+      "global_x": 0,
+      "global_y": -300,
+      "width": 260,
+      "height": 140,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1a1822",
+        "pack": "pack_floor"
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_client_out",
+      "direction": "out",
+      "destination": "client_station",
+      "width": 70,
+      "theme": "purple",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -380
+        },
+        {
+          "x": 140,
+          "y": -596
+        },
+        {
+          "x": 140,
+          "y": -884
+        },
+        {
+          "x": 0,
+          "y": -1100
+        }
+      ],
+      "length": 760
+    },
+    {
+      "id": "road_client_back",
+      "direction": "back",
+      "destination": "client_station",
+      "width": 70,
+      "theme": "purple",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -1100
+        },
+        {
+          "x": -174.1,
+          "y": -907.02
+        },
+        {
+          "x": -222.1,
+          "y": -619.02
+        },
+        {
+          "x": -120,
+          "y": -380
+        }
+      ],
+      "length": 770
+    },
+    {
+      "id": "road_market_out",
+      "direction": "out",
+      "destination": "market_station",
+      "width": 70,
+      "theme": "purple",
+      "bezier": [
+        {
+          "x": 340,
+          "y": 0
+        },
+        {
+          "x": 568,
+          "y": -140
+        },
+        {
+          "x": 872,
+          "y": -140
+        },
+        {
+          "x": 1100,
+          "y": 0
+        }
+      ],
+      "length": 798
+    },
+    {
+      "id": "road_market_back",
+      "direction": "back",
+      "destination": "market_station",
+      "width": 70,
+      "theme": "purple",
+      "bezier": [
+        {
+          "x": 1100,
+          "y": 0
+        },
+        {
+          "x": 850.17,
+          "y": 102.29
+        },
+        {
+          "x": 546.17,
+          "y": 54.29
+        },
+        {
+          "x": 340,
+          "y": -120
+        }
+      ],
+      "length": 807
+    },
+    {
+      "id": "road_studio_out",
+      "direction": "out",
+      "destination": "studio_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -340,
+          "y": 0
+        },
+        {
+          "x": -568,
+          "y": -140
+        },
+        {
+          "x": -872,
+          "y": -140
+        },
+        {
+          "x": -1100,
+          "y": 0
+        }
+      ],
+      "length": 798
+    },
+    {
+      "id": "road_studio_back",
+      "direction": "back",
+      "destination": "studio_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -1100,
+          "y": 0
+        },
+        {
+          "x": -893.83,
+          "y": 174.29
+        },
+        {
+          "x": -589.83,
+          "y": 222.29
+        },
+        {
+          "x": -340,
+          "y": 120
+        }
+      ],
+      "length": 807
+    }
+  ],
+  "ring_road": {
+    "id": "ring_road",
+    "radius": 800,
+    "width": 50,
+    "intersections": [
+      {
+        "id": "ix_road_client_out",
+        "road_id": "road_client_out",
+        "x": 103,
+        "y": -793,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_client_back",
+        "road_id": "road_client_back",
+        "x": -159,
+        "y": -784,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_market_out",
+        "road_id": "road_market_out",
+        "x": 792,
+        "y": -102,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_market_back",
+        "road_id": "road_market_back",
+        "x": 800,
+        "y": 53,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_studio_out",
+        "road_id": "road_studio_out",
+        "x": -792,
+        "y": -102,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_studio_back",
+        "road_id": "road_studio_back",
+        "x": -784,
+        "y": 155,
+        "traffic_light": true
+      }
+    ]
+  },
+  "stops": [
+    {
+      "id": "client_stop",
+      "road": "road_client_out",
+      "t": 0.5,
+      "poi": "notice_board",
+      "lighting": {
+        "color": "#c279ff",
+        "intensity": 1,
+        "type": "pool"
+      },
+      "audio": "distant_chatter"
+    },
+    {
+      "id": "market_stop",
+      "road": "road_market_out",
+      "t": 0.5,
+      "poi": "bench_cluster",
+      "lighting": {
+        "color": "#9b7fe8",
+        "intensity": 0.9,
+        "type": "steady"
+      },
+      "audio": "wind_low"
+    },
+    {
+      "id": "studio_stop",
+      "road": "road_studio_out",
+      "t": 0.5,
+      "poi": "vendor_table",
+      "lighting": {
+        "color": "#ff8b3a",
+        "intensity": 1,
+        "type": "flicker"
+      },
+      "audio": "crate_creak"
+    }
+  ],
+  "stations": [
+    {
+      "id": "client_station",
+      "position": {
+        "x": 0,
+        "y": -1100
+      },
+      "target_pack": "client",
+      "label": "CLIENT HQ"
+    },
+    {
+      "id": "market_station",
+      "position": {
+        "x": 1100,
+        "y": 0
+      },
+      "target_pack": "market",
+      "label": "THE MARKET"
+    },
+    {
+      "id": "studio_station",
+      "position": {
+        "x": -1100,
+        "y": 0
+      },
+      "target_pack": "studio",
+      "label": "STUDIO"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_competitors",
+      "x": 700,
+      "y": 700,
+      "w": 280,
+      "h": 180,
+      "color": "#1a1822",
+      "kind": "bar"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_north",
+      "position": {
+        "x": 0,
+        "y": 1300
+      }
+    },
+    {
+      "id": "egg_west",
+      "position": {
+        "x": -1300,
+        "y": 0
+      }
+    }
+  ],
+  "boundary": {
+    "north": 1300,
+    "south": -1300,
+    "east": 1300,
+    "west": -1300
+  },
+  "cast": [
+    {
+      "name": "Rex",
+      "role": "Producer",
+      "type": "anchor",
+      "color": "#ff7d4a",
+      "spawn": "team_pit"
+    },
+    {
+      "name": "Design",
+      "role": "Designer",
+      "type": "creative",
+      "color": "#c279ff",
+      "spawn": "creative"
+    },
+    {
+      "name": "Clem",
+      "role": "Strategist",
+      "type": "thinker",
+      "color": "#9b7fe8",
+      "spawn": "strategy"
+    },
+    {
+      "name": "Sadie",
+      "role": "Connector",
+      "type": "anchor",
+      "color": "#c9a0dc",
+      "spawn": "lobby"
+    },
+    {
+      "name": "Nico",
+      "role": "Visionary",
+      "type": "creative",
+      "color": "#4a9eff",
+      "spawn": "client_room"
+    },
+    {
+      "name": "Vera",
+      "role": "Steady",
+      "type": "anchor",
+      "color": "#f0e6cc",
+      "spawn": "team_pit"
+    }
+  ]
+}

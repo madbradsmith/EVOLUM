@@ -1,0 +1,156 @@
+{
+  "meta": {
+    "version": 1,
+    "description": "All ambient soundtrack presets. Procedural Web Audio synthesis — no external audio files needed."
+  },
+  "tracks": [
+    {
+      "id": "jazz",
+      "name": "After Hours Jazz",
+      "vibe": "late night, smoky room, brushed snares",
+      "master_gain": 0.35,
+      "sources": [
+        {
+          "type": "noise",
+          "filter": "bandpass",
+          "freq": 600,
+          "q": 1.5,
+          "gain": 0.07,
+          "lfo": {
+            "target": "gain",
+            "freq": 0.18,
+            "depth": 0.04
+          }
+        },
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": 110,
+          "gain": 0.05
+        },
+        {
+          "type": "stab",
+          "wave": "triangle",
+          "freq": 330,
+          "dur": 1.4,
+          "vol": 0.06,
+          "interval_ms": 5500
+        },
+        {
+          "type": "stab",
+          "wave": "triangle",
+          "freq": 440,
+          "dur": 1.2,
+          "vol": 0.05,
+          "interval_ms": 7200
+        },
+        {
+          "type": "stab",
+          "wave": "triangle",
+          "freq": 247,
+          "dur": 1.6,
+          "vol": 0.05,
+          "interval_ms": 9000
+        }
+      ]
+    },
+    {
+      "id": "lab_hum",
+      "name": "Lab Hum",
+      "vibe": "fluorescent lights, server fans, distant compressor",
+      "master_gain": 0.3,
+      "sources": [
+        {
+          "type": "osc",
+          "wave": "sine",
+          "freq": 60,
+          "gain": 0.05
+        },
+        {
+          "type": "osc",
+          "wave": "sawtooth",
+          "freq": 120,
+          "gain": 0.018,
+          "lfo": {
+            "target": "gain",
+            "freq": 0.5,
+            "depth": 0.008
+          }
+        },
+        {
+          "type": "noise",
+          "filter": "highpass",
+          "freq": 5000,
+          "q": 0.5,
+          "gain": 0.012
+        }
+      ]
+    },
+    {
+      "id": "stage_ambience",
+      "name": "Stage Ambience",
+      "vibe": "empty theater, dust, distant bell",
+      "master_gain": 0.3,
+      "sources": [
+        {
+          "type": "noise",
+          "filter": "lowpass",
+          "freq": 280,
+          "q": 0.7,
+          "gain": 0.06,
+          "lfo": {
+            "target": "freq",
+            "freq": 0.12,
+            "depth": 120
+          }
+        },
+        {
+          "type": "stab",
+          "wave": "sine",
+          "freq": 880,
+          "dur": 2.2,
+          "vol": 0.025,
+          "interval_ms": 11000
+        }
+      ]
+    },
+    {
+      "id": "street",
+      "name": "Street",
+      "vibe": "pavement, distant traffic, occasional engine",
+      "master_gain": 0.35,
+      "sources": [
+        {
+          "type": "noise",
+          "filter": "lowpass",
+          "freq": 380,
+          "q": 0.6,
+          "gain": 0.09
+        },
+        {
+          "type": "noise",
+          "filter": "highpass",
+          "freq": 4000,
+          "q": 0.4,
+          "gain": 0.02
+        },
+        {
+          "type": "sweep",
+          "wave": "sawtooth",
+          "freq_from": 50,
+          "freq_to": 80,
+          "dur": 3,
+          "vol": 0.04,
+          "interval_ms": 10000
+        }
+      ]
+    },
+    {
+      "id": "silence",
+      "name": "Silence",
+      "vibe": "no audio. nothing.",
+      "master_gain": 0,
+      "sources": []
+    }
+  ]
+}

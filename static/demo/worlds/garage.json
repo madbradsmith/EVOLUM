@@ -1,0 +1,282 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "The Garage",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "bay",
+      "label": "Main Bay",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 220,
+      "height": 140,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1d1c1a",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "office",
+      "label": "Office",
+      "global_x": -200,
+      "global_y": 100,
+      "width": 120,
+      "height": 90,
+      "flags": {
+        "walled": true,
+        "floor_color": "#221a14",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "parts",
+      "label": "Parts Room",
+      "global_x": 200,
+      "global_y": 100,
+      "width": 120,
+      "height": 90,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1a1614",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "lift",
+      "label": "Lift",
+      "global_x": 0,
+      "global_y": -140,
+      "width": 200,
+      "height": 60,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1c1c1c",
+        "pack": "pack_floor",
+        "raised": 4
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_alley_out",
+      "direction": "out",
+      "destination": "alley_station",
+      "width": 60,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 120,
+          "y": -180
+        },
+        {
+          "x": 258.4,
+          "y": -172.16
+        },
+        {
+          "x": 386.4,
+          "y": -252.16
+        },
+        {
+          "x": 440,
+          "y": -380
+        }
+      ],
+      "length": 402
+    },
+    {
+      "id": "road_alley_back",
+      "direction": "back",
+      "destination": "alley_station",
+      "width": 60,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 440,
+          "y": -380
+        },
+        {
+          "x": 305.07,
+          "y": -428.03
+        },
+        {
+          "x": 151.63,
+          "y": -388.73
+        },
+        {
+          "x": 56.4,
+          "y": -281.76
+        }
+      ],
+      "length": 420
+    },
+    {
+      "id": "road_yard_out",
+      "direction": "out",
+      "destination": "yard_station",
+      "width": 60,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -120,
+          "y": -180
+        },
+        {
+          "x": -258.4,
+          "y": -172.16
+        },
+        {
+          "x": -386.4,
+          "y": -252.16
+        },
+        {
+          "x": -440,
+          "y": -380
+        }
+      ],
+      "length": 402
+    },
+    {
+      "id": "road_yard_back",
+      "direction": "back",
+      "destination": "yard_station",
+      "width": 60,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -440,
+          "y": -380
+        },
+        {
+          "x": -302.12,
+          "y": -341.27
+        },
+        {
+          "x": -199.56,
+          "y": -220.57
+        },
+        {
+          "x": -183.6,
+          "y": -78.24
+        }
+      ],
+      "length": 420
+    }
+  ],
+  "ring_road": null,
+  "stops": [
+    {
+      "id": "alley_stop",
+      "road": "road_alley_out",
+      "t": 0.5,
+      "poi": "parked_vehicle",
+      "lighting": {
+        "color": "#ff8b3a",
+        "intensity": 0.7,
+        "type": "flicker"
+      },
+      "audio": "engine_idle"
+    },
+    {
+      "id": "yard_stop",
+      "road": "road_yard_out",
+      "t": 0.5,
+      "poi": "vendor_table",
+      "lighting": {
+        "color": "#ff7d4a",
+        "intensity": 0.9,
+        "type": "steady"
+      },
+      "audio": "crate_creak"
+    }
+  ],
+  "stations": [
+    {
+      "id": "alley_station",
+      "position": {
+        "x": 440,
+        "y": -380
+      },
+      "target_pack": "street",
+      "label": "STREET"
+    },
+    {
+      "id": "yard_station",
+      "position": {
+        "x": -440,
+        "y": -380
+      },
+      "target_pack": "yard",
+      "label": "THE YARD"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_junkyard",
+      "x": 0,
+      "y": -480,
+      "w": 320,
+      "h": 140,
+      "color": "#1c1a14",
+      "kind": "field"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_south",
+      "position": {
+        "x": 0,
+        "y": -600
+      }
+    }
+  ],
+  "boundary": {
+    "north": 600,
+    "south": -600,
+    "east": 600,
+    "west": -600
+  },
+  "cast": [
+    {
+      "name": "Hank",
+      "role": "Fixer",
+      "type": "anchor",
+      "color": "#8899aa",
+      "spawn": "bay"
+    },
+    {
+      "name": "Mo",
+      "role": "Operator",
+      "type": "anchor",
+      "color": "#ffb347",
+      "spawn": "lift"
+    },
+    {
+      "name": "Vera",
+      "role": "Steady",
+      "type": "anchor",
+      "color": "#f0e6cc",
+      "spawn": "office"
+    },
+    {
+      "name": "Rue",
+      "role": "Scout",
+      "type": "creative",
+      "color": "#ff6b6b",
+      "spawn": "parts"
+    },
+    {
+      "name": "Rex",
+      "role": "Producer",
+      "type": "anchor",
+      "color": "#ff7d4a",
+      "spawn": "bay"
+    }
+  ]
+}

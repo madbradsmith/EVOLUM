@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simutum — Replay Viewer</title>
+<style>
+:root{--s-bg:#06070b;--s-bg-2:#0a0c12;--s-panel:#0e1018;--s-panel-2:#141826;
+--s-border:rgba(184,196,224,0.14);--s-border-2:rgba(184,196,224,0.22);
+--s-text-1:#d8dde9;--s-text-2:#b9c4e0;--s-text-3:rgba(184,196,224,0.55);
+--s-text-4:rgba(184,196,224,0.32);--s-accent:#46d9c5;--s-warn:#ff9d6d;
+--s-font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+--s-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--s-bg);color:var(--s-text-1);font-family:var(--s-font-sans);min-height:100%}
+a{color:var(--s-accent);text-decoration:none}a:hover{text-decoration:underline}
+.nav{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--s-border);font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.nav strong{color:var(--s-accent);font-weight:700}.nav .sep{color:var(--s-border-2);margin:0 6px}
+.btn{display:inline-block;background:transparent;border:1px solid var(--s-border-2);color:var(--s-text-2);padding:8px 14px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s ease}
+.btn:hover{border-color:var(--s-accent);color:var(--s-accent);text-decoration:none}
+.btn.primary{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.08)}
+.btn.primary:hover{background:rgba(70,217,197,0.18)}
+
+body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.toolbar{display:flex;justify-content:space-between;align-items:center;padding:10px 20px;border-bottom:1px solid var(--s-border);gap:10px}
+.toolbar .left{display:flex;align-items:center;gap:10px;font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.toolbar .speed{display:flex;gap:0;border:1px solid var(--s-border-2);border-radius:4px;overflow:hidden}
+.toolbar .speed button{background:transparent;border:0;color:var(--s-text-3);padding:6px 10px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.toolbar .speed button.active{background:rgba(70,217,197,0.18);color:var(--s-accent)}
+.stage{flex:1;position:relative;background:#06070b}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.scrubber{padding:14px 20px;border-top:1px solid var(--s-border);display:flex;align-items:center;gap:12px;font-family:var(--s-font-mono);font-size:11px}
+.scrubber input{flex:1;accent-color:var(--s-accent)}
+.scrubber .t{color:var(--s-accent);font-variant-numeric:tabular-nums;min-width:80px;text-align:right}
+.speech-track{height:24px;background:rgba(70,217,197,0.06);border:1px solid var(--s-border);border-radius:4px;position:relative;margin-bottom:6px}
+.speech-marker{position:absolute;top:0;bottom:0;width:2px;background:var(--s-accent);pointer-events:auto;cursor:pointer}
+.speech-marker:hover{background:#fff}
+.empty{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:var(--s-text-3);font-family:var(--s-font-mono);font-size:13px;letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.empty input{margin-top:14px;color:var(--s-text-2)}
+</style></head>
+<body>
+<div class="toolbar">
+  <div class="left"><strong style="color:var(--s-accent)">SIMUTUM</strong> <span style="color:var(--s-border-2)">·</span> Replay Viewer</div>
+  <div class="left">
+    <span id="status">No replay loaded.</span>
+    <input type="file" id="fileIn" accept="application/json" style="color:var(--s-text-2);font-size:11px"/>
+    <div class="speed" id="speedCtl">
+      <button data-speed="1" class="active">1×</button>
+      <button data-speed="2">2×</button>
+      <button data-speed="4">4×</button>
+    </div>
+    <button class="btn" id="playBtn">▶</button>
+  </div>
+</div>
+<div class="stage">
+  <canvas id="cv"></canvas>
+  <div class="empty" id="emptyMsg">Load a replay.json (exported from the Game World REC button)<br/>
+    <input type="file" accept="application/json" id="fileIn2"/>
+  </div>
+</div>
+<div class="scrubber">
+  <div class="speech-track" id="speechTrack" style="flex:1"></div>
+  <span class="t" id="timeLbl">0.0s / 0.0s</span>
+</div>
+<div class="scrubber">
+  <input type="range" id="scrub" min="0" max="0" value="0" step="0.01"/>
+</div>
+
+<script>
+let replay = null;
+let speed = 1;
+let playing = false;
+let t = 0;        // seconds
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W=0, H=0;
+function resize(){ const r=cv.parentElement.getBoundingClientRect(); W=cv.width=r.width*(devicePixelRatio||1); H=cv.height=r.height*(devicePixelRatio||1); }
+addEventListener('resize', resize); resize();
+
+function setStatus(s){ document.getElementById('status').textContent = s; }
+
+function load(json) {
+  replay = json;
+  const dur = replay.ticks && replay.ticks.length ? replay.ticks[replay.ticks.length-1].t : 0;
+  document.getElementById('scrub').max = dur;
+  document.getElementById('emptyMsg').style.display = 'none';
+  setStatus('Loaded · ' + (replay.ticks||[]).length + ' ticks · ' + (replay.speech||[]).length + ' lines');
+  // build speech markers
+  const track = document.getElementById('speechTrack');
+  track.innerHTML = '';
+  for (const sp of (replay.speech || [])) {
+    const m = document.createElement('div');
+    m.className = 'speech-marker';
+    m.style.left = ((sp.t / Math.max(1,dur)) * 100) + '%';
+    m.title = sp.name + ': ' + sp.line;
+    m.addEventListener('click', () => seek(sp.t));
+    track.appendChild(m);
+  }
+  seek(0);
+  render();
+}
+
+function seek(newT) {
+  t = Math.max(0, Math.min(newT, parseFloat(document.getElementById('scrub').max)));
+  document.getElementById('scrub').value = t;
+  document.getElementById('timeLbl').textContent = t.toFixed(1) + 's / ' + document.getElementById('scrub').max + 's';
+  draw();
+}
+
+function nearestTick(time) {
+  if (!replay || !replay.ticks || !replay.ticks.length) return null;
+  // binary search
+  let lo = 0, hi = replay.ticks.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (replay.ticks[mid].t < time) lo = mid + 1; else hi = mid;
+  }
+  return replay.ticks[Math.max(0, lo - 1)] || replay.ticks[0];
+}
+
+function draw() {
+  ctx.fillStyle = '#06070b'; ctx.fillRect(0, 0, W, H);
+  if (!replay) return;
+  const tick = nearestTick(t);
+  if (!tick) return;
+  // boundary frame
+  const range = 3400;
+  const scale = Math.min(W, H) / range;
+  const cx = W/2, cy = H/2;
+  ctx.strokeStyle = 'rgba(70,217,197,0.18)';
+  ctx.lineWidth = 1 * (devicePixelRatio||1);
+  ctx.strokeRect(cx - 1600*scale, cy - 1600*scale, 3200*scale, 3200*scale);
+
+  // positions
+  for (const p of tick.positions) {
+    const x = cx + p.x * scale, y = cy - p.y * scale;
+    ctx.beginPath(); ctx.arc(x, y, 6 * (devicePixelRatio||1), 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(184,196,224,0.85)'; ctx.fill();
+    ctx.fillStyle = '#46d9c5';
+    ctx.font = (10 * (devicePixelRatio||1)) + 'px ui-monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.name, x, y - 12 * (devicePixelRatio||1));
+  }
+
+  // speech overlay: any speech event within ±1s of t
+  if (replay.speech) {
+    let yPos = 30 * (devicePixelRatio||1);
+    for (const sp of replay.speech) {
+      if (Math.abs(sp.t - t) < 1.5) {
+        ctx.fillStyle = '#46d9c5';
+        ctx.font = 'bold ' + (12 * (devicePixelRatio||1)) + 'px ui-monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(sp.name.toUpperCase() + ' · ' + sp.line, 20*(devicePixelRatio||1), yPos);
+        yPos += 18 * (devicePixelRatio||1);
+      }
+    }
+  }
+}
+
+document.getElementById('scrub').addEventListener('input', (e) => seek(parseFloat(e.target.value)));
+document.getElementById('playBtn').addEventListener('click', () => {
+  playing = !playing;
+  document.getElementById('playBtn').textContent = playing ? '❚❚' : '▶';
+});
+document.getElementById('speedCtl').addEventListener('click', (e) => {
+  if (e.target.tagName !== 'BUTTON') return;
+  speed = parseFloat(e.target.dataset.speed);
+  [...e.currentTarget.children].forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+});
+
+let last = performance.now();
+function render() {
+  const now = performance.now();
+  const dt = (now - last) / 1000; last = now;
+  if (playing && replay) {
+    const max = parseFloat(document.getElementById('scrub').max);
+    let nt = t + dt * speed;
+    if (nt > max) { nt = 0; }
+    seek(nt);
+  }
+  requestAnimationFrame(render);
+}
+render();
+
+function attach(input) {
+  input.addEventListener('change', (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const fr = new FileReader();
+    fr.onload = () => { try { load(JSON.parse(fr.result)); } catch(err) { alert(err.message); } };
+    fr.readAsText(f);
+  });
+}
+attach(document.getElementById('fileIn'));
+attach(document.getElementById('fileIn2'));
+</script>
+</body></html>

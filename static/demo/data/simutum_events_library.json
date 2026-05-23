@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "version": 1,
+    "description": "Pre-built event sequences entities can perform."
+  },
+  "events": [
+    {
+      "id": "standard_standup",
+      "name": "Standard Standup",
+      "duration_s": 95,
+      "lead": "Frank",
+      "beats": [
+        {
+          "t": 0,
+          "speaker": "lead",
+          "location": "square_center",
+          "line": "Standup. Two minutes. Question on the table."
+        },
+        {
+          "t": 12,
+          "speaker": "writer",
+          "location": "square_center",
+          "line": "The work is clean. Let's ship."
+        },
+        {
+          "t": 28,
+          "speaker": "analyst",
+          "location": "square_center",
+          "line": "Pre-reg check. What's the success metric?"
+        },
+        {
+          "t": 46,
+          "speaker": "auditor",
+          "location": "square_center",
+          "line": "Audit flag. Name what's locked in the redirect."
+        },
+        {
+          "t": 64,
+          "speaker": "lead",
+          "location": "square_center",
+          "line": "Decision: ship today. Action items dispatched."
+        },
+        {
+          "t": 82,
+          "speaker": "scribe",
+          "location": "scribe_desk",
+          "line": "Logged. Decision, four action items, lead identified."
+        }
+      ]
+    },
+    {
+      "id": "crisis_session",
+      "name": "Crisis Session",
+      "duration_s": 180,
+      "lead": "Frank",
+      "beats": [
+        {
+          "t": 0,
+          "speaker": "lead",
+          "location": "square_center",
+          "line": "Something broke. Get in here."
+        },
+        {
+          "t": 18,
+          "speaker": "fixer",
+          "location": "square_center",
+          "line": "Show me where it stopped working."
+        },
+        {
+          "t": 40,
+          "speaker": "auditor",
+          "location": "square_center",
+          "line": "Walking the timeline. When did this start?"
+        },
+        {
+          "t": 70,
+          "speaker": "strategist",
+          "location": "square_center",
+          "line": "Second-order: if we patch this, what breaks downstream?"
+        },
+        {
+          "t": 110,
+          "speaker": "fixer",
+          "location": "square_center",
+          "line": "Got it. Patching now. Audit later."
+        },
+        {
+          "t": 150,
+          "speaker": "lead",
+          "location": "square_center",
+          "line": "Decision: ship the patch, schedule the real fix Friday."
+        }
+      ]
+    },
+    {
+      "id": "writers_room_session",
+      "name": "Writers' Room",
+      "duration_s": 240,
+      "lead": "Max",
+      "beats": [
+        {
+          "t": 0,
+          "speaker": "writer",
+          "location": "table",
+          "line": "Three beats. Open, middle, land."
+        },
+        {
+          "t": 30,
+          "speaker": "editor",
+          "location": "table",
+          "line": "Cut the explanation. The verb is hiding."
+        },
+        {
+          "t": 70,
+          "speaker": "storyteller",
+          "location": "table",
+          "line": "What does the protagonist want?"
+        },
+        {
+          "t": 110,
+          "speaker": "critic",
+          "location": "table",
+          "line": "I don't buy the third beat yet."
+        },
+        {
+          "t": 160,
+          "speaker": "actor",
+          "location": "stage_corner",
+          "line": "Let me read it out loud."
+        },
+        {
+          "t": 210,
+          "speaker": "scribe",
+          "location": "corkboard",
+          "line": "Logged. Pass three, ready for the table read."
+        }
+      ]
+    },
+    {
+      "id": "pitch_rehearsal",
+      "name": "Pitch Rehearsal",
+      "duration_s": 150,
+      "lead": "Ash",
+      "beats": [
+        {
+          "t": 0,
+          "speaker": "pitch_artist",
+          "location": "stage",
+          "line": "Three slides. Watch me land it."
+        },
+        {
+          "t": 25,
+          "speaker": "director",
+          "location": "stage",
+          "line": "Open with the punch. Save the receipts."
+        },
+        {
+          "t": 55,
+          "speaker": "critic",
+          "location": "aud_n",
+          "line": "Polished. Is it true?"
+        },
+        {
+          "t": 85,
+          "speaker": "devil_adv",
+          "location": "aud_se",
+          "line": "What if the answer is no? Steel-man it."
+        },
+        {
+          "t": 115,
+          "speaker": "scribe",
+          "location": "aud_n",
+          "line": "Logged the version that landed."
+        },
+        {
+          "t": 140,
+          "speaker": "pitch_artist",
+          "location": "stage",
+          "line": "Again. Smaller. Land it."
+        }
+      ]
+    }
+  ]
+}

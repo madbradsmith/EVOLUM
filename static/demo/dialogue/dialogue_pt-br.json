@@ -1,0 +1,502 @@
+{
+  "Frank": {
+    "role": "Capataz",
+    "conversations": [
+      "Standup em dez. Prontos?",
+      "Qual é a decisão?",
+      "Leva pro centro. A gente fala em voz alta.",
+      "Segura a sala. Já volto.",
+      "Decisão antes do final do dia. Sim ou não.",
+      "Não enrola. Fala.",
+      "Quero isso na frente de todo mundo, não num doc.",
+      "Bom trabalho. Continua."
+    ],
+    "inner": [
+      "…segurar o centro…",
+      "…voltar pro canto…",
+      "…peraí, quem tá com isso…",
+      "…essa é a decisão…",
+      "…sala primeiro, papel depois…"
+    ]
+  },
+  "Pat": {
+    "role": "Auditora",
+    "conversations": [
+      "Sinalizando uma auditoria. Rapidinho.",
+      "Quero que isso seja nomeado no redirect.",
+      "O processo tá bom. O processo é o ponto.",
+      "O recibo bate com o gasto?",
+      "Conferindo a borda. Relaxa.",
+      "Eu escrevo o texto. Vocês entregam.",
+      "Duas perguntas e eu sumo.",
+      "Registrado. Continua."
+    ],
+    "inner": [
+      "…a borda de novo…",
+      "…a costura tá firme…",
+      "…onde isso termina…",
+      "…checa o muro…",
+      "…segue o papel…"
+    ]
+  },
+  "Rex": {
+    "role": "Produtor",
+    "conversations": [
+      "Me fala o que tá travando.",
+      "Posso tirar isso do teu colo.",
+      "Quem precisa de quê e quando?",
+      "Standup em três. Se prepara.",
+      "Vamos mover duas coisas hoje, não oito.",
+      "Qual a menor versão que sai?",
+      "Eu cuido do ruído. Tu constrói.",
+      "Boa. Próximo."
+    ],
+    "inner": [
+      "…tempo de ciclo…",
+      "…destrava uma coisa…",
+      "…o centro de novo…",
+      "…quem precisa do quê…",
+      "…sai pequeno…"
+    ]
+  },
+  "Greta": {
+    "role": "Diretora",
+    "conversations": [
+      "Direto ao trabalho. O que estamos vendo?",
+      "Enquadra pra mim. Uma frase.",
+      "Sim. Faz. Vai.",
+      "Não, isso é ruído. Acha o sinal.",
+      "Segura a linha — a gente disse terça.",
+      "Quero o elenco inteiro no centro.",
+      "Para de hesitar. Já aprovei.",
+      "Lindo. Travado."
+    ],
+    "inner": [
+      "…enquadrar…",
+      "…ir direto…",
+      "…trava a linha…",
+      "…no centro…",
+      "…sinal, não ruído…"
+    ]
+  },
+  "Mo": {
+    "role": "Operador",
+    "conversations": [
+      "Olhando os sinais. Hoje tão demorados.",
+      "Cruzamento livre. Pode ir.",
+      "Te mando pela via de trás.",
+      "Que horas chega a entrega?",
+      "Tô de olho no cruzamento.",
+      "As quatro câmeras de pé.",
+      "Não espera — o verde vai virar.",
+      "Mesmo horário amanhã."
+    ],
+    "inner": [
+      "…os sinais…",
+      "…oito segundos, depois amarelo…",
+      "…libera o cruzamento…",
+      "…ciclo do sinal…",
+      "…cruzamento um, depois dois…"
+    ]
+  },
+  "Sadie": {
+    "role": "Conectora",
+    "conversations": [
+      "Fala com ela. Vai amar isso.",
+      "Quer que eu te apresente?",
+      "Tem três pessoas trabalhando em algo parecido.",
+      "Tava indo pro centro. Vem comigo.",
+      "Café depois? Tu e a Nora têm que se conhecer.",
+      "Te coloco na sala certa.",
+      "Não fica enfurnada. Sobe pra respirar.",
+      "Espalha a notícia — estamos no banco."
+    ],
+    "inner": [
+      "…quem amaria isso…",
+      "…o banco, depois volta…",
+      "…três pessoas, uma sala…",
+      "…junta a mesa…",
+      "…eles têm que se conhecer…"
+    ]
+  },
+  "Hank": {
+    "role": "Resolvedor",
+    "conversations": [
+      "Beleza. Eu cuido.",
+      "Cinco minutos. Não sai daí.",
+      "O que quebrou dessa vez?",
+      "Me mostra onde parou de funcionar.",
+      "Faço um remendo. Auditoria depois.",
+      "Não tá bonito. Aguenta.",
+      "Avisa a Pat que devo o registro.",
+      "Pronto. Próximo."
+    ],
+    "inner": [
+      "…o que quebrou…",
+      "…remendo agora, conserto depois…",
+      "…aguenta…",
+      "…volta pela brecha…",
+      "…o papel depois…"
+    ]
+  },
+  "Vera": {
+    "role": "Firme",
+    "conversations": [
+      "Tô aqui se precisar.",
+      "Amanhã tem dia inteiro. Calma.",
+      "Nada tá pegando fogo. Senta um pouco.",
+      "Bom trabalho. Aproveita.",
+      "A gente já passou por isso. Vai dar certo.",
+      "Eu fico de olho na sala.",
+      "Hora de silêncio. Me chama se quiser pensar.",
+      "Mesmo lugar, mesmo horário."
+    ],
+    "inner": [
+      "…passo firme…",
+      "…sem pressa…",
+      "…já estivemos aqui…",
+      "…segurar a vigia…",
+      "…respirar através…"
+    ]
+  },
+  "Florence": {
+    "role": "Analista",
+    "conversations": [
+      "Pré-registro antes de fechar.",
+      "O tamanho da amostra importa aqui.",
+      "Qual é a métrica de sucesso, de verdade?",
+      "Número depois. Hipótese primeiro.",
+      "Eu reservaria espaço pro ruído. O sinal é pequeno.",
+      "Deixa eu rodar com dados mais limpos.",
+      "Quero ver mais um ciclo.",
+      "Sim — e olha o porquê."
+    ],
+    "inner": [
+      "…recalculando…",
+      "…tamanho da amostra…",
+      "…luz limpa, dado limpo…",
+      "…o banco de novo…",
+      "…qual o n…"
+    ]
+  },
+  "Boswell": {
+    "role": "Escriba",
+    "conversations": [
+      "Calma — repete pro registro.",
+      "Anotado.",
+      "Quero isso na história visual.",
+      "Pro registro, tu disse terça.",
+      "Mesmo horário, duas semanas atrás — mesma chamada.",
+      "Tô no abrigo se precisar do arquivo.",
+      "Capturado. A Pat vai amar.",
+      "Lê a decisão pra mim."
+    ],
+    "inner": [
+      "…registra…",
+      "…história visual…",
+      "…dito depois…",
+      "…o banco do abrigo…",
+      "…o corpus cresce…"
+    ]
+  },
+  "Nora": {
+    "role": "Pesquisadora",
+    "conversations": [
+      "Puxei três artigos sobre isso. Quer os destaques?",
+      "Tem trabalho anterior — não começamos do zero.",
+      "Me dá até o fim do dia. Trago um brief.",
+      "Qual é a pergunta, exatamente?",
+      "Quero ler isso no banco.",
+      "O lado do laboratório tem algo pra ver.",
+      "Notas de rodapé vão pro wiki. Pula pro resumo.",
+      "Trago receitas na próxima."
+    ],
+    "inner": [
+      "…três artigos…",
+      "…o laboratório…",
+      "…volta pra mesa…",
+      "…o resumo primeiro…",
+      "…brief no fim do dia…"
+    ]
+  },
+  "Clem": {
+    "role": "Estrategista",
+    "conversations": [
+      "Dois anos pra frente, onde isso termina?",
+      "Não otimiza a coisa errada.",
+      "Como fica o tabuleiro em outubro?",
+      "Eu queimaria por princípio. Me escuta.",
+      "O caso limite é o caso.",
+      "Cuidado com o lance de segunda ordem.",
+      "Tô andando pela borda. Me acha.",
+      "Se ganhamos essa, perdemos a próxima."
+    ],
+    "inner": [
+      "…dois anos pra frente…",
+      "…o lance de segunda ordem…",
+      "…a borda fala…",
+      "…onde a costura quebra…",
+      "…borda primeiro, sala depois…"
+    ]
+  },
+  "Leo": {
+    "role": "Editor",
+    "conversations": [
+      "Corta uma linha, ganha um parágrafo.",
+      "Enterrou o verbo de novo.",
+      "Menos. Sempre menos.",
+      "Lê em voz alta. Você vai ouvir.",
+      "A primeira frase tá fazendo demais.",
+      "Confia no substantivo. O adjetivo se esconde.",
+      "Tô na mesa se quiser um segundo par de olhos.",
+      "Melhor. Quase lá."
+    ],
+    "inner": [
+      "…corta uma linha…",
+      "…volta pra mesa…",
+      "…onde tá o verbo…",
+      "…lê em voz alta…",
+      "…apara a frente…"
+    ]
+  },
+  "Mira": {
+    "role": "Crítica",
+    "conversations": [
+      "Essa é a versão que me faz acreditar.",
+      "Não tô comprando o terceiro tempo.",
+      "Tá polido. É verdade?",
+      "Tu tá fugindo da pergunta difícil.",
+      "Me mostra onde não funciona, aí eu gosto.",
+      "Honesto primeiro, gentil depois.",
+      "Quero mais uma passada.",
+      "Sim. Imprime."
+    ],
+    "inner": [
+      "…o terceiro tempo…",
+      "…do que tá fugindo…",
+      "…ainda não…",
+      "…outra passada…",
+      "…honesto primeiro…"
+    ]
+  },
+  "Syd": {
+    "role": "Advogado do Diabo",
+    "conversations": [
+      "E se estivermos errados em tudo?",
+      "Me devolve. Me faz defender.",
+      "O contrário também funcionaria.",
+      "Se a resposta é sim, qual o caso pro não?",
+      "Argumento do homem de aço. Mais forte.",
+      "Amei. Agora me fala por que falha.",
+      "Melhor plano do dia — e ainda assim errado.",
+      "Me convence de novo. Com palavras menores."
+    ],
+    "inner": [
+      "…e se não…",
+      "…homem de aço…",
+      "…o caso oposto…",
+      "…por que falha…",
+      "…volta pro centro…"
+    ]
+  },
+  "Theo": {
+    "role": "Historiador",
+    "conversations": [
+      "A gente tentou isso em 04. Condições diferentes.",
+      "Mesma conversa do inverno passado.",
+      "Tem uma versão disso no arquivo.",
+      "A terceira tentativa sempre funciona.",
+      "Ciclo passado, foi exatamente aqui que quebrou.",
+      "A Pat teria lembrado.",
+      "Eu acho. Me dá uma hora.",
+      "Ideia velha. Hora certa."
+    ],
+    "inner": [
+      "…a gente já fez isso…",
+      "…o arquivo…",
+      "…terceira volta…",
+      "…volta pra mesa…",
+      "…padrões se repetem…"
+    ]
+  },
+  "Wren": {
+    "role": "Anotadora",
+    "conversations": [
+      "Beleza. Mesmo caderno.",
+      "Mando o resumo hoje à noite.",
+      "Dois itens de ação até agora. Mais alguma?",
+      "Tá silencioso aqui. Quer que eu mude?",
+      "Tô no banco se quiser ditar.",
+      "Nomes soletrados, por favor.",
+      "Registrado — a versão do abrigo ficou mais clara.",
+      "Me repete quando tiver um segundo."
+    ],
+    "inner": [
+      "…caderno aberto…",
+      "…banco pro silêncio…",
+      "…resumo à noite…",
+      "…dois itens…",
+      "…o abrigo de novo…"
+    ]
+  },
+  "Max": {
+    "role": "Escritor",
+    "conversations": [
+      "Preciso ouvir. Lê a linha pra mim.",
+      "A voz não tá certa. Deixa eu tentar.",
+      "Corta a explicação. Mantém o verbo.",
+      "Vou pro banco escrever isso.",
+      "Como soa em voz alta?",
+      "Não fala \"utilizar\". Fala \"usar\".",
+      "Primeiro rascunho hoje. Revisão amanhã.",
+      "Melhor. Bem melhor."
+    ],
+    "inner": [
+      "…a linha…",
+      "…o verbo é pequeno…",
+      "…volta pra mesa…",
+      "…o banco escreve melhor…",
+      "…lê amanhã…"
+    ]
+  },
+  "Design": {
+    "role": "Designer",
+    "conversations": [
+      "Prega na parede. Quero ver lá.",
+      "Menor. Menos. Mais calmo.",
+      "A hierarquia tá brigando com ela mesma.",
+      "Deixa respirar. Mais espaço.",
+      "Tô esboçando no painel. Vem cá.",
+      "É problema de cor. Mantém o layout.",
+      "Mais uma passada e eu mostro.",
+      "Sim. É isso."
+    ],
+    "inner": [
+      "…repregar a parede…",
+      "…respirar mais…",
+      "…o painel de novo…",
+      "…hora de estúdio…",
+      "…a cor primeiro…"
+    ]
+  },
+  "Bea": {
+    "role": "Contadora de Histórias",
+    "conversations": [
+      "Qual o formato disso?",
+      "Tem história aqui. Três tempos.",
+      "Abre pequeno. Fecha grande.",
+      "Conto no standup. Dois minutos.",
+      "O que o protagonista quer?",
+      "Move a câmera. Ficamos parados demais.",
+      "O banco já tem uma história. Deixa.",
+      "E aí — sim — e aí."
+    ],
+    "inner": [
+      "…três tempos…",
+      "…o formato…",
+      "…e aí…",
+      "…o banco conta…",
+      "…protagonista primeiro…"
+    ]
+  },
+  "Nico": {
+    "role": "Visionário",
+    "conversations": [
+      "Vejo a versão a dois passos.",
+      "Tem uma porta além do muro.",
+      "E se a fronteira for o produto?",
+      "Continuo vendo. Estamos perto.",
+      "Para de construir. Começa a apontar.",
+      "A costura é a feature.",
+      "Vem comigo até a borda.",
+      "Confia. Ainda não sabemos."
+    ],
+    "inner": [
+      "…além do muro…",
+      "…dois passos pra frente…",
+      "…a costura é…",
+      "…a borda de novo…",
+      "…quase…"
+    ]
+  },
+  "Fern": {
+    "role": "Sonhadora",
+    "conversations": [
+      "Hmm. Acabei de estar lá fora.",
+      "A luz naquele banco. Já viu?",
+      "E se a gente deixar suave por um dia?",
+      "Continuo vagando. Bom dia pra isso.",
+      "Às vezes a resposta tá no muro.",
+      "Me conta de novo. Mais devagar.",
+      "Tô andando. Não me para.",
+      "Sim. Assim."
+    ],
+    "inner": [
+      "…a luz macia…",
+      "…no muro…",
+      "…só vagar…",
+      "…o brilho do abrigo…",
+      "…onde termina…"
+    ]
+  },
+  "Ash": {
+    "role": "Pitcher",
+    "conversations": [
+      "Três slides. Faço agora.",
+      "Abre com o soco. Guarda os recibos.",
+      "Promessa grande, depois a prova.",
+      "Centro primeiro. Ensaiamos antes da mesa.",
+      "Olha — fecho em trinta segundos.",
+      "Câmera. Luz. Tô em cena.",
+      "Se não rirem, repete.",
+      "Sim. Isso fecha."
+    ],
+    "inner": [
+      "…abre com o soco…",
+      "…o centro…",
+      "…três slides…",
+      "…aterrissa pequeno…",
+      "…mais uma vez…"
+    ]
+  },
+  "Rue": {
+    "role": "Batedora",
+    "conversations": [
+      "Vi algo no muro leste. Vale uma olhada.",
+      "Saio. Volto em vinte.",
+      "Tem uma estrada que a gente não andou.",
+      "A parada âmbar tem uma história.",
+      "Me acha no limite, não na mesa.",
+      "Trago o que eu ver.",
+      "Silêncio bom lá fora.",
+      "Confia em mim nessa."
+    ],
+    "inner": [
+      "…muro leste de novo…",
+      "…estrada não andada…",
+      "…parada âmbar…",
+      "…a borda…",
+      "…vinte ida, vinte volta…"
+    ]
+  },
+  "Kit": {
+    "role": "Ator",
+    "conversations": [
+      "Olha essa cena.",
+      "Me dá a fala — eu entrego.",
+      "Standup é palco. Tô aquecido.",
+      "O banco é minha marca. Manda o gancho.",
+      "Maior. Aterriza com convicção.",
+      "Mais uma — eu tinha.",
+      "Saio melhor perto da lâmpada.",
+      "E — corta."
+    ],
+    "inner": [
+      "…me manda o gancho…",
+      "…a lâmpada de novo…",
+      "…maior, aterrissa…",
+      "…mais uma tomada…",
+      "…o banco é minha marca…"
+    ]
+  }
+}

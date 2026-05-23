@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>404 — off the map</title>
+<style>
+:root {
+  --s-bg:#06070b;--s-bg-2:#0a0c12;--s-panel:#0e1018;--s-panel-2:#141826;
+  --s-border:rgba(184,196,224,0.14);--s-border-2:rgba(184,196,224,0.22);
+  --s-text-1:#d8dde9;--s-text-2:#b9c4e0;--s-text-3:rgba(184,196,224,0.55);
+  --s-text-4:rgba(184,196,224,0.32);--s-accent:#46d9c5;--s-warn:#ff9d6d;
+  --s-font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --s-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--s-bg);color:var(--s-text-1);font-family:var(--s-font-sans);min-height:100%}
+a{color:var(--s-accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.nav{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--s-border);font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.nav strong{color:var(--s-accent);font-weight:700}
+.nav .sep{color:var(--s-border-2);margin:0 6px}
+.btn{display:inline-block;background:transparent;border:1px solid var(--s-border-2);color:var(--s-text-2);padding:8px 14px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s ease}
+.btn:hover{border-color:var(--s-accent);color:var(--s-accent);text-decoration:none}
+.btn.primary{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.08)}
+.btn.primary:hover{background:rgba(70,217,197,0.18)}
+
+body{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.void{flex:1;position:relative;background:#06070b}
+.void canvas{width:100%;height:100%;display:block}
+.msg{position:fixed;left:50%;bottom:36%;transform:translateX(-50%);text-align:center;font-family:var(--s-font-mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--s-text-3);line-height:1.7;pointer-events:none}
+.msg .line{color:var(--s-text-1);margin-bottom:10px;font-size:14px;letter-spacing:.18em}
+.back{margin-top:24px;pointer-events:auto;color:var(--s-accent)}
+</style></head>
+<body>
+<div class="nav"><div><strong>SIMUTUM</strong><span class="sep">/</span> off the map</div></div>
+<div class="void"><canvas id="cv"></canvas></div>
+<div class="msg">
+  <div class="line">· you've gone off the map ·</div>
+  <a href="index.html" class="back">← return to the world</a>
+</div>
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W=0,H=0;
+function resize(){const r=cv.parentElement.getBoundingClientRect();W=cv.width=r.width*devicePixelRatio;H=cv.height=r.height*devicePixelRatio;}
+addEventListener('resize',resize);resize();
+const e = { x: W*0.5, y: H*0.5, vx: 0, vy: 0, target: null };
+function pickTarget(){ e.target={ x: Math.random()*W, y: Math.random()*H }; }
+pickTarget();
+function tick(){
+  if(!e.target) pickTarget();
+  const dx = e.target.x - e.x, dy = e.target.y - e.y;
+  const d = Math.hypot(dx,dy);
+  if (d < 12) pickTarget();
+  else { e.vx = dx/d*1.2; e.vy = dy/d*1.2; e.x += e.vx; e.y += e.vy; }
+  ctx.fillStyle='rgba(6,7,11,0.15)';ctx.fillRect(0,0,W,H);
+  // anchor avatar: wide-ish head + body
+  ctx.fillStyle='rgba(184,196,224,0.6)';
+  ctx.beginPath(); ctx.arc(e.x, e.y+12, 14*devicePixelRatio, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(109,184,255,0.95)';
+  ctx.beginPath(); ctx.arc(e.x, e.y-4, 11*devicePixelRatio, 0, Math.PI*2); ctx.fill();
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body></html>

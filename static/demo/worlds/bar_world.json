@@ -1,0 +1,54 @@
+{
+  "meta": { "name": "The Bar (Debrief)", "version": 1 },
+  "sections": [
+    { "id": "the_bar",       "label": "The Bar",            "x":    0, "y":    0, "w": 280, "h": 140, "floor_color": "#2a1818", "walled": false, "rotation": 0, "raised": 0 },
+    { "id": "booth_north",   "label": "North Booth",        "x": -180, "y":  140, "w": 140, "h":  90, "floor_color": "#1f1414", "walled": "partial", "rotation": 0, "raised": 0 },
+    { "id": "booth_south",   "label": "South Booth",        "x":  180, "y": -140, "w": 140, "h":  90, "floor_color": "#1f1414", "walled": "partial", "rotation": 0, "raised": 0 },
+    { "id": "back_room",     "label": "Back Room",          "x":    0, "y":  280, "w": 200, "h": 120, "floor_color": "#231414", "walled": true,      "rotation": 0, "raised": 0 },
+    { "id": "snug",          "label": "The Snug",           "x": -260, "y": -100, "w":  90, "h":  90, "floor_color": "#1c1010", "walled": "partial", "rotation": 0, "raised": 4 },
+    { "id": "stage_corner",  "label": "Stage Corner",       "x":  260, "y":  120, "w": 100, "h":  80, "floor_color": "#2c1818", "walled": false,     "rotation": 0, "raised": 6 }
+  ],
+  "roads": [
+    { "id": "road_alley",  "label": "Back Alley",  "destination": "alley_station", "theme": "amber",  "width": 70,
+      "p0": { "x":   0, "y":  340 }, "p3": { "x":   0, "y": 1000 }, "sideOffset": 160, "intensity": 1.0 },
+    { "id": "road_strip",  "label": "The Strip",   "destination": "strip_station", "theme": "warm",   "width": 70,
+      "p0": { "x": 410, "y":    0 }, "p3": { "x": 1100, "y":   0 }, "sideOffset": 180, "intensity": 1.0 },
+    { "id": "road_riverwalk", "label": "Riverwalk", "destination": "river_station", "theme": "cyan",  "width": 70,
+      "p0": { "x":-400, "y":    0 }, "p3": { "x":-1100, "y":  0 }, "sideOffset": 180, "intensity": 0.8 }
+  ],
+  "ringRoad": { "enabled": true, "radius": 700, "width": 50 },
+  "stops": [
+    { "id": "alley_stop_1", "road": "road_alley", "t": 0.40, "poi": "vendor_table",
+      "lighting": { "color": "#ff7d4a", "intensity": 1.0, "type": "flicker" }, "audio": "crate_creak" },
+    { "id": "alley_stop_2", "road": "road_alley", "t": 0.78, "poi": "parked_vehicle",
+      "lighting": { "color": "#ff8b3a", "intensity": 0.8, "type": "pool" }, "audio": "engine_idle" },
+    { "id": "strip_stop_1", "road": "road_strip", "t": 0.30, "poi": "notice_board",
+      "lighting": { "color": "#f5b86b", "intensity": 1.0, "type": "steady" }, "audio": "distant_chatter" },
+    { "id": "strip_stop_2", "road": "road_strip", "t": 0.70, "poi": "bench_cluster",
+      "lighting": { "color": "#ffd28a", "intensity": 1.1, "type": "pool" }, "audio": "wind_low" },
+    { "id": "river_stop_1", "road": "road_riverwalk", "t": 0.45, "poi": "rock_bench",
+      "lighting": { "color": "#6dd8ff", "intensity": 0.9, "type": "steady" }, "audio": "wind_reeds" },
+    { "id": "river_stop_2", "road": "road_riverwalk", "t": 0.85, "poi": "covered_alcove",
+      "lighting": { "color": "#46d9c5", "intensity": 1.0, "type": "pulse" }, "audio": "sensor_ping" }
+  ],
+  "stations": [
+    { "id": "alley_station", "x":     0, "y": 1000, "label": "THE ALLEY",     "target_pack": "alley", "road": "road_alley" },
+    { "id": "strip_station", "x":  1100, "y":    0, "label": "THE STRIP",     "target_pack": "strip", "road": "road_strip" },
+    { "id": "river_station", "x": -1100, "y":    0, "label": "THE RIVERWALK", "target_pack": "river", "road": "road_riverwalk" }
+  ],
+  "ghostPacks": [
+    { "id": "alley_ghost", "x":  600, "y":  700, "w": 250, "h": 200, "color": "#1e1a1a", "kind": "bar" },
+    { "id": "strip_ghost", "x":  800, "y": -600, "w": 350, "h": 180, "color": "#1a1a2e", "kind": "theater" },
+    { "id": "river_ghost", "x": -800, "y": 600, "w": 400, "h": 220, "color": "#181e1a", "kind": "field" }
+  ],
+  "boundary": { "north": 1300, "south": -1300, "east": 1300, "west": -1300 },
+  "eggs": { "north": true, "south": true, "east": true, "west": true },
+  "cast": [
+    { "name": "Vic",     "role": "barback",  "color": "#ff9d6d", "type": "anchor",   "spawn": "the_bar",      "agenda": { "office": 0.50, "square": 0.30, "stop": 0.10, "intersection": 0.05, "boundary": 0.05 } },
+    { "name": "Rio",     "role": "regular",  "color": "#e0c46d", "type": "creative", "spawn": "booth_south",  "agenda": { "office": 0.20, "square": 0.30, "stop": 0.35, "intersection": 0.05, "boundary": 0.10 } },
+    { "name": "Mel",     "role": "stranger", "color": "#6dd8ff", "type": "thinker",  "spawn": "booth_north",  "agenda": { "office": 0.10, "square": 0.10, "stop": 0.30, "intersection": 0.20, "boundary": 0.30 } },
+    { "name": "Jules",   "role": "writer",   "color": "#c279ff", "type": "creative", "spawn": "snug",         "agenda": { "office": 0.40, "square": 0.20, "stop": 0.30, "intersection": 0.05, "boundary": 0.05 } },
+    { "name": "Brick",   "role": "owner",    "color": "#ff7d4a", "type": "anchor",   "spawn": "back_room",    "agenda": { "office": 0.30, "square": 0.40, "stop": 0.10, "intersection": 0.15, "boundary": 0.05 } }
+  ],
+  "editor": { "activeTab": "map", "selection": null, "camera": { "x": 0, "y": 0, "zoom": 0.5 }, "gridSize": 10, "previewPlay": true, "wizardDone": true }
+}

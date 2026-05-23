@@ -1,0 +1,580 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "The Campus",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "quad",
+      "label": "The Quad",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 300,
+      "height": 220,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1c1c20",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "eng",
+      "label": "Engineering",
+      "global_x": -700,
+      "global_y": 500,
+      "width": 260,
+      "height": 180,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1a1c28",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "arts",
+      "label": "Arts Building",
+      "global_x": 700,
+      "global_y": 500,
+      "width": 260,
+      "height": 180,
+      "flags": {
+        "walled": true,
+        "floor_color": "#221a26",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "commons",
+      "label": "Commons",
+      "global_x": 0,
+      "global_y": 500,
+      "width": 240,
+      "height": 140,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1d1d22",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "science",
+      "label": "Sciences",
+      "global_x": -700,
+      "global_y": -500,
+      "width": 260,
+      "height": 180,
+      "flags": {
+        "walled": true,
+        "floor_color": "#181e28",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "archive",
+      "label": "Archive",
+      "global_x": 700,
+      "global_y": -500,
+      "width": 260,
+      "height": 180,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1a1722",
+        "pack": "pack_floor"
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_north_out",
+      "direction": "out",
+      "destination": "north_gate",
+      "width": 80,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 0,
+          "y": 650
+        },
+        {
+          "x": -220,
+          "y": 905
+        },
+        {
+          "x": -220,
+          "y": 1245
+        },
+        {
+          "x": 0,
+          "y": 1500
+        }
+      ],
+      "length": 932
+    },
+    {
+      "id": "road_north_back",
+      "direction": "back",
+      "destination": "north_gate",
+      "width": 80,
+      "theme": "cyan",
+      "bezier": [
+        {
+          "x": 0,
+          "y": 1500
+        },
+        {
+          "x": 253.84,
+          "y": 1275.75
+        },
+        {
+          "x": 301.84,
+          "y": 935.75
+        },
+        {
+          "x": 120,
+          "y": 650
+        }
+      ],
+      "length": 939
+    },
+    {
+      "id": "road_south_out",
+      "direction": "out",
+      "destination": "south_gate",
+      "width": 80,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -650
+        },
+        {
+          "x": -220,
+          "y": -905
+        },
+        {
+          "x": -220,
+          "y": -1245
+        },
+        {
+          "x": 0,
+          "y": -1500
+        }
+      ],
+      "length": 932
+    },
+    {
+      "id": "road_south_back",
+      "direction": "back",
+      "destination": "south_gate",
+      "width": 80,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -1500
+        },
+        {
+          "x": 181.84,
+          "y": -1214.25
+        },
+        {
+          "x": 133.84,
+          "y": -874.25
+        },
+        {
+          "x": -120,
+          "y": -650
+        }
+      ],
+      "length": 939
+    },
+    {
+      "id": "road_east_out",
+      "direction": "out",
+      "destination": "east_gate",
+      "width": 80,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 900,
+          "y": 500
+        },
+        {
+          "x": 1188.51,
+          "y": 634.03
+        },
+        {
+          "x": 1508.51,
+          "y": 554.03
+        },
+        {
+          "x": 1700,
+          "y": 300
+        }
+      ],
+      "length": 895
+    },
+    {
+      "id": "road_east_back",
+      "direction": "back",
+      "destination": "east_gate",
+      "width": 80,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 1700,
+          "y": 300
+        },
+        {
+          "x": 1431.21,
+          "y": 126.08
+        },
+        {
+          "x": 1099.57,
+          "y": 159.52
+        },
+        {
+          "x": 870.9,
+          "y": 383.58
+        }
+      ],
+      "length": 903
+    },
+    {
+      "id": "road_west_out",
+      "direction": "out",
+      "destination": "west_gate",
+      "width": 80,
+      "theme": "purple",
+      "bezier": [
+        {
+          "x": -900,
+          "y": -500
+        },
+        {
+          "x": -1091.49,
+          "y": -245.97
+        },
+        {
+          "x": -1411.49,
+          "y": -165.97
+        },
+        {
+          "x": -1700,
+          "y": -300
+        }
+      ],
+      "length": 895
+    },
+    {
+      "id": "road_west_back",
+      "direction": "back",
+      "destination": "west_gate",
+      "width": 80,
+      "theme": "purple",
+      "bezier": [
+        {
+          "x": -1700,
+          "y": -300
+        },
+        {
+          "x": -1471.33,
+          "y": -524.07
+        },
+        {
+          "x": -1139.69,
+          "y": -557.5
+        },
+        {
+          "x": -870.9,
+          "y": -383.58
+        }
+      ],
+      "length": 903
+    }
+  ],
+  "ring_road": {
+    "id": "ring_road",
+    "radius": 1100,
+    "width": 70,
+    "intersections": [
+      {
+        "id": "ix_road_north_out",
+        "road_id": "road_north_out",
+        "x": -165,
+        "y": 1088,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_north_back",
+        "road_id": "road_north_back",
+        "x": 226,
+        "y": 1076,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_south_out",
+        "road_id": "road_south_out",
+        "x": -165,
+        "y": -1088,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_south_back",
+        "road_id": "road_south_back",
+        "x": 108,
+        "y": -1097,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_east_out",
+        "road_id": "road_east_out",
+        "x": 965,
+        "y": 527,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_east_back",
+        "road_id": "road_east_back",
+        "x": 1071,
+        "y": 246,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_west_out",
+        "road_id": "road_west_out",
+        "x": -1040,
+        "y": -361,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_west_back",
+        "road_id": "road_west_back",
+        "x": -1004,
+        "y": -451,
+        "traffic_light": true
+      }
+    ]
+  },
+  "stops": [
+    {
+      "id": "north_stop_1",
+      "road": "road_north_out",
+      "t": 0.3,
+      "poi": "notice_board",
+      "lighting": {
+        "color": "#6dd8ff",
+        "intensity": 0.9,
+        "type": "steady"
+      },
+      "audio": "wind_low"
+    },
+    {
+      "id": "north_stop_2",
+      "road": "road_north_out",
+      "t": 0.7,
+      "poi": "bench_cluster",
+      "lighting": {
+        "color": "#9ae8ff",
+        "intensity": 1,
+        "type": "pool"
+      },
+      "audio": "distant_chatter"
+    },
+    {
+      "id": "south_stop_1",
+      "road": "road_south_out",
+      "t": 0.4,
+      "poi": "parked_vehicle",
+      "lighting": {
+        "color": "#ff8b3a",
+        "intensity": 0.8,
+        "type": "flicker"
+      },
+      "audio": "engine_idle"
+    },
+    {
+      "id": "east_stop_1",
+      "road": "road_east_out",
+      "t": 0.5,
+      "poi": "bench_cluster",
+      "lighting": {
+        "color": "#f5b86b",
+        "intensity": 1,
+        "type": "steady"
+      },
+      "audio": "wind_low"
+    },
+    {
+      "id": "west_stop_1",
+      "road": "road_west_out",
+      "t": 0.5,
+      "poi": "rock_bench",
+      "lighting": {
+        "color": "#c279ff",
+        "intensity": 0.9,
+        "type": "steady"
+      },
+      "audio": "wind_reeds"
+    }
+  ],
+  "stations": [
+    {
+      "id": "north_gate",
+      "position": {
+        "x": 0,
+        "y": 1500
+      },
+      "target_pack": "town",
+      "label": "NORTH GATE"
+    },
+    {
+      "id": "south_gate",
+      "position": {
+        "x": 0,
+        "y": -1500
+      },
+      "target_pack": "station",
+      "label": "SOUTH GATE"
+    },
+    {
+      "id": "east_gate",
+      "position": {
+        "x": 1700,
+        "y": 300
+      },
+      "target_pack": "admin",
+      "label": "EAST GATE"
+    },
+    {
+      "id": "west_gate",
+      "position": {
+        "x": -1700,
+        "y": -300
+      },
+      "target_pack": "fields",
+      "label": "WEST GATE"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_dorms",
+      "x": 0,
+      "y": 1100,
+      "w": 460,
+      "h": 200,
+      "color": "#1a1c28",
+      "kind": "theater"
+    },
+    {
+      "id": "ghost_fields",
+      "x": -1300,
+      "y": 300,
+      "w": 380,
+      "h": 280,
+      "color": "#181e1a",
+      "kind": "field"
+    },
+    {
+      "id": "ghost_athletic",
+      "x": 1300,
+      "y": -300,
+      "w": 360,
+      "h": 220,
+      "color": "#1c1a22",
+      "kind": "bar"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_north",
+      "position": {
+        "x": 0,
+        "y": 2000
+      }
+    },
+    {
+      "id": "egg_south",
+      "position": {
+        "x": 0,
+        "y": -2000
+      }
+    },
+    {
+      "id": "egg_east",
+      "position": {
+        "x": 2000,
+        "y": 0
+      }
+    },
+    {
+      "id": "egg_west",
+      "position": {
+        "x": -2000,
+        "y": 0
+      }
+    }
+  ],
+  "boundary": {
+    "north": 2000,
+    "south": -2000,
+    "east": 2000,
+    "west": -2000
+  },
+  "cast": [
+    {
+      "name": "Nora",
+      "role": "Researcher",
+      "type": "thinker",
+      "color": "#46d9c5",
+      "spawn": "science"
+    },
+    {
+      "name": "Theo",
+      "role": "Historian",
+      "type": "thinker",
+      "color": "#d4a85a",
+      "spawn": "archive"
+    },
+    {
+      "name": "Design",
+      "role": "Designer",
+      "type": "creative",
+      "color": "#c279ff",
+      "spawn": "arts"
+    },
+    {
+      "name": "Leo",
+      "role": "Editor",
+      "type": "thinker",
+      "color": "#7ec87e",
+      "spawn": "eng"
+    },
+    {
+      "name": "Sadie",
+      "role": "Connector",
+      "type": "anchor",
+      "color": "#c9a0dc",
+      "spawn": "commons"
+    },
+    {
+      "name": "Frank",
+      "role": "Foreman",
+      "type": "anchor",
+      "color": "#6db8ff",
+      "spawn": "quad"
+    },
+    {
+      "name": "Fern",
+      "role": "Dreamer",
+      "type": "creative",
+      "color": "#5ec8b8",
+      "spawn": "commons"
+    }
+  ]
+}

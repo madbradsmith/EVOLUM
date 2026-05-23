@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simutum — My Account</title>
+<style>
+:root{--s-bg:#06070b;--s-bg-2:#0a0c12;--s-panel:#0e1018;--s-panel-2:#141826;
+--s-border:rgba(184,196,224,0.14);--s-border-2:rgba(184,196,224,0.22);
+--s-text-1:#d8dde9;--s-text-2:#b9c4e0;--s-text-3:rgba(184,196,224,0.55);
+--s-text-4:rgba(184,196,224,0.32);--s-accent:#46d9c5;--s-warn:#ff9d6d;
+--s-font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+--s-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--s-bg);color:var(--s-text-1);font-family:var(--s-font-sans);min-height:100%}
+a{color:var(--s-accent);text-decoration:none}a:hover{text-decoration:underline}
+.nav{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--s-border);font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.nav strong{color:var(--s-accent);font-weight:700}.nav .sep{color:var(--s-border-2);margin:0 6px}
+.btn{display:inline-block;background:transparent;border:1px solid var(--s-border-2);color:var(--s-text-2);padding:8px 14px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s ease}
+.btn:hover{border-color:var(--s-accent);color:var(--s-accent);text-decoration:none}
+.btn.primary{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.08)}
+.btn.primary:hover{background:rgba(70,217,197,0.18)}
+
+.hero{display:flex;justify-content:space-between;align-items:center;padding:32px 24px 0}
+.hero h1{margin:0;font-size:28px;font-weight:600}
+.hero .who{color:var(--s-text-3);font-family:var(--s-font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
+.panels{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:24px}
+@media(max-width:900px){.panels{grid-template-columns:1fr}}
+.p{background:var(--s-panel);border:1px solid var(--s-border);border-radius:8px;padding:18px;min-height:220px}
+.p h3{margin:0 0 12px;font-family:var(--s-font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--s-accent)}
+.p .item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--s-border)}
+.p .item:last-child{border-bottom:0}
+.p .item span{font-size:13px}
+.p .item .meta{color:var(--s-text-3);font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.04em}
+.badges{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.badge{aspect-ratio:1;background:rgba(6,7,11,0.6);border:1px solid var(--s-border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--s-font-mono);font-size:9px;letter-spacing:.04em;text-align:center;color:var(--s-text-4);padding:6px;line-height:1.2;text-transform:uppercase}
+.badge.unlocked{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.07);box-shadow:0 0 14px rgba(70,217,197,0.15)}
+.empty{color:var(--s-text-4);font-size:12.5px;font-family:var(--s-font-mono);letter-spacing:.04em;text-align:center;padding:24px 0}
+</style></head>
+<body>
+<div class="nav">
+  <div><strong>SIMUTUM</strong><span class="sep">/</span> dashboard</div>
+  <div><a class="btn primary" href="index.html">Enter the world →</a></div>
+</div>
+<div class="hero">
+  <h1>Welcome back.</h1>
+  <div class="who">tribe · founder · row 0</div>
+</div>
+<div class="wrap">
+<div class="panels">
+
+  <div class="p">
+    <h3>My Worlds</h3>
+    <div class="item"><span>Open Office</span><span class="meta">42 sessions</span></div>
+    <div class="item"><span>The Bar</span><span class="meta">8 sessions</span></div>
+    <div class="item"><span>Studio Loft</span><span class="meta">3 sessions</span></div>
+    <a class="btn" href="editor.html" style="margin-top:12px">+ New World</a>
+  </div>
+
+  <div class="p">
+    <h3>My Cast</h3>
+    <div class="item"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#6db8ff"></span>Frank</span><span class="meta">foreman</span></div>
+    <div class="item"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#ff7da6"></span>Florence</span><span class="meta">analyst</span></div>
+    <div class="item"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#ff9d6d"></span>Boswell</span><span class="meta">scribe</span></div>
+    <div class="item"><span style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:#79e5b8"></span>Pat</span><span class="meta">auditor</span></div>
+  </div>
+
+  <div class="p">
+    <h3>My Sessions</h3>
+    <div class="item"><span>Tue · standup</span><span class="meta">5:42</span></div>
+    <div class="item"><span>Mon · pitch rehearsal</span><span class="meta">7:18</span></div>
+    <div class="item"><span>Sat · writers room</span><span class="meta">12:04</span></div>
+    <div class="item"><span>Fri · debrief</span><span class="meta">9:30</span></div>
+  </div>
+
+  <div class="p" style="grid-column:span 2">
+    <h3>My Badges</h3>
+    <div class="badges">
+      <div class="badge unlocked">Founding Tribe</div><div class="badge unlocked">First Session</div><div class="badge unlocked">World Builder</div><div class="badge unlocked">Boundary Found</div><div class="badge">All Four Walls</div><div class="badge">10 Sessions</div><div class="badge">50 Sessions</div><div class="badge">Pack Collector</div><div class="badge unlocked">Tribe Finder</div><div class="badge">Director</div><div class="badge">Wrap Party</div><div class="badge">The Auteur</div>
+    </div>
+  </div>
+
+  <div class="p">
+    <h3>My Packs</h3>
+    <div class="item"><span>Map Packs</span><span class="meta">3 owned</span></div>
+    <div class="item"><span>Character Packs</span><span class="meta">2 owned</span></div>
+    <div class="item"><span>Soundtracks</span><span class="meta">1 owned</span></div>
+    <a class="btn" href="store.html" style="margin-top:12px">→ Browse Store</a>
+  </div>
+
+  <div class="p" style="grid-column:span 3">
+    <h3>Community Feed</h3>
+    <div class="item"><span>· <strong style="color:var(--s-accent)">Sadie</strong> shipped "The Boardroom" — 42 sessions logged.</span><span class="meta">2h</span></div>
+    <div class="item"><span>· <strong style="color:var(--s-accent)">Boswell</strong> released the Newsroom pack.</span><span class="meta">8h</span></div>
+    <div class="item"><span>· <strong style="color:var(--s-accent)">Pat</strong> joined the tribe.</span><span class="meta">1d</span></div>
+    <div class="item"><span>· <strong style="color:var(--s-accent)">Frank</strong> ran a six-hour wrap party in The Theater.</span><span class="meta">2d</span></div>
+  </div>
+
+</div>
+</div>
+<script>
+  // REPLACE WITH API
+  window.USER_DATA = { name: 'tribe member', sessions: 53, worlds: 3, packs: 6 };
+</script>
+</body></html>

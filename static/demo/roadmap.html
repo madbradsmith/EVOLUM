@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simutum — Roadmap</title>
+<style>
+:root {
+  --s-bg:#06070b;--s-bg-2:#0a0c12;--s-panel:#0e1018;--s-panel-2:#141826;
+  --s-border:rgba(184,196,224,0.14);--s-border-2:rgba(184,196,224,0.22);
+  --s-text-1:#d8dde9;--s-text-2:#b9c4e0;--s-text-3:rgba(184,196,224,0.55);
+  --s-text-4:rgba(184,196,224,0.32);--s-accent:#46d9c5;--s-warn:#ff9d6d;
+  --s-font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --s-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--s-bg);color:var(--s-text-1);font-family:var(--s-font-sans);min-height:100%}
+a{color:var(--s-accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.nav{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--s-border);font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.nav strong{color:var(--s-accent);font-weight:700}
+.nav .sep{color:var(--s-border-2);margin:0 6px}
+.btn{display:inline-block;background:transparent;border:1px solid var(--s-border-2);color:var(--s-text-2);padding:8px 14px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s ease}
+.btn:hover{border-color:var(--s-accent);color:var(--s-accent);text-decoration:none}
+.btn.primary{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.08)}
+.btn.primary:hover{background:rgba(70,217,197,0.18)}
+
+.wrap{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+h1{margin:8px 0 4px;font-size:32px;font-weight:600;letter-spacing:-0.01em}
+.sub{color:var(--s-text-3);margin:0 0 32px;font-family:var(--s-font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.col h2{margin:0 0 12px;font-family:var(--s-font-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.col.shipped h2{color:var(--s-accent)}
+.col.now h2{color:#e0c46d}
+.col.next h2{color:var(--s-text-3)}
+.card{background:var(--s-panel);border:1px solid var(--s-border);border-radius:8px;padding:14px 16px;margin-bottom:10px}
+.card .ttl{font-weight:600;font-size:14px;color:var(--s-text-1);margin-bottom:6px}
+.card .desc{font-size:12.5px;color:var(--s-text-3);line-height:1.55}
+</style></head>
+<body>
+<div class="nav"><div><strong>SIMUTUM</strong><span class="sep">/</span> roadmap</div></div>
+<div class="wrap">
+<h1>Roadmap</h1>
+<div class="sub">// UPDATE AS YOU BUILD</div>
+<div class="cols">
+  <div class="col shipped">
+    <h2>● Shipped</h2>
+    <div class="card"><div class="ttl">Open Office demo</div><div class="desc">v2 with curved roads, ring, traffic lights, autonomous entities.</div></div>
+    <div class="card"><div class="ttl">Map editor</div><div class="desc">2D canvas + live preview + wizard. Exports to engine JSON.</div></div>
+    <div class="card"><div class="ttl">Tribe finder</div><div class="desc">Boundary egg + claim page. First filter for first users.</div></div>
+    <div class="card"><div class="ttl">25-character roster</div><div class="desc">Anchor, thinker, creative types. Loadable from a pack.</div></div>
+    <div class="card"><div class="ttl">Six-language dialogue</div><div class="desc">EN + ES + PT-BR + FR + KO + JA. Native, not translated.</div></div>
+  </div>
+  <div class="col now">
+    <h2>◐ In progress</h2>
+    <div class="card"><div class="ttl">Operator console</div><div class="desc">Real-time scenario builder. Cast deck. Run + replay loop.</div></div>
+    <div class="card"><div class="ttl">Pack store</div><div class="desc">Map packs, character packs, skins, atmospheres, soundtracks.</div></div>
+    <div class="card"><div class="ttl">PWA shell</div><div class="desc">Add-to-home, offline play, full screen on mobile.</div></div>
+    <div class="card"><div class="ttl">Cinema mode</div><div class="desc">Auto-cuts to entities of interest. For pitches + screens.</div></div>
+  </div>
+  <div class="col next">
+    <h2>◯ Coming</h2>
+    <div class="card"><div class="ttl">Multi-operator sessions</div><div class="desc">Two operators, one world. Shared agents, shared cast.</div></div>
+    <div class="card"><div class="ttl">Audio packs</div><div class="desc">Curated soundtracks beyond procedural. Real recordings.</div></div>
+    <div class="card"><div class="ttl">Custom entity types</div><div class="desc">Build your own avatar geometry. No coding.</div></div>
+    <div class="card"><div class="ttl">Worlds API</div><div class="desc">External tools can read + write world JSON over HTTP.</div></div>
+    <div class="card"><div class="ttl">Public tribe directory</div><div class="desc">Founding tribe members get public profiles + worlds.</div></div>
+  </div>
+</div>
+</div>
+</body></html>

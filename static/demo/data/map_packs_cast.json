@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "version": 1,
+    "description": "Recommended casts per map pack. Each cast pulls from simutum_cast_roster.json."
+  },
+  "packs": [
+    {
+      "pack": "war_room",
+      "cast": [
+        "Frank",
+        "Pat",
+        "Mo",
+        "Clem",
+        "Hank"
+      ],
+      "why": "Frank holds the table. Pat audits the boundary in case the seam cracks. Mo runs the intersection in his head. Clem is two moves out. Hank fixes whatever Mo missed."
+    },
+    {
+      "pack": "writers_room",
+      "cast": [
+        "Max",
+        "Bea",
+        "Leo",
+        "Mira",
+        "Kit",
+        "Boswell"
+      ],
+      "why": "Max writes, Bea shapes the story, Leo cuts what they wrote. Mira tells them honestly. Kit performs the line before they've agreed on it. Boswell logs every version."
+    },
+    {
+      "pack": "pitch_room",
+      "cast": [
+        "Ash",
+        "Greta",
+        "Sadie",
+        "Mira",
+        "Syd",
+        "Boswell"
+      ],
+      "why": "Ash opens with the punch. Greta locks the line. Sadie reads the room. Mira and Syd push back. Boswell captures the verdict."
+    },
+    {
+      "pack": "lab",
+      "cast": [
+        "Florence",
+        "Nora",
+        "Leo",
+        "Theo",
+        "Wren",
+        "Clem"
+      ],
+      "why": "Six thinkers in a cross. Florence pre-regs everything, Nora pulls the prior work, Leo edits the brief, Theo finds the precedent. Wren takes the notes nobody reads. Clem looks at the next experiment."
+    },
+    {
+      "pack": "theater",
+      "cast": [
+        "Kit",
+        "Greta",
+        "Bea",
+        "Design",
+        "Vera"
+      ],
+      "why": "Kit on stage. Greta directs. Bea owns the story arc. Design owns the look. Vera keeps the room steady while everyone else is performing."
+    },
+    {
+      "pack": "newsroom",
+      "cast": [
+        "Rex",
+        "Rue",
+        "Boswell",
+        "Pat",
+        "Leo",
+        "Wren"
+      ],
+      "why": "Rex produces, Rue scouts the field. Boswell's captured every angle. Pat audits the source. Leo cuts the lede. Wren keeps the log honest."
+    },
+    {
+      "pack": "agency",
+      "cast": [
+        "Rex",
+        "Design",
+        "Clem",
+        "Sadie",
+        "Nico",
+        "Vera"
+      ],
+      "why": "Rex moves the work. Design and Clem hold the craft + strategy axes. Sadie owns the client room. Nico sees three months past the brief. Vera keeps the team from burning."
+    },
+    {
+      "pack": "campus",
+      "cast": [
+        "Nora",
+        "Theo",
+        "Design",
+        "Leo",
+        "Sadie",
+        "Frank",
+        "Fern"
+      ],
+      "why": "Six departments + the dreamer. Nora and Theo at the rigorous end. Design and Leo on craft. Sadie in commons. Frank on the quad. Fern just wandering — and somehow that's the breakthrough."
+    },
+    {
+      "pack": "garage",
+      "cast": [
+        "Hank",
+        "Mo",
+        "Vera",
+        "Rue",
+        "Rex"
+      ],
+      "why": "Small crew, tight space. Hank fixes, Mo dispatches, Vera holds the office. Rue brings parts from somewhere unlikely. Rex makes sure the customer leaves happy."
+    },
+    {
+      "pack": "summit",
+      "cast": [
+        "Frank",
+        "Pat",
+        "Clem",
+        "Nico",
+        "Fern",
+        "Rue",
+        "Theo"
+      ],
+      "why": "Seven people, seven directions. Frank tries to hold the council. Pat walks the edge. Clem strategizes. Nico sees what's past the wall. Fern drifts. Rue scouts. Theo remembers when they tried this before."
+    }
+  ]
+}

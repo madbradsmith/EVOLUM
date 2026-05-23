@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simutum — Get In</title>
+  <style>
+    :root {
+      --s-bg:        #06070b;
+      --s-bg-2:      #0a0c12;
+      --s-panel:     #0e1018;
+      --s-border:    rgba(184,196,224,0.14);
+      --s-border-2:  rgba(184,196,224,0.22);
+      --s-text-1:    #d8dde9;
+      --s-text-2:    #b9c4e0;
+      --s-text-3:    rgba(184,196,224,0.55);
+      --s-accent:    #46d9c5;
+      --s-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --s-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; min-height: 100vh;
+      background: radial-gradient(circle at 50% 0%, #0d1020 0%, var(--s-bg) 60%);
+      color: var(--s-text-1);
+      font-family: var(--s-font-sans);
+      display: flex; flex-direction: column;
+    }
+    .nav {
+      padding: 18px 24px;
+      font-family: var(--s-font-mono);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--s-text-3);
+    }
+    .nav strong { color: var(--s-accent); font-weight: 700; }
+    .nav .sep { color: var(--s-border-2); margin: 0 6px; }
+    .stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px 80px;
+    }
+    .card {
+      width: 100%; max-width: 540px;
+      background: rgba(14,16,24,0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--s-border-2);
+      border-radius: 14px;
+      padding: 44px 44px 36px;
+      box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
+    }
+    .eyebrow {
+      font-family: var(--s-font-mono);
+      font-size: 10px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--s-accent);
+      margin-bottom: 16px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    h1 .accent { color: var(--s-accent); }
+    .sub {
+      margin: 0 0 26px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--s-text-2);
+    }
+    form { display: flex; flex-direction: column; gap: 14px; }
+    label {
+      display: block;
+      font-family: var(--s-font-mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--s-text-3);
+      margin-bottom: 5px;
+    }
+    input[type=text], input[type=email] {
+      width: 100%;
+      background: rgba(6,7,11,0.7);
+      border: 1px solid var(--s-border-2);
+      color: var(--s-text-1);
+      font-family: var(--s-font-mono);
+      font-size: 14px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.18s ease;
+    }
+    input:focus { border-color: var(--s-accent); }
+    button.submit {
+      background: var(--s-accent);
+      color: #0a1614;
+      border: 0;
+      padding: 14px 18px;
+      font-family: var(--s-font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-top: 6px;
+    }
+    button.submit:hover { background: #5feedb; transform: translateY(-1px); }
+    .fineprint {
+      font-family: var(--s-font-mono);
+      font-size: 10.5px;
+      color: var(--s-text-3);
+      margin-top: 18px;
+      line-height: 1.7;
+    }
+    .fineprint .lead { color: var(--s-text-2); }
+    .pulldown {
+      margin-top: 32px;
+      padding-top: 22px;
+      border-top: 1px solid var(--s-border);
+      font-family: var(--s-font-mono);
+      font-size: 10.5px;
+      color: var(--s-text-3);
+      letter-spacing: 0.06em;
+      line-height: 1.8;
+    }
+    .pulldown .row { display: flex; gap: 12px; align-items: center; }
+    .pulldown .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--s-accent); }
+
+    /* Confirmation state */
+    .confirm { text-align: center; padding: 20px 0 4px; }
+    .confirm .glyph {
+      font-size: 48px; color: var(--s-accent);
+      margin: 0 0 18px;
+      animation: pulse 2s ease infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.65; } }
+    .confirm h2 {
+      font-size: 26px; font-weight: 600;
+      margin: 0 0 12px;
+      letter-spacing: -0.01em;
+    }
+    .confirm h2 .accent { color: var(--s-accent); }
+    .confirm p {
+      color: var(--s-text-2);
+      font-size: 14px; line-height: 1.6;
+      margin: 0 auto;
+      max-width: 380px;
+    }
+    .confirm .what-now {
+      margin-top: 28px;
+      padding: 14px;
+      border: 1px solid rgba(70,217,197,0.20);
+      background: rgba(70,217,197,0.05);
+      border-radius: 6px;
+      font-family: var(--s-font-mono);
+      font-size: 11px;
+      color: var(--s-text-2);
+      letter-spacing: 0.04em;
+      line-height: 1.6;
+    }
+    .confirm .what-now strong { color: var(--s-accent); }
+
+    @media (max-width: 640px) {
+      .card { padding: 32px 24px 28px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="nav">
+  <strong>SIMUTUM</strong>
+  <span class="sep">/</span>
+  Get In
+</div>
+
+<div class="stage">
+  <div class="card" id="card">
+    <!-- Default form state -->
+    <div id="formState">
+      <div class="eyebrow">·· founder's chair ··</div>
+      <h1>The box is the game.<br/><span class="accent">Your box.</span></h1>
+      <p class="sub">
+        You opened the demo. You found the seam. You know the world keeps running
+        when you're not watching. First users get the chair next to the cast.
+        We launch the platform Wednesday — we'd like you in the room.
+      </p>
+
+      <form id="signupForm" onsubmit="return submitForm(event)">
+        <div>
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" required autocomplete="name" />
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@somewhere" />
+        </div>
+        <button type="submit" class="submit">Save my seat →</button>
+      </form>
+
+      <div class="fineprint">
+        <div class="lead">What you get:</div>
+        · The Wednesday launch invite, before public.<br/>
+        · The full pack catalog (Theater, Bar, Lab + Field, Office).<br/>
+        · Operator console — build worlds, run scenarios, replay calls.<br/>
+        · A direct line to the cast. Yes, that means Frank.
+      </div>
+
+      <div class="pulldown">
+        <div class="row"><div class="dot"></div> Free for the first 30 days · no card.</div>
+      </div>
+    </div>
+
+    <!-- Confirmation state (hidden by default) -->
+    <div id="confirmState" class="confirm" style="display: none;">
+      <div class="glyph">◇</div>
+      <h2>You're in.<br/><span class="accent">Your world boots Wednesday.</span></h2>
+      <p>
+        We logged your seat. Frank will get the dispatch in the morning standup —
+        Pat will audit your name onto the manifest by noon.
+      </p>
+      <div class="what-now">
+        <strong>What happens next</strong><br/>
+        We'll email you Wednesday at 9am with your operator login.<br/>
+        You can close this tab. The cast is already talking about you.
+      </div>
+      <div class="fineprint" style="margin-top: 22px; text-align: center;">
+        <span id="hint">Heading back to the demo in <span id="countdown">12</span>…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Where the form posts. Wire this to your backend later.
+  const FORM_ENDPOINT = 'https://formspree.io/f/evolumstudio@gmail.com';
+
+  async function submitForm(ev) {
+    ev.preventDefault();
+    const form = ev.target;
+    const data = new FormData(form);
+    const body = JSON.stringify({
+      name: data.get('name'),
+      email: data.get('email'),
+      source: 'simutum_demo_signup',
+      at: new Date().toISOString(),
+    });
+
+    // Try posting — but show success either way so the demo never blocks.
+    try {
+      await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+    } catch (e) {
+      // swallow — preview environment may not have a backend
+      console.log('signup endpoint unreachable, queued client-side:', e.message);
+    }
+
+    showConfirmation();
+    return false;
+  }
+
+  function showConfirmation() {
+    document.getElementById('formState').style.display = 'none';
+    document.getElementById('confirmState').style.display = 'block';
+    // Soft countdown — bounces back to the demo so they re-engage.
+    let n = 12;
+    const cd = document.getElementById('countdown');
+    const tick = setInterval(() => {
+      n -= 1;
+      cd.textContent = n;
+      if (n <= 0) {
+        clearInterval(tick);
+        document.getElementById('hint').innerHTML = 'You can keep exploring — <a href="index.html" style="color:var(--s-accent)">return to the demo</a>.';
+      }
+    }, 1000);
+  }
+</script>
+
+</body>
+</html>

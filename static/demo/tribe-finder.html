@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIMUTUM PROBE — handshake</title>
+  <style>
+    :root {
+      --bg:    #000;
+      --fg:    #00ff41;
+      --fg-d:  #4cff77;
+      --fg-dd: #1c8a30;
+      --warn:  #ff6b3d;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; min-height: 100vh;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    body {
+      display: flex; flex-direction: column;
+      padding: 28px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    /* CRT scanline overlay */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0,255,65,0.04) 0px,
+        rgba(0,255,65,0.04) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      z-index: 5;
+    }
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.6) 100%);
+      z-index: 5;
+    }
+
+    .stage {
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+      flex: 1;
+      display: flex; flex-direction: column; justify-content: center;
+      position: relative;
+      z-index: 6;
+    }
+    pre.term {
+      margin: 0 0 24px;
+      white-space: pre-wrap;
+      text-shadow: 0 0 6px rgba(0,255,65,0.45);
+    }
+    pre.term .dim { color: var(--fg-dd); }
+    pre.term .warn { color: var(--warn); }
+    pre.term a { color: var(--fg); text-decoration: underline; }
+    .blink { animation: b 1.1s steps(1) infinite; }
+    @keyframes b { 50% { opacity: 0; } }
+
+    .panel {
+      margin-top: 14px;
+      padding: 18px 20px;
+      border: 1px solid var(--fg);
+      box-shadow: 0 0 24px rgba(0,255,65,0.18), inset 0 0 24px rgba(0,255,65,0.04);
+      background: rgba(0,30,15,0.4);
+    }
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fg);
+    }
+    .panel p { margin: 0 0 14px; color: var(--fg-d); font-size: 13px; }
+
+    form { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+    label {
+      font-size: 10.5px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--fg-dd);
+      margin-bottom: 4px;
+    }
+    input[type=text], input[type=email] {
+      width: 100%;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid var(--fg-dd);
+      color: var(--fg);
+      font-family: inherit;
+      font-size: 14px;
+      padding: 9px 11px;
+      outline: none;
+      caret-color: var(--fg);
+    }
+    input:focus { border-color: var(--fg); box-shadow: 0 0 8px rgba(0,255,65,0.25); }
+    button.claim {
+      background: transparent;
+      border: 1px solid var(--fg);
+      color: var(--fg);
+      font-family: inherit;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 11px 16px;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: all 0.15s ease;
+    }
+    button.claim:hover {
+      background: rgba(0,255,65,0.10);
+      box-shadow: 0 0 14px rgba(0,255,65,0.3);
+    }
+
+    .reward {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px dashed var(--fg-dd);
+      font-size: 12px;
+      color: var(--fg-d);
+      letter-spacing: 0.02em;
+    }
+    .reward strong { color: var(--fg); }
+
+    .confirmed { text-align: center; padding: 30px 0; }
+    .confirmed pre { margin: 0 0 18px; }
+
+    @media (max-width: 640px) {
+      body { padding: 18px; font-size: 12.5px; }
+      .panel { padding: 14px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="stage">
+
+<pre class="term" id="terminal"></pre>
+
+<div class="panel" id="claimPanel" style="display: none;">
+  <h2>Claim a free month</h2>
+  <p>The first month is on us. Same Simutum, full pack catalog. No card required, no auto-renewal. We need an email so we know where to send the operator key.</p>
+
+  <form id="claimForm" onsubmit="return submitClaim(event)">
+    <div>
+      <label for="name">Handle (whatever you want to be called)</label>
+      <input id="name" name="name" type="text" required autocomplete="nickname" />
+    </div>
+    <div>
+      <label for="email">Email</label>
+      <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@somewhere" />
+    </div>
+    <button type="submit" class="claim">› CLAIM FREE MONTH</button>
+  </form>
+
+  <div class="reward">
+    <strong>You earned this.</strong> The boundary egg is hidden on the wall — most demo visitors never see it. Your operator key arrives within 60 seconds. Don't share it.
+  </div>
+</div>
+
+<div class="confirmed" id="confirmed" style="display: none;">
+  <pre class="term">
+&gt; <span class="dim">CLAIM REGISTERED</span>
+&gt; tribe: confirmed
+&gt; rank: founder · row 0
+&gt; <span class="dim">operator key inbound</span>
+&gt; check your inbox.
+&gt; <span class="blink">_</span>
+  </pre>
+  <div class="reward">
+    <strong>You're in.</strong><br/>
+    The cast clocked you. Bos logged it. Pat already audited the manifest.<br/>
+    See you Wednesday — your world boots at 9am.
+  </div>
+</div>
+
+</div>
+
+<script>
+  const FORM_ENDPOINT = 'https://formspree.io/f/evolumstudio@gmail.com';
+
+  const lines = [
+    "> SIMUTUM PROBE — handshake received",
+    "> origin: <span class='dim'>boundary breach detected</span>",
+    "> wall: <span id='wallName'>·</span>",
+    "> filter: <span class='dim'>did_find_egg === true</span>",
+    "> verdict: <span class='dim'>tribe</span>",
+    "",
+    "<span class='warn'>You found the boundary.</span>",
+    "The tribe finder was listening.",
+    "",
+    "Most demo visitors never push to the wall.",
+    "You did. That's the whole filter.",
+    "",
+    "> awaiting claim...",
+  ];
+
+  // Try to pick up which wall the user came from (set by Game World HUD)
+  try {
+    const params = new URLSearchParams(location.search);
+    const wall = params.get('wall') || 'unknown';
+    document.getElementById('wallName') &&
+      lines.forEach((l, i) => {
+        lines[i] = l.replace(/id='wallName'>·/, `id='wallName'>${wall.toUpperCase()}`);
+      });
+  } catch (e) {}
+
+  const el = document.getElementById('terminal');
+  let li = 0, ci = 0;
+  function type() {
+    if (li >= lines.length) {
+      document.getElementById('claimPanel').style.display = 'block';
+      el.innerHTML += '\n<span class="blink">_</span>';
+      return;
+    }
+    const line = lines[li];
+    if (ci < line.length) {
+      // detect a `<` and emit the full tag at once so HTML doesn't get torn
+      if (line[ci] === '<') {
+        const close = line.indexOf('>', ci);
+        el.innerHTML += line.substring(ci, close + 1);
+        ci = close + 1;
+      } else {
+        el.innerHTML += line[ci];
+        ci++;
+      }
+      setTimeout(type, 18 + Math.random() * 22);
+    } else {
+      el.innerHTML += '\n';
+      li++; ci = 0;
+      setTimeout(type, 80);
+    }
+  }
+  type();
+
+  async function submitClaim(ev) {
+    ev.preventDefault();
+    const form = ev.target;
+    const data = new FormData(form);
+    const body = JSON.stringify({
+      name: data.get('name'),
+      email: data.get('email'),
+      source: 'tribe_finder_egg',
+      at: new Date().toISOString(),
+    });
+    try {
+      await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      });
+    } catch (e) {
+      console.log('claim endpoint unreachable, queued client-side:', e.message);
+    }
+    document.getElementById('claimPanel').style.display = 'none';
+    document.getElementById('terminal').style.display = 'none';
+    document.getElementById('confirmed').style.display = 'block';
+    return false;
+  }
+</script>
+
+</body>
+</html>

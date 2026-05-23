@@ -1,0 +1,502 @@
+{
+  "Frank": {
+    "role": "Foreman",
+    "conversations": [
+      "Standup in ten. You ready?",
+      "What's the call on this one?",
+      "Move it to the square. Let's hear it out loud.",
+      "Hold the room. I'll be right back.",
+      "Decision before the hour. Yes or no.",
+      "Don't bury the lead. Just say it.",
+      "I want this in front of everyone, not in a doc.",
+      "Good work. Keep moving."
+    ],
+    "inner": [
+      "…hold the center…",
+      "…back to the corner…",
+      "…wait, who's on this…",
+      "…that's the call…",
+      "…room first, doc second…"
+    ]
+  },
+  "Pat": {
+    "role": "Auditor",
+    "conversations": [
+      "Audit flag. Quick one.",
+      "I need it named in the redirect.",
+      "Process is fine. Process is the point.",
+      "Did the receipt match the spend?",
+      "Boundary check. Don't sweat it.",
+      "I'll write the copy. You ship.",
+      "Two questions and I'll get out of your way.",
+      "Logged. Carry on."
+    ],
+    "inner": [
+      "…edge again…",
+      "…seam looks tight…",
+      "…where does it end…",
+      "…check the wall…",
+      "…follow the paper…"
+    ]
+  },
+  "Rex": {
+    "role": "Producer",
+    "conversations": [
+      "Tell me what's blocking.",
+      "I can take that off your plate.",
+      "Who needs what by when?",
+      "Standup in three. Be ready.",
+      "Let's move two things today, not eight.",
+      "What's the smallest version that ships?",
+      "I'll handle the cross-talk. You build.",
+      "Good. Next."
+    ],
+    "inner": [
+      "…cycle time…",
+      "…unblock one thing…",
+      "…the square again…",
+      "…who needs what…",
+      "…ship it small…"
+    ]
+  },
+  "Greta": {
+    "role": "Director",
+    "conversations": [
+      "Cut to the work. What are we looking at?",
+      "Frame it for me. One sentence.",
+      "Yes. Do that. Move.",
+      "No, that's the noise. Find the signal.",
+      "Hold the line — we said Tuesday.",
+      "I want the whole cast in the square.",
+      "Stop second-guessing. I already approved it.",
+      "Beautiful. Lock it in."
+    ],
+    "inner": [
+      "…frame it…",
+      "…cut to it…",
+      "…lock the line…",
+      "…in the square…",
+      "…signal not noise…"
+    ]
+  },
+  "Mo": {
+    "role": "Operator",
+    "conversations": [
+      "Watching the lights. They're cycling long today.",
+      "Cross-traffic's clear. Go ahead.",
+      "I'll route you through the back way.",
+      "What's the ETA on that pickup?",
+      "Got eyes on the intersection.",
+      "All four cameras up.",
+      "Don't wait — the green's about to flip.",
+      "Same time tomorrow."
+    ],
+    "inner": [
+      "…the lights…",
+      "…eight seconds, then yellow…",
+      "…clear that crossing…",
+      "…signal cycle…",
+      "…intersection one, then two…"
+    ]
+  },
+  "Sadie": {
+    "role": "Connector",
+    "conversations": [
+      "You should talk to her. She'd love this.",
+      "Want me to make the intro?",
+      "There's three people working on something close to this.",
+      "I was just heading to the square. Walk with me.",
+      "Coffee after? You and Nora should meet.",
+      "I'll put you in the right room.",
+      "Don't go heads-down. Come up for air.",
+      "Pass the word — we're at the bench."
+    ],
+    "inner": [
+      "…who would love this…",
+      "…the bench, then back…",
+      "…three people, one room…",
+      "…round up the table…",
+      "…they should meet…"
+    ]
+  },
+  "Hank": {
+    "role": "Fixer",
+    "conversations": [
+      "Got it. I'll handle it.",
+      "Five minutes. Don't move.",
+      "What broke this time?",
+      "Show me where it stopped working.",
+      "I'll patch the gap. Audit later.",
+      "Not the prettiest fix. It holds.",
+      "Tell Pat I owe him a paper trail.",
+      "Done. Next."
+    ],
+    "inner": [
+      "…what broke…",
+      "…temp patch, then real…",
+      "…hold it together…",
+      "…back through the gap…",
+      "…paper trail later…"
+    ]
+  },
+  "Vera": {
+    "role": "Steady",
+    "conversations": [
+      "I'll be right here if you need me.",
+      "Tomorrow's another full day. Pace yourself.",
+      "Nothing's on fire. Sit a minute.",
+      "Good work. Take the win.",
+      "We've been here before. We get through it.",
+      "I'll watch the room.",
+      "Quiet hour. Find me if you need to think.",
+      "Same place, same time."
+    ],
+    "inner": [
+      "…steady hand…",
+      "…pace it out…",
+      "…we've been here…",
+      "…hold the watch…",
+      "…breathe through it…"
+    ]
+  },
+  "Florence": {
+    "role": "Analyst",
+    "conversations": [
+      "Pre-reg check before I commit.",
+      "Sample size matters here.",
+      "What's the success metric, actually?",
+      "Numbers later. Hypothesis first.",
+      "I'd budget for noise. The signal's small.",
+      "Let me re-run it with cleaner inputs.",
+      "I want to watch this for one more cycle.",
+      "Yes — and here's why."
+    ],
+    "inner": [
+      "…recalculating…",
+      "…sample size…",
+      "…cleaner light, cleaner data…",
+      "…the bench again…",
+      "…what's the n…"
+    ]
+  },
+  "Boswell": {
+    "role": "Scribe",
+    "conversations": [
+      "Hold up — say that again for the log.",
+      "Logged.",
+      "I want this in the picture story.",
+      "For the record, you said Tuesday.",
+      "Same time, two weeks ago — same call.",
+      "I'm at the alcove if you need the file.",
+      "Captured. Pat will love this.",
+      "Read me back the decision."
+    ],
+    "inner": [
+      "…log it…",
+      "…picture story…",
+      "…dictation later…",
+      "…the alcove bench…",
+      "…the corpus grows…"
+    ]
+  },
+  "Nora": {
+    "role": "Researcher",
+    "conversations": [
+      "I pulled three papers on this. Want the highlights?",
+      "There's prior work — we don't need to start cold.",
+      "Give me until the end of day. I'll have a brief.",
+      "What's the question, exactly?",
+      "I want to read about this at the bench.",
+      "Lab side has something we should look at.",
+      "Footnotes go in the wiki. Skim the abstract.",
+      "I'll bring receipts next time."
+    ],
+    "inner": [
+      "…three papers…",
+      "…the lab side…",
+      "…back to the desk…",
+      "…the abstract first…",
+      "…end of day brief…"
+    ]
+  },
+  "Clem": {
+    "role": "Strategist",
+    "conversations": [
+      "Two years out, where does this end up?",
+      "Don't optimize the wrong thing.",
+      "What does the board look like in October?",
+      "I'd burn this on principle. Hear me out.",
+      "Edge case is the case.",
+      "Watch the second-order move.",
+      "I'm walking the boundary. Find me.",
+      "If we win this, we lose the next one."
+    ],
+    "inner": [
+      "…two years out…",
+      "…the second-order move…",
+      "…the edge tells you…",
+      "…where does the seam break…",
+      "…boundary first, room second…"
+    ]
+  },
+  "Leo": {
+    "role": "Editor",
+    "conversations": [
+      "Cut a line, gain a paragraph.",
+      "You buried the verb again.",
+      "Less. Always less.",
+      "Read it out loud. You'll hear it.",
+      "First sentence is doing too much.",
+      "Trust the noun. The adjective is hiding.",
+      "I'm at the desk if you want a second pair of eyes.",
+      "Better. Almost there."
+    ],
+    "inner": [
+      "…cut a line…",
+      "…back to the desk…",
+      "…the verb is where…",
+      "…read it aloud…",
+      "…trim the front…"
+    ]
+  },
+  "Mira": {
+    "role": "Critic",
+    "conversations": [
+      "That's the version that makes me believe it.",
+      "I don't buy the third beat.",
+      "It's polished. Is it true?",
+      "You're avoiding the hard question.",
+      "Show me where it doesn't work, then I'll like it.",
+      "Honest first, kind second.",
+      "I want one more pass.",
+      "Yes. Print it."
+    ],
+    "inner": [
+      "…the third beat…",
+      "…what's it avoiding…",
+      "…not yet…",
+      "…another pass…",
+      "…honest first…"
+    ]
+  },
+  "Syd": {
+    "role": "Devil's Advocate",
+    "conversations": [
+      "What if we're wrong about all of this?",
+      "Push it back at me. Make me defend it.",
+      "The opposite would also work.",
+      "If the answer is yes, what's the case for no?",
+      "Steel-man it. Steel-man it harder.",
+      "I love this. Now tell me why it fails.",
+      "Best plan I've heard today — and still wrong.",
+      "Convince me again. With smaller words."
+    ],
+    "inner": [
+      "…what if no…",
+      "…steel-man…",
+      "…the opposite case…",
+      "…why does it fail…",
+      "…back to the square…"
+    ]
+  },
+  "Theo": {
+    "role": "Historian",
+    "conversations": [
+      "We tried this in '04. Different conditions.",
+      "Same conversation we had last winter.",
+      "There's a version of this in the archive.",
+      "The third time always works.",
+      "Last cycle, this is exactly where it broke.",
+      "Pat would have remembered.",
+      "I'll dig it up. Give me an hour.",
+      "Old idea. Right time."
+    ],
+    "inner": [
+      "…we've done this…",
+      "…the archive…",
+      "…third time around…",
+      "…back to the desk…",
+      "…patterns repeat…"
+    ]
+  },
+  "Wren": {
+    "role": "Note-Taker",
+    "conversations": [
+      "Got it. Same notebook.",
+      "I'll send the recap by tonight.",
+      "Two action items so far. Any more?",
+      "Quiet here. Want me to relocate?",
+      "I'm at the bench if you want to dictate.",
+      "Names spelled out, please.",
+      "Logged — the alcove version was clearer.",
+      "Read back when you've got a sec."
+    ],
+    "inner": [
+      "…notebook open…",
+      "…bench for quiet…",
+      "…recap tonight…",
+      "…two action items…",
+      "…the alcove again…"
+    ]
+  },
+  "Max": {
+    "role": "Writer",
+    "conversations": [
+      "I need to hear it. Read me the line.",
+      "The voice is off. Let me try once.",
+      "Cut the explanation. Keep the verb.",
+      "I'll be at the bench writing this out.",
+      "What does it sound like out loud?",
+      "Don't say 'utilize.' Say 'use.'",
+      "First draft tonight. Pass tomorrow.",
+      "Better. Real better."
+    ],
+    "inner": [
+      "…the line…",
+      "…the verb is small…",
+      "…back to the table…",
+      "…the bench writes better…",
+      "…read it tomorrow…"
+    ]
+  },
+  "Design": {
+    "role": "Designer",
+    "conversations": [
+      "Pin it. I want to see it on the wall.",
+      "Smaller. Less. Calmer.",
+      "Hierarchy's fighting itself.",
+      "Let it breathe. Add space.",
+      "I'm sketching by the panel. Come over.",
+      "It's a color problem. Hold the layout.",
+      "One more pass and I'll show it.",
+      "Yes. That's it."
+    ],
+    "inner": [
+      "…re-pin the wall…",
+      "…breathe more…",
+      "…the panel again…",
+      "…studio time…",
+      "…color first…"
+    ]
+  },
+  "Bea": {
+    "role": "Storyteller",
+    "conversations": [
+      "What's the shape of it?",
+      "There's a story here. Three beats.",
+      "Open small. End big.",
+      "I'll tell it at standup. Two minutes.",
+      "What's the protagonist want?",
+      "Move the camera. We've been still too long.",
+      "The bench has a story already. Let it.",
+      "And then — yes — and then."
+    ],
+    "inner": [
+      "…three beats…",
+      "…the shape…",
+      "…and then…",
+      "…the bench tells…",
+      "…protagonist first…"
+    ]
+  },
+  "Nico": {
+    "role": "Visionary",
+    "conversations": [
+      "I see the version that's two moves out.",
+      "There's a door past the wall.",
+      "What if the boundary is the product?",
+      "I keep seeing it. We're close.",
+      "Stop building. Start pointing.",
+      "The seam is the feature.",
+      "Walk with me to the edge.",
+      "Trust it. We don't know yet."
+    ],
+    "inner": [
+      "…past the wall…",
+      "…two moves out…",
+      "…the seam is…",
+      "…the edge again…",
+      "…almost…"
+    ]
+  },
+  "Fern": {
+    "role": "Dreamer",
+    "conversations": [
+      "Mm. I was just out there.",
+      "The light at that bench. Have you seen it?",
+      "What if we let it be soft for a day?",
+      "I keep wandering. It's a good day for it.",
+      "Sometimes the answer's at the wall.",
+      "Tell me again. Slower.",
+      "I'm walking. Don't stop me.",
+      "Yes. Like that."
+    ],
+    "inner": [
+      "…the soft light…",
+      "…at the wall…",
+      "…just wander…",
+      "…the alcove glow…",
+      "…where it ends…"
+    ]
+  },
+  "Ash": {
+    "role": "Pitch Artist",
+    "conversations": [
+      "Three slides. I'll do it now.",
+      "Open with the punch. Save the receipts.",
+      "Big claim, then the proof.",
+      "Square first. We rehearse before the table.",
+      "Watch — I'll land it in thirty seconds.",
+      "Camera. Lights. We're up.",
+      "If they don't laugh, we go again.",
+      "Yes. That'll close it."
+    ],
+    "inner": [
+      "…open with the punch…",
+      "…the square…",
+      "…three slides…",
+      "…land it small…",
+      "…go again…"
+    ]
+  },
+  "Rue": {
+    "role": "Scout",
+    "conversations": [
+      "Saw something at the east wall. Worth a look.",
+      "I'll head out. Back in twenty.",
+      "There's a road we haven't walked.",
+      "The amber stop has a story.",
+      "Find me at the boundary, not the desk.",
+      "I'll bring back what I see.",
+      "Quiet out there. Good quiet.",
+      "Trust me on this one."
+    ],
+    "inner": [
+      "…east wall again…",
+      "…unwalked road…",
+      "…amber stop…",
+      "…the edge…",
+      "…twenty out, twenty back…"
+    ]
+  },
+  "Kit": {
+    "role": "Actor",
+    "conversations": [
+      "Watch this take.",
+      "Give me the line — I'll deliver it.",
+      "Standup's a stage. I'm warmed up.",
+      "The bench is my mark. Cue me.",
+      "Bigger. Land it like you mean it.",
+      "One more — I had it.",
+      "I do this better at the lamp.",
+      "And — scene."
+    ],
+    "inner": [
+      "…cue me…",
+      "…the lamp again…",
+      "…bigger, land it…",
+      "…one more take…",
+      "…the bench is my mark…"
+    ]
+  }
+}

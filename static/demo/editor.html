@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Simutum World Editor</title>
+  <link rel="stylesheet" href="editor-styles.css" />
+  <style>
+    /* ─── Boundary egg HUD (Play tab) ────────────────────── */
+    .ripple-hud {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      width: 380px; max-width: calc(100vw - 32px);
+      padding: 18px 22px;
+      background: rgba(6,12,8,0.92);
+      border: 1px solid #00ff41;
+      border-radius: 8px;
+      text-align: center;
+      font-family: ui-monospace, Menlo, monospace;
+      color: #00ff41;
+      box-shadow: 0 0 40px rgba(0,255,65,0.35), inset 0 0 20px rgba(0,255,65,0.08);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 80;
+    }
+    .ripple-hud.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    .ripple-hud .top { font-size: 9.5px; letter-spacing: 0.18em; opacity: 0.6; margin-bottom: 8px; }
+    .ripple-hud .face { font-size: 12px; letter-spacing: 0.16em; margin-bottom: 12px; }
+    .ripple-hud .body { font-size: 13px; line-height: 1.5; color: #4cff77; margin-bottom: 10px; }
+    .ripple-hud .small { font-size: 10px; opacity: 0.5; letter-spacing: 0.04em; }
+
+    /* ─── Responsive: tablet / phone ─────────────────────── */
+    @media (max-width: 1024px) {
+      .preview-pane { display: none; }
+    }
+    @media (max-width: 720px) {
+      .banner { height: 42px; gap: 10px; padding: 0 10px; }
+      .banner__title { font-size: 10px; }
+      .banner__title .dim { display: none; }
+      .tabs { gap: 0; }
+      .tab { padding: 12px 9px; font-size: 9.5px; letter-spacing: 0.06em; }
+      .banner__actions .btn { padding: 5px 8px; font-size: 9.5px; }
+      .app { top: 42px; }
+      .canvas-toolbar .btn { padding: 5px 7px; font-size: 9.5px; }
+      .canvas-info { font-size: 9px; }
+      .inspector { width: calc(100% - 24px); }
+      .play-controls-hint { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app-root"></div>
+
+<!-- ─── Babylon.js ────────────────────────────────────── -->
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+<!-- ─── Editor modules (vanilla, order matters) ─────── -->
+<script src="editor-state.js"></script>
+<script src="editor-export.js"></script>
+<script src="editor-preview.js"></script>
+
+<!-- ─── React + Babel ────────────────────────────────── -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- ─── React components ─────────────────────────────── -->
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="editor-inspector.jsx"></script>
+<script type="text/babel" src="editor-map.jsx"></script>
+<script type="text/babel" src="editor-entities.jsx"></script>
+<script type="text/babel" src="editor-wizard.jsx"></script>
+<script type="text/babel" src="editor-play.jsx"></script>
+<script type="text/babel" src="editor-extensions.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+</body>
+</html>

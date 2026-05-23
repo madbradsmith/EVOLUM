@@ -1,0 +1,533 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "The Newsroom",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "pit",
+      "label": "The Pit",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 280,
+      "height": 180,
+      "flags": {
+        "walled": false,
+        "floor_color": "#2a1c14",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "foreign",
+      "label": "Foreign Desk",
+      "global_x": -260,
+      "global_y": 100,
+      "width": 180,
+      "height": 140,
+      "flags": {
+        "walled": true,
+        "floor_color": "#221610",
+        "pack": "pack_floor",
+        "rotation": -8
+      }
+    },
+    {
+      "id": "local",
+      "label": "Local Desk",
+      "global_x": 240,
+      "global_y": 80,
+      "width": 180,
+      "height": 140,
+      "flags": {
+        "walled": true,
+        "floor_color": "#221610",
+        "pack": "pack_floor",
+        "rotation": 10
+      }
+    },
+    {
+      "id": "investigative",
+      "label": "Investigative",
+      "global_x": 0,
+      "global_y": -240,
+      "width": 240,
+      "height": 140,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1f1610",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "photo",
+      "label": "Photo Desk",
+      "global_x": -300,
+      "global_y": -180,
+      "width": 140,
+      "height": 110,
+      "flags": {
+        "walled": false,
+        "floor_color": "#241a14",
+        "pack": "pack_floor",
+        "rotation": -12
+      }
+    },
+    {
+      "id": "copy_edit",
+      "label": "Copy Edit",
+      "global_x": 280,
+      "global_y": -200,
+      "width": 160,
+      "height": 120,
+      "flags": {
+        "walled": true,
+        "floor_color": "#1d1410",
+        "pack": "pack_floor",
+        "rotation": 15
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_print_out",
+      "direction": "out",
+      "destination": "print_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -380
+        },
+        {
+          "x": 128.2,
+          "y": -517.12
+        },
+        {
+          "x": 168.2,
+          "y": -725.12
+        },
+        {
+          "x": 100,
+          "y": -900
+        }
+      ],
+      "length": 558
+    },
+    {
+      "id": "road_print_back",
+      "direction": "back",
+      "destination": "print_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 100,
+          "y": -900
+        },
+        {
+          "x": -56.95,
+          "y": -790.92
+        },
+        {
+          "x": -144.09,
+          "y": -591.98
+        },
+        {
+          "x": -117.84,
+          "y": -402.66
+        }
+      ],
+      "length": 570
+    },
+    {
+      "id": "road_field_n_out",
+      "direction": "out",
+      "destination": "field_n_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -150,
+          "y": 260
+        },
+        {
+          "x": -187.12,
+          "y": 492.1
+        },
+        {
+          "x": -367.12,
+          "y": 668.1
+        },
+        {
+          "x": -600,
+          "y": 700
+        }
+      ],
+      "length": 675
+    },
+    {
+      "id": "road_field_n_back",
+      "direction": "back",
+      "destination": "field_n_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -600,
+          "y": 700
+        },
+        {
+          "x": -517.23,
+          "y": 477.08
+        },
+        {
+          "x": -303.67,
+          "y": 335.4
+        },
+        {
+          "x": -66.11,
+          "y": 345.8
+        }
+      ],
+      "length": 686
+    },
+    {
+      "id": "road_field_e_out",
+      "direction": "out",
+      "destination": "field_e_station",
+      "width": 70,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 420,
+          "y": 100
+        },
+        {
+          "x": 461.57,
+          "y": 342.92
+        },
+        {
+          "x": 653.57,
+          "y": 502.92
+        },
+        {
+          "x": 900,
+          "y": 500
+        }
+      ],
+      "length": 684
+    },
+    {
+      "id": "road_field_e_back",
+      "direction": "back",
+      "destination": "field_e_station",
+      "width": 70,
+      "theme": "warm",
+      "bezier": [
+        {
+          "x": 900,
+          "y": 500
+        },
+        {
+          "x": 902.82,
+          "y": 250.95
+        },
+        {
+          "x": 741.55,
+          "y": 54.08
+        },
+        {
+          "x": 496.82,
+          "y": 7.81
+        }
+      ],
+      "length": 694
+    },
+    {
+      "id": "road_field_w_out",
+      "direction": "out",
+      "destination": "field_w_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -380,
+          "y": -180
+        },
+        {
+          "x": -562.98,
+          "y": -99.07
+        },
+        {
+          "x": -770.98,
+          "y": -147.07
+        },
+        {
+          "x": -900,
+          "y": -300
+        }
+      ],
+      "length": 573
+    },
+    {
+      "id": "road_field_w_back",
+      "direction": "back",
+      "destination": "field_w_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -900,
+          "y": -300
+        },
+        {
+          "x": -700.12,
+          "y": -337.08
+        },
+        {
+          "x": -502.91,
+          "y": -242.31
+        },
+        {
+          "x": -406.98,
+          "y": -63.07
+        }
+      ],
+      "length": 586
+    }
+  ],
+  "ring_road": {
+    "id": "ring_road",
+    "radius": 500,
+    "width": 50,
+    "intersections": [
+      {
+        "id": "ix_road_print_out",
+        "road_id": "road_print_out",
+        "x": 79,
+        "y": -495,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_print_back",
+        "road_id": "road_print_back",
+        "x": -122,
+        "y": -485,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_field_n_out",
+        "road_id": "road_field_n_out",
+        "x": -218,
+        "y": 449,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_field_n_back",
+        "road_id": "road_field_n_back",
+        "x": -311,
+        "y": 392,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_field_e_out",
+        "road_id": "road_field_e_out",
+        "x": 452,
+        "y": 213,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_field_e_back",
+        "road_id": "road_field_e_back",
+        "x": 500,
+        "y": 9,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_field_w_out",
+        "road_id": "road_field_w_out",
+        "x": -478,
+        "y": -149,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_field_w_back",
+        "road_id": "road_field_w_back",
+        "x": -474,
+        "y": -158,
+        "traffic_light": true
+      }
+    ]
+  },
+  "stops": [
+    {
+      "id": "print_stop",
+      "road": "road_print_out",
+      "t": 0.5,
+      "poi": "parked_vehicle",
+      "lighting": {
+        "color": "#ff7d4a",
+        "intensity": 0.9,
+        "type": "flicker"
+      },
+      "audio": "engine_idle"
+    },
+    {
+      "id": "field_n_stop",
+      "road": "road_field_n_out",
+      "t": 0.5,
+      "poi": "notice_board",
+      "lighting": {
+        "color": "#ff8b3a",
+        "intensity": 1,
+        "type": "pool"
+      },
+      "audio": "distant_chatter"
+    },
+    {
+      "id": "field_e_stop",
+      "road": "road_field_e_out",
+      "t": 0.5,
+      "poi": "bench_cluster",
+      "lighting": {
+        "color": "#ffd28a",
+        "intensity": 1,
+        "type": "steady"
+      },
+      "audio": "wind_low"
+    },
+    {
+      "id": "field_w_stop",
+      "road": "road_field_w_out",
+      "t": 0.5,
+      "poi": "road_marker",
+      "lighting": {
+        "color": "#e84a3c",
+        "intensity": 0.7,
+        "type": "flicker"
+      },
+      "audio": "transformer_hum"
+    }
+  ],
+  "stations": [
+    {
+      "id": "print_station",
+      "position": {
+        "x": 100,
+        "y": -900
+      },
+      "target_pack": "press",
+      "label": "THE PRESS"
+    },
+    {
+      "id": "field_n_station",
+      "position": {
+        "x": -600,
+        "y": 700
+      },
+      "target_pack": "beat_n",
+      "label": "NORTH BEAT"
+    },
+    {
+      "id": "field_e_station",
+      "position": {
+        "x": 900,
+        "y": 500
+      },
+      "target_pack": "beat_e",
+      "label": "EAST BEAT"
+    },
+    {
+      "id": "field_w_station",
+      "position": {
+        "x": -900,
+        "y": -300
+      },
+      "target_pack": "beat_w",
+      "label": "WEST BEAT"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_archive",
+      "x": 600,
+      "y": -700,
+      "w": 280,
+      "h": 160,
+      "color": "#1c1410",
+      "kind": "bar"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_south",
+      "position": {
+        "x": 0,
+        "y": -1100
+      }
+    },
+    {
+      "id": "egg_east",
+      "position": {
+        "x": 1200,
+        "y": 0
+      }
+    }
+  ],
+  "boundary": {
+    "north": 1100,
+    "south": -1100,
+    "east": 1200,
+    "west": -1100
+  },
+  "cast": [
+    {
+      "name": "Rex",
+      "role": "Producer",
+      "type": "anchor",
+      "color": "#ff7d4a",
+      "spawn": "pit"
+    },
+    {
+      "name": "Rue",
+      "role": "Scout",
+      "type": "creative",
+      "color": "#ff6b6b",
+      "spawn": "foreign"
+    },
+    {
+      "name": "Boswell",
+      "role": "Scribe",
+      "type": "thinker",
+      "color": "#ff9d6d",
+      "spawn": "local"
+    },
+    {
+      "name": "Pat",
+      "role": "Auditor",
+      "type": "anchor",
+      "color": "#79e5b8",
+      "spawn": "investigative"
+    },
+    {
+      "name": "Leo",
+      "role": "Editor",
+      "type": "thinker",
+      "color": "#7ec87e",
+      "spawn": "copy_edit"
+    },
+    {
+      "name": "Wren",
+      "role": "Note-Taker",
+      "type": "thinker",
+      "color": "#aab8cc",
+      "spawn": "photo"
+    }
+  ]
+}

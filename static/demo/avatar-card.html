@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Simutum Avatar Card</title>
+<style>
+:root {
+  --s-bg:#06070b;--s-bg-2:#0a0c12;--s-panel:#0e1018;--s-panel-2:#141826;
+  --s-border:rgba(184,196,224,0.14);--s-border-2:rgba(184,196,224,0.22);
+  --s-text-1:#d8dde9;--s-text-2:#b9c4e0;--s-text-3:rgba(184,196,224,0.55);
+  --s-text-4:rgba(184,196,224,0.32);--s-accent:#46d9c5;--s-warn:#ff9d6d;
+  --s-font-mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --s-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--s-bg);color:var(--s-text-1);font-family:var(--s-font-sans);min-height:100%}
+a{color:var(--s-accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.nav{padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--s-border);font-family:var(--s-font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--s-text-3)}
+.nav strong{color:var(--s-accent);font-weight:700}
+.nav .sep{color:var(--s-border-2);margin:0 6px}
+.btn{display:inline-block;background:transparent;border:1px solid var(--s-border-2);color:var(--s-text-2);padding:8px 14px;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;border-radius:4px;cursor:pointer;transition:all .15s ease}
+.btn:hover{border-color:var(--s-accent);color:var(--s-accent);text-decoration:none}
+.btn.primary{border-color:var(--s-accent);color:var(--s-accent);background:rgba(70,217,197,0.08)}
+.btn.primary:hover{background:rgba(70,217,197,0.18)}
+
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:24px}
+.card{width:400px;height:400px;background:radial-gradient(circle at 50% 35%,#101522 0%,#06070b 70%);border:1px solid var(--s-border-2);border-radius:14px;position:relative;overflow:hidden;margin-bottom:18px}
+.card svg{position:absolute;inset:0;width:100%;height:100%}
+.card .name{position:absolute;left:0;right:0;bottom:36px;text-align:center;font-family:var(--s-font-mono);font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--s-text-1);font-weight:700}
+.card .role{position:absolute;left:0;right:0;bottom:18px;text-align:center;font-family:var(--s-font-mono);font-size:10.5px;letter-spacing:.10em;text-transform:uppercase;color:var(--s-text-3)}
+.card .brand{position:absolute;top:14px;right:16px;font-family:var(--s-font-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--s-accent)}
+.controls{display:flex;gap:8px;font-family:var(--s-font-mono)}
+</style></head>
+<body>
+<div class="card" id="card">
+  <div class="brand">·· SIMUTUM ··</div>
+  <svg id="av" viewBox="-50 -10 100 120"></svg>
+  <div class="name" id="lblName"></div>
+  <div class="role" id="lblRole"></div>
+</div>
+<div class="controls">
+  <button class="btn primary" onclick="saveAsPNG()">↓ Save as PNG</button>
+  <a class="btn" href="index.html">← Back</a>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+const name = params.get('name') || 'Anonymous';
+const type = params.get('type') || 'anchor';
+const color = params.get('color') || '#46d9c5';
+const role = params.get('role') || 'cast';
+document.getElementById('lblName').textContent = name;
+document.getElementById('lblRole').textContent = role;
+const av = document.getElementById('av');
+const conf = type === 'thinker'
+  ? { headW:13, headH:15, bodyW:9, bodyH:18, neckH:7 }
+  : type === 'creative'
+    ? { headW:14, headH:14, bodyW:11, bodyH:16, neckH:6, torus:true }
+    : { headW:14, headH:11, bodyW:11, bodyH:14, neckH:5 };
+
+let angle = 0;
+function darken(hex, satFac, lumFac) {
+  const c=hex.replace('#','');
+  const R=parseInt(c.slice(0,2),16),G=parseInt(c.slice(2,4),16),B=parseInt(c.slice(4,6),16);
+  const lum = Math.max(R,G,B)*(1-lumFac);
+  const avg=(R+G+B)/3;
+  const blend=v=>Math.round(v*(1-satFac)+avg*satFac)*(lum/(Math.max(R,G,B)||1));
+  const tx=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0');
+  return '#'+tx(blend(R))+tx(blend(G))+tx(blend(B));
+}
+function render() {
+  angle = (angle + 0.5) % 360;
+  const r = (Math.sin(angle*Math.PI/180)*0.5+0.5);
+  const skew = (r-0.5)*0.6;
+  let s = '<defs><radialGradient id="pad"><stop offset="0" stop-color="'+color+'" stop-opacity="0.45"/><stop offset="1" stop-color="'+color+'" stop-opacity="0"/></radialGradient></defs>';
+  s += '<ellipse cx="0" cy="104" rx="32" ry="7" fill="url(#pad)"/>';
+  s += '<ellipse cx="'+(skew*7)+'" cy="'+(104-conf.bodyH/2)+'" rx="'+(conf.bodyW/2*(1+r*0.04))+'" ry="'+(conf.bodyH/2)+'" fill="'+darken(color,0.4,0.3)+'" opacity="0.92"/>';
+  if (conf.torus) s += '<ellipse cx="'+(skew*7)+'" cy="'+(104-conf.bodyH+8)+'" rx="'+((conf.bodyW/2+1.5))+'" ry="1.8" fill="'+color+'" opacity="0.85"/>';
+  s += '<rect x="'+(skew*7-2.4)+'" y="'+(104-conf.bodyH-conf.neckH)+'" width="4.8" height="'+conf.neckH+'" fill="'+darken(color,0.4,0.3)+'"/>';
+  s += '<ellipse cx="'+(skew*7)+'" cy="'+(104-conf.bodyH-conf.neckH-conf.headH/2)+'" rx="'+(conf.headW/2)+'" ry="'+(conf.headH/2)+'" fill="'+color+'"/>';
+  av.innerHTML = s;
+  requestAnimationFrame(render);
+}
+render();
+async function saveAsPNG() {
+  const card = document.getElementById('card');
+  const cv = document.createElement('canvas');
+  const dpr = devicePixelRatio || 1;
+  cv.width = 800 * dpr; cv.height = 800 * dpr;
+  const ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  // background
+  const grd = ctx.createRadialGradient(400, 280, 0, 400, 280, 600);
+  grd.addColorStop(0, '#101522'); grd.addColorStop(0.7, '#06070b');
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, 800, 800);
+  // border
+  ctx.strokeStyle = 'rgba(184,196,224,0.22)';
+  ctx.lineWidth = 2; ctx.strokeRect(2, 2, 796, 796);
+  // brand
+  ctx.fillStyle = '#46d9c5';
+  ctx.font = 'bold 18px ui-monospace';
+  ctx.fillText('·· SIMUTUM ··', 600, 36);
+  // body
+  ctx.translate(400, 380);
+  ctx.scale(4, 4);
+  // simple body + head colored
+  ctx.fillStyle = darken(color, 0.4, 0.3);
+  ctx.beginPath();
+  ctx.ellipse(0, 95-conf.bodyH/2, conf.bodyW/2, conf.bodyH/2, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(0, 95-conf.bodyH-conf.neckH-conf.headH/2, conf.headW/2, conf.headH/2, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.resetTransform();
+  // labels
+  ctx.fillStyle = '#d8dde9';
+  ctx.font = 'bold 28px ui-monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(name.toUpperCase(), 400, 670);
+  ctx.fillStyle = 'rgba(184,196,224,0.55)';
+  ctx.font = '20px ui-monospace';
+  ctx.fillText(role.toUpperCase(), 400, 706);
+  const url = cv.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url; a.download = 'simutum-' + name.toLowerCase() + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+</script>
+</body></html>

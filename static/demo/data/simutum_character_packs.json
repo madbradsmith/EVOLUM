@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "version": 1,
+    "description": "Curated 5-character packs from the 25-roster."
+  },
+  "packs": [
+    {
+      "id": "film_crew",
+      "name": "Film Crew",
+      "blurb": "A working production. Director, producer, scene shop, the actor on stage.",
+      "characters": [
+        "Greta",
+        "Rex",
+        "Design",
+        "Bea",
+        "Kit"
+      ]
+    },
+    {
+      "id": "writers_room",
+      "name": "Writers' Room",
+      "blurb": "Six writers, one table. Voices argue. Pages get cut.",
+      "characters": [
+        "Max",
+        "Bea",
+        "Leo",
+        "Mira",
+        "Boswell"
+      ]
+    },
+    {
+      "id": "the_startup",
+      "name": "The Startup",
+      "blurb": "Small team, big swing. Founder energy.",
+      "characters": [
+        "Frank",
+        "Sadie",
+        "Mo",
+        "Design",
+        "Nico"
+      ]
+    },
+    {
+      "id": "the_lab",
+      "name": "The Lab",
+      "blurb": "Pre-registers, prior work, footnotes.",
+      "characters": [
+        "Florence",
+        "Nora",
+        "Theo",
+        "Wren",
+        "Leo"
+      ]
+    },
+    {
+      "id": "the_agency",
+      "name": "The Agency",
+      "blurb": "Creative + strategy + client room. Pat lurks.",
+      "characters": [
+        "Rex",
+        "Design",
+        "Clem",
+        "Sadie",
+        "Pat"
+      ]
+    },
+    {
+      "id": "remote_team",
+      "name": "Remote Team",
+      "blurb": "Distributed, async, lots of solo edges.",
+      "characters": [
+        "Clem",
+        "Fern",
+        "Nico",
+        "Rue",
+        "Wren"
+      ]
+    },
+    {
+      "id": "inner_circle",
+      "name": "The Inner Circle",
+      "blurb": "Five people. They've all been here before.",
+      "characters": [
+        "Frank",
+        "Pat",
+        "Florence",
+        "Boswell",
+        "Vera"
+      ]
+    },
+    {
+      "id": "full_floor",
+      "name": "Full Floor",
+      "blurb": "Maximum coverage — every type, every tendency.",
+      "characters": [
+        "Frank",
+        "Florence",
+        "Max",
+        "Design",
+        "Pat"
+      ]
+    }
+  ]
+}

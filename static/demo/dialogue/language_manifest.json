@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "version": 1,
+    "description": "Native-language dialogue packs for Simutum NPCs."
+  },
+  "languages": [
+    {
+      "code": "en",
+      "label": "English",
+      "speech_lang": "en-US",
+      "file": "simutum_dialogue.json"
+    },
+    {
+      "code": "es",
+      "label": "Español",
+      "speech_lang": "es-ES",
+      "file": "dialogue_es.json"
+    },
+    {
+      "code": "pt-br",
+      "label": "Português (Brasil)",
+      "speech_lang": "pt-BR",
+      "file": "dialogue_pt-br.json"
+    },
+    {
+      "code": "fr",
+      "label": "Français",
+      "speech_lang": "fr-FR",
+      "file": "dialogue_fr.json"
+    },
+    {
+      "code": "ko",
+      "label": "한국어",
+      "speech_lang": "ko-KR",
+      "file": "dialogue_ko.json"
+    },
+    {
+      "code": "ja",
+      "label": "日本語",
+      "speech_lang": "ja-JP",
+      "file": "dialogue_ja.json"
+    }
+  ]
+}

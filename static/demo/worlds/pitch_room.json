@@ -1,0 +1,412 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "Pitch Room",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "stage",
+      "label": "Center Stage",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 220,
+      "height": 160,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1f1c2a",
+        "pack": "pack_floor",
+        "raised": 8
+      }
+    },
+    {
+      "id": "aud_n",
+      "label": "North Audience",
+      "global_x": 0,
+      "global_y": 280,
+      "width": 320,
+      "height": 90,
+      "flags": {
+        "walled": true,
+        "floor_color": "#181a26",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "aud_se",
+      "label": "SE Audience",
+      "global_x": 240,
+      "global_y": -180,
+      "width": 200,
+      "height": 120,
+      "flags": {
+        "walled": true,
+        "floor_color": "#181a26",
+        "pack": "pack_floor",
+        "rotation": -30
+      }
+    },
+    {
+      "id": "aud_sw",
+      "label": "SW Audience",
+      "global_x": -240,
+      "global_y": -180,
+      "width": 200,
+      "height": 120,
+      "flags": {
+        "walled": true,
+        "floor_color": "#181a26",
+        "pack": "pack_floor",
+        "rotation": 30
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_back_out",
+      "direction": "out",
+      "destination": "back_station",
+      "width": 60,
+      "theme": "white",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -360
+        },
+        {
+          "x": 120,
+          "y": -522
+        },
+        {
+          "x": 120,
+          "y": -738
+        },
+        {
+          "x": 0,
+          "y": -900
+        }
+      ],
+      "length": 579
+    },
+    {
+      "id": "road_back_back",
+      "direction": "back",
+      "destination": "back_station",
+      "width": 60,
+      "theme": "white",
+      "bezier": [
+        {
+          "x": 0,
+          "y": -900
+        },
+        {
+          "x": -153.14,
+          "y": -764.03
+        },
+        {
+          "x": -201.14,
+          "y": -548.03
+        },
+        {
+          "x": -120,
+          "y": -360
+        }
+      ],
+      "length": 591
+    },
+    {
+      "id": "road_left_out",
+      "direction": "out",
+      "destination": "left_station",
+      "width": 60,
+      "theme": "white",
+      "bezier": [
+        {
+          "x": -460,
+          "y": 0
+        },
+        {
+          "x": -592,
+          "y": 100
+        },
+        {
+          "x": -768,
+          "y": 100
+        },
+        {
+          "x": -900,
+          "y": 0
+        }
+      ],
+      "length": 473
+    },
+    {
+      "id": "road_left_back",
+      "direction": "back",
+      "destination": "left_station",
+      "width": 60,
+      "theme": "white",
+      "bezier": [
+        {
+          "x": -900,
+          "y": 0
+        },
+        {
+          "x": -741.69,
+          "y": -60.48
+        },
+        {
+          "x": -565.69,
+          "y": -12.48
+        },
+        {
+          "x": -460,
+          "y": 120
+        }
+      ],
+      "length": 488
+    },
+    {
+      "id": "road_right_out",
+      "direction": "out",
+      "destination": "right_station",
+      "width": 60,
+      "theme": "white",
+      "bezier": [
+        {
+          "x": 460,
+          "y": 0
+        },
+        {
+          "x": 592,
+          "y": 100
+        },
+        {
+          "x": 768,
+          "y": 100
+        },
+        {
+          "x": 900,
+          "y": 0
+        }
+      ],
+      "length": 473
+    },
+    {
+      "id": "road_right_back",
+      "direction": "back",
+      "destination": "right_station",
+      "width": 60,
+      "theme": "white",
+      "bezier": [
+        {
+          "x": 900,
+          "y": 0
+        },
+        {
+          "x": 794.31,
+          "y": -132.48
+        },
+        {
+          "x": 618.31,
+          "y": -180.48
+        },
+        {
+          "x": 460,
+          "y": -120
+        }
+      ],
+      "length": 488
+    }
+  ],
+  "ring_road": {
+    "id": "ring_road",
+    "radius": 600,
+    "width": 50,
+    "intersections": [
+      {
+        "id": "ix_road_back_out",
+        "road_id": "road_back_out",
+        "x": 88,
+        "y": -593,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_back_back",
+        "road_id": "road_back_back",
+        "x": -158,
+        "y": -578,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_left_out",
+        "road_id": "road_left_out",
+        "x": -597,
+        "y": 65,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_left_back",
+        "road_id": "road_left_back",
+        "x": -600,
+        "y": 10,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_right_out",
+        "road_id": "road_right_out",
+        "x": 597,
+        "y": 65,
+        "traffic_light": true
+      },
+      {
+        "id": "ix_road_right_back",
+        "road_id": "road_right_back",
+        "x": 583,
+        "y": -146,
+        "traffic_light": true
+      }
+    ]
+  },
+  "stops": [
+    {
+      "id": "back_stop",
+      "road": "road_back_out",
+      "t": 0.5,
+      "poi": "road_marker",
+      "lighting": {
+        "color": "#e8edf8",
+        "intensity": 1,
+        "type": "pool"
+      },
+      "audio": "distant_chatter"
+    },
+    {
+      "id": "left_stop",
+      "road": "road_left_out",
+      "t": 0.5,
+      "poi": "notice_board",
+      "lighting": {
+        "color": "#b9c4e0",
+        "intensity": 0.8,
+        "type": "steady"
+      },
+      "audio": "wind_low"
+    },
+    {
+      "id": "right_stop",
+      "road": "road_right_out",
+      "t": 0.5,
+      "poi": "bench_cluster",
+      "lighting": {
+        "color": "#e8edf8",
+        "intensity": 1,
+        "type": "pool"
+      },
+      "audio": "wind_low"
+    }
+  ],
+  "stations": [
+    {
+      "id": "back_station",
+      "position": {
+        "x": 0,
+        "y": -900
+      },
+      "target_pack": "green_room",
+      "label": "GREEN ROOM"
+    },
+    {
+      "id": "left_station",
+      "position": {
+        "x": -900,
+        "y": 0
+      },
+      "target_pack": "lobby",
+      "label": "LOBBY"
+    },
+    {
+      "id": "right_station",
+      "position": {
+        "x": 900,
+        "y": 0
+      },
+      "target_pack": "investors",
+      "label": "INVESTOR HALL"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_lobby_check",
+      "x": -700,
+      "y": 500,
+      "w": 280,
+      "h": 160,
+      "color": "#1a1a22",
+      "kind": "bar"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_south",
+      "position": {
+        "x": 0,
+        "y": -1100
+      }
+    }
+  ],
+  "boundary": {
+    "north": 1100,
+    "south": -1100,
+    "east": 1100,
+    "west": -1100
+  },
+  "cast": [
+    {
+      "name": "Ash",
+      "role": "Pitch Artist",
+      "type": "creative",
+      "color": "#a8e840",
+      "spawn": "stage"
+    },
+    {
+      "name": "Greta",
+      "role": "Director",
+      "type": "anchor",
+      "color": "#e84a6f",
+      "spawn": "stage"
+    },
+    {
+      "name": "Sadie",
+      "role": "Connector",
+      "type": "anchor",
+      "color": "#c9a0dc",
+      "spawn": "aud_n"
+    },
+    {
+      "name": "Mira",
+      "role": "Critic",
+      "type": "thinker",
+      "color": "#7ab8e8",
+      "spawn": "aud_se"
+    },
+    {
+      "name": "Syd",
+      "role": "Devil's Adv.",
+      "type": "thinker",
+      "color": "#ff6b4a",
+      "spawn": "aud_sw"
+    },
+    {
+      "name": "Boswell",
+      "role": "Scribe",
+      "type": "thinker",
+      "color": "#ff9d6d",
+      "spawn": "aud_n"
+    }
+  ]
+}

@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Simutum Demo — Open Office World v2</title>
+
+  <!-- ─── DEMO_MODE + SIGNUP_URL ──────────────────────────────────
+       Set DEMO_MODE = true to:
+         · hide the Tweaks panel
+         · hide the Export JSON button
+         · make station CTA panels click-through to SIGNUP_URL
+       Otherwise the build behaves as the operator playground. -->
+  <script>
+    window.DEMO_MODE        = true;
+    window.SIGNUP_URL       = 'signup.html';
+    window.TRIBE_URL        = 'tribe-finder.html';
+    window.SKIN             = 'default';
+    window.ATMOSPHERE       = 'none';
+    window.WORLD_SOUNDTRACK = 'none';
+    window.LANG             = 'en';
+    // Final compilation knobs
+    window.SESSION_SKIN     = 'default';   // default | hollywood | noir | cyberpunk | sunrise
+    window.TIME_OF_DAY      = 'night';     // night | dawn | day | dusk
+    window.CROWD_SIZE       = 0;           // 0–20 background ghosts
+    window.GREENROOM        = false;       // true → 30s greenroom intro
+    window.RELATIONSHIPS    = [];          // [{a, b, type: 'rivalry'|'mentor'|'drift'}]
+    window.PROPS            = [];          // [{section, type}]
+  </script>
+
+  <!-- ─── PWA + Open Graph ─── -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#46d9c5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Simutum" />
+  <meta property="og:title" content="Simutum — the box is the game" />
+  <meta property="og:description" content="A living 3D workspace. Six AI entities boot with agendas. Every session runs differently." />
+  <meta property="og:image" content="og-preview.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="https://evolumstudio.com/demo" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Simutum — the box is the game" />
+  <meta name="twitter:description" content="A living 3D workspace. Every session runs differently." />
+  <meta name="twitter:image" content="og-preview.png" />
+
+  <link rel="icon" href="icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+
+  <style>
+    :root {
+      --s-bg:        #06070b;
+      --s-bg-2:      #0a0c12;
+      --s-panel:     #0e1018;
+      --s-panel-2:   #141826;
+      --s-border:    rgba(184,196,224,0.14);
+      --s-border-2:  rgba(184,196,224,0.22);
+      --s-text-1:    #d8dde9;
+      --s-text-2:    #b9c4e0;
+      --s-text-3:    rgba(184,196,224,0.55);
+      --s-accent:    #46d9c5;
+      --s-warn:      #ff9d6d;
+      --s-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --s-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      background: var(--s-bg); color: var(--s-text-1);
+      font-family: var(--s-font-sans); }
+    #renderCanvas { width: 100%; height: 100%; display: block; touch-action: none; outline: 0; }
+
+    /* ─── Banner / HUD ─────────────────────────────────────── */
+    .banner {
+      position: fixed; top: 0; left: 0; right: 0; height: 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 0 16px;
+      background: rgba(14,16,24,0.78);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--s-border);
+      z-index: 40;
+      font-family: var(--s-font-mono);
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .banner__title {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .banner__title strong { color: var(--s-accent); font-weight: 700; }
+    .banner__title .dim { color: var(--s-text-3); font-weight: 500; }
+    .banner__meta {
+      display: flex; gap: 16px;
+      color: var(--s-text-2);
+      font-size: 10.5px;
+    }
+    .banner__meta span::before { content: "· "; color: var(--s-border-2); }
+    .banner__meta span:first-child::before { content: ""; }
+
+    /* ─── Bottom-left controls hint ──────────────────────── */
+    .controls {
+      position: fixed; bottom: 12px; left: 16px;
+      font-family: var(--s-font-mono);
+      font-size: 10px;
+      color: var(--s-text-3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      z-index: 40;
+      max-width: 540px;
+      line-height: 1.7;
+    }
+    .controls kbd {
+      display: inline-block;
+      padding: 1px 6px;
+      background: rgba(184,196,224,0.10);
+      border: 1px solid rgba(184,196,224,0.22);
+      border-radius: 3px;
+      font-family: var(--s-font-mono);
+      font-size: 9.5px;
+      color: var(--s-text-2);
+      margin: 0 1px;
+    }
+
+    /* ─── 2D top-down overlay ─────────────────────────────── */
+    #mapCanvas {
+      position: fixed; right: 12px; bottom: 12px;
+      width: 280px; height: 280px;
+      border: 1px solid var(--s-border-2);
+      border-radius: 6px;
+      background: rgba(6,7,11,0.85);
+      z-index: 30;
+      display: block;
+    }
+    .mapLabel {
+      position: fixed; right: 12px; bottom: 296px;
+      font-family: var(--s-font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--s-text-3);
+      z-index: 30;
+      padding: 4px 8px;
+      background: rgba(14,16,24,0.85);
+      border: 1px solid var(--s-border);
+      border-bottom: 0;
+      border-radius: 4px 4px 0 0;
+      pointer-events: none;
+    }
+
+    /* ─── Boundary ripple HUD ────────────────────────────── */
+    #rippleHud {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      width: 380px;
+      padding: 18px 22px;
+      background: rgba(6,12,8,0.92);
+      border: 1px solid #00ff41;
+      border-radius: 8px;
+      text-align: center;
+      font-family: var(--s-font-mono);
+      color: #00ff41;
+      box-shadow: 0 0 40px rgba(0,255,65,0.35), inset 0 0 20px rgba(0,255,65,0.08);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 80;
+    }
+    #rippleHud.visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    #rippleHud .top { font-size: 9.5px; letter-spacing: 0.18em; opacity: 0.6; margin-bottom: 8px; }
+    #rippleHud .face { font-size: 12px; letter-spacing: 0.16em; margin-bottom: 12px; }
+    #rippleHud .body { font-size: 13px; line-height: 1.5; color: #4cff77; margin-bottom: 10px; }
+    #rippleHud .small { font-size: 10px; opacity: 0.5; letter-spacing: 0.04em; }
+
+    /* ─── Audio unlock overlay ───────────────────────────── */
+    #audioOverlay {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 40%, rgba(20,24,40,0.85), rgba(6,7,11,0.96));
+      z-index: 200;
+      transition: opacity 0.5s ease;
+    }
+    #audioOverlay.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
+    .audioCard {
+      max-width: 460px;
+      padding: 32px 36px;
+      background: rgba(14,16,24,0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--s-border-2);
+      border-radius: 10px;
+      text-align: center;
+      font-family: var(--s-font-mono);
+    }
+    .audioCard h1 {
+      margin: 0 0 6px;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--s-accent);
+      font-weight: 700;
+    }
+    .audioCard .tag {
+      font-size: 11px;
+      color: var(--s-text-3);
+      letter-spacing: 0.06em;
+      margin-bottom: 18px;
+    }
+    .audioCard p {
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: var(--s-text-2);
+      margin: 12px 0;
+      font-family: var(--s-font-sans);
+      letter-spacing: 0.01em;
+    }
+    .audioCard .accent { color: var(--s-accent); font-family: var(--s-font-mono); }
+    .audioCard button {
+      margin-top: 18px;
+      padding: 11px 22px;
+      background: transparent;
+      border: 1px solid var(--s-accent);
+      color: var(--s-accent);
+      font-family: var(--s-font-mono);
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.18s ease;
+    }
+    .audioCard button:hover { background: rgba(70,217,197,0.10); }
+
+    /* ─── Demo chip (top-right corner pre-banner) ──────── */
+    .demoChip {
+      position: fixed; top: 60px; right: 12px;
+      z-index: 25;
+      background: rgba(70,217,197,0.08);
+      border: 1px solid var(--s-accent);
+      color: var(--s-accent);
+      padding: 4px 9px;
+      font-family: var(--s-font-mono);
+      font-size: 9.5px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    /* ─── World controls strip (skin / atmosphere / lang / track) ─── */
+    .world-controls {
+      position: fixed; top: 60px; right: 12px;
+      z-index: 30;
+      display: flex; gap: 6px;
+      background: rgba(14,16,24,0.82);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--s-border-2);
+      border-radius: 6px;
+      padding: 4px;
+      font-family: var(--s-font-mono);
+    }
+    .world-controls .wc-group {
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 7px;
+      border-right: 1px solid var(--s-border);
+    }
+    .world-controls .wc-group:last-child { border-right: 0; }
+    .world-controls label {
+      font-size: 9px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: var(--s-text-3);
+    }
+    .world-controls select {
+      background: transparent;
+      border: 0;
+      color: var(--s-accent);
+      font-family: var(--s-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 4px;
+      cursor: pointer;
+      outline: none;
+    }
+    .world-controls select option {
+      background: var(--s-panel);
+      color: var(--s-text-1);
+    }
+
+    /* On phone, hide the world-controls strip (top-right gets cluttered) */
+    @media (max-width: 720px) {
+      .world-controls {
+        top: auto; bottom: 8px; left: 8px; right: auto;
+        padding: 3px;
+      }
+      .world-controls .wc-group { padding: 2px 5px; }
+      .world-controls label { font-size: 8px; }
+      .world-controls select { font-size: 9.5px; }
+    }
+
+    /* ─── REC button ─────────────────────────────────────── */
+    .rec-btn {
+      position: fixed; top: 60px; left: 16px;
+      z-index: 50;
+      background: rgba(14,16,24,0.78);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--s-border-2);
+      color: var(--s-text-2);
+      padding: 6px 12px;
+      font-family: var(--s-font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .rec-btn:hover { color: #ff7d4a; border-color: #ff7d4a; }
+    .rec-btn.recording {
+      color: #ff5a5a; border-color: #ff5a5a;
+      background: rgba(255,90,90,0.10);
+      animation: recPulse 1s ease infinite;
+    }
+    @keyframes recPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,90,90,0.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(255,90,90,0); }
+    }
+    .rec-dot { display: inline-block; width: 7px; height: 7px;
+      border-radius: 50%; background: currentColor; margin-right: 6px;
+      vertical-align: middle; }
+
+    /* ─── Mobile virtual joystick ──────────────────────── */
+    .joy-zone {
+      position: fixed; bottom: 20px;
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      background: rgba(14,16,24,0.55);
+      border: 1px solid rgba(184,196,224,0.18);
+      touch-action: none; z-index: 60;
+      display: none;
+    }
+    .joy-zone.left  { left:  20px; }
+    .joy-zone.right { right: 20px; }
+    .joy-dot {
+      position: absolute; left: calc(50% - 14px); top: calc(50% - 14px);
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(70,217,197,0.5);
+      pointer-events: none;
+      transform: translate(0, 0);
+      transition: transform 0.04s linear;
+    }
+    body.is-touch .joy-zone { display: block; }
+
+    /* ─── Responsive: phone ────────────────────────────── */
+    @media (max-width: 720px) {
+      .banner { height: 40px; padding: 0 10px; gap: 6px; }
+      .banner__title { font-size: 10px; }
+      .banner__title .dim { display: none; }
+      .banner__meta { display: none; }
+      .controls { display: none; }
+      #mapCanvas { width: 160px; height: 160px; bottom: 8px; right: 8px; }
+      .mapLabel { display: none; }
+      .demoChip { top: 50px; }
+      .rec-btn { top: 50px; left: 10px; padding: 5px 9px; font-size: 9.5px; }
+    }
+
+    /* ─── DEMO_MODE selectors (set on <body>) ─────────── */
+    body.demo-mode .twk-panel,
+    body.demo-mode .twk-toggle { display: none !important; }
+  </style>
+</head>
+<body>
+
+<canvas id="renderCanvas"></canvas>
+
+<!-- ─── Banner ─── -->
+<div class="banner">
+  <div class="banner__title">
+    <strong>SIMUTUM</strong>
+    <span class="dim">/ open-office demo · v2</span>
+  </div>
+  <div class="banner__meta">
+    <span>1100 × 900 floor</span>
+    <span>6 entities · live agendas</span>
+    <span>3 stations · 6 roads</span>
+    <span>mid ring · r=900</span>
+  </div>
+</div>
+
+<!-- ─── Controls hint ─── -->
+<div class="controls">
+  <kbd>top down</kbd> drag to pan · scroll to zoom &nbsp;·&nbsp;
+  <kbd>free fly</kbd> <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> walk, mouse-look · push to a wall to reveal the easter egg
+</div>
+
+<!-- ─── 2D overlay ─── -->
+<div class="mapLabel">Top-down · vector minimap</div>
+<canvas id="mapCanvas"></canvas>
+
+<!-- ─── Boundary egg HUD ─── -->
+<div id="rippleHud">
+  <div class="top">·· STARGATE BOUNDARY ··</div>
+  <div class="face">·</div>
+  <div class="body">A green terminal flickers on at the wall.<br/>The tribe finder is listening.</div>
+  <div class="small">click the panel in-world to follow the signal</div>
+</div>
+
+<!-- ─── Audio overlay (click to start) ─── -->
+<div id="audioOverlay">
+  <div class="audioCard">
+    <h1>Hello, Open Office</h1>
+    <div class="tag">simutum demo · the box is the game</div>
+    <p>You are 320 units above one lit island in total darkness. A standup is in progress. The road leaves the map. The boundary is real.</p>
+    <p style="color: var(--s-text-3); font-size: 11.5px;">
+      <span class="accent">The entities are not on a program.</span> Every refresh, the standup goes differently.
+    </p>
+    <button id="audioStart">ENTER THE WORLD</button>
+  </div>
+</div>
+
+<!-- ─── World controls (skin / atmosphere / lang / soundtrack) ─── -->
+<div class="world-controls" id="worldControls">
+  <div class="wc-group">
+    <label>Skin</label>
+    <select id="ctlSkin">
+      <option value="default">Default</option>
+      <option value="neon">Neon</option>
+      <option value="wireframe">Wireframe</option>
+      <option value="broadcast">Broadcast</option>
+    </select>
+  </div>
+  <div class="wc-group">
+    <label>Atmos</label>
+    <select id="ctlAtmosphere">
+      <option value="none">Clear</option>
+      <option value="rain">Rain</option>
+      <option value="fog">Fog</option>
+      <option value="starfield">Starfield</option>
+      <option value="pulse">Pulse</option>
+    </select>
+  </div>
+  <div class="wc-group">
+    <label>Track</label>
+    <select id="ctlTrack">
+      <option value="none">Off</option>
+      <option value="jazz">Jazz</option>
+      <option value="lab_hum">Lab Hum</option>
+      <option value="stage_ambience">Stage</option>
+      <option value="street">Street</option>
+      <option value="silence">Silence</option>
+    </select>
+  </div>
+  <div class="wc-group">
+    <label>Lang</label>
+    <select id="ctlLang">
+      <option value="en">EN</option>
+      <option value="es">ES</option>
+      <option value="pt-br">PT-BR</option>
+      <option value="fr">FR</option>
+      <option value="ko">KO</option>
+      <option value="ja">JA</option>
+    </select>
+  </div>
+</div>
+
+<!-- ─── REC button (records replay.json) ─── -->
+<button id="recBtn" class="rec-btn"><span class="rec-dot"></span>REC</button>
+
+<!-- ─── Mobile virtual joystick zones ─── -->
+<div id="joyLeft"  class="joy-zone left"><div class="joy-dot"></div></div>
+<div id="joyRight" class="joy-zone right"><div class="joy-dot"></div></div>
+
+<!-- ─── React tweaks panel root ─── -->
+<div id="app-root"></div>
+
+<!-- ─── Babylon.js ─── -->
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+
+<!-- ─── World modules (vanilla JS, order matters) ─── -->
+<script src="geometry.js"></script>
+<script src="scene-build.js"></script>
+<script src="scene-stops.js"></script>
+<script src="scene-entities.js"></script>
+<script src="scene-audio.js"></script>
+<script src="scene-runtime.js"></script>
+
+<!-- ─── React + Babel for the tweaks panel ─── -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<!-- ─── Final compilation: extensions (timer, stats, photo, bubbles, intro, skins, ToD, crowd, greenroom, minimap, relationships, props) ─── -->
+<script src="gw-extensions.js"></script>
+
+<!-- ─── PWA: register service worker ─── -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+
+<!-- ─── DEMO_MODE + REC + mobile perf + virtual joystick wiring ─── -->
+<script>
+(function () {
+  'use strict';
+  const IS_TOUCH = (navigator.maxTouchPoints || 0) > 1;
+  if (IS_TOUCH) document.body.classList.add('is-touch');
+
+  // ── DEMO_MODE handling ─────────────────────────────────
+  if (window.DEMO_MODE) {
+    document.body.classList.add('demo-mode');
+    // hide the export button in the React tweaks/cam pill once mounted
+    const hideExport = () => {
+      document.querySelectorAll('button').forEach(b => {
+        if (/EXPORT JSON/i.test(b.textContent || '')) b.style.display = 'none';
+      });
+    };
+    const waitR = setInterval(() => {
+      if (document.querySelector('button')) { hideExport(); clearInterval(waitR); }
+    }, 200);
+
+    // make station CTA panels click-through to SIGNUP_URL
+    const tryStations = setInterval(() => {
+      const R = window.SIMUTUM_RUNTIME;
+      if (!R || !R.scene) return;
+      clearInterval(tryStations);
+      R.scene.onPointerObservable.add((pi) => {
+        if (pi.type !== BABYLON.PointerEventTypes.POINTERDOWN) return;
+        const pick = pi.pickInfo;
+        if (!pick || !pick.hit || !pick.pickedMesh) return;
+        if (/^ctaP_|^gate_/.test(pick.pickedMesh.name)) {
+          window.location.href = window.SIGNUP_URL;
+        }
+      });
+    }, 200);
+  }
+
+  // ── Egg terminal click → tribe-finder.html (always, even outside DEMO_MODE) ──
+  const tryEggs = setInterval(() => {
+    const R = window.SIMUTUM_RUNTIME;
+    if (!R || !R.scene) return;
+    clearInterval(tryEggs);
+    R.scene.onPointerObservable.add((pi) => {
+      if (pi.type !== BABYLON.PointerEventTypes.POINTERDOWN) return;
+      const pick = pi.pickInfo;
+      if (!pick || !pick.hit || !pick.pickedMesh) return;
+      const mn = pick.pickedMesh.name || '';
+      if (/^egg_(screen|post|base|pool)_/.test(mn)) {
+        // pull face out of the egg name (egg_screen_egg_north → north)
+        const m = mn.match(/egg_(?:north|south|east|west)/);
+        const face = m ? m[0].split('_')[1] : '';
+        window.location.href = window.TRIBE_URL + (face ? '?wall=' + face : '');
+      }
+    });
+  }, 200);
+
+  // ── Mobile performance mode ────────────────────────────
+  if (IS_TOUCH) {
+    const apply = setInterval(() => {
+      const R = window.SIMUTUM_RUNTIME;
+      if (!R || !R.scene) return;
+      clearInterval(apply);
+      R.scene.fogStart = 350;
+      R.scene.fogEnd = 1400;
+      R.scene.shadowsEnabled = false;
+      // simplify entity meshes: lower their LOD by halving segments via re-rendering
+      // (no-op here — meshes are already low poly; this hook is reserved for heavier scenes)
+    }, 200);
+  }
+
+  // ── REC button ────────────────────────────────────────
+  const recBtn = document.getElementById('recBtn');
+  if (recBtn) {
+    let recording = false;
+    let recState = null;
+    let tickAcc = 0, lastT = performance.now();
+    recBtn.addEventListener('click', () => {
+      const R = window.SIMUTUM_RUNTIME;
+      if (!R) return;
+      if (!recording) {
+        recState = { startedAt: Date.now(), ticks: [], speech: [] };
+        recording = true;
+        recBtn.classList.add('recording');
+        recBtn.innerHTML = '<span class="rec-dot"></span>STOP';
+        tickAcc = 0; lastT = performance.now();
+        // hook into Babylon render loop for tick capture
+        const obs = R.scene.onBeforeRenderObservable.add(() => {
+          if (!recording) { R.scene.onBeforeRenderObservable.remove(obs); return; }
+          const now = performance.now();
+          const dt = (now - lastT) / 1000; lastT = now;
+          tickAcc += dt;
+          if (tickAcc < 0.25) return;
+          tickAcc = 0;
+          const positions = R.getAgents().map(a => ({
+            name: a.name,
+            x: Math.round(a.avatar.root.position.x),
+            y: Math.round(a.avatar.root.position.z),
+            state: a.state,
+          }));
+          recState.ticks.push({
+            tick: recState.ticks.length,
+            t: Math.round((Date.now() - recState.startedAt) / 100) / 10,
+            positions,
+            speech: [],
+          });
+        });
+      } else {
+        recording = false;
+        recBtn.classList.remove('recording');
+        recBtn.innerHTML = '<span class="rec-dot"></span>REC';
+        const blob = new Blob([JSON.stringify(recState, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'replay.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    });
+  }
+
+  // ── Virtual joystick (free fly only) ──────────────────
+  if (IS_TOUCH) {
+    function dispatchKey(code, which, down) {
+      const ev = new KeyboardEvent(down ? 'keydown' : 'keyup', { code, key: code.slice(3).toLowerCase(), keyCode: which, which, bubbles: true });
+      window.dispatchEvent(ev);
+    }
+    function setupJoy(elId, side) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      const dot = el.querySelector('.joy-dot');
+      let active = false;
+      let startX = 0, startY = 0;
+      let cur = { w: false, a: false, s: false, d: false };
+      const onDown = (ev) => {
+        ev.preventDefault();
+        active = true;
+        const r = el.getBoundingClientRect();
+        startX = r.left + r.width / 2;
+        startY = r.top + r.height / 2;
+        move(ev);
+      };
+      const move = (ev) => {
+        if (!active) return;
+        const t = ev.touches ? ev.touches[0] : ev;
+        const dx = t.clientX - startX, dy = t.clientY - startY;
+        const r = el.getBoundingClientRect();
+        const max = r.width / 2;
+        const len = Math.min(max, Math.hypot(dx, dy));
+        const a = Math.atan2(dy, dx);
+        const nx = Math.cos(a) * len, ny = Math.sin(a) * len;
+        dot.style.transform = `translate(${nx}px, ${ny}px)`;
+        if (side === 'left') {
+          const want = { w: ny < -max * 0.3, s: ny > max * 0.3, a: nx < -max * 0.3, d: nx > max * 0.3 };
+          for (const k of ['w','a','s','d']) {
+            if (want[k] !== cur[k]) {
+              dispatchKey('Key' + k.toUpperCase(), ({ w: 87, a: 65, s: 83, d: 68 })[k], want[k]);
+              cur[k] = want[k];
+            }
+          }
+        } else {
+          // right zone: synthesize pointermove on canvas (look)
+          const canvas = document.getElementById('renderCanvas');
+          if (canvas) {
+            const ev2 = new PointerEvent('pointermove', {
+              clientX: t.clientX, clientY: t.clientY,
+              pointerType: 'touch', bubbles: true,
+            });
+            canvas.dispatchEvent(ev2);
+          }
+        }
+      };
+      const up = () => {
+        if (!active) return;
+        active = false;
+        dot.style.transform = 'translate(0,0)';
+        if (side === 'left') {
+          for (const k of ['w','a','s','d']) {
+            if (cur[k]) dispatchKey('Key' + k.toUpperCase(), ({ w: 87, a: 65, s: 83, d: 68 })[k], false);
+            cur[k] = false;
+          }
+        }
+      };
+      el.addEventListener('pointerdown', onDown);
+      el.addEventListener('touchstart', onDown, { passive: false });
+      window.addEventListener('pointermove', move);
+      window.addEventListener('touchmove', move, { passive: false });
+      window.addEventListener('pointerup', up);
+      window.addEventListener('touchend', up);
+      window.addEventListener('pointercancel', up);
+    }
+    setupJoy('joyLeft', 'left');
+    setupJoy('joyRight', 'right');
+  }
+
+  // ── Skin / Atmosphere / Soundtrack / Language systems ──
+  // All four are runtime-swappable via the top-right control strip.
+  (function () {
+    let ready = false;
+    const SKIN_ORIG = new WeakMap(); // mesh → original material snapshot
+
+    const wait = setInterval(() => {
+      const R = window.SIMUTUM_RUNTIME;
+      if (!R || !R.scene || !R.getAgents) return;
+      clearInterval(wait);
+      ready = true;
+      // Wire up control selectors
+      const wire = (id, key, applyFn) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = window[key];
+        el.addEventListener('change', () => {
+          window[key] = el.value;
+          applyFn(el.value);
+        });
+        applyFn(window[key]);
+      };
+      wire('ctlSkin',       'SKIN',             applySkin);
+      wire('ctlAtmosphere', 'ATMOSPHERE',       applyAtmosphere);
+      wire('ctlTrack',      'WORLD_SOUNDTRACK', applySoundtrack);
+      wire('ctlLang',       'LANG',             applyLang);
+    }, 200);
+
+    // ─── Skin ──────────────────────────────────────────
+    function applySkin(skin) {
+      if (!ready) return;
+      const R = window.SIMUTUM_RUNTIME;
+      const agents = R.getAgents();
+      for (const a of agents) {
+        const meshes = [a.avatar.head, a.avatar.body, a.avatar.neck].filter(Boolean);
+        for (const m of meshes) {
+          if (!m.material) continue;
+          // snapshot original if not already cached
+          if (!SKIN_ORIG.has(m)) {
+            SKIN_ORIG.set(m, {
+              diffuse: m.material.diffuseColor ? m.material.diffuseColor.clone() : null,
+              emissive: m.material.emissiveColor ? m.material.emissiveColor.clone() : null,
+              alpha: m.material.alpha,
+              wireframe: m.material.wireframe,
+            });
+          }
+          const orig = SKIN_ORIG.get(m);
+          const mat = m.material;
+          if (skin === 'default') {
+            if (orig.diffuse)  mat.diffuseColor  = orig.diffuse.clone();
+            if (orig.emissive) mat.emissiveColor = orig.emissive.clone();
+            mat.alpha = orig.alpha;
+            mat.wireframe = orig.wireframe;
+          } else if (skin === 'neon') {
+            const base = orig.diffuse ? orig.diffuse.clone() : new BABYLON.Color3(1, 1, 1);
+            mat.diffuseColor = base.scale(1.0);
+            mat.emissiveColor = base.scale(1.4);
+            mat.alpha = 1.0;
+            mat.wireframe = false;
+          } else if (skin === 'wireframe') {
+            mat.diffuseColor = orig.diffuse ? orig.diffuse.clone() : new BABYLON.Color3(0.7,0.8,1);
+            mat.emissiveColor = new BABYLON.Color3(0, 0, 0);
+            mat.alpha = 0.18;
+            mat.wireframe = true;
+          } else if (skin === 'broadcast') {
+            const c = orig.diffuse ? orig.diffuse.clone() : new BABYLON.Color3(1,1,1);
+            // desaturate
+            const lum = c.r * 0.3 + c.g * 0.6 + c.b * 0.1;
+            mat.diffuseColor = new BABYLON.Color3(
+              c.r * 0.4 + lum * 0.6,
+              c.g * 0.4 + lum * 0.6,
+              c.b * 0.4 + lum * 0.6
+            );
+            mat.emissiveColor = new BABYLON.Color3(0, 0, 0);
+            mat.alpha = 1.0;
+            mat.wireframe = false;
+          }
+        }
+      }
+    }
+
+    // ─── Atmosphere ────────────────────────────────────
+    let atmosState = { rain: null, starfield: null, pulseObs: null, savedFogStart: null, savedFogEnd: null };
+    function applyAtmosphere(mode) {
+      if (!ready) return;
+      const R = window.SIMUTUM_RUNTIME;
+      const scene = R.scene;
+      // tear down previous
+      if (atmosState.rain) { atmosState.rain.dispose(); atmosState.rain = null; }
+      if (atmosState.starfield) { atmosState.starfield.dispose(); atmosState.starfield = null; }
+      if (atmosState.pulseObs) { scene.onBeforeRenderObservable.remove(atmosState.pulseObs); atmosState.pulseObs = null; }
+      if (atmosState.savedFogStart !== null) {
+        scene.fogStart = atmosState.savedFogStart;
+        scene.fogEnd = atmosState.savedFogEnd;
+        atmosState.savedFogStart = atmosState.savedFogEnd = null;
+      }
+
+      if (mode === 'rain') {
+        const ps = new BABYLON.ParticleSystem('rain', 1200, scene);
+        ps.particleTexture = makeStreakTexture(scene);
+        ps.minEmitBox = new BABYLON.Vector3(-1600, 600, -1600);
+        ps.maxEmitBox = new BABYLON.Vector3( 1600, 800,  1600);
+        ps.emitter = new BABYLON.Vector3(0, 700, 0);
+        ps.color1 = new BABYLON.Color4(0.7, 0.85, 1.0, 0.6);
+        ps.color2 = new BABYLON.Color4(0.4, 0.55, 0.8, 0.4);
+        ps.colorDead = new BABYLON.Color4(0, 0, 0, 0);
+        ps.minSize = 0.5; ps.maxSize = 1.5;
+        ps.minLifeTime = 1.0; ps.maxLifeTime = 1.8;
+        ps.emitRate = 800;
+        ps.direction1 = new BABYLON.Vector3(-1.2, -10, -0.5);
+        ps.direction2 = new BABYLON.Vector3(-0.6, -10, -0.2);
+        ps.minEmitPower = 60; ps.maxEmitPower = 90;
+        ps.gravity = new BABYLON.Vector3(0, -180, 0);
+        ps.start();
+        atmosState.rain = ps;
+      } else if (mode === 'fog') {
+        atmosState.savedFogStart = scene.fogStart;
+        atmosState.savedFogEnd = scene.fogEnd;
+        scene.fogStart = 80;
+        scene.fogEnd = 400;
+      } else if (mode === 'starfield') {
+        const ps = new BABYLON.ParticleSystem('stars', 600, scene);
+        ps.particleTexture = makeDotTexture(scene);
+        ps.minEmitBox = new BABYLON.Vector3(-2500, 200, -2500);
+        ps.maxEmitBox = new BABYLON.Vector3( 2500, 800,  2500);
+        ps.emitter = new BABYLON.Vector3(0, 500, 0);
+        ps.color1 = new BABYLON.Color4(0.9, 0.95, 1.0, 0.9);
+        ps.color2 = new BABYLON.Color4(0.7, 0.8, 1.0, 0.7);
+        ps.colorDead = new BABYLON.Color4(0.5, 0.6, 0.9, 0);
+        ps.minSize = 1.2; ps.maxSize = 2.6;
+        ps.minLifeTime = 8; ps.maxLifeTime = 14;
+        ps.emitRate = 80;
+        ps.direction1 = new BABYLON.Vector3(-2, 0, -2);
+        ps.direction2 = new BABYLON.Vector3( 2, 0,  2);
+        ps.minEmitPower = 1; ps.maxEmitPower = 3;
+        ps.gravity = new BABYLON.Vector3(0, 0, 0);
+        ps.start();
+        atmosState.starfield = ps;
+      } else if (mode === 'pulse') {
+        // breathe section floor emissive on 4s sine cycle
+        const targets = scene.meshes.filter(m => /^floor_/.test(m.name) && m.material);
+        const startTime = performance.now();
+        atmosState.pulseObs = scene.onBeforeRenderObservable.add(() => {
+          const t = (performance.now() - startTime) / 1000;
+          const v = 0.5 + 0.5 * Math.sin(t * Math.PI / 2); // 4-sec full period
+          for (const m of targets) {
+            const c = m.material.diffuseColor;
+            if (!m.material._origPulseEmissive) {
+              m.material._origPulseEmissive = m.material.emissiveColor ? m.material.emissiveColor.clone() : new BABYLON.Color3(0,0,0);
+            }
+            m.material.emissiveColor = c.scale(v * 0.35);
+          }
+        });
+      }
+    }
+
+    function makeStreakTexture(scene) {
+      const cv = document.createElement('canvas');
+      cv.width = 4; cv.height = 32;
+      const ctx = cv.getContext('2d');
+      const grd = ctx.createLinearGradient(0, 0, 0, 32);
+      grd.addColorStop(0, 'rgba(255,255,255,0.0)');
+      grd.addColorStop(0.5, 'rgba(255,255,255,1.0)');
+      grd.addColorStop(1, 'rgba(255,255,255,0.0)');
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, 4, 32);
+      const tex = new BABYLON.DynamicTexture('streak', { width: 4, height: 32 }, scene, false);
+      const ictx = tex.getContext();
+      ictx.drawImage(cv, 0, 0);
+      tex.update();
+      tex.hasAlpha = true;
+      return tex;
+    }
+    function makeDotTexture(scene) {
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 16;
+      const ctx = cv.getContext('2d');
+      const grd = ctx.createRadialGradient(8,8,0,8,8,7);
+      grd.addColorStop(0,'rgba(255,255,255,1)');
+      grd.addColorStop(0.5,'rgba(255,255,255,0.6)');
+      grd.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle = grd; ctx.fillRect(0,0,16,16);
+      const tex = new BABYLON.DynamicTexture('dot', { width: 16, height: 16 }, scene, false);
+      tex.getContext().drawImage(cv, 0, 0);
+      tex.update();
+      tex.hasAlpha = true;
+      return tex;
+    }
+
+    // ─── Soundtrack ────────────────────────────────────
+    let trackState = { ctx: null, master: null, sources: [] };
+    function applySoundtrack(track) {
+      // stop previous
+      for (const s of trackState.sources) { try { s.stop && s.stop(); } catch (e) {} }
+      trackState.sources = [];
+      if (track === 'none' || track === 'silence') return;
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!trackState.ctx) {
+        trackState.ctx = new AC();
+        trackState.master = trackState.ctx.createGain();
+        trackState.master.gain.value = 0.35;
+        trackState.master.connect(trackState.ctx.destination);
+      }
+      const ctx = trackState.ctx;
+      const out = trackState.master;
+      // resume on first user gesture (most contexts start suspended)
+      if (ctx.state === 'suspended') { ctx.resume(); }
+
+      const mkNoise = (filterType, freq, q, gain) => {
+        const buf = ctx.createBuffer(1, ctx.sampleRate * 3, ctx.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+        const filt = ctx.createBiquadFilter(); filt.type = filterType; filt.frequency.value = freq; filt.Q.value = q;
+        const g = ctx.createGain(); g.gain.value = gain;
+        src.connect(filt).connect(g).connect(out); src.start();
+        trackState.sources.push(src);
+        return { filt, g };
+      };
+      const mkOsc = (type, freq, gain) => {
+        const o = ctx.createOscillator(); o.type = type; o.frequency.value = freq;
+        const g = ctx.createGain(); g.gain.value = gain;
+        o.connect(g).connect(out); o.start();
+        trackState.sources.push(o);
+        return { o, g };
+      };
+      const mkLFO = (target, freq, depth) => {
+        const o = ctx.createOscillator(); o.frequency.value = freq;
+        const g = ctx.createGain(); g.gain.value = depth;
+        o.connect(g).connect(target); o.start();
+        trackState.sources.push(o);
+      };
+      const mkStab = (freq, dur, vol, delayMs) => {
+        const id = setInterval(() => {
+          if (!ctx) return;
+          const t0 = ctx.currentTime;
+          const o = ctx.createOscillator();
+          o.type = 'triangle'; o.frequency.value = freq;
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0, t0);
+          g.gain.linearRampToValueAtTime(vol, t0 + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+          o.connect(g).connect(out); o.start(t0); o.stop(t0 + dur + 0.05);
+        }, delayMs + Math.random() * delayMs * 0.4);
+        trackState.sources.push({ stop: () => clearInterval(id) });
+      };
+
+      if (track === 'jazz') {
+        const n = mkNoise('bandpass', 600, 1.5, 0.07);
+        mkLFO(n.g.gain, 0.18, 0.04);
+        mkOsc('sine', 110, 0.05);
+        mkStab(330, 1.4, 0.06, 5500);
+        mkStab(440, 1.2, 0.05, 7200);
+        mkStab(247, 1.6, 0.05, 9000);
+      } else if (track === 'lab_hum') {
+        mkOsc('sine', 60, 0.05);
+        const h = mkOsc('sawtooth', 120, 0.018);
+        mkLFO(h.g.gain, 0.5, 0.008);
+        mkNoise('highpass', 5000, 0.5, 0.012);
+      } else if (track === 'stage_ambience') {
+        const n = mkNoise('lowpass', 280, 0.7, 0.06);
+        mkLFO(n.filt.frequency, 0.12, 120);
+        // distant audience bell
+        mkStab(880, 2.2, 0.025, 11000);
+      } else if (track === 'street') {
+        mkNoise('lowpass', 380, 0.6, 0.09);
+        mkNoise('highpass', 4000, 0.4, 0.02);
+        // occasional engine pass
+        const id = setInterval(() => {
+          if (!ctx) return;
+          const t0 = ctx.currentTime;
+          const o = ctx.createOscillator();
+          o.type = 'sawtooth'; o.frequency.value = 50;
+          const g = ctx.createGain();
+          g.gain.setValueAtTime(0, t0);
+          g.gain.linearRampToValueAtTime(0.04, t0 + 0.5);
+          g.gain.linearRampToValueAtTime(0, t0 + 2.5);
+          o.frequency.linearRampToValueAtTime(80, t0 + 1.5);
+          o.connect(g).connect(out); o.start(t0); o.stop(t0 + 3);
+        }, 8000 + Math.random() * 6000);
+        trackState.sources.push({ stop: () => clearInterval(id) });
+      }
+    }
+
+    // ─── Language ─────────────────────────────────────
+    let langDialogue = null;
+    function applyLang(lang) {
+      const filename = ({
+        'en': 'simutum_dialogue.json',
+        'es': 'dialogue_es.json',
+        'pt-br': 'dialogue_pt-br.json',
+        'fr': 'dialogue_fr.json',
+        'ko': 'dialogue_ko.json',
+        'ja': 'dialogue_ja.json',
+      })[lang] || 'simutum_dialogue.json';
+      fetch(filename).then(r => r.json()).then(data => {
+        langDialogue = data;
+        window.SIMUTUM_DIALOGUE = data; // accessible to runtime if it wants to look up lines
+      }).catch(() => { /* file may not be available in this bundle */ });
+
+      // Set the speech voice language code
+      const speechLang = ({
+        'en': 'en-US', 'es': 'es-ES', 'pt-br': 'pt-BR',
+        'fr': 'fr-FR', 'ko': 'ko-KR', 'ja': 'ja-JP',
+      })[lang] || 'en-US';
+      window.SIMUTUM_SPEECH_LANG = speechLang;
+      // Best-effort: if the synth has voices, prefer one matching the lang
+      if (window.speechSynthesis) {
+        const voices = window.speechSynthesis.getVoices();
+        const match = voices.find(v => v.lang === speechLang) || voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+        if (match) window.SIMUTUM_PREFERRED_VOICE = match;
+      }
+    }
+  })();
+
+  // ── Cinema mode: passive camera that drifts + cuts ───
+  // Adds a CINEMA button to the top-right camera pill once mounted.
+  (function () {
+    let cinemaActive = false;
+    let cinemaCam = null;
+    let cutTimer = 0;
+    let currentTarget = null;
+    let camFrom = null, camTo = null, camProg = 0;
+    let lookFrom = null, lookTo = null;
+
+    function findInterestingTarget(R) {
+      const agents = R.getAgents();
+      if (!agents.length) return null;
+      const stops = R.getStops();
+      let bestScore = -1;
+      let best = null;
+      const camPos = R.scene.activeCamera.position;
+      for (const a of agents) {
+        const ap = a.avatar.root.position;
+        let score = 0;
+        // bonus: near a stop
+        for (const s of stops) {
+          const d = Math.hypot(ap.x - s.position.x, ap.z - s.position.z);
+          if (d < 80) score += 6;
+        }
+        // bonus: near boundary
+        const SIM = window.SIMUTUM_WORLD;
+        const bdist = Math.min(
+          Math.abs(SIM.BOUNDARY.north - ap.z),
+          Math.abs(SIM.BOUNDARY.south - ap.z),
+          Math.abs(SIM.BOUNDARY.east - ap.x),
+          Math.abs(SIM.BOUNDARY.west - ap.x)
+        );
+        if (bdist < 200) score += 8;
+        // bonus: near another entity (conversation likely)
+        for (const b of agents) {
+          if (b === a) continue;
+          const bp = b.avatar.root.position;
+          const d = Math.hypot(ap.x - bp.x, ap.z - bp.z);
+          if (d < 80) score += 4;
+        }
+        // light penalty: still in their spawn zone (boring)
+        // tiny randomness so the same scene doesn't lock
+        score += Math.random() * 2;
+        if (score > bestScore) { bestScore = score; best = a; }
+      }
+      return best;
+    }
+
+    function cutToTarget(R, target) {
+      const ap = target.avatar.root.position;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 90 + Math.random() * 60;
+      const h = 70 + Math.random() * 40;
+      camFrom = cinemaCam.position.clone();
+      camTo = new BABYLON.Vector3(
+        ap.x + Math.cos(angle) * dist,
+        h,
+        ap.z + Math.sin(angle) * dist
+      );
+      lookFrom = cinemaCam._cinemaTarget ? cinemaCam._cinemaTarget.clone() : new BABYLON.Vector3(ap.x, 0, ap.z);
+      lookTo = new BABYLON.Vector3(ap.x, 15, ap.z);
+      cinemaCam._cinemaTarget = lookTo;
+      camProg = 0;
+      currentTarget = target;
+    }
+
+    function tickCinema(R) {
+      if (!cinemaActive) return;
+      const dt = R.engine.getDeltaTime() / 1000;
+      cutTimer -= dt;
+      if (cutTimer <= 0) {
+        cutTimer = 8;
+        const t = findInterestingTarget(R);
+        if (t) cutToTarget(R, t);
+      }
+      // smooth ease toward target
+      camProg = Math.min(1, camProg + dt * 0.8);
+      const e = camProg * (3 - 2 * camProg); // smoothstep
+      if (camFrom && camTo) {
+        cinemaCam.position.x = camFrom.x + (camTo.x - camFrom.x) * e;
+        cinemaCam.position.y = camFrom.y + (camTo.y - camFrom.y) * e;
+        cinemaCam.position.z = camFrom.z + (camTo.z - camFrom.z) * e;
+      }
+      if (lookFrom && lookTo) {
+        const lx = lookFrom.x + (lookTo.x - lookFrom.x) * e;
+        const ly = lookFrom.y + (lookTo.y - lookFrom.y) * e;
+        const lz = lookFrom.z + (lookTo.z - lookFrom.z) * e;
+        cinemaCam.setTarget(new BABYLON.Vector3(lx, ly, lz));
+      }
+    }
+
+    function startCinema() {
+      const R = window.SIMUTUM_RUNTIME;
+      if (!R) return;
+      if (!cinemaCam) {
+        cinemaCam = new BABYLON.UniversalCamera('cinemaCam',
+          new BABYLON.Vector3(0, 120, -200), R.scene);
+        cinemaCam.minZ = 0.5;
+        cinemaCam.maxZ = 6000;
+        cinemaCam.fov = 1.15;
+        cinemaCam.setTarget(new BABYLON.Vector3(0, 0, 0));
+        R.scene.onBeforeRenderObservable.add(() => tickCinema(R));
+      }
+      R.scene.activeCamera = cinemaCam;
+      cinemaActive = true;
+      cutTimer = 0; // trigger an immediate cut
+    }
+    function stopCinema() { cinemaActive = false; }
+
+    // Hijack the existing cam pill to add a CINEMA button
+    const wait = setInterval(() => {
+      const btns = [...document.querySelectorAll('button')].filter(b => /TOP DOWN|FREE FLY/.test(b.textContent || ''));
+      if (btns.length < 2) return;
+      clearInterval(wait);
+      const pill = btns[0].parentElement;
+      if (pill.querySelector('.cinema-btn')) return;
+      const btn = document.createElement('button');
+      btn.className = 'cinema-btn';
+      btn.textContent = 'CINEMA';
+      btn.style.cssText = btns[0].style.cssText;
+      // mimic the cam button look
+      btn.style.border = 0;
+      btn.style.background = 'transparent';
+      btn.style.color = '#b9c4e0';
+      btn.style.padding = '7px 12px';
+      btn.style.fontFamily = 'ui-monospace, Menlo, monospace';
+      btn.style.fontSize = '10.5px';
+      btn.style.letterSpacing = '0.10em';
+      btn.style.textTransform = 'uppercase';
+      btn.style.cursor = 'pointer';
+      btn.style.borderLeft = '1px solid rgba(184,196,224,0.12)';
+      let on = false;
+      btn.addEventListener('click', () => {
+        on = !on;
+        if (on) {
+          startCinema();
+          btn.style.background = 'rgba(70,217,197,0.18)';
+          btn.style.color = '#46d9c5';
+          // dim siblings
+          for (const b of btns) b.style.background = 'transparent';
+        } else {
+          stopCinema();
+          btn.style.background = 'transparent';
+          btn.style.color = '#b9c4e0';
+          // pop back to top-down
+          const top = btns.find(b => b.textContent === 'TOP DOWN');
+          if (top) top.click();
+        }
+      });
+      // Also flip cinema off when user clicks another cam mode
+      for (const b of btns) {
+        b.addEventListener('click', () => {
+          if (on) { on = false; stopCinema();
+            btn.style.background = 'transparent';
+            btn.style.color = '#b9c4e0';
+          }
+        });
+      }
+      pill.insertBefore(btn, btns[1].nextSibling);
+    }, 250);
+  })();
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,282 @@
+{
+  "canvas": {
+    "width": 4000,
+    "height": 4000
+  },
+  "meta": {
+    "name": "War Room",
+    "version": 1,
+    "family": "simutum_pack"
+  },
+  "sections": [
+    {
+      "id": "command",
+      "label": "Command Table",
+      "global_x": 0,
+      "global_y": 0,
+      "width": 220,
+      "height": 140,
+      "flags": {
+        "walled": true,
+        "floor_color": "#2a1818",
+        "pack": "pack_floor",
+        "raised": 4
+      }
+    },
+    {
+      "id": "situation",
+      "label": "Situation Wall",
+      "global_x": -260,
+      "global_y": 0,
+      "width": 140,
+      "height": 200,
+      "flags": {
+        "walled": true,
+        "floor_color": "#231414",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "strategy",
+      "label": "Strategy Pit",
+      "global_x": 260,
+      "global_y": 0,
+      "width": 140,
+      "height": 200,
+      "flags": {
+        "walled": true,
+        "floor_color": "#231414",
+        "pack": "pack_floor"
+      }
+    },
+    {
+      "id": "ops",
+      "label": "Ops Bench",
+      "global_x": 0,
+      "global_y": 220,
+      "width": 280,
+      "height": 90,
+      "flags": {
+        "walled": false,
+        "floor_color": "#1f1414",
+        "pack": "pack_floor"
+      }
+    }
+  ],
+  "roads": [
+    {
+      "id": "road_east_out",
+      "direction": "out",
+      "destination": "east_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 340,
+          "y": 0
+        },
+        {
+          "x": 472,
+          "y": 60
+        },
+        {
+          "x": 648,
+          "y": 60
+        },
+        {
+          "x": 780,
+          "y": 0
+        }
+      ],
+      "length": 452
+    },
+    {
+      "id": "road_east_back",
+      "direction": "back",
+      "destination": "east_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": 780,
+          "y": 0
+        },
+        {
+          "x": 663.79,
+          "y": -93.89
+        },
+        {
+          "x": 487.79,
+          "y": -141.89
+        },
+        {
+          "x": 340,
+          "y": -120
+        }
+      ],
+      "length": 468
+    },
+    {
+      "id": "road_west_out",
+      "direction": "out",
+      "destination": "west_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -340,
+          "y": 0
+        },
+        {
+          "x": -472,
+          "y": 60
+        },
+        {
+          "x": -648,
+          "y": 60
+        },
+        {
+          "x": -780,
+          "y": 0
+        }
+      ],
+      "length": 452
+    },
+    {
+      "id": "road_west_back",
+      "direction": "back",
+      "destination": "west_station",
+      "width": 70,
+      "theme": "amber",
+      "bezier": [
+        {
+          "x": -780,
+          "y": 0
+        },
+        {
+          "x": -632.21,
+          "y": -21.89
+        },
+        {
+          "x": -456.21,
+          "y": 26.11
+        },
+        {
+          "x": -340,
+          "y": 120
+        }
+      ],
+      "length": 468
+    }
+  ],
+  "ring_road": null,
+  "stops": [
+    {
+      "id": "east_stop_1",
+      "road": "road_east_out",
+      "t": 0.5,
+      "poi": "parked_vehicle",
+      "lighting": {
+        "color": "#ff5a5a",
+        "intensity": 1,
+        "type": "flicker"
+      },
+      "audio": "transformer_hum"
+    },
+    {
+      "id": "west_stop_1",
+      "road": "road_west_out",
+      "t": 0.5,
+      "poi": "notice_board",
+      "lighting": {
+        "color": "#e84a3c",
+        "intensity": 0.9,
+        "type": "steady"
+      },
+      "audio": "distant_chatter"
+    }
+  ],
+  "stations": [
+    {
+      "id": "east_station",
+      "position": {
+        "x": 780,
+        "y": 0
+      },
+      "target_pack": "briefing",
+      "label": "BRIEFING ROOM"
+    },
+    {
+      "id": "west_station",
+      "position": {
+        "x": -780,
+        "y": 0
+      },
+      "target_pack": "archive",
+      "label": "ARCHIVE"
+    }
+  ],
+  "ghost_packs": [
+    {
+      "id": "ghost_motorpool",
+      "x": 0,
+      "y": 600,
+      "w": 380,
+      "h": 160,
+      "color": "#1a1a22",
+      "kind": "bar"
+    }
+  ],
+  "easter_eggs": [
+    {
+      "id": "egg_north",
+      "position": {
+        "x": 0,
+        "y": 800
+      }
+    }
+  ],
+  "boundary": {
+    "north": 800,
+    "south": -800,
+    "east": 800,
+    "west": -800
+  },
+  "cast": [
+    {
+      "name": "Frank",
+      "role": "Foreman",
+      "type": "anchor",
+      "color": "#6db8ff",
+      "spawn": "command"
+    },
+    {
+      "name": "Pat",
+      "role": "Auditor",
+      "type": "anchor",
+      "color": "#79e5b8",
+      "spawn": "situation"
+    },
+    {
+      "name": "Mo",
+      "role": "Operator",
+      "type": "anchor",
+      "color": "#ffb347",
+      "spawn": "ops"
+    },
+    {
+      "name": "Clem",
+      "role": "Strategist",
+      "type": "thinker",
+      "color": "#9b7fe8",
+      "spawn": "strategy"
+    },
+    {
+      "name": "Hank",
+      "role": "Fixer",
+      "type": "anchor",
+      "color": "#8899aa",
+      "spawn": "ops"
+    }
+  ]
+}
